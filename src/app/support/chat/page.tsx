@@ -415,7 +415,7 @@ export default function UserSupportChatPage() {
       <Sidebar />
 
       <TicketChat
-        headerTitle="Ticket with Algorax"
+        headerTitle={`Ticket with ${projectName}`}
         headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
         showBackButton={false}
         intro={
@@ -454,7 +454,7 @@ export default function UserSupportChatPage() {
 
               <div>
                 {!ticketCreated && hasSLA && <h3 className="font-medium text-foreground mb-3">Help beyond free help</h3>}
-                {!ticketCreated && !hasSLA && <h3 className="font-medium text-foreground mb-3">Algorax&apos;s rates</h3>}
+                {!ticketCreated && !hasSLA && <h3 className="font-medium text-foreground mb-3">{projectName}&apos;s rates</h3>}
                 <div className="bg-white border border-border rounded-lg overflow-hidden">
                   <table className="w-full">
                     <tbody>
