@@ -1,0 +1,365 @@
+"use client"
+
+import { useState } from "react"
+import { useDashboardStats } from "@/hooks/useDashboardStats"
+import { ExternalLink, HelpCircle, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Sidebar } from "@/components/layout/sidebar"
+import { Header } from "@/components/layout/header"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TabSelector } from "@/components/ui/tab-selector"
+import Link from "next/link"
+import { useProjectSelection } from "@/contexts/project-context"
+import { parseTimeDisplayToMinutes } from "@/lib/format"
+
+export default function Dashboard() {
+  const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
+  const [selectedMonth, setSelectedMonth] = useState<string>("")
+  const [helperFilter, setHelperFilter] = useState<"all" | "core" | "extended" | "community">("all")
+  const [issueFilter, setIssueFilter] = useState<"all" | "applied">("all")
+
+  const [helperSort, setHelperSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
+  const [issueSort, setIssueSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
+
+  const generateMonthOptions = () => {
+    const months = []
+    const now = new Date()
+
+    for (let i = 1; i <= 12; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthName = date.toLocaleDateString("en-US", { month: "long" })
+      const year = date.getFullYear()
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+
+      months.push({
+        value,
+        label: `${monthName} ${year}`,
+        monthYear: `${monthName} ${year}`,
+      })
+    }
+
+    return months
+  }
+
+  const monthOptions = generateMonthOptions()
+
+  const { selectedProjectId } = useProjectSelection()
+  const projectId = selectedProjectId ?? undefined
+
+  // Fetch dashboard stats
+  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats(projectId)
+
+  const allHelpers = dashboardStats?.helperStats || []
+  const allIssueTypes = dashboardStats?.issueTypeStats || []
+  const keyStats = dashboardStats?.keyStats || { totalTicketsSolved: 0, totalTimeSpent: "-", percentageSolved: 0 }
+
+  const filteredHelpers =
+    helperFilter === "all" ? allHelpers : allHelpers.filter((helper) => helper.category === helperFilter)
+
+  const filteredIssueTypes = issueFilter === "all" ? allIssueTypes : allIssueTypes.filter((issue) => issue.applied)
+
+  const sortHelpers = (helpers: typeof allHelpers) => {
+    if (!helperSort) return helpers
+
+    return [...helpers].sort((a, b) => {
+      let aValue: string | number = a[helperSort.column as keyof typeof a] as string | number
+      let bValue: string | number = b[helperSort.column as keyof typeof b] as string | number
+
+      if (helperSort.column === "tickets") {
+        aValue = aValue === "-" ? 0 : Number.parseInt(String(aValue), 10)
+        bValue = bValue === "-" ? 0 : Number.parseInt(String(bValue), 10)
+      } else if (helperSort.column === "time") {
+        aValue = parseTimeDisplayToMinutes(String(aValue))
+        bValue = parseTimeDisplayToMinutes(String(bValue))
+      }
+
+      if (aValue < bValue) return helperSort.direction === "asc" ? -1 : 1
+      if (aValue > bValue) return helperSort.direction === "asc" ? 1 : -1
+      return 0
+    })
+  }
+
+  const sortIssueTypes = (issues: typeof allIssueTypes) => {
+    if (!issueSort) return issues
+
+    return [...issues].sort((a, b) => {
+      let aValue: string | number = a[issueSort.column as keyof typeof a] as string | number
+      let bValue: string | number = b[issueSort.column as keyof typeof b] as string | number
+
+      if (issueSort.column === "tickets") {
+        aValue = aValue === "-" ? 0 : Number.parseInt(String(aValue), 10)
+        bValue = bValue === "-" ? 0 : Number.parseInt(String(bValue), 10)
+      } else if (issueSort.column === "time") {
+        aValue = parseTimeDisplayToMinutes(String(aValue))
+        bValue = parseTimeDisplayToMinutes(String(bValue))
+      }
+
+      if (aValue < bValue) return issueSort.direction === "asc" ? -1 : 1
+      if (aValue > bValue) return issueSort.direction === "asc" ? 1 : -1
+      return 0
+    })
+  }
+
+  const handleHelperSort = (column: string) => {
+    setHelperSort((prev) => {
+      if (prev?.column === column) {
+        return prev.direction === "asc" ? { column, direction: "desc" } : null
+      }
+      return { column, direction: "asc" }
+    })
+  }
+
+  const handleIssueSort = (column: string) => {
+    setIssueSort((prev) => {
+      if (prev?.column === column) {
+        return prev.direction === "asc" ? { column, direction: "desc" } : null
+      }
+      return { column, direction: "asc" }
+    })
+  }
+
+  const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
+    if (currentSort?.column !== column) {
+      return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+    }
+    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+  }
+
+  const sortedHelpers = sortHelpers(filteredHelpers)
+  const sortedIssueTypes = sortIssueTypes(filteredIssueTypes)
+
+  return (
+    <div className="h-screen flex overflow-hidden">
+      <Sidebar />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="Overview" subtitle="Stats and insight" />
+
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+          {/* Time Filters */}
+          <div className="flex gap-2">
+            <Button
+              variant={timeFilter === "current" ? "lavender" : "outline"}
+              size="sm"
+              className={
+                timeFilter === "current"
+                  ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
+                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+              }
+              onClick={() => {
+                setTimeFilter("current")
+                setSelectedMonth("")
+              }}
+            >
+              Current month
+            </Button>
+            <div className="relative">
+              <Select
+                value={selectedMonth}
+                onValueChange={(value) => {
+                  setSelectedMonth(value)
+                  setTimeFilter("choose")
+                }}
+              >
+                <SelectTrigger
+                  size="sm"
+                  variant={timeFilter === "choose" ? "lavender" : "outline"}
+                  className="w-[160px] text-sm"
+                >
+                  <SelectValue placeholder="Choose month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant={timeFilter === "all" ? "lavender" : "outline"}
+              size="sm"
+              className={
+                timeFilter !== "all"
+                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                  : undefined
+              }
+              onClick={() => {
+                setTimeFilter("all")
+                setSelectedMonth("")
+              }}
+            >
+              All time
+            </Button>
+          </div>
+
+          {/* Key Stats */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-lg font-medium text-foreground">Key stats</h2>
+              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div className="flex gap-4 max-w-fit">
+              <Card className="border-border min-w-[250px]">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
+                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
+                </CardContent>
+              </Card>
+              <Card className="border-border min-w-[250px]">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-muted-foreground">Total time spent</span>
+                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
+                </CardContent>
+              </Card>
+              <Card className="border-border min-w-[250px]">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-muted-foreground">Percentage solved</span>
+                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.percentageSolved}%</div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Tables */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Helpers Table */}
+            <div>
+              <h2 className="text-lg font-medium text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
+              <div className="mb-4">
+                <TabSelector
+                  options={[
+                    { value: "all", label: "View all" },
+                    { value: "core", label: "Core team" },
+                    { value: "extended", label: "Extended team" },
+                    { value: "community", label: "Community" },
+                  ]}
+                  value={helperFilter}
+                  onChange={(value) => setHelperFilter(value as typeof helperFilter)}
+                />
+              </div>
+              <Card className="border-border py-0">
+                <CardContent className="p-0">
+                  <div className="bg-muted px-4 py-3 border-b border-border">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                      <div
+                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        onClick={() => handleHelperSort("name")}
+                      >
+                        Name
+                        {getSortIcon("name", helperSort)}
+                      </div>
+                      <div
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        onClick={() => handleHelperSort("tickets")}
+                      >
+                        No of tickets
+                        {getSortIcon("tickets", helperSort)}
+                      </div>
+                      <div
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        onClick={() => handleHelperSort("time")}
+                      >
+                        Total time
+                        {getSortIcon("time", helperSort)}
+                      </div>
+                    </div>
+                  </div>
+                  {sortedHelpers.map((helper, index) => (
+                    <div key={index} className="px-4 py-3 border-b border-border last:border-b-0">
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        <div className="col-span-6 flex items-center gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback
+                              style={{ backgroundColor: helper.color }}
+                              className="text-foreground text-sm font-medium"
+                            >
+                              {helper.initial}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm text-foreground">{helper.name}</span>
+                        </div>
+                        <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
+                        <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
+                        <div className="col-span-1 flex justify-end">
+                          <Link href={`/helpers/${helper.id}`}>
+                            <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Issue Types Table */}
+            <div>
+              <h2 className="text-lg font-medium text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
+              <div className="mb-4">
+                <TabSelector
+                  options={[
+                    { value: "all", label: "View all" },
+                    { value: "applied", label: "Applied this period" },
+                  ]}
+                  value={issueFilter}
+                  onChange={(value) => setIssueFilter(value as typeof issueFilter)}
+                />
+              </div>
+              <Card className="border-border py-0">
+                <CardContent className="p-0">
+                  <div className="bg-muted px-4 py-3 border-b border-border">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                      <div
+                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        onClick={() => handleIssueSort("name")}
+                      >
+                        Name
+                        {getSortIcon("name", issueSort)}
+                      </div>
+                      <div
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        onClick={() => handleIssueSort("tickets")}
+                      >
+                        No of tickets
+                        {getSortIcon("tickets", issueSort)}
+                      </div>
+                      <div
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        onClick={() => handleIssueSort("time")}
+                      >
+                        Total time
+                        {getSortIcon("time", issueSort)}
+                      </div>
+                    </div>
+                  </div>
+                  {sortedIssueTypes.map((issue, index) => (
+                    <div key={index} className="px-4 py-3 border-b border-border last:border-b-0">
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
+                        <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
+                        <div className="col-span-3 text-sm text-foreground">{issue.time}</div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}

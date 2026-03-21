@@ -1,0 +1,431 @@
+"use client"
+
+import {
+  ChevronDown,
+  ChevronsLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useUser } from "@/contexts/user-context"
+import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
+import { useProjectSelection } from "@/contexts/project-context"
+import { Logo } from "@/components/brand/logo"
+import type { Database } from "@/types/database"
+
+interface SidebarProps {
+  className?: string
+}
+
+type Project = Database["public"]["Tables"]["projects"]["Row"]
+
+interface NavigationItem {
+  name: string
+  href: string
+  icon: string
+  subItems?: NavigationItem[]
+}
+
+// Flaticon Icon Component
+const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?: string }) => {
+  return <i className={`fi ${iconClass} ${className || ""}`} />
+}
+
+// Project Logo Component with Avatar Placeholder
+const ProjectLogo = ({ 
+  logoUrl, 
+  projectName, 
+  size = "w-6 h-6",
+}: { 
+  logoUrl: string | null | undefined
+  projectName: string
+  size?: string
+}) => {
+  const firstLetter = projectName?.[0]?.toUpperCase() || "?"
+
+  if (logoUrl) {
+    return (
+      <Avatar className={size}>
+        <AvatarImage src={logoUrl} alt={projectName} />
+        <AvatarFallback className="bg-brand-primary text-white text-xs">
+          {firstLetter}
+        </AvatarFallback>
+      </Avatar>
+    )
+  }
+
+  return (
+    <Avatar className={size}>
+      <AvatarFallback className="bg-brand-primary text-white text-xs">
+        {firstLetter}
+      </AvatarFallback>
+    </Avatar>
+  )
+}
+
+export function Sidebar({ className }: SidebarProps) {
+  const pathname = usePathname()
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Settings"])
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const { user } = useUser()
+  const isAuthenticated = !!user?.id
+  const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
+  const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
+  
+  const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
+
+  // Fetch branding for selected project
+  const { data: selectedProjectBranding } = useProjectBranding(selectedProject?.project_id || "")
+
+  // If we have projects but no selection yet, pick the first project.
+  // (ProjectProvider also does this, but this keeps Sidebar resilient if mounted alone somewhere.)
+  // Only run when projects finish loading and we have no selection
+  useEffect(() => {
+    if (projectsLoading) return
+    if (userProjects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(userProjects[0].project_id)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when length/selection changes, not array reference
+  }, [projectsLoading, userProjects.length, selectedProjectId, setSelectedProjectId])
+
+  // Get project logo from branding
+  const getProjectLogo = (project: Project | undefined, branding: { logo_url?: string | null } | null | undefined) => {
+    if (!project) return null
+    return branding?.logo_url ?? null
+  }
+
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProjectId(project.project_id)
+  }
+
+  const toggleExpanded = (itemName: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(itemName) ? prev.filter((item) => item !== itemName) : [...prev, itemName],
+    )
+  }
+
+  const adminNavigationItems: NavigationItem[] = [
+    { name: "Overview", href: "/", icon: "fi-rr-apps" },
+    { name: "Helpers", href: "/helpers", icon: "fi-rr-user" },
+    { name: "Tickets", href: "/tickets", icon: "fi-rr-comments" },
+    { name: "SLAs", href: "/slas", icon: "fi-rr-star-octogram" },
+    {
+      name: "Reports",
+      href: "#",
+      icon: "fi-rr-document",
+      subItems: [
+        { name: "Support", href: "/reports/support", icon: "fi-rr-comments" },
+        { name: "SLAs", href: "/reports/slas", icon: "fi-rr-star-octogram" },
+      ],
+    },
+    // { name: "Availability", href: "#", icon: "fi-rr-list-check" },
+    { name: "Landing page", href: "/landing-page", icon: "fi-rr-browser" },
+    {
+      name: "Settings",
+      href: "#",
+      icon: "fi-rr-settings",
+      subItems: [
+        { name: "Payment", href: "/settings/payment", icon: "fi-rr-credit-card" },
+        { name: "Profile", href: "/settings/profile", icon: "fi-rr-user" },
+        { name: "Project", href: "/settings/project", icon: "fi-rr-folder" },
+        { name: "Branding", href: "/settings/branding", icon: "fi-rr-paint-brush" },
+      ],
+    },
+  ]
+
+  const helperNavigationItems: NavigationItem[] = [
+    { name: "Profile", href: "/helper/profile", icon: "fi-rr-user" },
+    { name: "Support", href: "/helper/support", icon: "fi-rr-comments" },
+    { name: "Tickets", href: "/tickets", icon: "fi-rr-comments" },
+    { name: "Reports", href: "/helper/reports", icon: "fi-rr-document" },
+    { name: "Settings", href: "/helper/settings", icon: "fi-rr-settings" },
+  ]
+
+  const userNavigationItems: NavigationItem[] = [
+    { name: "Profile", href: "#", icon: "fi-rr-user" },
+    { name: "Support", href: "/support/chat", icon: "fi-rr-comments" },
+    { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
+    { name: "Reports", href: "#", icon: "fi-rr-document" },
+    { name: "Settings", href: "#", icon: "fi-rr-settings" },
+  ]
+
+  const getNavigationItems = () => {
+    if (user.role === "helper") return helperNavigationItems
+    if (user.role === "user") return userNavigationItems
+    return adminNavigationItems
+  }
+
+  const navigationItems = getNavigationItems()
+
+  const bottomItems = [
+    { name: "Documentation", href: "#", icon: "fi-rr-book-alt" },
+    { name: "Help", href: "/help", icon: "fi-rr-interrogation" },
+  ]
+
+  const isItemActive = (item: NavigationItem) => {
+    if (item.subItems) {
+      return item.subItems.some((subItem) => pathname === subItem.href)
+    }
+    return pathname === item.href
+  }
+
+  const isSubItemActive = (href: string) => pathname === href
+
+  return (
+    <div
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-card border-r border-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
+    >
+      <div className="p-4 flex items-center justify-between">
+        {isCollapsed ? (
+          selectedProject ? (
+            <ProjectLogo
+              logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
+              projectName={selectedProject.name}
+              size="w-8 h-8"
+            />
+          ) : (
+            <Logo className="text-foreground" />
+          )
+        ) : (
+          <Logo className="text-foreground" />
+        )}
+        {!isCollapsed && (
+          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => setIsCollapsed(true)}>
+            <ChevronsLeft className="w-5 h-5 text-muted-foreground" />
+          </Button>
+        )}
+      </div>
+
+      {isCollapsed && (
+        <div className="px-4 pb-4 flex justify-center">
+          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => setIsCollapsed(false)}>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </Button>
+        </div>
+      )}
+
+      {!isCollapsed && (
+        <div className="px-4 pb-4">
+          {!isAuthenticated ? (
+            <div className="w-full px-4 py-3 bg-muted rounded-lg">
+              <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
+                <Link href={`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`}>
+                  Sign in
+                </Link>
+              </Button>
+            </div>
+          ) : projectsLoading ? (
+            <div className="w-full flex items-center justify-center px-4 py-3 bg-muted rounded-lg">
+              <div className="text-sm text-muted-foreground">Loading projects...</div>
+            </div>
+          ) : userProjects.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 rounded-lg transition-colors">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <ProjectLogo
+                      logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
+                      projectName={selectedProject?.name || ""}
+                      size="w-6 h-6"
+                    />
+                    <span className="text-lg font-semibold text-foreground truncate">
+                      {selectedProject?.name || "Select Project"}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {userProjects.map((project) => {
+                  const isSelected = selectedProject?.project_id === project.project_id
+                  return (
+                    <ProjectLogoWithBranding
+                      key={project.project_id}
+                      project={project}
+                      isSelected={isSelected}
+                      onSelect={handleProjectSelect}
+                    />
+                  )
+                })}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-brand-primary"
+                  onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add new +
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="w-full px-4 py-3 bg-muted rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">No projects yet</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-brand-primary"
+                onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Project
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <div className="space-y-1">
+          {navigationItems.map((item) => {
+            const isActive = isItemActive(item)
+            const isExpanded = expandedItems.includes(item.name)
+            const activeClasses = "bg-brand-primary/10 text-brand-primary"
+            const inactiveClasses = "text-muted-foreground hover:bg-muted"
+
+            return (
+              <div key={item.name}>
+                {item.subItems ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(item.name)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                        isActive ? activeClasses : inactiveClasses
+                      }`}
+                      title={isCollapsed ? item.name : undefined}
+                    >
+                      <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+                      {!isCollapsed && (
+                        <>
+                          {item.name}
+                          <ChevronRight
+                            className={`w-4 h-4 ml-auto transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                          />
+                        </>
+                      )}
+                    </button>
+                    {!isCollapsed && isExpanded && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {item.subItems.map((subItem) => {
+                          const isSubActive = isSubItemActive(subItem.href)
+                          return (
+                            <Link key={subItem.name} href={subItem.href}>
+                              <div
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                  isSubActive ? activeClasses : inactiveClasses
+                                }`}
+                              >
+                                <FlaticonIcon iconClass={subItem.icon} className="w-5 h-5 flex-shrink-0" />
+                                {subItem.name}
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link href={item.href}>
+                    <div
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        isActive ? activeClasses : inactiveClasses
+                      }`}
+                      title={isCollapsed ? item.name : undefined}
+                    >
+                      <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+                      {!isCollapsed && item.name}
+                    </div>
+                  </Link>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </nav>
+
+      <div className="p-4 border-t border-border space-y-2">
+        {bottomItems.map((item) => {
+          const isActive = item.href !== "#" && pathname === item.href
+          const className = `flex items-center gap-3 px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+            isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
+          }`
+          const content = (
+            <>
+              <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+              {!isCollapsed && item.name}
+            </>
+          )
+          return item.href !== "#" ? (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={className}
+              title={isCollapsed ? item.name : undefined}
+            >
+              {content}
+            </Link>
+          ) : (
+            <div key={item.name} className={className} title={isCollapsed ? item.name : undefined}>
+              {content}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="p-4 border-t border-border">
+        <div className="flex items-center gap-3">
+          <Avatar className="w-8 h-8">
+            <AvatarFallback className="bg-brand-primary text-white text-sm">{user.avatar}</AvatarFallback>
+          </Avatar>
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-foreground">{user.name}</div>
+              <div className="text-xs text-muted-foreground">
+                Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Component to render project logo with branding in dropdown
+function ProjectLogoWithBranding({ 
+  project, 
+  isSelected, 
+  onSelect 
+}: { 
+  project: Project
+  isSelected: boolean
+  onSelect: (project: Project) => void
+}) {
+  const { data: branding } = useProjectBranding(project.project_id)
+  const logoUrl = branding?.logo_url ?? null
+
+  return (
+    <DropdownMenuItem
+      onClick={() => onSelect(project)}
+      className={isSelected ? "bg-brand-primary/10 text-brand-primary" : ""}
+    >
+      <ProjectLogo
+        logoUrl={logoUrl}
+        projectName={project.name}
+        size="w-5 h-5"
+      />
+      <span className="ml-2 truncate">{project.name}</span>
+    </DropdownMenuItem>
+  )
+}
