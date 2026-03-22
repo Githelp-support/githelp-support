@@ -239,7 +239,7 @@ export function Sidebar({ className }: SidebarProps) {
                       projectName={selectedProject?.name || ""}
                       size="w-6 h-6"
                     />
-                    <span className="text-lg font-semibold text-foreground truncate">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
