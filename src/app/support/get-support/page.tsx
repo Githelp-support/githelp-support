@@ -44,7 +44,7 @@ export default function GetSupportPage() {
   // Fetch branding for logo
   const { data: brandingData } = useProjectBranding(projectId || "")
   const projectLogo = brandingData?.logo_url || null
-  const projectName = project?.name || "Algorax"
+  const projectName = project?.name || "Support"
 
   if (!projectIdParam && !slugParam) {
     return (

@@ -11,6 +11,7 @@ import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
 import { useTimeEntries, useCreateTimeEntry, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
+import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import {
@@ -97,6 +98,7 @@ export default function TicketDetailPage() {
 
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
+  const { data: project } = useProject(projectId)
   const { data: projectRole } = useProjectRole(projectId || undefined)
   const addSelfAsHelper = useAddSelfAsHelper()
   const isAdminButNotHelper =
@@ -425,7 +427,7 @@ export default function TicketDetailPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="relative border-b border-border z-10">
-          <Header title={`Ticket with Algorax`} subtitle={`ID: ${ticketId}`} showBackButton={true} />
+          <Header title={`Ticket with ${project?.name || 'Support'}`} subtitle={`ID: ${ticketId}`} showBackButton={true} />
         </div>
         <main className="flex-1 flex overflow-hidden">
           {/* Main Content */}

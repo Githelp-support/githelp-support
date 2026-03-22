@@ -53,7 +53,7 @@ export default function SupportPage() {
 
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
-  const projectName = project?.name || "Algorax"
+  const projectName = project?.name || "Support"
 
   // Format payment values (convert cents to dollars)
   const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"

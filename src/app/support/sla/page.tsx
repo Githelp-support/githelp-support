@@ -5,11 +5,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { HelpCircle } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useProject, useProjectBySlug } from "@/hooks/useProject"
 
 export default function SLAEntryPage() {
   const [slaId, setSlaId] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const projectIdParam = searchParams.get("project")
+  const slugParam = searchParams.get("slug")
+  const { data: projectById } = useProject(projectIdParam || "")
+  const { data: projectBySlug } = useProjectBySlug(slugParam || "")
+  const project = projectIdParam ? projectById : projectBySlug
+  const projectName = project?.name || "Support"
 
   const handleEnterSupportSpace = () => {
     if (slaId.trim()) {
@@ -29,7 +38,7 @@ export default function SLAEntryPage() {
         </div>
         <div>
           <h1 className="text-3xl font-normal text-[#444444]">
-            Welcome to the support page for <span className="font-semibold">Algorax</span>
+            Welcome to the support page for <span className="font-semibold">{projectName}</span>
           </h1>
         </div>
       </div>
