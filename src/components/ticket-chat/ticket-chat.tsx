@@ -98,11 +98,11 @@ export function TicketChat(props: TicketChatProps) {
               {/* Chat Messages Container */}
               <div className="bg-white rounded-t-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
                 <div className="p-4">
-                  <div className="max-w-4xl space-y-6">
+                  <div className="max-w-4xl space-y-8">
                     {intro}
 
                     {/* Chat Messages */}
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       {thread.map((msg) => (
                         <div key={msg.id} className="flex gap-3">
                           {msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended") ? (
