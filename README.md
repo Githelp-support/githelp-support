@@ -6,7 +6,7 @@ A support ticket and team collaboration platform built with Next.js. Manage supp
 
 - **Ticket management** — Create, assign, and track support requests with real-time updates
 - **Helper system** — Invite team members as helpers with role-based permissions
-- **SLA tracking** — Define and monitor service level agreements
+- **SLA tracking** — Define and monitor support level agreements
 - **Project-based organization** — Organize work across multiple projects with invites and roles
 - **Reporting** — Built-in reporting and analytics
 - **Real-time chat** — Live messaging on tickets via Supabase subscriptions
