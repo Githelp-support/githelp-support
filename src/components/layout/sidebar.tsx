@@ -264,7 +264,7 @@ export function Sidebar({ className }: SidebarProps) {
                   onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add new +
+                  Add new
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
