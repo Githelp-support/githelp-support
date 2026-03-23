@@ -239,7 +239,7 @@ export function Sidebar({ className }: SidebarProps) {
                       projectName={selectedProject?.name || ""}
                       size="w-6 h-6"
                     />
-                    <span className="text-lg font-semibold text-foreground truncate">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -264,7 +264,7 @@ export function Sidebar({ className }: SidebarProps) {
                   onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add new +
+                  Add new
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
