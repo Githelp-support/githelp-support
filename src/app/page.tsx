@@ -203,7 +203,7 @@ export default function Dashboard() {
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex gap-4 max-w-fit">
-              <Card className="border-border min-w-[250px]">
+              <Card className="border-border min-w-[250px] py-[9px]">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm text-muted-foreground">Number of tickets solved</span>
@@ -212,7 +212,7 @@ export default function Dashboard() {
                   <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border min-w-[250px]">
+              <Card className="border-border min-w-[250px] py-[9px]">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm text-muted-foreground">Total time spent</span>
@@ -221,7 +221,7 @@ export default function Dashboard() {
                   <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border min-w-[250px]">
+              <Card className="border-border min-w-[250px] py-[9px]">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm text-muted-foreground">Percentage solved</span>
