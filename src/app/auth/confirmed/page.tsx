@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus"
@@ -10,6 +11,7 @@ import { ensureUserOrganization } from "@/lib/organizations"
 export default function AuthConfirmedPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const [isProcessing, setIsProcessing] = useState(true)
   const { data: onboardingStatus, isLoading: onboardingLoading } = useOnboardingStatus()
 
@@ -24,6 +26,9 @@ export default function AuthConfirmedPage() {
         router.push("/auth/signin")
         return
       }
+
+      // Invalidate onboarding-status cache to prevent stale data from a previous session
+      await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] })
 
       // If user signed in with GitHub, check for pending helper invite by github_username and auto-accept
       const providers = (session.user.app_metadata?.providers as string[] | undefined) ?? []
@@ -51,7 +56,7 @@ export default function AuthConfirmedPage() {
     }
 
     handleAuthCallback()
-  }, [router])
+  }, [router, queryClient])
 
   // Handle redirect after onboarding status is loaded
   useEffect(() => {

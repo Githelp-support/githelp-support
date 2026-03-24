@@ -25,6 +25,7 @@ export default function ProjectLandingPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isCheckingAuth, setIsCheckingAuth] = useState(true)
     const [hasRequested, setHasRequested] = useState(false)
+    const [isCheckingMembership, setIsCheckingMembership] = useState(false)
 
     const { data: projectById, isLoading: loadingById } = useProject(isUuid ? param : "")
     const { data: projectBySlug, isLoading: loadingBySlug } = useProjectBySlug(!isUuid ? param : "")
@@ -53,6 +54,45 @@ export default function ProjectLandingPage() {
 
         return () => subscription.unsubscribe()
     }, [])
+
+    // Check if user is already a member or helper — redirect to dashboard
+    useEffect(() => {
+        if (!isAuthenticated || !projectId) return
+
+        setIsCheckingMembership(true)
+
+        const checkMembership = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                setIsCheckingMembership(false)
+                return
+            }
+
+            const [{ data: member }, { data: helper }] = await Promise.all([
+                supabase
+                    .from("projects_members")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .eq("project_id", projectId)
+                    .maybeSingle(),
+                supabase
+                    .from("projects_helpers")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .eq("project_id", projectId)
+                    .maybeSingle(),
+            ])
+
+            if (member || helper) {
+                router.push("/")
+                return
+            }
+
+            setIsCheckingMembership(false)
+        }
+
+        checkMembership()
+    }, [isAuthenticated, projectId, router])
 
     // Check if user has already requested
     useEffect(() => {
@@ -105,7 +145,7 @@ export default function ProjectLandingPage() {
         }
     }
 
-    if (isCheckingAuth || projectLoading) {
+    if (isCheckingAuth || projectLoading || isCheckingMembership) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-muted/50">
                 <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
