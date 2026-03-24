@@ -6,10 +6,12 @@ import { supabase } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { ensureUserOrganization } from "@/lib/organizations"
+import { useQueryClient } from "@tanstack/react-query"
 
 export default function AuthConfirmedPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const [isProcessing, setIsProcessing] = useState(true)
   const { data: onboardingStatus, isLoading: onboardingLoading } = useOnboardingStatus()
 
@@ -34,8 +36,12 @@ export default function AuthConfirmedPage() {
             const { data: acceptData } = await supabase.functions.invoke("accept-project-invite", {
               body: { token: data.invite.token },
             })
-            if (acceptData?.success && acceptData?.project_id) {
-              router.push(`/projects/${acceptData.project_id}`)
+            if (acceptData?.success) {
+              // Auto-accept succeeded — user is now a member.
+              // Invalidate onboarding-status so the second useEffect
+              // sees isMember=true and routes to dashboard / redirectTo.
+              await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] })
+              setIsProcessing(false)
               return
             }
             // If accept failed (e.g. needs profile), redirect to invite page
@@ -51,7 +57,7 @@ export default function AuthConfirmedPage() {
     }
 
     handleAuthCallback()
-  }, [router])
+  }, [router, queryClient])
 
   // Handle redirect after onboarding status is loaded
   useEffect(() => {
