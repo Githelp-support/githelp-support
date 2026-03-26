@@ -179,34 +179,36 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               </RadioGroup>
             </div>
 
-            {/* Hours included */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Hours included</h3>
+            {/* Hours included - only visible when "Limited hours" is selected */}
+            {formData.supportLimitation === "limited" && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-900">Hours included</h3>
 
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700">Monthly hours included in contract</label>
-                <Input
-                  placeholder="Number of hours"
-                  type="number"
-                  value={formData.monthlyHours}
-                  onChange={(e) => handleInputChange("monthlyHours", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-700">Monthly hours included in contract</label>
+                  <Input
+                    placeholder="Number of hours"
+                    type="number"
+                    value={formData.monthlyHours}
+                    onChange={(e) => handleInputChange("monthlyHours", e.target.value)}
+                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
 
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="rollover"
-                  checked={formData.unusedHoursRollover}
-                  onCheckedChange={(checked) => handleInputChange("unusedHoursRollover", checked as boolean)}
-                  className="border-gray-300"
-                />
-                <Label htmlFor="rollover" className="text-sm text-gray-700 flex items-center gap-2">
-                  Unused hours rollover
-                  <Info className="w-4 h-4 text-gray-400" />
-                </Label>
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="rollover"
+                    checked={formData.unusedHoursRollover}
+                    onCheckedChange={(checked) => handleInputChange("unusedHoursRollover", checked as boolean)}
+                    className="border-gray-300"
+                  />
+                  <Label htmlFor="rollover" className="text-sm text-gray-700 flex items-center gap-2">
+                    Unused hours rollover
+                    <Info className="w-4 h-4 text-gray-400" />
+                  </Label>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Subscription cost */}
             <div className="space-y-4">
