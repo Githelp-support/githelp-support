@@ -25,22 +25,36 @@ export default function AuthConfirmedPage() {
         return
       }
 
-      // If user signed in with GitHub, check for pending helper invite by github_username and auto-accept
+      // If user signed in with GitHub and is NOT already a project member,
+      // check for pending helper invite by github_username and auto-accept.
+      // Skip this block entirely for existing members so a stale invite
+      // doesn't hijack every subsequent login.
       const providers = (session.user.app_metadata?.providers as string[] | undefined) ?? []
       if (providers.includes("github")) {
         try {
-          const { data } = await supabase.functions.invoke("get-pending-invite-by-github")
-          if (data?.success && data?.invite?.token) {
-            const { data: acceptData } = await supabase.functions.invoke("accept-project-invite", {
-              body: { token: data.invite.token },
-            })
-            if (acceptData?.success && acceptData?.project_id) {
-              router.push(`/projects/${acceptData.project_id}`)
+          // Check if user is already a member of any project
+          const { data: existingMemberships } = await supabase
+            .from("projects_members")
+            .select("id")
+            .eq("user_id", session.user.id)
+            .limit(1)
+
+          const isAlreadyMember = existingMemberships && existingMemberships.length > 0
+
+          if (!isAlreadyMember) {
+            const { data } = await supabase.functions.invoke("get-pending-invite-by-github")
+            if (data?.success && data?.invite?.token) {
+              const { data: acceptData } = await supabase.functions.invoke("accept-project-invite", {
+                body: { token: data.invite.token },
+              })
+              if (acceptData?.success && acceptData?.project_id) {
+                router.push(`/projects/${acceptData.project_id}`)
+                return
+              }
+              // If accept failed (e.g. needs profile), redirect to invite page
+              router.push(`/invite/${data.invite.token}`)
               return
             }
-            // If accept failed (e.g. needs profile), redirect to invite page
-            router.push(`/invite/${data.invite.token}`)
-            return
           }
         } catch {
           // Ignore - continue with normal flow
