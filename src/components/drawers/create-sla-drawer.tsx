@@ -162,7 +162,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                 onValueChange={(value) => {
                   handleInputChange("supportLimitation", value)
                   if (value === "unlimited") {
-                    setFormData((prev) => ({ ...prev, monthlyHours: "", unusedHoursRollover: false }))
+                    setFormData((prev) => ({ ...prev, monthlyHours: "", unusedHoursRollover: false, startPrice: "", firstSixtyMinRate: "", afterSixtyMinRate: "" }))
                   }
                 }}
                 className="space-y-3"
@@ -254,42 +254,44 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             </div>
 
             {/* Rates beyond included hours */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Rates beyond included hours</h3>
+            {formData.supportLimitation === "limited" && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-900">Rates beyond included hours</h3>
 
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700 flex items-center gap-2">
-                  Start price
-                  <Info className="w-4 h-4 text-gray-400" />
-                </label>
-                <Input
-                  placeholder="USD 0.00"
-                  value={formData.startPrice}
-                  onChange={(e) => handleInputChange("startPrice", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-700 flex items-center gap-2">
+                    Start price
+                    <Info className="w-4 h-4 text-gray-400" />
+                  </label>
+                  <Input
+                    placeholder="USD 0.00"
+                    value={formData.startPrice}
+                    onChange={(e) => handleInputChange("startPrice", e.target.value)}
+                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700">USD/min - First 60 min</label>
-                <Input
-                  placeholder="USD 0.00"
-                  value={formData.firstSixtyMinRate}
-                  onChange={(e) => handleInputChange("firstSixtyMinRate", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-700">USD/min - First 60 min</label>
+                  <Input
+                    placeholder="USD 0.00"
+                    value={formData.firstSixtyMinRate}
+                    onChange={(e) => handleInputChange("firstSixtyMinRate", e.target.value)}
+                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700">USD/min - After 60 min</label>
-                <Input
-                  placeholder="USD 0.00"
-                  value={formData.afterSixtyMinRate}
-                  onChange={(e) => handleInputChange("afterSixtyMinRate", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                />
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-700">USD/min - After 60 min</label>
+                  <Input
+                    placeholder="USD 0.00"
+                    value={formData.afterSixtyMinRate}
+                    onChange={(e) => handleInputChange("afterSixtyMinRate", e.target.value)}
+                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Response times */}
             <div className="space-y-4">
