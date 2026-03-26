@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { ExternalLink, HelpCircle, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -137,17 +138,18 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Overview" subtitle="Stats and insight" />
 
-        <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+        <main className="flex-1 px-8 py-6 space-y-8 overflow-y-auto">
           {/* Time Filters */}
           <div className="flex gap-2">
             <Button
               variant={timeFilter === "current" ? "lavender" : "outline"}
               size="sm"
-              className={
+              className={cn(
+                "rounded-lg px-4 text-[13px] font-medium",
                 timeFilter === "current"
                   ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
                   : "text-muted-foreground hover:bg-brand-primary hover:text-white"
-              }
+              )}
               onClick={() => {
                 setTimeFilter("current")
                 setSelectedMonth("")
@@ -166,7 +168,7 @@ export default function Dashboard() {
                 <SelectTrigger
                   size="sm"
                   variant={timeFilter === "choose" ? "lavender" : "outline"}
-                  className="w-[160px] text-sm"
+                  className="w-[160px] rounded-lg text-[13px] font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
                 </SelectTrigger>
@@ -182,11 +184,12 @@ export default function Dashboard() {
             <Button
               variant={timeFilter === "all" ? "lavender" : "outline"}
               size="sm"
-              className={
+              className={cn(
+                "rounded-lg px-4 text-[13px] font-medium",
                 timeFilter !== "all"
                   ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
                   : undefined
-              }
+              )}
               onClick={() => {
                 setTimeFilter("all")
                 setSelectedMonth("")
@@ -199,45 +202,45 @@ export default function Dashboard() {
           {/* Key Stats */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-medium text-foreground">Key stats</h2>
+              <h2 className="text-base font-semibold text-foreground">Key stats</h2>
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className="flex gap-4 max-w-fit">
-              <Card className="border-border min-w-[250px] py-[9px]">
-                <CardContent className="p-3">
+            <div className="flex gap-5 max-w-fit">
+              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
+                <CardContent className="px-5 py-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
+                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <HelpCircle className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-xl font-bold text-foreground">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border min-w-[250px] py-[9px]">
-                <CardContent className="p-3">
+              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
+                <CardContent className="px-5 py-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm text-muted-foreground">Total time spent</span>
+                    <span className="text-xs text-muted-foreground">Total time spent</span>
                     <HelpCircle className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-xl font-bold text-foreground">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border min-w-[250px] py-[9px]">
-                <CardContent className="p-3">
+              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
+                <CardContent className="px-5 py-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm text-muted-foreground">Percentage solved</span>
+                    <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <HelpCircle className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-xl font-bold text-foreground">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
           </div>
 
           {/* Tables */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-8">
             {/* Helpers Table */}
             <div>
-              <h2 className="text-lg font-medium text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
               <div className="mb-4">
                 <TabSelector
                   options={[
@@ -250,10 +253,10 @@ export default function Dashboard() {
                   onChange={(value) => setHelperFilter(value as typeof helperFilter)}
                 />
               </div>
-              <Card className="border-border py-0">
+              <Card className="border-border/60 rounded-lg py-0 shadow-none">
                 <CardContent className="p-0">
-                  <div className="bg-muted px-4 py-3 border-b border-border">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-4 py-2.5 border-b border-border/60">
+                    <div className="grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleHelperSort("name")}
@@ -278,21 +281,21 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {sortedHelpers.map((helper, index) => (
-                    <div key={index} className="px-4 py-3 border-b border-border last:border-b-0">
+                    <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 flex items-center gap-3">
-                          <Avatar className="w-8 h-8">
+                          <Avatar className="w-7 h-7">
                             <AvatarFallback
                               style={{ backgroundColor: helper.color }}
-                              className="text-foreground text-sm font-medium"
+                              className="text-foreground text-xs font-medium"
                             >
                               {helper.initial}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-foreground">{helper.name}</span>
+                          <span className="text-[13px] text-foreground">{helper.name}</span>
                         </div>
-                        <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
-                        <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
+                        <div className="col-span-3 text-[13px] text-foreground">{helper.tickets}</div>
+                        <div className="col-span-2 text-[13px] text-foreground">{helper.time}</div>
                         <div className="col-span-1 flex justify-end">
                           <Link href={`/helpers/${helper.id}`}>
                             <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
@@ -307,7 +310,7 @@ export default function Dashboard() {
 
             {/* Issue Types Table */}
             <div>
-              <h2 className="text-lg font-medium text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
               <div className="mb-4">
                 <TabSelector
                   options={[
@@ -318,10 +321,10 @@ export default function Dashboard() {
                   onChange={(value) => setIssueFilter(value as typeof issueFilter)}
                 />
               </div>
-              <Card className="border-border py-0">
+              <Card className="border-border/60 rounded-lg py-0 shadow-none">
                 <CardContent className="p-0">
-                  <div className="bg-muted px-4 py-3 border-b border-border">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-4 py-2.5 border-b border-border/60">
+                    <div className="grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleIssueSort("name")}
@@ -346,11 +349,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {sortedIssueTypes.map((issue, index) => (
-                    <div key={index} className="px-4 py-3 border-b border-border last:border-b-0">
+                    <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
-                        <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
-                        <div className="col-span-3 text-sm text-foreground">{issue.time}</div>
+                        <div className="col-span-6 text-[13px] text-foreground">{issue.name}</div>
+                        <div className="col-span-3 text-[13px] text-foreground">{issue.tickets}</div>
+                        <div className="col-span-3 text-[13px] text-foreground">{issue.time}</div>
                       </div>
                     </div>
                   ))}
