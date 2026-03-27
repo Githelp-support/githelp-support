@@ -165,8 +165,8 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               )}
             </button>
             <div className="flex items-center gap-2">
-              <Avatar className="w-8 h-8">
-                <AvatarFallback className="bg-brand-primary text-white text-sm">{user.avatar}</AvatarFallback>
+              <Avatar className="w-8 h-8 rounded-[11px]">
+                <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[11px]">{user.avatar}</AvatarFallback>
               </Avatar>
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer">
