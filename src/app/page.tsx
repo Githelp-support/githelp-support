@@ -284,10 +284,10 @@ export default function Dashboard() {
                     <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 flex items-center gap-3">
-                          <Avatar className="w-7 h-7 rounded-[9px]">
+                          <Avatar className="w-7 h-7 rounded-[11px]">
                             <AvatarFallback
                               style={{ backgroundColor: helper.color }}
-                              className="text-foreground text-xs font-medium rounded-[9px]"
+                              className="text-foreground text-xs font-medium rounded-[11px] font-[family-name:var(--font-outfit)]"
                             >
                               {helper.initial}
                             </AvatarFallback>

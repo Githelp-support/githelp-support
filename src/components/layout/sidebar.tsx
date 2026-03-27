@@ -42,23 +42,32 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   return <i className={`fi ${iconClass} ${className || ""}`} />
 }
 
+// Corner radius map: 1/2.55 of the element pixel size
+// w-5=20px→8px, w-6=24px→9px, w-8=32px→13px
+const sizeRadiusMap: Record<string, string> = {
+  "w-5 h-5": "rounded-[8px]",
+  "w-6 h-6": "rounded-[9px]",
+  "w-8 h-8": "rounded-[13px]",
+}
+
 // Project Logo Component with Avatar Placeholder
-const ProjectLogo = ({ 
-  logoUrl, 
-  projectName, 
+const ProjectLogo = ({
+  logoUrl,
+  projectName,
   size = "w-6 h-6",
-}: { 
+}: {
   logoUrl: string | null | undefined
   projectName: string
   size?: string
 }) => {
   const firstLetter = projectName?.[0]?.toUpperCase() || "?"
+  const radius = sizeRadiusMap[size] || "rounded-[9px]"
 
   if (logoUrl) {
     return (
-      <Avatar className={size}>
+      <Avatar className={`${size} ${radius}`}>
         <AvatarImage src={logoUrl} alt={projectName} />
-        <AvatarFallback className="bg-brand-primary text-white text-xs">
+        <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
           {firstLetter}
         </AvatarFallback>
       </Avatar>
@@ -66,8 +75,8 @@ const ProjectLogo = ({
   }
 
   return (
-    <Avatar className={size}>
-      <AvatarFallback className="bg-brand-primary text-white text-xs">
+    <Avatar className={`${size} ${radius}`}>
+      <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
         {firstLetter}
       </AvatarFallback>
     </Avatar>
@@ -385,8 +394,8 @@ export function Sidebar({ className }: SidebarProps) {
 
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8">
-            <AvatarFallback className="bg-brand-primary text-white text-sm">{user.avatar}</AvatarFallback>
+          <Avatar className="w-8 h-8 rounded-[13px]">
+            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[13px] font-[family-name:var(--font-outfit)]">{user.avatar}</AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
