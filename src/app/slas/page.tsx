@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { MoreHorizontal, Plus, Search, ChevronDown, Info, ChevronsUpDown, ChevronUp } from "lucide-react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -137,7 +138,7 @@ export default function SLAsPage() {
               <button
                 type="button"
                 onClick={() => setCurrentFilter("active")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                className={`px-6 py-2 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
                   currentFilter === "active"
                     ? "text-brand-primary border-brand-primary"
                     : "text-muted-foreground border-transparent hover:text-foreground"
@@ -148,7 +149,7 @@ export default function SLAsPage() {
               <button
                 type="button"
                 onClick={() => setCurrentFilter("deactivated")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                className={`px-6 py-2 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
                   currentFilter === "deactivated"
                     ? "text-brand-primary border-brand-primary"
                     : "text-muted-foreground border-transparent hover:text-foreground"
@@ -159,7 +160,7 @@ export default function SLAsPage() {
               <button
                 type="button"
                 onClick={() => setCurrentFilter("archived")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                className={`px-6 py-2 text-[13px] font-medium transition-colors border-b-2 cursor-pointer ${
                   currentFilter === "archived"
                     ? "text-brand-primary border-brand-primary"
                     : "text-muted-foreground border-transparent hover:text-foreground"
@@ -193,9 +194,9 @@ export default function SLAsPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border/60 shadow-none overflow-hidden">
             {/* Table Header */}
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border/60">
               <div className="grid grid-cols-12 gap-4 items-center">
                 <div className="col-span-1">
                   <input type="checkbox" className="rounded border-border" />
@@ -205,7 +206,7 @@ export default function SLAsPage() {
                     onClick={() => handleSort("name")}
                     className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
                   >
-                    <span className="text-sm font-medium text-foreground">Entity</span>
+                    <span className="text-xs font-medium text-foreground">Entity</span>
                     <SLASortIcon column="name" sortConfig={sortConfig} />
                   </button>
                 </div>
@@ -214,7 +215,7 @@ export default function SLAsPage() {
                     onClick={() => handleSort("created")}
                     className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
                   >
-                    <span className="text-sm font-medium text-foreground">Created</span>
+                    <span className="text-xs font-medium text-foreground">Created</span>
                     <SLASortIcon column="created" sortConfig={sortConfig} />
                   </button>
                 </div>
@@ -223,7 +224,7 @@ export default function SLAsPage() {
                     onClick={() => handleSort("agreementCategory")}
                     className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
                   >
-                    <span className="text-sm font-medium text-foreground">Agreement category</span>
+                    <span className="text-xs font-medium text-foreground">Agreement category</span>
                     <SLASortIcon column="agreementCategory" sortConfig={sortConfig} />
                   </button>
                 </div>
@@ -232,9 +233,9 @@ export default function SLAsPage() {
             </div>
 
             {/* Table Body */}
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border/60">
               {isLoading ? (
-                <div className="px-6 py-8 text-center text-muted-foreground">Loading SLAs...</div>
+                <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">Loading SLAs...</div>
               ) : filteredAndSortedSLAs.length > 0 ? (
                 filteredAndSortedSLAs.map((sla, index) => (
                 <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
@@ -243,31 +244,33 @@ export default function SLAsPage() {
                       <input type="checkbox" className="rounded border-border" />
                     </div>
                     <div className="col-span-4 flex items-center space-x-3">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-foreground"
-                        style={{ backgroundColor: sla.color }}
-                      >
-                        {sla.initial}
-                      </div>
+                      <Avatar className="size-8 rounded-[calc(var(--radius)*1/2.55)]">
+                        <AvatarFallback
+                          className="rounded-[calc(var(--radius)*1/2.55)] text-[13px] font-medium text-foreground font-['Outfit']"
+                          style={{ backgroundColor: sla.color }}
+                        >
+                          {sla.initial}
+                        </AvatarFallback>
+                      </Avatar>
                       <Link
                         href={`/slas/${sla.id}`}
-                        className="text-sm font-medium text-foreground hover:text-brand-primary transition-colors cursor-pointer"
+                        className="text-[13px] font-medium text-foreground hover:text-brand-primary transition-colors cursor-pointer"
                       >
                         {sla.name}
                       </Link>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm text-muted-foreground">{sla.created}</span>
+                      <span className="text-[13px] text-muted-foreground">{sla.created}</span>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-sm text-muted-foreground">{sla.agreementCategory}</span>
+                      <span className="text-[13px] text-muted-foreground">{sla.agreementCategory}</span>
                     </div>
                     <div className="col-span-2 flex items-center justify-end space-x-2">
                       <Link href={`/slas/${sla.id}`}>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                          className="text-xs text-muted-foreground border-border/60 hover:bg-muted bg-transparent"
                         >
                           See details
                         </Button>
@@ -280,7 +283,7 @@ export default function SLAsPage() {
                 </div>
               ))
               ) : (
-                <div className="px-6 py-8 text-center text-muted-foreground">No SLAs found</div>
+                <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No SLAs found</div>
               )}
             </div>
           </div>

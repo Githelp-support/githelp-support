@@ -287,9 +287,9 @@ export default function ReportsSLAsPage() {
 
             {/* Monthly Reports Table */}
             {activeTab === "monthly" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-white rounded-lg border border-border/60 shadow-none overflow-hidden">
                 {/* Table Header */}
-                <div className="bg-muted px-6 py-3 border-b border-border">
+                <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <Checkbox
@@ -298,23 +298,23 @@ export default function ReportsSLAsPage() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Period</span>
+                      <span className="text-xs font-medium text-foreground">Period</span>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-sm font-medium text-foreground">Entity</span>
+                      <span className="text-xs font-medium text-foreground">Entity</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <span className="text-xs font-medium text-foreground">Amount</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <span className="text-xs font-medium text-foreground">Status</span>
                     </div>
                     <div className="col-span-2"></div>
                   </div>
                 </div>
 
                 {/* Table Body */}
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border/60">
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading reports...</div>
                   ) : reports.length === 0 ? (
@@ -330,24 +330,24 @@ export default function ReportsSLAsPage() {
                           />
                         </div>
                         <div className="col-span-2">
-                          <span className="text-sm text-foreground">{report.period}</span>
+                          <span className="text-[13px] text-foreground">{report.period}</span>
                         </div>
                         <div className="col-span-3 flex items-center space-x-3">
-                          <Avatar className="w-8 h-8">
+                          <Avatar className="w-8 h-8" style={{ borderRadius: "calc(var(--radius) / 2.55)" }}>
                             <AvatarFallback
-                              className="text-sm font-medium text-foreground"
-                              style={{ backgroundColor: report.entityColor }}
+                              className="text-[13px] font-medium text-foreground font-[family-name:var(--font-outfit,Outfit)]"
+                              style={{ backgroundColor: report.entityColor, borderRadius: "calc(var(--radius) / 2.55)" }}
                             >
                               {report.entityInitial}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-foreground">{report.entity}</span>
+                          <span className="text-[13px] text-foreground">{report.entity}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-sm text-foreground">{report.amount}</span>
+                          <span className="text-[13px] text-foreground">{report.amount}</span>
                         </div>
                         <div className="col-span-2">
-                          <Badge variant="secondary" className="bg-status-success-bg text-status-success-text hover:opacity-90">
+                          <Badge variant="secondary" className="bg-status-success-bg text-status-success-text hover:opacity-90 font-[family-name:var(--font-outfit,Outfit)]" style={{ borderRadius: "calc(var(--radius) / 2.55)" }}>
                             Paid out
                           </Badge>
                         </div>
@@ -375,9 +375,9 @@ export default function ReportsSLAsPage() {
             )}
 
             {activeTab === "tickets" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-white rounded-lg border border-border/60 shadow-none overflow-hidden">
                 {/* Table Header */}
-                <div className="bg-muted px-6 py-3 border-b border-border">
+                <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <Checkbox
@@ -386,23 +386,23 @@ export default function ReportsSLAsPage() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Date</span>
+                      <span className="text-xs font-medium text-foreground">Date</span>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-sm font-medium text-foreground">Entity</span>
+                      <span className="text-xs font-medium text-foreground">Entity</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <span className="text-xs font-medium text-foreground">Amount</span>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <span className="text-xs font-medium text-foreground">Status</span>
                     </div>
                     <div className="col-span-2"></div>
                   </div>
                 </div>
 
                 {/* Table Body */}
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border/60">
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
                   ) : tickets.length === 0 ? (
@@ -418,26 +418,27 @@ export default function ReportsSLAsPage() {
                           />
                         </div>
                         <div className="col-span-2">
-                          <span className="text-sm text-foreground">{ticket.date}</span>
+                          <span className="text-[13px] text-foreground">{ticket.date}</span>
                         </div>
                         <div className="col-span-3 flex items-center space-x-3">
-                          <Avatar className="w-8 h-8">
+                          <Avatar className="w-8 h-8" style={{ borderRadius: "calc(var(--radius) / 2.55)" }}>
                             <AvatarFallback
-                              className="text-sm font-medium text-foreground"
-                              style={{ backgroundColor: ticket.entityColor }}
+                              className="text-[13px] font-medium text-foreground font-[family-name:var(--font-outfit,Outfit)]"
+                              style={{ backgroundColor: ticket.entityColor, borderRadius: "calc(var(--radius) / 2.55)" }}
                             >
                               {ticket.entityInitial}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm text-foreground">{ticket.entity}</span>
+                          <span className="text-[13px] text-foreground">{ticket.entity}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-sm text-foreground">{ticket.amount}</span>
+                          <span className="text-[13px] text-foreground">{ticket.amount}</span>
                         </div>
                         <div className="col-span-2">
                           <Badge
                             variant="secondary"
-                            className="bg-status-success-bg text-status-success-text flex items-center gap-1"
+                            className="bg-status-success-bg text-status-success-text flex items-center gap-1 font-[family-name:var(--font-outfit,Outfit)]"
+                            style={{ borderRadius: "calc(var(--radius) / 2.55)" }}
                           >
                             <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
                               <path

@@ -63,15 +63,15 @@ export default function HelpPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Help" subtitle="Get help with common issues" />
 
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-3xl mx-auto space-y-8">
+        <main className="flex-1 overflow-auto p-4">
+          <div className="max-w-3xl mx-auto space-y-6">
             {/* Intro */}
             <div className="flex items-start gap-4">
               <div className="rounded-full bg-brand-primary/10 p-3 shrink-0">
                 <HelpCircle className="w-8 h-8 text-brand-primary" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Having an issue?</h2>
+                <h2 className="text-base font-semibold text-foreground mb-1">Having an issue?</h2>
                 <p className="text-muted-foreground">
                   Use the topics below to find answers. If you still need help, reach out through support or create a ticket for your project.
                 </p>
@@ -79,11 +79,11 @@ export default function HelpPage() {
             </div>
 
             {/* FAQ */}
-            <Card className="border-border">
+            <Card className="border-border/60 rounded-lg shadow-none">
               <CardContent className="p-0">
                 <Accordion type="single" collapsible className="w-full">
                   {FAQ_ITEMS.map((item, index) => (
-                    <AccordionItem key={index} value={`item-${index}`} className="px-6">
+                    <AccordionItem key={index} value={`item-${index}`} className="px-4">
                       <AccordionTrigger className="text-foreground hover:no-underline hover:text-brand-primary">
                         {item.question}
                       </AccordionTrigger>
@@ -97,8 +97,8 @@ export default function HelpPage() {
             </Card>
 
             {/* Get support CTA */}
-            <Card className="border-border bg-muted/30">
-              <CardContent className="p-6">
+            <Card className="border-border/60 rounded-lg shadow-none bg-muted/30">
+              <CardContent className="p-4">
                 <h3 className="font-semibold text-foreground mb-2">Still need help?</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Get in touch with your project&apos;s support team or open a ticket.
