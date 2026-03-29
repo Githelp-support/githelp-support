@@ -199,59 +199,43 @@ export default function TicketsPage() {
         <main className="flex-1 p-6 space-y-6 overflow-y-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-4">
-            <Card className="border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-primary/10 rounded-lg flex items-center justify-center">
-                    <User className="w-5 h-5 text-brand-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Tickets</p>
-                    <p className="text-xl font-semibold text-foreground">{stats.total}</p>
-                  </div>
+            <Card className="border-border/60 py-0 shadow-none">
+              <CardContent className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Total Tickets</span>
                 </div>
+                <div className="text-xl font-bold text-foreground">{stats.total}</div>
               </CardContent>
             </Card>
 
-            <Card className="border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-status-success-bg rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-status-success-text" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Available</p>
-                    <p className="text-xl font-semibold text-foreground">{stats.available}</p>
-                  </div>
+            <Card className="border-border/60 py-0 shadow-none">
+              <CardContent className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Available</span>
                 </div>
+                <div className="text-xl font-bold text-foreground">{stats.available}</div>
               </CardContent>
             </Card>
 
-            <Card className="border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-brand-primary/10 rounded-lg flex items-center justify-center">
-                    <MessageCircle className="w-5 h-5 text-brand-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">In Progress</p>
-                    <p className="text-xl font-semibold text-foreground">{stats.inProgress}</p>
-                  </div>
+            <Card className="border-border/60 py-0 shadow-none">
+              <CardContent className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">In Progress</span>
                 </div>
+                <div className="text-xl font-bold text-foreground">{stats.inProgress}</div>
               </CardContent>
             </Card>
 
-            <Card className="border-border">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-status-success-bg rounded-lg flex items-center justify-center">
-                    <User className="w-5 h-5 text-status-success-text" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                    <p className="text-xl font-semibold text-foreground">{stats.completed}</p>
-                  </div>
+            <Card className="border-border/60 py-0 shadow-none">
+              <CardContent className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Completed</span>
                 </div>
+                <div className="text-xl font-bold text-foreground">{stats.completed}</div>
               </CardContent>
             </Card>
           </div>
