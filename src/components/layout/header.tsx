@@ -122,8 +122,8 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
 
   return (
     <>
-      <header className="bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
+      <header className="bg-background border-b border-border px-8 py-3">
+        <div className="flex items-center justify-between gap-8">
           <div className="flex items-center gap-4">
             {showBackButton && (
               <button
@@ -138,7 +138,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
                 {info && (
                   <div className="relative group">
                     <Info className="w-5 h-5 text-muted-foreground cursor-help" />
@@ -149,7 +149,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                   </div>
                 )}
               </div>
-              {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+              {subtitle && <p className="mt-0.5 text-sm font-normal text-muted-foreground/80">{subtitle}</p>}
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -165,8 +165,8 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               )}
             </button>
             <div className="flex items-center gap-2">
-              <Avatar className="w-8 h-8">
-                <AvatarFallback className="bg-brand-primary text-white text-sm">{user.avatar}</AvatarFallback>
+              <Avatar className="w-8 h-8 rounded-[13px]">
+                <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[13px] font-[family-name:var(--font-outfit)]">{user.avatar}</AvatarFallback>
               </Avatar>
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer">

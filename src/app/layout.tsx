@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Open_Sans } from "next/font/google"
+import { Open_Sans, Outfit } from "next/font/google"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { UserProvider } from "@/contexts/user-context"
@@ -16,6 +16,12 @@ const openSans = Open_Sans({
   variable: "--font-open-sans",
 })
 
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-outfit",
+})
+
 export const metadata: Metadata = {
   title: "Githelp",
   description: "Support set in system for open source projects",
@@ -29,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className={`font-sans ${openSans.variable} ${GeistMono.variable} h-full`}>
+      <body className={`font-sans ${openSans.variable} ${GeistMono.variable} ${outfit.variable} h-full`}>
         <Suspense fallback={<LoadingFallback />}>
           <ReactQueryProvider>
             <UserProvider>
