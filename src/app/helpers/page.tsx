@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
@@ -446,18 +447,16 @@ export default function HelpersPage() {
           <div className="space-y-4 mb-6">
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="relative">
-                <select
-                  value={currentView}
-                  onChange={(e) => handleViewChange(e.target.value as "added" | "requests" | "invited")}
-                  className="w-full p-3 bg-white border border-border rounded-lg text-sm text-muted-foreground appearance-none cursor-pointer"
-                >
-                  <option value="added">Added</option>
-                  <option value="requests">Requests</option>
-                  <option value="invited">Invites</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
-              </div>
+              <Select value={currentView} onValueChange={(value) => handleViewChange(value as 'added' | 'requests' | 'invited')}>
+                <SelectTrigger className="border-input focus-visible:ring-ring w-full h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="added">Added</SelectItem>
+                  <SelectItem value="requests">Requests</SelectItem>
+                  <SelectItem value="invited">Invites</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 <Input
