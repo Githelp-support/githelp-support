@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Github, Info } from "lucide-react"
+import { MessageCircle, Send, Cone, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -157,7 +157,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           {/* Profile header */}
           <div className="flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center text-white text-base font-semibold shrink-0"
+              className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-white text-base font-semibold shrink-0"
               style={{ backgroundColor: helper.avatarColor }}
             >
               {helper.avatar}
@@ -165,25 +165,25 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-foreground">{helper.name}</h1>
               <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                {helper.category}
+                {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
               </Badge>
             </div>
           </div>
 
           {/* Contact information */}
           <Card className="border-border rounded-lg shadow-none">
-            <CardContent className="px-5 py-4">
+            <CardContent className="px-5 py-[6px]">
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5">
                   <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                   <span className="text-sm text-foreground/80 truncate">{helper.discord}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                  <Send className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                   <span className="text-sm text-foreground/80 truncate">{helper.email}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Github className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                  <Cone className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                   <span className="text-sm text-brand-primary truncate">{helper.github}</span>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               <Info className="w-3.5 h-3.5 text-muted-foreground/60" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              <Card className="border-border rounded-xl shadow-sm">
+              <Card className="border-border rounded-xl shadow-none">
                 <CardContent className="px-5 py-4">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs text-muted-foreground/70">Number of tickets solved</span>
@@ -266,7 +266,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <div className="text-xl font-bold text-foreground">{helper.stats.ticketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border rounded-xl shadow-sm">
+              <Card className="border-border rounded-xl shadow-none">
                 <CardContent className="px-5 py-4">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs text-muted-foreground/70">Total time spent</span>
@@ -275,7 +275,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <div className="text-xl font-bold text-foreground">{helper.stats.totalTime}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border rounded-xl shadow-sm">
+              <Card className="border-border rounded-xl shadow-none">
                 <CardContent className="px-5 py-4">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs text-muted-foreground/70">Percentage solved</span>
@@ -290,7 +290,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           {/* All tickets */}
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">All tickets</h2>
-            <Card className="border-border rounded-xl shadow-sm py-0 overflow-hidden">
+            <Card className="border-border rounded-xl shadow-none py-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
