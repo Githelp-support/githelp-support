@@ -427,7 +427,7 @@ export default function HelpersPage() {
               {showAddSelfAsHelper && (
                 <Button
                   variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-xl text-[13px] font-medium"
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
@@ -435,7 +435,7 @@ export default function HelpersPage() {
                   Add myself as helper
                 </Button>
               )}
-              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white" onClick={() => setIsDrawerOpen(true)}>
+              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add new helper
               </Button>
@@ -450,19 +450,19 @@ export default function HelpersPage() {
                 <select
                   value={currentView}
                   onChange={(e) => handleViewChange(e.target.value as "added" | "requests" | "invited")}
-                  className="w-full p-3 bg-white border border-border rounded-lg text-sm text-muted-foreground appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-white border border-[#e2e8f0] rounded-xl text-[13px] text-muted-foreground appearance-none cursor-pointer focus:outline-none focus:border-brand-primary transition-colors"
                 >
                   <option value="added">Added</option>
                   <option value="requests">Requests</option>
                   <option value="invited">Invites</option>
                 </select>
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-4 h-4 text-[#94a3b8] absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Search className="w-[18px] h-[18px] absolute left-3.5 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" />
                 <Input
                   placeholder="Search name, Discord user, or GitHub account"
-                  className="pl-10 h-11 border-border focus:border-brand-primary"
+                  className="pl-10 h-[46px] border-[#e2e8f0] rounded-xl text-[13px] placeholder:text-[#94a3b8] focus:border-brand-primary transition-colors"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -470,9 +470,9 @@ export default function HelpersPage() {
             </div>
 
             {/* Open for new helpers toggle - separate row */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-foreground">Open for new helpers</span>
-              <Switch defaultChecked className="data-[state=checked]:bg-[#82c95f]" />
+            <div className="flex items-center space-x-3">
+              <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
+              <Switch defaultChecked className="h-5 w-9 data-[state=checked]:bg-[#82c95f]" />
             </div>
           </div>
 
