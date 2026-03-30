@@ -26,6 +26,11 @@ export function formatRelativeTime(createdAt: string): string {
   if (diffMins < 1) return "Just now"
   if (diffMins < 60) return `${diffMins} min`
   if (diffHours < 24) return `${diffHours}h`
-  if (diffDays < 7) return `${diffDays}d`
-  return created.toLocaleDateString()
+  if (diffDays < 3) return `${diffDays}d`
+
+  const sameYear = created.getFullYear() === now.getFullYear()
+  const month = created.toLocaleString("en-US", { month: "short" })
+  const day = created.getDate()
+
+  return sameYear ? `${month} ${day}` : `${month} ${day}, ${created.getFullYear()}`
 }
