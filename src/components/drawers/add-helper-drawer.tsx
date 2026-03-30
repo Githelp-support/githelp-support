@@ -280,7 +280,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             </FormField>
 
             <div className="space-y-3">
-              <Label className="text-[13px] font-medium text-foreground">Invite method</Label>
+              <Label className="text-[13px] font-semibold text-foreground">Invite method</Label>
               <RadioGroup
                 value={formData.inviteMethod}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, inviteMethod: value as "email" | "link" | "contributors" | "github_username" }))}

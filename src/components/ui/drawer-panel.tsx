@@ -61,7 +61,16 @@ export function DrawerPanel({
       >
         {(title != null || headerAction != null) && (
           <div className="flex items-center justify-between px-6 py-5 border-b border-border flex-shrink-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="text-muted-foreground hover:bg-muted shrink-0 size-8"
+                aria-label="Close"
+              >
+                <X className="w-[18px] h-[18px] stroke-[1.5]" />
+              </Button>
               {title != null && (
                 <h2 id="drawer-title" className="text-lg font-semibold text-foreground">
                   {title}
@@ -69,15 +78,6 @@ export function DrawerPanel({
               )}
               {headerAction}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="text-muted-foreground hover:bg-muted shrink-0"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </Button>
           </div>
         )}
         <div className="flex-1 flex flex-col min-h-0">{children}</div>
