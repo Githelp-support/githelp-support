@@ -1,5 +1,4 @@
 "use client"
-import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import React from "react"
@@ -94,11 +93,11 @@ export function NotificationsPanel({
   const getTypeBadgeStyles = (type: string) => {
     switch (type) {
       case "HELPER_REQUEST":
-        return "bg-purple-50 text-brand-primary dark:bg-purple-950/30 dark:text-purple-300"
+        return "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
       case "NEW_PAYOUT":
-        return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
       case "SUPPORT_TICKET":
-        return "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"
+        return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
       default:
         return "bg-muted text-muted-foreground"
     }
@@ -122,10 +121,12 @@ export function NotificationsPanel({
     <>
       <div className="fixed right-4 top-16 w-96 max-w-[calc(100vw-2rem)] bg-card shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-50 flex flex-col rounded-xl border border-border max-h-[80vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-text-heading tracking-tight">Notifications</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-muted rounded-lg transition-colors cursor-pointer">
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
+              <i className="fi fi-rr-cross-small text-base text-muted-foreground leading-none flex items-center justify-center" />
+            </button>
+            <h2 className="text-base font-semibold text-text-heading tracking-tight">Notifications</h2>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
