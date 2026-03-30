@@ -161,6 +161,33 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Brand colors – dark overrides */
+  --brand-primary: #6c5ce7;
+  --border-subtle: oklch(1 0 0 / 12%);
+  --text-heading: #f0f0f2;
+  --text-muted: #a1a1a8;
+  --bg-subtle: #1e1e22;
+  --text-tertiary: #7a7a80;
+  --support-header: #1e1b34;
+  /* Status badge colors – dark overrides */
+  --status-success-bg: #1a3d33;
+  --status-success-text: #5ec4b8;
+  --status-warning-bg: #3d3620;
+  --status-warning-text: #c4b55e;
+  --status-high-bg: #3d1a28;
+  --status-high-text: #e86ba0;
+  /* Page/panel background – dark override */
+  --page-muted: #161620;
+  /* Avatar/helper palette – dark overrides (slightly muted for dark backgrounds) */
+  --avatar-1: #4d2a36;
+  --avatar-2: #1f4d3d;
+  --avatar-3: #1f3d4d;
+  --avatar-4: #4d3d1f;
+  --avatar-5: #332b4d;
+  --avatar-6: #2b4d1f;
+  --avatar-7: #4d4a2a;
+  --avatar-8: #382b4d;
+  --avatar-9: #1f3a4d;
 }
 
 /* Code blocks in chat (Figma: code block style) */
