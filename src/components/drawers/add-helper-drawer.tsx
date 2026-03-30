@@ -213,14 +213,16 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
       isOpen={isOpen}
       onClose={handleClose}
       title="Add new helper"
+      width="w-[440px]"
+      className="shadow-2xl"
       footer={
-        <div className="flex space-x-3">
+        <div className="flex gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="flex-1"
+            className="flex-1 h-11 rounded-xl text-[14px] font-semibold shadow-sm"
           >
             {hasSuccessResult ? "Close" : "Cancel"}
           </Button>
@@ -230,7 +232,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
               form="add-helper-form"
               disabled={isSubmitting || !canSubmit}
               variant="default"
-              className="flex-1"
+              className="flex-1 h-11 rounded-xl text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md"
             >
               {isSubmitting ? "Creating..." : "Create invite"}
             </Button>
@@ -239,7 +241,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
       }
     >
       <form id="add-helper-form" onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 p-6 space-y-6 overflow-auto">
+        <div className="flex-1 px-6 py-5 space-y-6 overflow-auto">
             {(formData.inviteMethod === "link" ||
               formData.inviteMethod === "email" ||
               formData.inviteMethod === "github_username") && (
@@ -250,7 +252,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                 <Input
                   value={formData.inviteeIdentifier}
                   onChange={(e) => handleInputChange("inviteeIdentifier", e.target.value)}
-                  className="border-input"
+                  className="h-10 rounded-lg border-border"
                   placeholder={
                     formData.inviteMethod === "github_username"
                       ? "Defaults to GitHub username"
@@ -266,7 +268,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                 onValueChange={(value) => handleInputChange("category", value)}
                 required
               >
-                <SelectTrigger className="border-input focus-visible:ring-ring">
+                <SelectTrigger className="w-full h-10 rounded-lg border-border focus-visible:ring-ring">
                   <SelectValue placeholder="Pick helper category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -278,28 +280,29 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             </FormField>
 
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-foreground">Invite method</Label>
+              <Label className="text-[13px] font-semibold text-foreground">Invite method</Label>
               <RadioGroup
                 value={formData.inviteMethod}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, inviteMethod: value as "email" | "link" | "contributors" | "github_username" }))}
+                className="grid gap-2.5"
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="link" id="link" />
-                  <Label htmlFor="link" className="cursor-pointer">Generate shareable link</Label>
+                <div className="flex items-center space-x-2.5">
+                  <RadioGroupItem value="link" id="link" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                  <Label htmlFor="link" className="cursor-pointer text-sm text-foreground/80">Generate shareable link</Label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="email" id="email" />
-                  <Label htmlFor="email" className="cursor-pointer">Send via email</Label>
+                <div className="flex items-center space-x-2.5">
+                  <RadioGroupItem value="email" id="email" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                  <Label htmlFor="email" className="cursor-pointer text-sm text-foreground/80">Send via email</Label>
                 </div>
                 {projectId && (
                   <>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="contributors" id="contributors" />
-                      <Label htmlFor="contributors" className="cursor-pointer">From contributors</Label>
+                    <div className="flex items-center space-x-2.5">
+                      <RadioGroupItem value="contributors" id="contributors" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                      <Label htmlFor="contributors" className="cursor-pointer text-sm text-foreground/80">From contributors</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="github_username" id="github_username" />
-                      <Label htmlFor="github_username" className="cursor-pointer">GitHub username</Label>
+                    <div className="flex items-center space-x-2.5">
+                      <RadioGroupItem value="github_username" id="github_username" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                      <Label htmlFor="github_username" className="cursor-pointer text-sm text-foreground/80">GitHub username</Label>
                     </div>
                   </>
                 )}
@@ -332,26 +335,26 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                 ) : contributors.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2">No contributors found for this repository.</p>
                 ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
+                  <div className="space-y-2.5 max-h-48 overflow-y-auto border border-border/60 rounded-xl bg-muted/30 p-3">
                     <Button type="button" variant="outline" size="sm" onClick={selectAllContributors}>
                       {selectedContributors.size === contributors.length ? "Deselect all" : "Select all"}
                     </Button>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {contributors.map((c: RepoContributor) => (
                         <div
                           key={c.login}
-                          className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                             selectedContributors.has(c.login)
-                              ? "bg-brand-primary/10 border border-brand-primary"
-                              : "border border-transparent hover:bg-muted/50"
+                              ? "bg-brand-primary/10 border border-brand-primary/60"
+                              : "border border-transparent hover:bg-muted/60"
                           }`}
                           onClick={() => toggleContributor(c.login)}
                         >
                           <Image
                             src={c.avatar_url}
                             alt={c.login}
-                            width={32}
-                            height={32}
+                            width={28}
+                            height={28}
                             className="rounded-full"
                           />
                           <span className="font-medium text-sm">{c.login}</span>
@@ -372,7 +375,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                 <Input
                   value={formData.githubUsername}
                   onChange={(e) => handleInputChange("githubUsername", e.target.value)}
-                  className="border-input"
+                  className="h-10 rounded-lg border-border"
                   placeholder="e.g. octocat"
                 />
               </FormField>
@@ -384,7 +387,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="border-input"
+                  className="h-10 rounded-lg border-border"
                   placeholder="user@example.com"
                   required={formData.inviteMethod === "email"}
                 />
@@ -400,13 +403,14 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                   <Input
                     value={inviteUrl}
                     readOnly
-                    className="border-input bg-muted"
+                    className="h-10 rounded-xl border-border/60 bg-muted/40"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={handleCopyLink}
+                    className="rounded-xl border-border/60 hover:bg-muted/60"
                   >
                     {copied ? (
                       <Check className="w-4 h-4 text-green-600" />
@@ -423,11 +427,11 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                 label="Invite links"
                 hint="Share each link with the corresponding contributor."
               >
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-border/60 rounded-xl bg-muted/30 p-3">
                   {Object.entries(inviteLinks).map(([login, url]) => (
                     <div
                       key={login}
-                      className="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg bg-background/60 text-sm"
                     >
                       <span className="font-medium w-24 truncate">{login}</span>
                       <span className="flex-1 truncate text-muted-foreground">{url}</span>
@@ -435,6 +439,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                         type="button"
                         variant="ghost"
                         size="sm"
+                        className="rounded-lg hover:bg-muted/60"
                         onClick={async () => {
                           await navigator.clipboard.writeText(url)
                           setCopied(true)
@@ -452,7 +457,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
 
             {/* Error message */}
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="px-3.5 py-3 bg-red-50/80 border border-red-200/60 rounded-xl">
                 <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
