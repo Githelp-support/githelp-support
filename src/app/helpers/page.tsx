@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -18,17 +19,6 @@ import { useCreateProjectInvite, useListProjectInvites, useRevokeProjectInvite }
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import Link from "next/link"
-
-const DiscordIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.44-.444.963-.608 1.493a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.493.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.873-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-  </svg>
-)
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -446,23 +436,21 @@ export default function HelpersPage() {
           <div className="space-y-4 mb-6">
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="relative">
-                <select
-                  value={currentView}
-                  onChange={(e) => handleViewChange(e.target.value as "added" | "requests" | "invited")}
-                  className="w-full px-4 py-3 bg-white border border-[#e2e8f0] rounded-xl text-[13px] text-muted-foreground appearance-none cursor-pointer focus:outline-none focus:border-brand-primary transition-colors"
-                >
-                  <option value="added">Added</option>
-                  <option value="requests">Requests</option>
-                  <option value="invited">Invites</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-[#94a3b8] absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none" />
-              </div>
+              <Select value={currentView} onValueChange={(value) => handleViewChange(value as "added" | "requests" | "invited")}>
+                <SelectTrigger className="w-full h-[46px] border-input focus-visible:ring-ring rounded-lg text-[13px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="added">Added</SelectItem>
+                  <SelectItem value="requests">Requests</SelectItem>
+                  <SelectItem value="invited">Invites</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="relative">
                 <Search className="w-[18px] h-[18px] absolute left-3.5 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" />
                 <Input
-                  placeholder="Search name, Discord user, or GitHub account"
-                  className="pl-10 h-[46px] border-[#e2e8f0] rounded-xl text-[13px] placeholder:text-[#94a3b8] focus:border-brand-primary transition-colors"
+                  placeholder="Search name or GitHub account"
+                  className="pl-10 h-[46px] border-input rounded-lg text-[13px] placeholder:text-[#94a3b8] focus:border-brand-primary transition-colors"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -472,7 +460,7 @@ export default function HelpersPage() {
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
               <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
-              <Switch defaultChecked className="h-5 w-9 data-[state=checked]:bg-[#82c95f]" />
+              <Switch defaultChecked className="h-5 w-9 data-[state=checked]:bg-brand-primary" />
             </div>
           </div>
 
@@ -506,7 +494,7 @@ export default function HelpersPage() {
                   <div>
                     <input type="checkbox" className="rounded border-border" />
                   </div>
-                  <div className="col-span-2 flex items-center space-x-2">
+                  <div className="col-span-3 flex items-center space-x-2">
                     <button type="button"
                       onClick={() => handleSort("name")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
@@ -515,8 +503,7 @@ export default function HelpersPage() {
                       <HelpersSortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
-                  <div className="col-span-1"></div>
-                  <div className="col-span-2 flex items-center space-x-2">
+                  <div className="col-span-3 flex items-center space-x-2">
                     <button type="button"
                       onClick={() => handleSort("githubAccount")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
@@ -525,17 +512,7 @@ export default function HelpersPage() {
                       <HelpersSortIcon field="githubAccount" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
-                  <div className="col-span-2 flex items-center space-x-2">
-                    <button type="button"
-                      onClick={() => handleSort("discordUser")}
-                      className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
-                    >
-                      <span className="text-sm font-medium text-foreground">Discord user</span>
-                      <HelpersSortIcon field="discordUser" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
-                  </div>
-                  <div className="col-span-1"></div>
-                  <div className="col-span-1">
+                  <div className="col-span-2">
                     <button type="button"
                       onClick={() => handleSort("category")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
@@ -544,7 +521,7 @@ export default function HelpersPage() {
                       <HelpersSortIcon field="category" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
-                  <div className="col-span-2"></div>
+                  <div className="col-span-3"></div>
                 </div>
               )}
             </div>
@@ -622,7 +599,7 @@ export default function HelpersPage() {
                               </Button>
                             )}
                             <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
-                              <MoreHorizontal className="w-4 h-4" />
+                              <MoreVertical className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
@@ -640,33 +617,27 @@ export default function HelpersPage() {
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
-                        <div className="col-span-2 flex items-center space-x-2">
+                        <div className="col-span-3 flex items-center gap-[18px]">
                           <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-foreground"
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                             style={{ backgroundColor: helper.color }}
                           >
                             {helper.initial}
                           </div>
                           <span className="text-sm font-medium text-foreground">{helper.name}</span>
                         </div>
-                        <div className="col-span-1"></div>
-                        <div className="col-span-2 flex items-center space-x-2">
+                        <div className="col-span-3 flex items-center space-x-2">
                           <GithubIcon className="w-4 h-4 text-foreground" />
                           <span className="text-sm text-brand-primary">{helper.githubAccount || "-"}</span>
                         </div>
-                        <div className="col-span-2 flex items-center space-x-2">
-                          <DiscordIcon className="w-4 h-4 text-[#5865f2]" />
-                          <span className="text-sm text-muted-foreground">{helper.discordUser}</span>
-                        </div>
-                        <div className="col-span-1"></div>
-                        <div className="col-span-1">
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted">
+                        <div className="col-span-2">
+                          <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-[13px] px-3 py-1">
                             {helper.category
                               ? mapCategoryToLabel[helper.category as keyof typeof mapCategoryToLabel]
                               : ""}
                           </Badge>
                         </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                        <div className="col-span-3 flex items-center justify-end space-x-2">
                           {helper.isRegistered ? (
                             <Link href={`/helpers/${helper.id}`}>
                               <Button
@@ -681,7 +652,7 @@ export default function HelpersPage() {
                             <span className="text-sm text-muted-foreground px-3 py-1">Not registered</span>
                           )}
                           <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
-                            <MoreHorizontal className="w-4 h-4" />
+                            <MoreVertical className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -705,26 +676,20 @@ export default function HelpersPage() {
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
-                        <div className="col-span-2 flex items-center space-x-2">
+                        <div className="col-span-3 flex items-center gap-[18px]">
                           <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-foreground"
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                             style={{ backgroundColor: request.color }}
                           >
                             {request.initial}
                           </div>
                           <span className="text-sm font-medium text-foreground">{request.name}</span>
                         </div>
-                        <div className="col-span-1"></div>
-                        <div className="col-span-2 flex items-center space-x-2">
+                        <div className="col-span-3 flex items-center space-x-2">
                           <GithubIcon className="w-4 h-4 text-foreground" />
                           <span className="text-sm text-brand-primary">{request.githubAccount}</span>
                         </div>
-                        <div className="col-span-2 flex items-center space-x-2">
-                          <DiscordIcon className="w-4 h-4 text-[#5865f2]" />
-                          <span className="text-sm text-muted-foreground">{request.discordUser}</span>
-                        </div>
-                        <div className="col-span-1"></div>
-                        <div className="col-span-3 flex items-center justify-end space-x-2">
+                        <div className="col-span-5 flex items-center justify-end space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
@@ -741,7 +706,7 @@ export default function HelpersPage() {
                             Accept
                           </Button>
                           <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
-                            <MoreHorizontal className="w-4 h-4" />
+                            <MoreVertical className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
