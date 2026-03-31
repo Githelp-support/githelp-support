@@ -437,7 +437,7 @@ export default function HelpersPage() {
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
               <Select value={currentView} onValueChange={(value) => handleViewChange(value as "added" | "requests" | "invited")}>
-                <SelectTrigger className="w-full h-[46px] border-input focus-visible:ring-ring rounded-lg text-[13px]">
+                <SelectTrigger className="w-full h-[46px] data-[size=default]:h-[46px] border-input focus-visible:ring-ring rounded-lg text-[13px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -460,7 +460,7 @@ export default function HelpersPage() {
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
               <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
-              <Switch defaultChecked className="h-5 w-9 data-[state=checked]:bg-brand-primary" />
+              <Switch defaultChecked className="h-5 w-9 data-[state=checked]:bg-[#4AA19E]" />
             </div>
           </div>
 
@@ -628,7 +628,7 @@ export default function HelpersPage() {
                         </div>
                         <div className="col-span-3 flex items-center space-x-2">
                           <GithubIcon className="w-4 h-4 text-foreground" />
-                          <span className="text-sm text-brand-primary">{helper.githubAccount || "-"}</span>
+                          <span className="text-sm text-[#0F0F11]">{helper.githubAccount || "-"}</span>
                         </div>
                         <div className="col-span-2">
                           <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-[13px] px-3 py-1">
@@ -687,7 +687,7 @@ export default function HelpersPage() {
                         </div>
                         <div className="col-span-3 flex items-center space-x-2">
                           <GithubIcon className="w-4 h-4 text-foreground" />
-                          <span className="text-sm text-brand-primary">{request.githubAccount}</span>
+                          <span className="text-sm text-[#0F0F11]">{request.githubAccount}</span>
                         </div>
                         <div className="col-span-5 flex items-center justify-end space-x-2">
                           <Button
