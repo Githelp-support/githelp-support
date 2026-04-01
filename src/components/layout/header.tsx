@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, ChevronDown, ChevronLeft, Info } from "lucide-react"
+import { Bell, ChevronDown, ArrowLeft, Info } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
@@ -130,9 +130,9 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                 onClick={handleBackClick}
                 className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer flex items-center gap-2"
               >
-                <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+                <ArrowLeft className="w-4 h-4 text-muted-foreground" />
                 {backButtonText && (
-                  <span className="text-sm text-brand-primary hover:text-brand-primary/80 font-medium">{backButtonText}</span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground font-medium">{backButtonText}</span>
                 )}
               </button>
             )}

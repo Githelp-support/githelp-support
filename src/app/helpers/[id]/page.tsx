@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Github, Info } from "lucide-react"
+import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -13,6 +15,18 @@ import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeE
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
+import { cn } from "@/lib/utils"
+
+const GithubIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+  </svg>
+)
 
 export default function HelperProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
@@ -149,55 +163,65 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Helper Details" showBackButton={true} backButtonText="Back to list of helpers" backButtonHref="/helpers" />
+        <Header title="Helper Details" />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
+          {/* Back link */}
+          <Link
+            href="/helpers"
+            className="inline-flex items-center text-brand-primary hover:text-brand-primary/80 text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to list of helpers
+          </Link>
+
           {/* Profile header */}
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-5">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold"
+              className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-black text-base font-semibold shrink-0 font-[family-name:var(--font-outfit)]"
               style={{ backgroundColor: helper.avatarColor }}
             >
               {helper.avatar}
             </div>
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-semibold text-foreground">{helper.name}</h1>
-              <Badge variant="secondary" className="bg-brand-primary/10 text-muted-foreground border-0">
-                {helper.category}
+            <div className="flex flex-wrap items-center gap-4">
+              <h1 className="text-xl font-bold text-foreground">{helper.name}</h1>
+              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
+                {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
               </Badge>
             </div>
           </div>
 
           {/* Contact information */}
-          <Card className="mb-8 border-border">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <MessageCircle className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-muted-foreground">{helper.discord}</span>
+          <Card className="border-border rounded-lg shadow-none">
+            <CardContent className="px-5 py-[6px]">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                  <span className="text-sm text-foreground/80 truncate">{helper.discord}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-muted-foreground">{helper.email}</span>
+                <div className="flex items-center gap-2.5">
+                  <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                  <span className="text-sm text-foreground/80 truncate">{helper.email}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Github className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-brand-primary">{helper.github}</span>
+                <div className="flex items-center gap-2.5">
+                  <GithubIcon className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                  <span className="text-sm text-brand-primary truncate">{helper.github}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Time period filters */}
-          <div className="flex gap-2 mb-6">
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant={timeFilter === "current" ? "default" : "outline"}
+              variant={timeFilter === "current" ? "lavender" : "outline"}
               size="sm"
-              className={
+              className={cn(
+                "rounded-lg px-4 text-[13px] font-medium",
                 timeFilter === "current"
-                  ? "bg-brand-primary hover:bg-brand-primary/90 text-white"
-                  : "border-border text-muted-foreground bg-transparent hover:bg-gray-50"
-              }
+                  ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
+                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+              )}
               onClick={() => {
                 setTimeFilter("current")
                 setSelectedMonth("")
@@ -214,11 +238,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 }}
               >
                 <SelectTrigger
-                  className={`w-[180px] h-9 text-sm ${
-                    timeFilter === "choose"
-                      ? "bg-brand-primary text-white border-brand-primary hover:bg-brand-primary/90"
-                      : "border-border text-muted-foreground bg-transparent hover:bg-gray-50"
-                  }`}
+                  size="sm"
+                  variant={timeFilter === "choose" ? "lavender" : "outline"}
+                  className="w-[160px] rounded-lg text-[13px] font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
                 </SelectTrigger>
@@ -232,13 +254,14 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <Button
-              variant={timeFilter === "all" ? "default" : "outline"}
+              variant={timeFilter === "all" ? "lavender" : "outline"}
               size="sm"
-              className={
-                timeFilter === "all"
-                  ? "bg-brand-primary hover:bg-brand-primary/90 text-white"
-                  : "border-border text-muted-foreground bg-transparent hover:bg-gray-50"
-              }
+              className={cn(
+                "rounded-lg px-4 text-[13px] font-medium",
+                timeFilter !== "all"
+                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                  : undefined
+              )}
               onClick={() => {
                 setTimeFilter("all")
                 setSelectedMonth("")
@@ -249,100 +272,123 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Key stats */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Key stats</h2>
-              <Info className="w-4 h-4 text-muted-foreground" />
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-medium text-foreground">Key stats</h2>
+              <Info className="w-3.5 h-3.5 text-muted-foreground/60" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <Card className="border-border rounded-xl shadow-none">
+                <CardContent className="px-5 py-[11px]">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-xs text-muted-foreground/70">Number of tickets solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground/50" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{helper.stats.ticketsSolved}</div>
+                  <div className="text-xl font-bold text-foreground">{helper.stats.ticketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Total time spent</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+              <Card className="border-border rounded-xl shadow-none">
+                <CardContent className="px-5 py-[11px]">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-xs text-muted-foreground/70">Total time spent</span>
+                    <Info className="w-3 h-3 text-muted-foreground/50" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{helper.stats.totalTime}</div>
+                  <div className="text-xl font-bold text-foreground">{helper.stats.totalTime}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Percentage solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+              <Card className="border-border rounded-xl shadow-none">
+                <CardContent className="px-5 py-[11px]">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-xs text-muted-foreground/70">Percentage solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground/50" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{helper.stats.percentageSolved}%</div>
+                  <div className="text-xl font-bold text-foreground">{helper.stats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
           </div>
 
           {/* All tickets */}
-          <div>
-            <h2 className="text-lg font-semibold text-foreground mb-4">All tickets</h2>
-            <Card className="border-border py-0">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">All tickets</h2>
+            <Card className="border-border rounded-xl shadow-none py-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border bg-brand-primary/10">
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                          <input type="checkbox" className="mr-3" />
-                          Ticket ID
+                      <tr className="border-b border-border bg-muted/60">
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                          <div className="flex items-center gap-3">
+                            <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
+                            Ticket ID
+                          </div>
                         </th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Ticket type</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground"></th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Date
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Ticket type
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Amount
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Status
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </th>
+                        <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {helper.tickets.map((ticket) => (
-                        <tr key={ticket.id} className="border-b border-border hover:bg-muted">
-                          <td className="p-4">
+                        <tr key={ticket.id} className="border-b border-border last:border-b-0 hover:bg-muted/40 transition-colors">
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <input type="checkbox" />
-                              <span className="text-foreground font-medium">{ticket.id}</span>
+                              <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
+                              <span className="text-sm text-foreground font-semibold">{ticket.id}</span>
                             </div>
                           </td>
-                          <td className="p-4 text-muted-foreground">{ticket.date}</td>
-                          <td className="p-4 text-muted-foreground">{ticket.type}</td>
-                          <td className="p-4 text-muted-foreground">{ticket.amount}</td>
-                          <td className="p-4">
+                          <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.date}</td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.type}</td>
+                          <td className="px-4 py-3 text-sm text-foreground font-medium">{ticket.amount}</td>
+                          <td className="px-4 py-3">
                             <Badge
                               variant="secondary"
-                              className={
+                              className={cn(
+                                "text-xs font-medium px-2.5 py-0.5 rounded-full border-0",
                                 ticket.status === "Completed"
-                                  ? "bg-status-success-bg text-status-success-text border-0"
-                                  : "bg-status-warning-bg text-status-warning-text border-0"
-                              }
+                                  ? "bg-status-success-bg text-status-success-text"
+                                  : "bg-status-warning-bg text-status-warning-text"
+                              )}
                             >
                               {ticket.status === "Completed" && "✓ "}
                               {ticket.status}
                             </Badge>
                           </td>
-                          <td className="p-4">
-                            <div className="flex gap-2">
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2 justify-end">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                                className="rounded-lg border-border text-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
                               >
                                 Open
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                                className="rounded-lg border-border text-muted-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
                               >
                                 Download PDF
                               </Button>
@@ -357,6 +403,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             </Card>
           </div>
         </main>
+
       </div>
     </div>
   )
