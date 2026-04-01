@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info, ArrowUpDown } from "lucide-react"
+import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -162,9 +163,18 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Helper Details" showBackButton={true} backButtonText="Back to list of helpers" backButtonHref="/helpers" />
+        <Header title="Helper Details" />
 
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
+          {/* Back link */}
+          <Link
+            href="/helpers"
+            className="inline-flex items-center text-brand-primary hover:text-brand-primary/80 text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to list of helpers
+          </Link>
+
           {/* Profile header */}
           <div className="flex items-center gap-5">
             <div
@@ -307,37 +317,37 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border bg-muted/60">
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-3">
                             <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
                             Ticket ID
                           </div>
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Date
-                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Ticket type
-                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Amount
-                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Status
-                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
+                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground"></th>
+                        <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground"></th>
                       </tr>
                     </thead>
                     <tbody>
