@@ -7,7 +7,7 @@ export function usePendingRequests(projectId?: string) {
     queryFn: async () => {
       let query = supabase
         .from('pending_user_requests')
-        .select('*')
+        .select('*, user:users_public!user_id(username, avatar_url)')
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
 

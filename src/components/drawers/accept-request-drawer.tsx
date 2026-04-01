@@ -16,6 +16,7 @@ interface AcceptRequestDrawerProps {
   onSubmit: (requestData: { category: string }) => void
   requestData: {
     name: string
+    email?: string
     githubUser: string
     githubAccount: string
   } | null
@@ -32,7 +33,7 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
     onClose()
   }
 
-  const generatedEmail = `${requestData.githubUser}@gmail.com`
+  const displayEmail = requestData.email || `${requestData.githubUser}@gmail.com`
 
   return (
     <DrawerPanel
@@ -67,7 +68,7 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
             <Input value={requestData.name} disabled className="h-10 rounded-lg bg-muted/60 border-border text-foreground disabled:opacity-70" />
           </FormField>
           <FormField label="Email address">
-            <Input value={generatedEmail} disabled className="h-10 rounded-lg bg-muted/60 border-border text-foreground disabled:opacity-70" />
+            <Input value={displayEmail} disabled className="h-10 rounded-lg bg-muted/60 border-border text-foreground disabled:opacity-70" />
           </FormField>
           <FormField label="Category">
             <Select value={category} onValueChange={setCategory}>
