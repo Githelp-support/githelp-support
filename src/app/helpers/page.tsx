@@ -35,7 +35,7 @@ const GithubIcon = ({ className }: { className?: string }) => (
 // Helper colors for avatars
 const helperColors = ["#f4bccc", "#d0f6bc", "#bcedf6", "#f6e6bc", "#cbbcf6"]
 
-type SortField = "name" | "discordUser" | "category" | "githubAccount"
+type SortField = "name" | "githubUser" | "category" | "githubAccount"
 type SortDirection = "asc" | "desc" | null
 
 function HelpersSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
@@ -99,7 +99,7 @@ export default function HelpersPage() {
       id: helper.helper_id,
       name: helper.user?.name || "Unknown",
       initial: (helper.user?.name || "U")[0].toUpperCase(),
-      discordUser: helper.user?.username || "-",
+      githubUser: helper.user?.username || "-",
       githubAccount: helper.user?.username || "-",
       category: helper.category || "Community",
       color: helperColors[index % helperColors.length],
@@ -113,7 +113,7 @@ export default function HelpersPage() {
     return pendingRequestsData.map((request, index) => ({
       ...request,
       initial: (request.name || "U")[0].toUpperCase(),
-      discordUser: request.name || "-",
+      githubUser: request.name || "-",
       githubAccount: request.email || "-",
       color: helperColors[index % helperColors.length],
     }))
@@ -240,7 +240,7 @@ export default function HelpersPage() {
       const matchesSearch =
         searchQuery === "" ||
         helper.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        helper.discordUser.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        helper.githubUser.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (helper.githubAccount && helper.githubAccount.toLowerCase().includes(searchQuery.toLowerCase()))
       return matchesCategory && matchesSearch
     })
@@ -255,9 +255,9 @@ export default function HelpersPage() {
           aValue = a.name.toLowerCase()
           bValue = b.name.toLowerCase()
           break
-        case "discordUser":
-          aValue = a.discordUser.toLowerCase()
-          bValue = b.discordUser.toLowerCase()
+        case "githubUser":
+          aValue = a.githubUser.toLowerCase()
+          bValue = b.githubUser.toLowerCase()
           break
         case "githubAccount":
           aValue = (a.githubAccount || "").toLowerCase()
@@ -283,7 +283,7 @@ export default function HelpersPage() {
       const matchesSearch =
         searchQuery === "" ||
         request.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.discordUser.toLowerCase().includes(searchQuery.toLowerCase())
+        request.githubUser.toLowerCase().includes(searchQuery.toLowerCase())
       return matchesSearch
     })
     .sort((a, b) => {
@@ -297,9 +297,9 @@ export default function HelpersPage() {
           aValue = a.name.toLowerCase()
           bValue = b.name.toLowerCase()
           break
-        case "discordUser":
-          aValue = a.discordUser.toLowerCase()
-          bValue = b.discordUser.toLowerCase()
+        case "githubUser":
+          aValue = a.githubUser.toLowerCase()
+          bValue = b.githubUser.toLowerCase()
           break
         case "githubAccount":
           aValue = a.githubAccount.toLowerCase()

@@ -6,8 +6,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { FormField } from "@/components/ui/form-field"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
-import { Info } from "lucide-react"
+import { Info, Github } from "lucide-react"
 
 interface AcceptRequestDrawerProps {
   isOpen: boolean
@@ -15,7 +16,7 @@ interface AcceptRequestDrawerProps {
   onSubmit: (requestData: { category: string }) => void
   requestData: {
     name: string
-    discordUser: string
+    githubUser: string
     githubAccount: string
   } | null
 }
@@ -31,43 +32,46 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
     onClose()
   }
 
-  const generatedEmail = `${requestData.discordUser}@gmail.com`
+  const generatedEmail = `${requestData.githubUser}@gmail.com`
 
   return (
     <DrawerPanel
       isOpen={isOpen}
       onClose={onClose}
       title="Accept helper request"
+      width="w-[440px]"
+      className="shadow-2xl"
       headerAction={<Info className="w-4 h-4 text-muted-foreground" />}
       footer={
-        <div className="flex space-x-3">
-          <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+        <div className="flex gap-3">
+          <Button type="button" variant="outline" onClick={onClose} className="flex-1 h-11 rounded-xl text-[14px] font-semibold shadow-sm">
             Cancel
           </Button>
-          <Button type="submit" form="accept-request-form" variant="default" className="flex-1">
+          <Button type="submit" form="accept-request-form" variant="default" className="flex-1 h-11 rounded-xl text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md">
             Accept request
           </Button>
         </div>
       }
     >
       <form id="accept-request-form" onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 p-6 space-y-6 overflow-auto">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Discord username</label>
-            <Input value={requestData.discordUser} disabled className="bg-muted border-input text-muted-foreground" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Full name</label>
-            <Input value={requestData.name} disabled className="bg-muted border-input text-muted-foreground" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Email address</label>
-            <Input value={generatedEmail} disabled className="bg-muted border-input text-muted-foreground" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Category</label>
+        <div className="flex-1 px-6 py-5 space-y-6 overflow-auto">
+          <FormField label="GitHub user">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Github className="w-4 h-4" />
+              </span>
+              <Input value={requestData.githubUser} disabled className="h-10 rounded-lg bg-muted/60 border-border text-foreground disabled:opacity-70 pl-9" />
+            </div>
+          </FormField>
+          <FormField label="Full name">
+            <Input value={requestData.name} disabled className="h-10 rounded-lg bg-muted/60 border-border text-foreground disabled:opacity-70" />
+          </FormField>
+          <FormField label="Email address">
+            <Input value={generatedEmail} disabled className="h-10 rounded-lg bg-muted/60 border-border text-foreground disabled:opacity-70" />
+          </FormField>
+          <FormField label="Category">
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="border-input">
+              <SelectTrigger className="w-full h-10 rounded-lg border-border focus-visible:ring-ring">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
@@ -76,10 +80,10 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
                 <SelectItem value="community">Community</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="bg-muted/50 border border-border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              When accepting this request, {requestData.discordUser} will be validated as a helper and be eligible to
+          </FormField>
+          <div className="bg-muted/30 border border-border/60 rounded-xl px-4 py-3.5">
+            <p className="text-xs text-muted-foreground/70 leading-relaxed">
+              When accepting this request, {requestData.githubUser} will be validated as a helper and be eligible to
               receive and accept support requests.
             </p>
           </div>
