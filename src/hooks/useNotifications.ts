@@ -34,9 +34,9 @@ export function useNotifications() {
             return (data || []) as Notification[];
         },
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
+        staleTime: 60_000,
+        refetchOnReconnect: true,
+        refetchOnWindowFocus: true,
     });
 }
 
