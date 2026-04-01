@@ -460,7 +460,7 @@ export default function HelpersPage() {
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
               <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
-              <Switch defaultChecked className="h-5 w-9 data-[state=checked]:bg-[#4AA19E]" />
+              <Switch defaultChecked className="h-[22px] w-[38px] p-[3px] border-0 data-[state=checked]:bg-[#4AA19E]" />
             </div>
           </div>
 
@@ -546,7 +546,7 @@ export default function HelpersPage() {
                     .filter((invite) => invite.is_active)
                     .map((invite) => (
                       <div key={invite.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                        <div className="grid gap-2 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                        <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                           <div>
                             <input type="checkbox" className="rounded border-border" />
                           </div>
@@ -613,7 +613,7 @@ export default function HelpersPage() {
                   return filteredHelpers.length > 0 ? (
                     filteredHelpers.map((helper, index) => (
                     <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid gap-2 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
@@ -672,7 +672,7 @@ export default function HelpersPage() {
                 return filteredRequests.length > 0 ? (
                   filteredRequests.map((request, index) => (
                     <div key={request.user_id || index} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid gap-2 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
