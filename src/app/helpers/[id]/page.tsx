@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info, ListFilter } from "lucide-react"
+import { MessageCircle, Mail, Info, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -166,14 +166,14 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
           {/* Profile header */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-5">
             <div
               className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-black text-base font-semibold shrink-0 font-[family-name:var(--font-outfit)]"
               style={{ backgroundColor: helper.avatarColor }}
             >
               {helper.avatar}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-4">
               <h1 className="text-xl font-bold text-foreground">{helper.name}</h1>
               <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
                 {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
@@ -316,25 +316,25 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Date
-                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
                           </div>
                         </th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Ticket type
-                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
                           </div>
                         </th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Amount
-                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
                           </div>
                         </th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Status
-                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                            <ArrowUpDown className="w-3 h-3 text-muted-foreground/60" />
                           </div>
                         </th>
                         <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground"></th>
