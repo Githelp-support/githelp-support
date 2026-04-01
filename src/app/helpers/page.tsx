@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
@@ -662,7 +663,7 @@ export default function HelpersPage() {
                   <div className="px-6 py-12 text-center">
                     <p className="text-muted-foreground mb-2">No helpers yet.</p>
                     <p className="text-sm text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                    <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white" onClick={() => setIsDrawerOpen(true)}>
+                    <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
                       <Plus className="w-4 h-4 mr-2" />
                       Add new helper
                     </Button>

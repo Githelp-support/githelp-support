@@ -51,7 +51,7 @@ export function DrawerPanel({
       />
       <div
         className={cn(
-          "fixed right-0 top-0 h-full bg-white shadow-xl z-50 flex flex-col border-border border-l",
+          "fixed right-0 top-0 h-full bg-background shadow-2xl z-50 flex flex-col border-border border-l rounded-l-2xl",
           width,
           className
         )}
@@ -60,8 +60,17 @@ export function DrawerPanel({
         aria-labelledby={title ? "drawer-title" : undefined}
       >
         {(title != null || headerAction != null) && (
-          <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="text-muted-foreground hover:bg-muted shrink-0 size-8"
+                aria-label="Close"
+              >
+                <X className="w-[18px] h-[18px] stroke-[1.5]" />
+              </Button>
               {title != null && (
                 <h2 id="drawer-title" className="text-lg font-semibold text-foreground">
                   {title}
@@ -69,20 +78,11 @@ export function DrawerPanel({
               )}
               {headerAction}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="text-muted-foreground hover:bg-muted shrink-0"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </Button>
           </div>
         )}
         <div className="flex-1 flex flex-col min-h-0">{children}</div>
         {footer != null && (
-          <div className="p-6 border-t border-border flex-shrink-0">{footer}</div>
+          <div className="px-6 py-4 border-t border-border flex-shrink-0">{footer}</div>
         )}
       </div>
     </>
