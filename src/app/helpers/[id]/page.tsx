@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info } from "lucide-react"
+import { MessageCircle, Mail, Info, ListFilter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -168,7 +168,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           {/* Profile header */}
           <div className="flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-white text-base font-semibold shrink-0"
+              className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-black text-base font-semibold shrink-0 font-[family-name:var(--font-outfit)]"
               style={{ backgroundColor: helper.avatarColor }}
             >
               {helper.avatar}
@@ -269,7 +269,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               <Card className="border-border rounded-xl shadow-none">
-                <CardContent className="px-5 py-4">
+                <CardContent className="px-5 py-[11px]">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs text-muted-foreground/70">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground/50" />
@@ -278,7 +278,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 </CardContent>
               </Card>
               <Card className="border-border rounded-xl shadow-none">
-                <CardContent className="px-5 py-4">
+                <CardContent className="px-5 py-[11px]">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs text-muted-foreground/70">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground/50" />
@@ -287,7 +287,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 </CardContent>
               </Card>
               <Card className="border-border rounded-xl shadow-none">
-                <CardContent className="px-5 py-4">
+                <CardContent className="px-5 py-[11px]">
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-xs text-muted-foreground/70">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground/50" />
@@ -307,17 +307,37 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border bg-muted/60">
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
                           <div className="flex items-center gap-3">
                             <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
                             Ticket ID
                           </div>
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ticket type</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Amount</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide"></th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Date
+                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                          </div>
+                        </th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Ticket type
+                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                          </div>
+                        </th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Amount
+                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                          </div>
+                        </th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            Status
+                            <ListFilter className="w-3 h-3 text-muted-foreground/60" />
+                          </div>
+                        </th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -347,7 +367,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                             </Badge>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 justify-end">
                               <Button
                                 variant="outline"
                                 size="sm"
