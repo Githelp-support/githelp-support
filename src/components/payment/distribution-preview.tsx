@@ -1,5 +1,14 @@
 "use client"
 
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+
 /** Stripe fee: 2.9% + $0.30 per transaction (US) */
 const STRIPE_PERCENT = 0.029
 const STRIPE_FIXED_CENTS = 30
@@ -37,29 +46,42 @@ export function DistributionPreview({
   ]
 
   return (
-    <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-4">
-      <h4 className="text-sm font-semibold text-foreground mb-4">
-        1 hour of support - Distribution
-      </h4>
-      <div className="space-y-3">
-        {rows.map(({ label, amount }) => (
-          <div
-            key={label}
-            className="flex items-center justify-between text-sm"
-          >
-            <span className="text-muted-foreground">{label}</span>
-            <span className="text-foreground font-medium tabular-nums">
-              {formatCurrency(amount)}
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-border mt-3 pt-3 flex items-center justify-between">
-        <span className="text-sm font-bold text-brand-primary">Sum</span>
-        <span className="text-sm font-bold text-brand-primary tabular-nums">
+    <Card className="shrink-0 w-full sm:w-[280px] py-0 gap-0 shadow-none bg-muted/40">
+      <CardHeader className="px-4 pt-4 pb-3">
+        <CardTitle className="text-sm">
+          1 hour of support &mdash; Distribution
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="px-4 pb-0">
+        <div className="space-y-2.5">
+          {rows.map(({ label, amount }) => (
+            <div
+              key={label}
+              className="flex items-center justify-between text-sm"
+            >
+              <span className="text-muted-foreground">{label}</span>
+              <span
+                className={cn(
+                  "font-medium tabular-nums",
+                  amount === 0
+                    ? "text-muted-foreground/60"
+                    : "text-foreground"
+                )}
+              >
+                {formatCurrency(amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+
+      <CardFooter className="border-t px-4 pt-3 pb-4 mt-3 flex items-center justify-between">
+        <span className="text-sm font-semibold text-brand-primary">Total</span>
+        <span className="text-sm font-semibold text-brand-primary tabular-nums">
           {formatCurrency(oneHourTotal)}
         </span>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   )
 }
