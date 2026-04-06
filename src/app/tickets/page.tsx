@@ -199,45 +199,39 @@ export default function TicketsPage() {
         <main className="flex-1 p-6 space-y-6 overflow-y-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-4">
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <User className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Total Tickets</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.total}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Available</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.available}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <MessageCircle className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">In Progress</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.inProgress}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <User className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Completed</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.completed}</div>
-              </CardContent>
-            </Card>
+            {([
+              { label: "Total Tickets", value: stats.total, filterValue: "all", icon: User },
+              { label: "Available", value: stats.available, filterValue: "available", icon: Clock },
+              { label: "In Progress", value: stats.inProgress, filterValue: "in-progress", icon: MessageCircle },
+              { label: "Completed", value: stats.completed, filterValue: "completed", icon: User },
+            ] as const).map((card) => {
+              const Icon = card.icon
+              const isActive = statusFilter === card.filterValue
+              return (
+                <button
+                  key={card.filterValue}
+                  type="button"
+                  className="cursor-pointer text-left"
+                  onClick={() => setStatusFilter(card.filterValue)}
+                >
+                  <Card className="border-border/60 py-0 shadow-none">
+                    <CardContent className="px-5 py-0">
+                      <div
+                        className="h-[2px] -mx-5"
+                        style={{ backgroundColor: isActive ? "#3C2EC5" : "transparent" }}
+                      />
+                      <div className="py-4">
+                        <div className="text-xl font-bold text-foreground mb-1">{card.value}</div>
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">{card.label}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </button>
+              )
+            })}
           </div>
 
           {/* Filters */}
