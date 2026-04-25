@@ -6,7 +6,6 @@ import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { getStatusBadgeClass } from "@/lib/status-colors"
@@ -252,131 +251,163 @@ export default function ReportsSupportPage() {
               </Button>
             </div>
 
-            <div className="bg-white rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-border">
-                    <TableHead className="w-12">
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
+              {/* Table Header */}
+              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                {activeTab === "monthly" ? (
+                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                    <div>
                       <Checkbox
                         checked={allSelected}
-                        onCheckedChange={activeTab === "monthly" ? handleSelectAll : handleTicketSelectAll}
+                        onCheckedChange={handleSelectAll}
                       />
-                    </TableHead>
-                    {activeTab === "monthly" ? (
-                      <>
-                        <TableHead className="text-muted-foreground font-medium">Period</TableHead>
-                        <TableHead className="text-muted-foreground font-medium">Description</TableHead>
-                      </>
-                    ) : (
-                      <>
-                        <TableHead className="text-muted-foreground font-medium">Ticket ID</TableHead>
-                        <TableHead className="text-muted-foreground font-medium">Date</TableHead>
-                        <TableHead className="text-muted-foreground font-medium">Helper</TableHead>
-                      </>
-                    )}
-                    <TableHead className="text-muted-foreground font-medium">Amount</TableHead>
-                    <TableHead className="text-muted-foreground font-medium">Status</TableHead>
-                    <TableHead className="w-32" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                        Loading...
-                      </TableCell>
-                    </TableRow>
-                  ) : activeTab === "monthly" ? (
-                    filteredMonthlyReports.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                          No reports found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredMonthlyReports.map((report) => (
-                        <TableRow key={report.id} className="border-b border-border hover:bg-muted">
-                          <TableCell>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm font-medium text-foreground">Period</span>
+                    </div>
+                    <div className="col-span-3">
+                      <span className="text-sm font-medium text-foreground">Description</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm font-medium text-foreground">Amount</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm font-medium text-foreground">Status</span>
+                    </div>
+                    <div className="col-span-2"></div>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                    <div>
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={handleTicketSelectAll}
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <span className="text-sm font-medium text-foreground">Ticket ID</span>
+                    </div>
+                    <div className="col-span-1">
+                      <span className="text-sm font-medium text-foreground">Date</span>
+                    </div>
+                    <div className="col-span-3">
+                      <span className="text-sm font-medium text-foreground">Helper</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm font-medium text-foreground">Amount</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-sm font-medium text-foreground">Status</span>
+                    </div>
+                    <div className="col-span-2"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Table Body */}
+              <div className="divide-y divide-border">
+                {isLoading ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                ) : activeTab === "monthly" ? (
+                  filteredMonthlyReports.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground">No reports found</div>
+                  ) : (
+                    filteredMonthlyReports.map((report) => (
+                      <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                        <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                          <div>
                             <Checkbox
                               checked={selectedRows.includes(report.id)}
                               onCheckedChange={() => handleRowSelect(report.id)}
                             />
-                          </TableCell>
-                          <TableCell className="font-medium text-foreground">{report.period}</TableCell>
-                          <TableCell className="text-muted-foreground">{report.description}</TableCell>
-                          <TableCell className="text-foreground">{report.amount}</TableCell>
-                          <TableCell>
-                            <Badge className={`${getStatusBadgeClass(report.status)} hover:opacity-90`}>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-sm font-medium text-foreground">{report.period}</span>
+                          </div>
+                          <div className="col-span-3">
+                            <span className="text-sm text-muted-foreground">{report.description}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-sm text-foreground">{report.amount}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <Badge className={`${getStatusBadgeClass(report.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
                               {report.status}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" className="h-8 text-muted-foreground bg-transparent">
-                                Open
-                              </Button>
-                              <Button variant="outline" size="sm" className="h-8 text-muted-foreground bg-transparent">
-                                Download PDF
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )
-                  ) : ticketsData.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                        No tickets found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    ticketsData.map((ticket) => (
-                      <TableRow key={ticket.id} className="border-b border-border hover:bg-muted">
-                        <TableCell>
+                          </div>
+                          <div className="col-span-2 flex items-center justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            >
+                              Open
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            >
+                              Download PDF
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )
+                ) : ticketsData.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground">No tickets found</div>
+                ) : (
+                  ticketsData.map((ticket) => (
+                    <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                        <div>
                           <Checkbox
                             checked={selectedTicketRows.includes(ticket.id)}
                             onCheckedChange={() => handleTicketRowSelect(ticket.id)}
                           />
-                        </TableCell>
-                        <TableCell className="font-medium text-foreground">
+                        </div>
+                        <div className="col-span-1">
                           {ticket.ticketId ? (
                             <Link
                               href={`/helper/tickets/${ticket.ticketId}`}
-                              className="text-brand-primary hover:underline"
+                              className="text-sm font-medium text-brand-primary hover:underline"
                             >
                               {getShortTicketId(ticket.ticketId)}
                             </Link>
                           ) : (
-                            "—"
+                            <span className="text-sm font-medium text-foreground">—</span>
                           )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{ticket.date}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-foreground"
-                              style={{ backgroundColor: ticket.helperColor }}
-                            >
-                              {ticket.helperInitial}
-                            </div>
-                            <span className="text-foreground">{ticket.helper}</span>
+                        </div>
+                        <div className="col-span-1">
+                          <span className="text-sm text-muted-foreground">{ticket.date}</span>
+                        </div>
+                        <div className="col-span-3 flex items-center gap-[18px]">
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: ticket.helperColor }}
+                          >
+                            {ticket.helperInitial}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-foreground">{ticket.amount}</TableCell>
-                        <TableCell>
+                          <span className="text-sm font-medium text-foreground">{ticket.helper}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">{ticket.amount}</span>
+                        </div>
+                        <div className="col-span-2">
                           {ticket.statusType === "pending" ? (
-                            <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit`}>
+                            <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
                               <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
                                 <circle cx="6" cy="6" r="2" fill="currentColor" />
                               </svg>
                               {ticket.status}
                             </Badge>
                           ) : ticket.statusType === "failed" ? (
-                            <Badge className={`${getStatusBadgeClass("failed")} flex items-center gap-1 w-fit`}>
+                            <Badge className={`${getStatusBadgeClass("failed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
                               {ticket.status}
                             </Badge>
                           ) : (
-                            <Badge className={`${getStatusBadgeClass("completed")} flex items-center gap-1 w-fit`}>
+                            <Badge className={`${getStatusBadgeClass("completed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
                               <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
                                 <path
                                   d="M10 3L4.5 8.5L2 6"
@@ -389,28 +420,39 @@ export default function ReportsSupportPage() {
                               {ticket.status}
                             </Badge>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {ticket.ticketId ? (
-                              <Button variant="outline" size="sm" className="h-8 text-muted-foreground bg-transparent" asChild>
-                                <Link href={`/helper/tickets/${ticket.ticketId}`}>Open</Link>
-                              </Button>
-                            ) : (
-                              <Button variant="outline" size="sm" className="h-8 text-muted-foreground bg-transparent">
-                                Open
-                              </Button>
-                            )}
-                            <Button variant="outline" size="sm" className="h-8 text-muted-foreground bg-transparent">
-                              Download PDF
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                          {ticket.ticketId ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                              asChild
+                            >
+                              <Link href={`/helper/tickets/${ticket.ticketId}`}>Open</Link>
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            >
+                              Open
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                          >
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </main>

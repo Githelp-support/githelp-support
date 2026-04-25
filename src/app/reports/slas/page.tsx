@@ -214,82 +214,60 @@ export default function ReportsSLAsPage() {
 
           <div className="max-w-7xl space-y-6">
             {/* Filters */}
-            <div className="flex items-center gap-4">
-              {activeTab === "tickets" ? (
-                <>
-                  <Button
-                    variant={selectedFilter === "current" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedFilter("current")}
-                    className={
-                      selectedFilter === "current"
-                        ? "bg-brand-primary hover:bg-brand-primary/90 text-white h-9"
-                        : "text-muted-foreground border-border hover:bg-muted bg-white h-9"
-                    }
-                  >
-                    Current month
-                  </Button>
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="w-[140px] h-9 text-muted-foreground border-border">
-                      <SelectValue placeholder="Choose month" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {months.map((month) => (
-                        <SelectItem key={month} value={month}>
-                          {month}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant={selectedFilter === "all" ? "lavender" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedFilter("all")}
-                    className={
-                      selectedFilter === "all"
-                        ? "bg-brand-primary hover:bg-brand-primary/90 text-white h-9"
-                        : "text-muted-foreground border-border hover:bg-muted bg-white h-9"
-                    }
-                  >
-                    All
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="w-[140px] h-9 text-muted-foreground border-border">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {months.map((month) => (
-                        <SelectItem key={month} value={month}>
-                          {month}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    variant={selectedFilter === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedFilter("all")}
-                    className={
-                      selectedFilter === "all"
-                        ? "bg-brand-primary hover:bg-brand-primary/90 text-white h-9"
-                        : "text-muted-foreground border-border hover:bg-muted bg-white h-9"
-                    }
-                  >
-                    All
-                  </Button>
-                </>
+            <div className="flex gap-2 mb-6">
+              {activeTab === "tickets" && (
+                <Button
+                  variant={selectedFilter === "current" ? "default" : "outline"}
+                  size="sm"
+                  className={
+                    selectedFilter === "current"
+                      ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
+                      : "h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+                  }
+                  onClick={() => {
+                    setSelectedFilter("current")
+                    setSelectedMonth("")
+                  }}
+                >
+                  Current month
+                </Button>
               )}
+              <Select
+                value={selectedMonth}
+                onValueChange={(v) => {
+                  setSelectedMonth(v)
+                  if (v) setSelectedFilter("all")
+                }}
+              >
+                <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+                  <SelectValue placeholder="Choose month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month) => (
+                    <SelectItem key={month} value={month}>
+                      {month}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant={selectedFilter === "all" ? "default" : "outline"}
+                size="sm"
+                className="h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+                onClick={() => {
+                  setSelectedFilter("all")
+                  setSelectedMonth("")
+                }}
+              >
+                All
+              </Button>
             </div>
 
             {/* Monthly Reports Table */}
             {activeTab === "monthly" && (
               <div className="bg-white rounded-lg border border-border overflow-hidden">
                 {/* Table Header */}
-                <div className="bg-muted px-6 py-3 border-b border-border">
+                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <Checkbox
@@ -355,14 +333,14 @@ export default function ReportsSLAsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-white"
+                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                           >
                             Open
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-white"
+                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                           >
                             Download PDF
                           </Button>
@@ -377,7 +355,7 @@ export default function ReportsSLAsPage() {
             {activeTab === "tickets" && (
               <div className="bg-white rounded-lg border border-border overflow-hidden">
                 {/* Table Header */}
-                <div className="bg-muted px-6 py-3 border-b border-border">
+                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <Checkbox
@@ -455,14 +433,14 @@ export default function ReportsSLAsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-white"
+                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                           >
                             Open
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-white"
+                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                           >
                             Download PDF
                           </Button>
