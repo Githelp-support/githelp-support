@@ -145,7 +145,7 @@ export default function Dashboard() {
               variant={timeFilter === "current" ? "lavender" : "outline"}
               size="sm"
               className={cn(
-                "rounded-lg px-4 text-[13px] font-medium",
+                "rounded-lg px-4 text-sm font-medium",
                 timeFilter === "current"
                   ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
                   : "text-muted-foreground hover:bg-brand-primary hover:text-white"
@@ -168,7 +168,7 @@ export default function Dashboard() {
                 <SelectTrigger
                   size="sm"
                   variant={timeFilter === "choose" ? "lavender" : "outline"}
-                  className="w-[160px] rounded-lg text-[13px] font-medium"
+                  className="w-[160px] rounded-lg text-sm font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
                 </SelectTrigger>
@@ -185,7 +185,7 @@ export default function Dashboard() {
               variant={timeFilter === "all" ? "lavender" : "outline"}
               size="sm"
               className={cn(
-                "rounded-lg px-4 text-[13px] font-medium",
+                "rounded-lg px-4 text-sm font-medium",
                 timeFilter !== "all"
                   ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
                   : undefined
@@ -255,8 +255,8 @@ export default function Dashboard() {
               </div>
               <Card className="border-border/60 rounded-lg py-0 shadow-none">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-4 py-2.5 border-b border-border/60">
-                    <div className="grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleHelperSort("name")}
@@ -292,10 +292,10 @@ export default function Dashboard() {
                               {helper.initial}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-[13px] text-foreground">{helper.name}</span>
+                          <span className="text-sm text-foreground">{helper.name}</span>
                         </div>
-                        <div className="col-span-3 text-[13px] text-foreground">{helper.tickets}</div>
-                        <div className="col-span-2 text-[13px] text-foreground">{helper.time}</div>
+                        <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
+                        <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
                         <div className="col-span-1 flex justify-end">
                           <Link href={`/helpers/${helper.id}`}>
                             <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
@@ -323,8 +323,8 @@ export default function Dashboard() {
               </div>
               <Card className="border-border/60 rounded-lg py-0 shadow-none">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-4 py-2.5 border-b border-border/60">
-                    <div className="grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleIssueSort("name")}
@@ -351,9 +351,9 @@ export default function Dashboard() {
                   {sortedIssueTypes.map((issue, index) => (
                     <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 text-[13px] text-foreground">{issue.name}</div>
-                        <div className="col-span-3 text-[13px] text-foreground">{issue.tickets}</div>
-                        <div className="col-span-3 text-[13px] text-foreground">{issue.time}</div>
+                        <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
+                        <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
+                        <div className="col-span-3 text-sm text-foreground">{issue.time}</div>
                       </div>
                     </div>
                   ))}
