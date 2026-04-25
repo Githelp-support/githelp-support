@@ -39,7 +39,11 @@ interface NavigationItem {
 
 // Flaticon Icon Component
 const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?: string }) => {
-  return <i className={`fi ${iconClass} ${className || ""}`} />
+  return (
+    <i
+      className={`fi ${iconClass} inline-flex items-center justify-center leading-none text-[18px] ${className || ""}`}
+    />
+  )
 }
 
 // Corner radius map: 1/2.55 of the element pixel size
@@ -314,7 +318,9 @@ export function Sidebar({ className }: SidebarProps) {
                       }`}
                       title={isCollapsed ? item.name : undefined}
                     >
-                      <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                        <FlaticonIcon iconClass={item.icon} />
+                      </span>
                       {!isCollapsed && (
                         <>
                           {item.name}
@@ -335,7 +341,9 @@ export function Sidebar({ className }: SidebarProps) {
                                   isSubActive ? activeClasses : inactiveClasses
                                 }`}
                               >
-                                <FlaticonIcon iconClass={subItem.icon} className="w-5 h-5 flex-shrink-0" />
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                                  <FlaticonIcon iconClass={subItem.icon} />
+                                </span>
                                 {subItem.name}
                               </div>
                             </Link>
@@ -352,7 +360,9 @@ export function Sidebar({ className }: SidebarProps) {
                       }`}
                       title={isCollapsed ? item.name : undefined}
                     >
-                      <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                        <FlaticonIcon iconClass={item.icon} />
+                      </span>
                       {!isCollapsed && item.name}
                     </div>
                   </Link>
@@ -371,7 +381,9 @@ export function Sidebar({ className }: SidebarProps) {
           }`
           const content = (
             <>
-              <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <FlaticonIcon iconClass={item.icon} />
+              </span>
               {!isCollapsed && item.name}
             </>
           )
