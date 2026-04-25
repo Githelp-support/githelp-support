@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react"
+import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
@@ -55,7 +55,7 @@ type SortDirection = "asc" | "desc"
 
 function TicketsSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
   if (sortField !== field) {
-    return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
   }
   return sortDirection === "asc" ? (
     <ChevronUp className="w-4 h-4 text-brand-primary" />
@@ -351,7 +351,7 @@ export default function TicketsPage() {
               <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
                 <div className="grid grid-cols-12 gap-4 items-center">
                   <div className="col-span-4">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-[18px]">
                       <div
                         className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                         style={{ backgroundColor: ticketColors[index % ticketColors.length] }}
@@ -360,7 +360,7 @@ export default function TicketsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <Link href={`/helper/tickets/${ticket.id}`}>
-                          <h4 className="font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
                             {ticket.title}
                           </h4>
                         </Link>
