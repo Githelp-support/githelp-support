@@ -6,7 +6,6 @@ import { ExternalLink, HelpCircle, ChevronUp, ChevronDown, ChevronsUpDown } from
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -284,14 +283,12 @@ export default function Dashboard() {
                     <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 flex items-center gap-3">
-                          <Avatar className="w-7 h-7 rounded-[11px]">
-                            <AvatarFallback
-                              style={{ backgroundColor: helper.color }}
-                              className="text-foreground text-xs font-medium rounded-[11px] font-[family-name:var(--font-outfit)]"
-                            >
-                              {helper.initial}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: helper.color }}
+                          >
+                            {helper.initial}
+                          </div>
                           <span className="text-sm text-foreground">{helper.name}</span>
                         </div>
                         <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
