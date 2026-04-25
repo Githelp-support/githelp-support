@@ -197,9 +197,9 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-card border-r border-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
     >
-      <div className="p-4 flex items-center justify-between">
+      <div className="px-4 pt-5 pb-3 flex items-center justify-between min-h-[40px]">
         {isCollapsed ? (
           selectedProject ? (
             <ProjectLogo
@@ -208,30 +208,40 @@ export function Sidebar({ className }: SidebarProps) {
               size="w-8 h-8"
             />
           ) : (
-            <Logo className="text-foreground" />
+            <Logo className="text-sidebar-foreground" />
           )
         ) : (
-          <Logo className="text-foreground" />
+          <Logo className="text-sidebar-foreground" />
         )}
         {!isCollapsed && (
-          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => setIsCollapsed(true)}>
-            <ChevronsLeft className="w-5 h-5 text-muted-foreground" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            onClick={() => setIsCollapsed(true)}
+          >
+            <ChevronsLeft className="w-5 h-5" />
           </Button>
         )}
       </div>
 
       {isCollapsed && (
-        <div className="px-4 pb-4 flex justify-center">
-          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => setIsCollapsed(false)}>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        <div className="px-3 pb-3 flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            onClick={() => setIsCollapsed(false)}
+          >
+            <ChevronRight className="w-5 h-5" />
           </Button>
         </div>
       )}
 
       {!isCollapsed && (
-        <div className="px-4 pb-4">
+        <div className="px-3 pb-4">
           {!isAuthenticated ? (
-            <div className="w-full px-4 py-3 bg-muted rounded-lg">
+            <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
               <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
                 <Link href={`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`}>
                   Sign in
@@ -239,24 +249,27 @@ export function Sidebar({ className }: SidebarProps) {
               </Button>
             </div>
           ) : projectsLoading ? (
-            <div className="w-full flex items-center justify-center px-4 py-3 bg-muted rounded-lg">
+            <div className="w-full flex items-center justify-center px-3 py-2.5 min-h-[44px] bg-bg-subtle border border-sidebar-border rounded-lg">
               <div className="text-sm text-muted-foreground">Loading projects...</div>
             </div>
           ) : userProjects.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 rounded-lg transition-colors">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 min-h-[44px] bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <ProjectLogo
                       logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
                       projectName={selectedProject?.name || ""}
                       size="w-6 h-6"
                     />
-                    <span className="text-sm font-semibold text-foreground truncate">
+                    <span className="text-sm font-semibold text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
-                  <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
@@ -282,7 +295,7 @@ export function Sidebar({ className }: SidebarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="w-full px-4 py-3 bg-muted rounded-lg">
+            <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
               <div className="text-sm text-muted-foreground mb-2">No projects yet</div>
               <Button
                 variant="outline"
@@ -298,13 +311,13 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       )}
 
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-1">
+      <nav className="flex-1 px-3 pb-4 overflow-y-auto">
+        <div className="space-y-0.5">
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
             const activeClasses = "bg-brand-primary/10 text-brand-primary"
-            const inactiveClasses = "text-muted-foreground hover:bg-muted"
+            const inactiveClasses = "text-muted-foreground hover:bg-bg-subtle hover:text-sidebar-foreground"
 
             return (
               <div key={item.name}>
@@ -313,7 +326,7 @@ export function Sidebar({ className }: SidebarProps) {
                     <button
                       type="button"
                       onClick={() => toggleExpanded(item.name)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                       title={isCollapsed ? item.name : undefined}
@@ -325,19 +338,19 @@ export function Sidebar({ className }: SidebarProps) {
                         <>
                           {item.name}
                           <ChevronRight
-                            className={`w-4 h-4 ml-auto transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                            className={`w-4 h-4 ml-auto opacity-70 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                           />
                         </>
                       )}
                     </button>
                     {!isCollapsed && isExpanded && (
-                      <div className="ml-6 mt-1 space-y-1">
+                      <div className="ml-3 mt-0.5 pl-3 border-l border-sidebar-border space-y-0.5">
                         {item.subItems.map((subItem) => {
                           const isSubActive = isSubItemActive(subItem.href)
                           return (
                             <Link key={subItem.name} href={subItem.href}>
                               <div
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                className={`flex items-center gap-3 px-3 py-2 min-h-[36px] rounded-md text-sm font-medium transition-colors ${
                                   isSubActive ? activeClasses : inactiveClasses
                                 }`}
                               >
@@ -355,7 +368,7 @@ export function Sidebar({ className }: SidebarProps) {
                 ) : (
                   <Link href={item.href}>
                     <div
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                       title={isCollapsed ? item.name : undefined}
@@ -373,11 +386,11 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-border space-y-2">
+      <div className="px-3 py-3 border-t border-sidebar-border space-y-0.5">
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
-          const className = `flex items-center gap-3 px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
-            isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
+          const className = `flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
+            isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-muted-foreground hover:bg-bg-subtle hover:text-sidebar-foreground"
           }`
           const content = (
             <>
@@ -404,15 +417,15 @@ export function Sidebar({ className }: SidebarProps) {
         })}
       </div>
 
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8 rounded-[13px]">
+      <div className="px-3 py-3 border-t border-sidebar-border">
+        <div className={`flex items-center gap-3 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
+          <Avatar className="w-8 h-8 rounded-[13px] shrink-0">
             <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[13px] font-[family-name:var(--font-outfit)]">{user.avatar}</AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-foreground">{user.name}</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
+              <div className="text-xs text-muted-foreground mt-0.5 truncate">
                 Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </div>
             </div>
@@ -439,14 +452,14 @@ function ProjectLogoWithBranding({
   return (
     <DropdownMenuItem
       onClick={() => onSelect(project)}
-      className={isSelected ? "bg-brand-primary/10 text-brand-primary" : ""}
+      className={`gap-2 ${isSelected ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
     >
       <ProjectLogo
         logoUrl={logoUrl}
         projectName={project.name}
         size="w-5 h-5"
       />
-      <span className="ml-2 truncate">{project.name}</span>
+      <span className="truncate text-sm font-medium">{project.name}</span>
     </DropdownMenuItem>
   )
 }
