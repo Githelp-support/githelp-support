@@ -120,7 +120,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
-      prev.includes(itemName) ? prev.filter((item) => item !== itemName) : [...prev, itemName],
+      prev.includes(itemName) ? prev.filter((item) => item !== itemName) : [itemName],
     )
   }
 
@@ -306,24 +306,45 @@ export function Sidebar({ className }: SidebarProps) {
               <div key={item.name}>
                 {item.subItems ? (
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(item.name)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    <div
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                       title={isCollapsed ? item.name : undefined}
                     >
-                      <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          if (!isExpanded) setExpandedItems([item.name])
+                        }}
+                        onKeyDown={(e) => {
+                          if ((e.key === "Enter" || e.key === " ") && !isExpanded) {
+                            e.preventDefault()
+                            setExpandedItems([item.name])
+                          }
+                        }}
+                        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      >
+                        <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
+                        {!isCollapsed && <span>{item.name}</span>}
+                      </div>
                       {!isCollapsed && (
-                        <>
-                          {item.name}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleExpanded(item.name)
+                          }}
+                          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${item.name}`}
+                          className="flex-shrink-0 cursor-pointer"
+                        >
                           <ChevronRight
-                            className={`w-4 h-4 ml-auto transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                            className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                           />
-                        </>
+                        </button>
                       )}
-                    </button>
+                    </div>
                     {!isCollapsed && isExpanded && (
                       <div className="ml-6 mt-1 space-y-1">
                         {item.subItems.map((subItem) => {
@@ -345,7 +366,7 @@ export function Sidebar({ className }: SidebarProps) {
                     )}
                   </div>
                 ) : (
-                  <Link href={item.href}>
+                  <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive ? activeClasses : inactiveClasses
