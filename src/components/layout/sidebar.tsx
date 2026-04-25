@@ -41,7 +41,7 @@ interface NavigationItem {
 const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?: string }) => {
   return (
     <i
-      className={`fi ${iconClass} inline-flex items-center justify-center leading-none text-[18px] ${className || ""}`}
+      className={`fi ${iconClass} inline-flex items-center justify-center leading-none ${className || ""}`}
     />
   )
 }
