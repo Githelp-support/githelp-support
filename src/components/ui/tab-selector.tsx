@@ -26,7 +26,7 @@ export function TabSelector<T = string>({ options, value, onChange, className }:
             className={
               isSelected
                 ? "text-foreground font-medium bg-background border border-border hover:bg-muted shadow-sm"
-                : "text-muted-foreground hover:text-muted-foreground hover:bg-muted bg-transparent"
+                : "text-muted-foreground hover:text-muted-foreground hover:bg-muted bg-transparent font-normal"
             }
             onClick={() => onChange(option.value)}
           >
