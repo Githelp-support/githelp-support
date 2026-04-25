@@ -193,9 +193,9 @@ export function Sidebar({ className }: SidebarProps) {
 
   const isSubItemActive = (href: string) => pathname === href
 
-  // Shared row class: 22px tall with 18px gap between icon + label, applies a 17px tracked label
+  // Shared row class: 22px tall with 18px gap between icon + label, applies a 14px tracked label
   const navRowBase =
-    "flex items-center h-[22px] gap-[18px] text-[17px] tracking-[-0.34px] font-semibold transition-colors"
+    "flex items-center h-[22px] gap-[18px] text-[14px] tracking-[-0.28px] font-semibold transition-colors"
 
   return (
     <div
@@ -280,7 +280,7 @@ export function Sidebar({ className }: SidebarProps) {
                       projectName={selectedProject?.name || ""}
                       size="w-[33px] h-[33px]"
                     />
-                    <span className="text-[17px] font-semibold tracking-[-0.34px] text-text-heading truncate">
+                    <span className="text-[16px] font-semibold tracking-[-0.32px] text-text-heading truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -301,7 +301,7 @@ export function Sidebar({ className }: SidebarProps) {
                 })}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-brand-primary"
+                  className="text-brand-primary text-[16px] tracking-[-0.32px]"
                   onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -383,14 +383,29 @@ export function Sidebar({ className }: SidebarProps) {
                 )}
 
                 {item.subItems && !isCollapsed && isExpanded && (
-                  <div className="flex flex-col gap-1 px-5">
+                  <div className="relative flex flex-col gap-1 px-5">
+                    {/* Vertical line connecting bullet points */}
+                    <div
+                      aria-hidden
+                      className="absolute left-[30px] top-[18px] bottom-[18px] w-px bg-border-subtle"
+                    />
                     {item.subItems.map((subItem) => {
                       const isSubActive = isSubItemActive(subItem.href)
                       return (
-                        <Link key={subItem.name} href={subItem.href} className="block">
+                        <Link key={subItem.name} href={subItem.href} className="block relative">
+                          {/* Bullet point — filled for active, hollow for inactive */}
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "absolute left-[6px] top-1/2 -translate-y-1/2 w-[9px] h-[9px] rounded-full z-10",
+                              isSubActive
+                                ? "bg-brand-primary"
+                                : "bg-card border border-text-tertiary",
+                            )}
+                          />
                           <div
                             className={cn(
-                              "flex items-center text-[17px] tracking-[-0.34px] rounded-[10px] pl-[51px] transition-colors",
+                              "flex items-center text-[14px] tracking-[-0.28px] rounded-[10px] pl-[40px] transition-colors",
                               isSubActive
                                 ? "bg-brand-primary/10 text-brand-primary font-semibold py-4"
                                 : "text-text-tertiary hover:text-text-muted font-normal py-2.5",
@@ -459,7 +474,7 @@ export function Sidebar({ className }: SidebarProps) {
             <div className="text-[17px] font-semibold tracking-[-0.34px] text-text-heading truncate">
               {user.name}
             </div>
-            <div className="text-[15px] tracking-[-0.3px] text-text-tertiary truncate">
+            <div className="text-[12px] tracking-[-0.24px] text-text-tertiary truncate">
               Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
             </div>
           </div>
@@ -485,7 +500,10 @@ function ProjectLogoWithBranding({
   return (
     <DropdownMenuItem
       onClick={() => onSelect(project)}
-      className={isSelected ? "bg-brand-primary/10 text-brand-primary" : ""}
+      className={cn(
+        "text-[16px] tracking-[-0.32px]",
+        isSelected ? "bg-brand-primary/10 text-brand-primary" : "",
+      )}
     >
       <ProjectLogo
         logoUrl={logoUrl}
