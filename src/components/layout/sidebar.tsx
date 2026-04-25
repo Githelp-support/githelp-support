@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Plus,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -39,14 +40,15 @@ interface NavigationItem {
 
 // Flaticon Icon Component
 const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?: string }) => {
-  return <i className={`fi ${iconClass} ${className || ""}`} />
+  return <i className={cn("fi", iconClass, className)} />
 }
 
 // Corner radius map: 1/2.55 of the element pixel size
-// w-5=20px→8px, w-6=24px→9px, w-8=32px→13px
+// w-5=20px→8px, w-6=24px→9px, w-[33px]=33px→13px, w-8=32px→13px
 const sizeRadiusMap: Record<string, string> = {
   "w-5 h-5": "rounded-[8px]",
   "w-6 h-6": "rounded-[9px]",
+  "w-[33px] h-[33px]": "rounded-[10px]",
   "w-8 h-8": "rounded-[13px]",
 }
 
@@ -65,9 +67,9 @@ const ProjectLogo = ({
 
   if (logoUrl) {
     return (
-      <Avatar className={`${size} ${radius}`}>
+      <Avatar className={cn(size, radius)}>
         <AvatarImage src={logoUrl} alt={projectName} />
-        <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
+        <AvatarFallback className={cn("bg-brand-primary text-white text-xs font-[family-name:var(--font-outfit)]", radius)}>
           {firstLetter}
         </AvatarFallback>
       </Avatar>
@@ -75,8 +77,8 @@ const ProjectLogo = ({
   }
 
   return (
-    <Avatar className={`${size} ${radius}`}>
-      <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
+    <Avatar className={cn(size, radius)}>
+      <AvatarFallback className={cn("bg-brand-primary text-white text-xs font-[family-name:var(--font-outfit)]", radius)}>
         {firstLetter}
       </AvatarFallback>
     </Avatar>
@@ -91,7 +93,7 @@ export function Sidebar({ className }: SidebarProps) {
   const isAuthenticated = !!user?.id
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
-  
+
   const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
 
   // Fetch branding for selected project
@@ -191,11 +193,25 @@ export function Sidebar({ className }: SidebarProps) {
 
   const isSubItemActive = (href: string) => pathname === href
 
+  // Shared row class: 22px tall with 18px gap between icon + label, applies a 17px tracked label
+  const navRowBase =
+    "flex items-center h-[22px] gap-[18px] text-[17px] tracking-[-0.34px] font-semibold transition-colors"
+
   return (
     <div
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-card border-r border-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
+      className={cn(
+        "flex flex-col h-screen bg-card border-r border-border-subtle transition-all duration-300 overflow-hidden",
+        isCollapsed ? "w-16" : "w-[280px]",
+        className,
+      )}
     >
-      <div className="p-4 flex items-center justify-between">
+      {/* Top line: Logo + collapse toggle */}
+      <div
+        className={cn(
+          "flex items-center pt-6 pb-4",
+          isCollapsed ? "justify-center px-3" : "justify-between px-5",
+        )}
+      >
         {isCollapsed ? (
           selectedProject ? (
             <ProjectLogo
@@ -204,30 +220,43 @@ export function Sidebar({ className }: SidebarProps) {
               size="w-8 h-8"
             />
           ) : (
-            <Logo className="text-foreground" />
+            <Logo className="w-8 h-8 text-foreground" />
           )
         ) : (
-          <Logo className="text-foreground" />
-        )}
-        {!isCollapsed && (
-          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => setIsCollapsed(true)}>
-            <ChevronsLeft className="w-5 h-5 text-muted-foreground" />
-          </Button>
+          <>
+            <Logo className="w-8 h-8 text-foreground" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto hover:bg-transparent"
+              onClick={() => setIsCollapsed(true)}
+              aria-label="Collapse sidebar"
+            >
+              <ChevronsLeft className="w-6 h-6 text-text-tertiary" />
+            </Button>
+          </>
         )}
       </div>
 
       {isCollapsed && (
-        <div className="px-4 pb-4 flex justify-center">
-          <Button variant="ghost" size="sm" className="p-1 h-auto" onClick={() => setIsCollapsed(false)}>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        <div className="px-3 pb-4 flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="p-1 h-auto hover:bg-transparent"
+            onClick={() => setIsCollapsed(false)}
+            aria-label="Expand sidebar"
+          >
+            <ChevronRight className="w-5 h-5 text-text-tertiary" />
           </Button>
         </div>
       )}
 
+      {/* Project switcher */}
       {!isCollapsed && (
-        <div className="px-4 pb-4">
+        <div className="px-3 pb-6">
           {!isAuthenticated ? (
-            <div className="w-full px-4 py-3 bg-muted rounded-lg">
+            <div className="w-full px-5 py-3.5 bg-bg-subtle rounded-[10px]">
               <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
                 <Link href={`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`}>
                   Sign in
@@ -235,24 +264,27 @@ export function Sidebar({ className }: SidebarProps) {
               </Button>
             </div>
           ) : projectsLoading ? (
-            <div className="w-full flex items-center justify-center px-4 py-3 bg-muted rounded-lg">
-              <div className="text-sm text-muted-foreground">Loading projects...</div>
+            <div className="w-full flex items-center justify-center h-[63px] bg-bg-subtle rounded-[10px]">
+              <div className="text-sm text-text-tertiary">Loading projects...</div>
             </div>
           ) : userProjects.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 rounded-lg transition-colors">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between gap-[18px] h-[63px] px-5 bg-bg-subtle hover:bg-muted rounded-[10px] transition-colors"
+                >
+                  <div className="flex items-center gap-[18px] min-w-0 flex-1">
                     <ProjectLogo
                       logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
                       projectName={selectedProject?.name || ""}
-                      size="w-6 h-6"
+                      size="w-[33px] h-[33px]"
                     />
-                    <span className="text-sm font-semibold text-foreground truncate">
+                    <span className="text-[17px] font-semibold tracking-[-0.34px] text-text-heading truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
-                  <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  <ChevronDown className="w-5 h-5 text-text-muted flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
@@ -278,8 +310,8 @@ export function Sidebar({ className }: SidebarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="w-full px-4 py-3 bg-muted rounded-lg">
-              <div className="text-sm text-muted-foreground mb-2">No projects yet</div>
+            <div className="w-full px-5 py-3.5 bg-bg-subtle rounded-[10px]">
+              <div className="text-sm text-text-tertiary mb-2">No projects yet</div>
               <Button
                 variant="outline"
                 size="sm"
@@ -294,68 +326,82 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       )}
 
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-1">
+      {/* Main navigation */}
+      <nav className="flex-1 px-3 overflow-y-auto">
+        <div className="flex flex-col gap-6">
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
-            const activeClasses = "bg-brand-primary/10 text-brand-primary"
-            const inactiveClasses = "text-muted-foreground hover:bg-muted"
+            const leafActive = !item.subItems && isActive
+            const itemColor = leafActive
+              ? "text-brand-primary"
+              : isActive
+                ? "text-text-heading"
+                : "text-text-muted hover:text-text-heading"
 
             return (
-              <div key={item.name}>
+              <div key={item.name} className="flex flex-col gap-6">
                 {item.subItems ? (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(item.name)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                        isActive ? activeClasses : inactiveClasses
-                      }`}
-                      title={isCollapsed ? item.name : undefined}
-                    >
-                      <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
-                      {!isCollapsed && (
-                        <>
-                          {item.name}
-                          <ChevronRight
-                            className={`w-4 h-4 ml-auto transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                          />
-                        </>
-                      )}
-                    </button>
-                    {!isCollapsed && isExpanded && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {item.subItems.map((subItem) => {
-                          const isSubActive = isSubItemActive(subItem.href)
-                          return (
-                            <Link key={subItem.name} href={subItem.href}>
-                              <div
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                  isSubActive ? activeClasses : inactiveClasses
-                                }`}
-                              >
-                                <FlaticonIcon iconClass={subItem.icon} className="w-5 h-5 flex-shrink-0" />
-                                {subItem.name}
-                              </div>
-                            </Link>
-                          )
-                        })}
-                      </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(item.name)}
+                    className={cn(
+                      navRowBase,
+                      "w-full cursor-pointer",
+                      isCollapsed ? "justify-center" : "px-5",
+                      itemColor,
                     )}
-                  </div>
+                    title={isCollapsed ? item.name : undefined}
+                  >
+                    <FlaticonIcon iconClass={item.icon} className="text-[22px] leading-none flex-shrink-0" />
+                    {!isCollapsed && (
+                      <>
+                        <span className="flex-1 text-left truncate">{item.name}</span>
+                        <ChevronDown
+                          className={cn(
+                            "w-5 h-5 flex-shrink-0 text-text-muted transition-transform",
+                            isExpanded && "rotate-180",
+                          )}
+                        />
+                      </>
+                    )}
+                  </button>
                 ) : (
                   <Link href={item.href}>
                     <div
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isActive ? activeClasses : inactiveClasses
-                      }`}
+                      className={cn(
+                        navRowBase,
+                        isCollapsed ? "justify-center" : "px-5",
+                        itemColor,
+                      )}
                       title={isCollapsed ? item.name : undefined}
                     >
-                      <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
-                      {!isCollapsed && item.name}
+                      <FlaticonIcon iconClass={item.icon} className="text-[22px] leading-none flex-shrink-0" />
+                      {!isCollapsed && <span className="truncate">{item.name}</span>}
                     </div>
                   </Link>
+                )}
+
+                {item.subItems && !isCollapsed && isExpanded && (
+                  <div className="flex flex-col gap-1 px-5">
+                    {item.subItems.map((subItem) => {
+                      const isSubActive = isSubItemActive(subItem.href)
+                      return (
+                        <Link key={subItem.name} href={subItem.href} className="block">
+                          <div
+                            className={cn(
+                              "flex items-center text-[17px] tracking-[-0.34px] rounded-[10px] pl-[51px] transition-colors",
+                              isSubActive
+                                ? "bg-brand-primary/10 text-brand-primary font-semibold py-4"
+                                : "text-text-tertiary hover:text-text-muted font-normal py-2.5",
+                            )}
+                          >
+                            {subItem.name}
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
             )
@@ -363,60 +409,72 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-border space-y-2">
+      {/* Bottom items: Documentation / Help */}
+      <div className="flex flex-col gap-5 px-3 pb-5 pt-4">
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
-          const className = `flex items-center gap-3 px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
-            isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
-          }`
+          const rowClass = cn(
+            navRowBase,
+            "cursor-pointer",
+            isCollapsed ? "justify-center" : "px-5",
+            isActive ? "text-brand-primary" : "text-text-muted hover:text-text-heading",
+          )
           const content = (
             <>
-              <FlaticonIcon iconClass={item.icon} className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && item.name}
+              <FlaticonIcon iconClass={item.icon} className="text-[22px] leading-none flex-shrink-0" />
+              {!isCollapsed && <span className="truncate">{item.name}</span>}
             </>
           )
           return item.href !== "#" ? (
             <Link
               key={item.name}
               href={item.href}
-              className={className}
+              className={rowClass}
               title={isCollapsed ? item.name : undefined}
             >
               {content}
             </Link>
           ) : (
-            <div key={item.name} className={className} title={isCollapsed ? item.name : undefined}>
+            <div key={item.name} className={rowClass} title={isCollapsed ? item.name : undefined}>
               {content}
             </div>
           )
         })}
       </div>
 
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-8 h-8 rounded-[13px]">
-            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[13px] font-[family-name:var(--font-outfit)]">{user.avatar}</AvatarFallback>
-          </Avatar>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-foreground">{user.name}</div>
-              <div className="text-xs text-muted-foreground">
-                Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </div>
+      {/* Profile footer */}
+      <div
+        className={cn(
+          "flex items-center border-t border-border-subtle p-5",
+          isCollapsed ? "justify-center gap-0" : "gap-[18px]",
+        )}
+      >
+        <Avatar className="w-12 h-12 rounded-[16px] flex-shrink-0">
+          <AvatarFallback className="bg-avatar-5 text-text-heading text-[18px] rounded-[16px] font-[family-name:var(--font-outfit)]">
+            {user.avatar}
+          </AvatarFallback>
+        </Avatar>
+        {!isCollapsed && (
+          <div className="flex-1 min-w-0">
+            <div className="text-[17px] font-semibold tracking-[-0.34px] text-text-heading truncate">
+              {user.name}
             </div>
-          )}
-        </div>
+            <div className="text-[15px] tracking-[-0.3px] text-text-tertiary truncate">
+              Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 // Component to render project logo with branding in dropdown
-function ProjectLogoWithBranding({ 
-  project, 
-  isSelected, 
-  onSelect 
-}: { 
+function ProjectLogoWithBranding({
+  project,
+  isSelected,
+  onSelect,
+}: {
   project: Project
   isSelected: boolean
   onSelect: (project: Project) => void
