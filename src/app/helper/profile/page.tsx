@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { Github, Info, Loader2 } from "lucide-react"
+import { ChevronsUpDown, Github, Info, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -276,7 +276,7 @@ export default function HelperProfilePage() {
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-16 h-16 rounded-[25px] flex items-center justify-center text-foreground text-xl font-[family-name:var(--font-outfit)] font-normal"
+              className="w-16 h-16 rounded-[25px] flex items-center justify-center text-foreground text-[28px] font-[family-name:var(--font-outfit)] font-normal"
               style={{ backgroundColor: helperColors[0] }}
             >
               {displayAvatar}
@@ -518,20 +518,25 @@ export default function HelperProfilePage() {
             <div className="bg-white rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center space-x-2">
                     <span className="text-sm font-medium text-foreground">Ticket ID</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center space-x-2">
                     <span className="text-sm font-medium text-foreground">Date</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center space-x-2">
                     <span className="text-sm font-medium text-foreground">Ticket type</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center space-x-2">
                     <span className="text-sm font-medium text-foreground">Amount</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-2 flex items-center space-x-2">
                     <span className="text-sm font-medium text-foreground">Status</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
                   </div>
                   <div className="col-span-2"></div>
                 </div>
