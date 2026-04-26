@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { MessageCircle, Mail, Github, Info, Loader2, Tag } from "lucide-react"
+import { Github, Info, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -276,7 +276,7 @@ export default function HelperProfilePage() {
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold"
+              className="w-16 h-16 rounded-[25px] flex items-center justify-center text-white text-xl font-[family-name:var(--font-outfit)] font-semibold"
               style={{ backgroundColor: helperColors[0] }}
             >
               {displayAvatar}
@@ -290,34 +290,19 @@ export default function HelperProfilePage() {
           </div>
 
           {/* Editable contact information */}
-          <Card className="mb-8 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Contact information</h2>
-              <div className="space-y-4 max-w-md">
-                <FormField label="Display name">
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <Input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your name"
-                      className="bg-background"
-                    />
-                  </div>
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Contact information</h2>
+            <div className="space-y-4">
+              <div className="flex gap-5">
+                <FormField label="Display name" className="flex-1 max-w-md">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className="bg-background"
+                  />
                 </FormField>
-                <FormField label="Email">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email"
-                      className="bg-background"
-                    />
-                  </div>
-                </FormField>
-                <FormField label="GitHub username">
+                <FormField label="GitHub username" className="flex-1 max-w-md pl-5">
                   <div className="flex items-center gap-2">
                     <Github className="w-5 h-5 text-muted-foreground shrink-0" />
                     {gitHubConnected ? (
@@ -337,90 +322,99 @@ export default function HelperProfilePage() {
                     )}
                   </div>
                 </FormField>
-                <Button
-                  onClick={handleSaveProfile}
-                  disabled={updateUserProfile.isPending}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-white"
-                >
-                  {updateUserProfile.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Save contact details"
-                  )}
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Editable category */}
-          <Card className="mb-8 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Helper category</h2>
-              <div className="flex items-center gap-4 flex-wrap">
-                <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="core">Core team</SelectItem>
-                    <SelectItem value="extended">Extended team</SelectItem>
-                    <SelectItem value="community">Community</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={handleSaveCategory}
-                  disabled={updateHelper.isPending}
-                  variant="outline"
-                  className="border-border"
-                >
-                  {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Project keywords / topics */}
-          <Card className="mb-8 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Tag className="w-5 h-5 text-muted-foreground" />
-                Topics & keywords
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Select the project topics you can help with. This helps route relevant tickets to you.
-              </p>
-              {projectKeywords.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No keywords defined for this project yet.</p>
-              ) : (
-                <div className="flex flex-wrap gap-3 mb-4">
-                  {projectKeywords.map((kw) => (
-                    <label
-                      key={kw.id}
-                      className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
-                    >
-                      <Checkbox
-                        checked={selectedKeywords.includes(kw.id)}
-                        onCheckedChange={() => handleKeywordToggle(kw.id)}
-                      />
-                      <span className="text-sm font-medium">{kw.value}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+              <FormField label="Email" className="max-w-md">
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className="bg-background"
+                />
+              </FormField>
               <Button
-                onClick={handleSaveKeywords}
-                disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
+                onClick={handleSaveProfile}
+                disabled={updateUserProfile.isPending}
                 variant="outline"
                 className="border-border"
               >
-                {setHelperKeywords.isPending ? (
+                {updateUserProfile.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "Save topics"
+                  "Save contact details"
                 )}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
+
+          <hr className="border-0 border-t mb-8" style={{ borderColor: "#1E1E1E" }} />
+
+          {/* Editable category */}
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Helper category</h2>
+            <div className="flex items-center gap-4 flex-wrap">
+              <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="core">Core team</SelectItem>
+                  <SelectItem value="extended">Extended team</SelectItem>
+                  <SelectItem value="community">Community</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={handleSaveCategory}
+                disabled={updateHelper.isPending}
+                variant="outline"
+                className="border-border"
+              >
+                {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
+              </Button>
+            </div>
+          </section>
+
+          <hr className="border-0 border-t mb-8" style={{ borderColor: "#1E1E1E" }} />
+
+          {/* Project keywords / topics */}
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Topics & keywords</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Select the project topics you can help with. This helps route relevant tickets to you.
+            </p>
+            {projectKeywords.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No keywords defined for this project yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-3 mb-4">
+                {projectKeywords.map((kw) => (
+                  <label
+                    key={kw.id}
+                    className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
+                  >
+                    <Checkbox
+                      checked={selectedKeywords.includes(kw.id)}
+                      onCheckedChange={() => handleKeywordToggle(kw.id)}
+                    />
+                    <span className="text-sm font-medium">{kw.value}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <Button
+              onClick={handleSaveKeywords}
+              disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
+              variant="outline"
+              className="border-border"
+            >
+              {setHelperKeywords.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Save topics"
+              )}
+            </Button>
+          </section>
+
+          <hr className="border-0 border-t mb-8" style={{ borderColor: "#1E1E1E" }} />
 
           {/* Time period filters */}
           <div className="flex gap-2 mb-6">
