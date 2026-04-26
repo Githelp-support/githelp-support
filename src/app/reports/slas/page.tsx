@@ -400,9 +400,11 @@ export default function ReportsSLAsPage() {
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
-                      <Checkbox
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
                         checked={selectedRows.length === sortedReports.length && sortedReports.length > 0}
-                        onCheckedChange={handleSelectAll}
+                        onChange={handleSelectAll}
                       />
                     </div>
                     <div className="col-span-2">
@@ -516,9 +518,11 @@ export default function ReportsSLAsPage() {
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
-                      <Checkbox
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
                         checked={selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0}
-                        onCheckedChange={handleTicketSelectAll}
+                        onChange={handleTicketSelectAll}
                       />
                     </div>
                     <div className="col-span-2">

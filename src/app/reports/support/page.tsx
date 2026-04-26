@@ -382,9 +382,11 @@ export default function ReportsSupportPage() {
                 {activeTab === "monthly" ? (
                   <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                     <div>
-                      <Checkbox
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
                         checked={allSelected}
-                        onCheckedChange={handleSelectAll}
+                        onChange={handleSelectAll}
                       />
                     </div>
                     <div className="col-span-2">
@@ -432,9 +434,11 @@ export default function ReportsSupportPage() {
                 ) : (
                   <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                     <div>
-                      <Checkbox
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
                         checked={allSelected}
-                        onCheckedChange={handleTicketSelectAll}
+                        onChange={handleTicketSelectAll}
                       />
                     </div>
                     <div className="col-span-1">
