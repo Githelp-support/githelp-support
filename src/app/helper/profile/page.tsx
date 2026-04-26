@@ -276,7 +276,7 @@ export default function HelperProfilePage() {
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-16 h-16 rounded-[25px] flex items-center justify-center text-white text-xl font-[family-name:var(--font-outfit)] font-semibold"
+              className="w-16 h-16 rounded-[25px] flex items-center justify-center text-foreground text-xl font-[family-name:var(--font-outfit)] font-normal"
               style={{ backgroundColor: helperColors[0] }}
             >
               {displayAvatar}
@@ -337,6 +337,7 @@ export default function HelperProfilePage() {
                 disabled={updateUserProfile.isPending}
                 variant="outline"
                 className="border-border"
+                style={{ marginTop: "22px" }}
               >
                 {updateUserProfile.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -347,7 +348,7 @@ export default function HelperProfilePage() {
             </div>
           </section>
 
-          <hr className="border-0 border-t mb-8" style={{ borderColor: "#1E1E1E" }} />
+          <hr className="border-0 border-t mb-8" style={{ borderColor: "#E5E5E5" }} />
 
           {/* Editable category */}
           <section className="mb-8">
@@ -374,7 +375,7 @@ export default function HelperProfilePage() {
             </div>
           </section>
 
-          <hr className="border-0 border-t mb-8" style={{ borderColor: "#1E1E1E" }} />
+          <hr className="border-0 border-t mb-8" style={{ borderColor: "#E5E5E5" }} />
 
           {/* Project keywords / topics */}
           <section className="mb-8">
@@ -385,7 +386,7 @@ export default function HelperProfilePage() {
             {projectKeywords.length === 0 ? (
               <p className="text-sm text-muted-foreground">No keywords defined for this project yet.</p>
             ) : (
-              <div className="flex flex-wrap gap-3 mb-4">
+              <div className="flex flex-wrap gap-3">
                 {projectKeywords.map((kw) => (
                   <label
                     key={kw.id}
@@ -404,7 +405,7 @@ export default function HelperProfilePage() {
               onClick={handleSaveKeywords}
               disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
               variant="outline"
-              className="border-border"
+              className="border-border mt-[22px]"
             >
               {setHelperKeywords.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -414,7 +415,7 @@ export default function HelperProfilePage() {
             </Button>
           </section>
 
-          <hr className="border-0 border-t mb-8" style={{ borderColor: "#1E1E1E" }} />
+          <hr className="border-0 border-t mb-8" style={{ borderColor: "#E5E5E5" }} />
 
           {/* Time period filters */}
           <div className="flex gap-2 mb-6">
@@ -514,71 +515,78 @@ export default function HelperProfilePage() {
           {/* All tickets */}
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">All tickets</h2>
-            <Card className="border-border py-0">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border bg-brand-primary/10">
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Ticket ID</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Ticket type</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tickets.map((ticket) => (
-                        <tr key={ticket.fullId || ticket.id} className="border-b border-border hover:bg-muted">
-                          <td className="p-4">
-                            <span className="text-foreground font-medium">{ticket.id}</span>
-                          </td>
-                          <td className="p-4 text-muted-foreground">{ticket.date}</td>
-                          <td className="p-4 text-muted-foreground">{ticket.type}</td>
-                          <td className="p-4 text-muted-foreground">{ticket.amount}</td>
-                          <td className="p-4">
-                            <Badge
-                              variant="secondary"
-                              className={
-                                ticket.status === "Completed"
-                                  ? "bg-status-success-bg text-status-success-text border-0"
-                                  : "bg-status-warning-bg text-status-warning-text border-0"
-                              }
-                            >
-                              {ticket.status === "Completed" && "✓ "}
-                              {ticket.status}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            {ticket.fullId ? (
-                              <Link href={`/helper/tickets/${ticket.fullId}`}>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                                >
-                                  Open
-                                </Button>
-                              </Link>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                                disabled
-                              >
-                                Open
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                  <div className="col-span-2">
+                    <span className="text-sm font-medium text-foreground">Ticket ID</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-sm font-medium text-foreground">Date</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-sm font-medium text-foreground">Ticket type</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-sm font-medium text-foreground">Amount</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-sm font-medium text-foreground">Status</span>
+                  </div>
+                  <div className="col-span-2"></div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.fullId || ticket.id}
+                  className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]"
+                >
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-2">
+                      <span className="text-foreground font-medium">{ticket.id}</span>
+                    </div>
+                    <div className="col-span-2 text-muted-foreground">{ticket.date}</div>
+                    <div className="col-span-2 text-muted-foreground">{ticket.type}</div>
+                    <div className="col-span-2 text-muted-foreground">{ticket.amount}</div>
+                    <div className="col-span-2">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          ticket.status === "Completed"
+                            ? "bg-status-success-bg text-status-success-text border-0"
+                            : "bg-status-warning-bg text-status-warning-text border-0"
+                        }
+                      >
+                        {ticket.status === "Completed" && "✓ "}
+                        {ticket.status}
+                      </Badge>
+                    </div>
+                    <div className="col-span-2">
+                      {ticket.fullId ? (
+                        <Link href={`/helper/tickets/${ticket.fullId}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                          >
+                            Open
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                          disabled
+                        >
+                          Open
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </main>
       </div>
