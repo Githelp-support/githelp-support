@@ -188,7 +188,9 @@ export function Sidebar({ className }: SidebarProps) {
 
   const isItemActive = (item: NavigationItem) => {
     if (item.subItems) {
-      return item.subItems.some((subItem) => pathname === subItem.href)
+      // Parent items with sub-items should never receive the active highlight;
+      // only the active sub-item itself is marked.
+      return false
     }
     return pathname === item.href
   }
@@ -344,25 +346,26 @@ export function Sidebar({ className }: SidebarProps) {
                       )}
                     </button>
                     {!isCollapsed && isExpanded && (
-                      <div className="relative ml-[22px] mt-0.5 space-y-0.5">
-                        {/* Vertical guide line, centered under the parent icon column */}
+                      <div className="relative mt-0.5 space-y-0.5">
+                        {/* Vertical guide line, centered under the parent icon column.
+                            Clamped to start/end at the center of the first/last dot. */}
                         <span
                           aria-hidden="true"
-                          className="pointer-events-none absolute left-0 top-0 bottom-0 w-px bg-[#E1E1E1]"
+                          className="pointer-events-none absolute left-[22px] top-[20px] bottom-[20px] w-px bg-[#E1E1E1]"
                         />
                         {item.subItems.map((subItem) => {
                           const isSubActive = isSubItemActive(subItem.href)
                           return (
                             <Link key={subItem.name} href={subItem.href}>
                               <div
-                                className={`relative flex items-center pl-5 pr-3 py-2 min-h-[36px] rounded-md text-sm font-medium transition-colors ${
+                                className={`relative flex items-center pl-11 pr-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
                                   isSubActive ? activeClasses : inactiveClasses
                                 }`}
                               >
                                 {/* Sub-category marker, centered on the vertical line */}
                                 <span
                                   aria-hidden="true"
-                                  className={`absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
+                                  className={`absolute left-[22px] top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
                                     isSubActive ? "bg-brand-primary" : "bg-[#E1E1E1]"
                                   }`}
                                 />
