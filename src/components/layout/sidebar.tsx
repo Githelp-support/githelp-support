@@ -197,7 +197,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
     >
       <div className="px-4 pt-5 pb-3 flex items-center justify-between min-h-[40px]">
         {isCollapsed ? (
@@ -350,13 +350,10 @@ export function Sidebar({ className }: SidebarProps) {
                           return (
                             <Link key={subItem.name} href={subItem.href}>
                               <div
-                                className={`flex items-center gap-3 px-3 py-2 min-h-[36px] rounded-md text-sm font-medium transition-colors ${
+                                className={`flex items-center px-3 py-2 min-h-[36px] rounded-md text-sm font-medium transition-colors ${
                                   isSubActive ? activeClasses : inactiveClasses
                                 }`}
                               >
-                                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                                  <FlaticonIcon iconClass={subItem.icon} />
-                                </span>
                                 {subItem.name}
                               </div>
                             </Link>
