@@ -351,7 +351,7 @@ export function Sidebar({ className }: SidebarProps) {
                             Clamped to start/end at the center of the first/last dot. */}
                         <span
                           aria-hidden="true"
-                          className="pointer-events-none absolute left-[22px] top-[20px] bottom-[20px] w-px bg-[#E1E1E1]"
+                          className="pointer-events-none absolute left-[22px] top-[20px] bottom-[20px] w-px bg-border-subtle"
                         />
                         {item.subItems.map((subItem) => {
                           const isSubActive = isSubItemActive(subItem.href)
@@ -366,7 +366,7 @@ export function Sidebar({ className }: SidebarProps) {
                                 <span
                                   aria-hidden="true"
                                   className={`absolute left-[22px] top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
-                                    isSubActive ? "bg-brand-primary" : "bg-[#E1E1E1]"
+                                    isSubActive ? "bg-brand-primary" : "bg-border-subtle"
                                   }`}
                                 />
                                 {subItem.name}
