@@ -344,16 +344,28 @@ export function Sidebar({ className }: SidebarProps) {
                       )}
                     </button>
                     {!isCollapsed && isExpanded && (
-                      <div className="ml-3 mt-0.5 pl-3 border-l border-sidebar-border space-y-0.5">
+                      <div className="relative ml-[22px] mt-0.5 space-y-0.5">
+                        {/* Vertical guide line, centered under the parent icon column */}
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute left-0 top-0 bottom-0 w-px bg-[#E1E1E1]"
+                        />
                         {item.subItems.map((subItem) => {
                           const isSubActive = isSubItemActive(subItem.href)
                           return (
                             <Link key={subItem.name} href={subItem.href}>
                               <div
-                                className={`flex items-center px-3 py-2 min-h-[36px] rounded-md text-sm font-medium transition-colors ${
+                                className={`relative flex items-center pl-5 pr-3 py-2 min-h-[36px] rounded-md text-sm font-medium transition-colors ${
                                   isSubActive ? activeClasses : inactiveClasses
                                 }`}
                               >
+                                {/* Sub-category marker, centered on the vertical line */}
+                                <span
+                                  aria-hidden="true"
+                                  className={`absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
+                                    isSubActive ? "bg-brand-primary" : "bg-[#E1E1E1]"
+                                  }`}
+                                />
                                 {subItem.name}
                               </div>
                             </Link>
