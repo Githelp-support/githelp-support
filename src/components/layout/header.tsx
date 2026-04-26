@@ -138,7 +138,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+                <h1 className="text-2xl font-semibold tracking-[0.02em] text-foreground">{title}</h1>
                 {info && (
                   <div className="relative group">
                     <Info className="w-5 h-5 text-muted-foreground cursor-help" />
