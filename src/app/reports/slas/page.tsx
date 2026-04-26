@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -15,21 +16,48 @@ import { useProjectSelection } from "@/contexts/project-context"
 interface ReportData {
   id: string
   period: string
+  periodRaw: number
   entity: string
   entityInitial: string
   entityColor: string
   amount: string
+  amountRaw: number
   status: "paid-out" | "pending" | "processing"
 }
 
 interface TicketData {
   id: string
   date: string
+  dateRaw: string
   entity: string
   entityInitial: string
   entityColor: string
   amount: string
+  amountRaw: number
   status: "completed" | "pending" | "processing"
+}
+
+type MonthlySortField = "period" | "entity" | "amount" | "status"
+type TicketsSortField = "date" | "entity" | "amount" | "status"
+type SortDirection = "asc" | "desc"
+
+function ReportsSortIcon<T extends string>({
+  field,
+  sortField,
+  sortDirection,
+}: {
+  field: T
+  sortField: T | null
+  sortDirection: SortDirection
+}) {
+  if (sortField !== field) {
+    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+  }
+  return sortDirection === "asc" ? (
+    <ChevronUp className="w-4 h-4 text-brand-primary" />
+  ) : (
+    <ChevronDown className="w-4 h-4 text-brand-primary" />
+  )
 }
 
 // Helper function to format date
@@ -85,6 +113,10 @@ export default function ReportsSLAsPage() {
   const [selectedFilter, setSelectedFilter] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [selectedTicketRows, setSelectedTicketRows] = useState<string[]>([])
+  const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
+  const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
+  const [ticketsSortField, setTicketsSortField] = useState<TicketsSortField | null>(null)
+  const [ticketsSortDirection, setTicketsSortDirection] = useState<SortDirection>("asc")
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -128,10 +160,12 @@ export default function ReportsSLAsPage() {
       return {
         id: key,
         period: data.month,
+        periodRaw: new Date(data.month).getTime(),
         entity: (data.sla as any)?.name || "Unknown",
         entityInitial: initial,
         entityColor: color,
         amount: formatAmount(data.total, "usd"),
+        amountRaw: data.total,
         status: "paid-out" as const,
       }
     })
@@ -148,21 +182,117 @@ export default function ReportsSLAsPage() {
         return {
           id: transfer.id,
           date: formatDate(transfer.completed_at!),
+          dateRaw: transfer.completed_at!,
           entity: (transfer.sla as any)?.name || "Unknown",
           entityInitial: initial,
           entityColor: color,
           amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
+          amountRaw: transfer.amount_smallest_unit,
           status: transfer.status === "completed" ? "completed" : "pending",
         }
       })
   }, [transfersData, slasData])
+
+  const sortedReports = useMemo(() => {
+    if (!monthlySortField) return reports
+    const sorted = [...reports]
+    sorted.sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+      switch (monthlySortField) {
+        case "period":
+          aValue = a.periodRaw
+          bValue = b.periodRaw
+          break
+        case "entity":
+          aValue = a.entity.toLowerCase()
+          bValue = b.entity.toLowerCase()
+          break
+        case "amount":
+          aValue = a.amountRaw
+          bValue = b.amountRaw
+          break
+        case "status":
+          aValue = a.status.toLowerCase()
+          bValue = b.status.toLowerCase()
+          break
+        default:
+          return 0
+      }
+      if (aValue < bValue) return monthlySortDirection === "asc" ? -1 : 1
+      if (aValue > bValue) return monthlySortDirection === "asc" ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [reports, monthlySortField, monthlySortDirection])
+
+  const sortedTickets = useMemo(() => {
+    if (!ticketsSortField) return tickets
+    const sorted = [...tickets]
+    sorted.sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+      switch (ticketsSortField) {
+        case "date":
+          aValue = new Date(a.dateRaw).getTime()
+          bValue = new Date(b.dateRaw).getTime()
+          break
+        case "entity":
+          aValue = a.entity.toLowerCase()
+          bValue = b.entity.toLowerCase()
+          break
+        case "amount":
+          aValue = a.amountRaw
+          bValue = b.amountRaw
+          break
+        case "status":
+          aValue = a.status.toLowerCase()
+          bValue = b.status.toLowerCase()
+          break
+        default:
+          return 0
+      }
+      if (aValue < bValue) return ticketsSortDirection === "asc" ? -1 : 1
+      if (aValue > bValue) return ticketsSortDirection === "asc" ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [tickets, ticketsSortField, ticketsSortDirection])
+
+  const handleMonthlySort = (field: MonthlySortField) => {
+    if (monthlySortField === field) {
+      if (monthlySortDirection === "asc") {
+        setMonthlySortDirection("desc")
+      } else {
+        setMonthlySortField(null)
+        setMonthlySortDirection("asc")
+      }
+    } else {
+      setMonthlySortField(field)
+      setMonthlySortDirection("asc")
+    }
+  }
+
+  const handleTicketsSort = (field: TicketsSortField) => {
+    if (ticketsSortField === field) {
+      if (ticketsSortDirection === "asc") {
+        setTicketsSortDirection("desc")
+      } else {
+        setTicketsSortField(null)
+        setTicketsSortDirection("asc")
+      }
+    } else {
+      setTicketsSortField(field)
+      setTicketsSortDirection("asc")
+    }
+  }
 
   const handleRowSelect = (id: string) => {
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]))
   }
 
   const handleSelectAll = () => {
-    setSelectedRows(selectedRows.length === reports.length ? [] : reports.map((report) => report.id))
+    setSelectedRows(selectedRows.length === sortedReports.length ? [] : sortedReports.map((report) => report.id))
   }
 
   const handleTicketRowSelect = (id: string) => {
@@ -170,7 +300,7 @@ export default function ReportsSLAsPage() {
   }
 
   const handleTicketSelectAll = () => {
-    setSelectedTicketRows(selectedTicketRows.length === tickets.length ? [] : tickets.map((ticket) => ticket.id))
+    setSelectedTicketRows(selectedTicketRows.length === sortedTickets.length ? [] : sortedTickets.map((ticket) => ticket.id))
   }
 
   return (
@@ -271,21 +401,49 @@ export default function ReportsSLAsPage() {
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <Checkbox
-                        checked={selectedRows.length === reports.length && reports.length > 0}
+                        checked={selectedRows.length === sortedReports.length && sortedReports.length > 0}
                         onCheckedChange={handleSelectAll}
                       />
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Period</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("period")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Period</span>
+                        <ReportsSortIcon field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-sm font-medium text-foreground">Entity</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("entity")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Entity</span>
+                        <ReportsSortIcon field="entity" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("amount")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Amount</span>
+                        <ReportsSortIcon field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("status")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Status</span>
+                        <ReportsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2"></div>
                   </div>
@@ -295,10 +453,10 @@ export default function ReportsSLAsPage() {
                 <div className="divide-y divide-border">
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading reports...</div>
-                  ) : reports.length === 0 ? (
+                  ) : sortedReports.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">No reports found</div>
                   ) : (
-                    reports.map((report) => (
+                    sortedReports.map((report) => (
                     <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-1">
@@ -359,21 +517,49 @@ export default function ReportsSLAsPage() {
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <Checkbox
-                        checked={selectedTicketRows.length === tickets.length && tickets.length > 0}
+                        checked={selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0}
                         onCheckedChange={handleTicketSelectAll}
                       />
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Date</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("date")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Date</span>
+                        <ReportsSortIcon field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-sm font-medium text-foreground">Entity</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("entity")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Entity</span>
+                        <ReportsSortIcon field="entity" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("amount")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Amount</span>
+                        <ReportsSortIcon field="amount" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("status")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Status</span>
+                        <ReportsSortIcon field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2"></div>
                   </div>
@@ -383,10 +569,10 @@ export default function ReportsSLAsPage() {
                 <div className="divide-y divide-border">
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
-                  ) : tickets.length === 0 ? (
+                  ) : sortedTickets.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">No tickets found</div>
                   ) : (
-                    tickets.map((ticket) => (
+                    sortedTickets.map((ticket) => (
                     <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-1">

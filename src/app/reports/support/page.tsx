@@ -8,9 +8,33 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
+
+type MonthlySortField = "period" | "description" | "amount" | "status"
+type TicketsSortField = "ticketId" | "date" | "helper" | "amount" | "status"
+type SortDirection = "asc" | "desc"
+
+function ReportsSortIcon<T extends string>({
+  field,
+  sortField,
+  sortDirection,
+}: {
+  field: T
+  sortField: T | null
+  sortDirection: SortDirection
+}) {
+  if (sortField !== field) {
+    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+  }
+  return sortDirection === "asc" ? (
+    <ChevronUp className="w-4 h-4 text-brand-primary" />
+  ) : (
+    <ChevronDown className="w-4 h-4 text-brand-primary" />
+  )
+}
 
 const HELPER_COLORS = ["#f4bccc", "#d0f6bc", "#f6e6bc", "#bcedf6", "#cbbcf6", "#82c95f"]
 
@@ -55,6 +79,10 @@ export default function ReportsSupportPage() {
   const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [selectedTicketRows, setSelectedTicketRows] = useState<string[]>([])
+  const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
+  const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
+  const [ticketsSortField, setTicketsSortField] = useState<TicketsSortField | null>(null)
+  const [ticketsSortDirection, setTicketsSortDirection] = useState<SortDirection>("asc")
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -96,11 +124,13 @@ export default function ReportsSupportPage() {
       .map(([key, data]) => ({
         id: key,
         period: data.month,
+        periodRaw: new Date(data.month).getTime(),
         description: "Monthly report",
         amount: formatAmount(data.total, "usd"),
+        amountRaw: data.total,
         status: "Paid out" as const,
       }))
-      .sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime())
+      .sort((a, b) => b.periodRaw - a.periodRaw)
   }, [transfersData])
 
   // Tickets: individual payment transfers with ticket + helper info
@@ -120,6 +150,7 @@ export default function ReportsSupportPage() {
         helperInitial: initial,
         helperColor: color,
         amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
+        amountRaw: transfer.amount_smallest_unit,
         status: transfer.status === "completed" ? "Completed" : transfer.status === "failed" ? "Failed" : "Pending",
         statusType: transfer.status,
       }
@@ -136,16 +167,110 @@ export default function ReportsSupportPage() {
 
   // Filter monthly reports by selected month
   const filteredMonthlyReports = useMemo(() => {
-    if (!selectedMonth) return monthlyReports
-    return monthlyReports.filter((r) => r.period === selectedMonth)
-  }, [monthlyReports, selectedMonth])
+    const list = !selectedMonth ? monthlyReports : monthlyReports.filter((r) => r.period === selectedMonth)
+    if (!monthlySortField) return list
+    const sorted = [...list]
+    sorted.sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+      switch (monthlySortField) {
+        case "period":
+          aValue = a.periodRaw
+          bValue = b.periodRaw
+          break
+        case "description":
+          aValue = a.description.toLowerCase()
+          bValue = b.description.toLowerCase()
+          break
+        case "amount":
+          aValue = a.amountRaw
+          bValue = b.amountRaw
+          break
+        case "status":
+          aValue = a.status.toLowerCase()
+          bValue = b.status.toLowerCase()
+          break
+        default:
+          return 0
+      }
+      if (aValue < bValue) return monthlySortDirection === "asc" ? -1 : 1
+      if (aValue > bValue) return monthlySortDirection === "asc" ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [monthlyReports, selectedMonth, monthlySortField, monthlySortDirection])
+
+  const sortedTickets = useMemo(() => {
+    if (!ticketsSortField) return ticketsData
+    const sorted = [...ticketsData]
+    sorted.sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+      switch (ticketsSortField) {
+        case "ticketId":
+          aValue = (a.ticketId ?? "").toLowerCase()
+          bValue = (b.ticketId ?? "").toLowerCase()
+          break
+        case "date":
+          aValue = new Date(a.dateRaw).getTime()
+          bValue = new Date(b.dateRaw).getTime()
+          break
+        case "helper":
+          aValue = a.helper.toLowerCase()
+          bValue = b.helper.toLowerCase()
+          break
+        case "amount":
+          aValue = a.amountRaw
+          bValue = b.amountRaw
+          break
+        case "status":
+          aValue = a.status.toLowerCase()
+          bValue = b.status.toLowerCase()
+          break
+        default:
+          return 0
+      }
+      if (aValue < bValue) return ticketsSortDirection === "asc" ? -1 : 1
+      if (aValue > bValue) return ticketsSortDirection === "asc" ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [ticketsData, ticketsSortField, ticketsSortDirection])
+
+  const handleMonthlySort = (field: MonthlySortField) => {
+    if (monthlySortField === field) {
+      if (monthlySortDirection === "asc") {
+        setMonthlySortDirection("desc")
+      } else {
+        setMonthlySortField(null)
+        setMonthlySortDirection("asc")
+      }
+    } else {
+      setMonthlySortField(field)
+      setMonthlySortDirection("asc")
+    }
+  }
+
+  const handleTicketsSort = (field: TicketsSortField) => {
+    if (ticketsSortField === field) {
+      if (ticketsSortDirection === "asc") {
+        setTicketsSortDirection("desc")
+      } else {
+        setTicketsSortField(null)
+        setTicketsSortDirection("asc")
+      }
+    } else {
+      setTicketsSortField(field)
+      setTicketsSortDirection("asc")
+    }
+  }
 
   const handleRowSelect = (id: string) => {
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]))
   }
 
   const handleSelectAll = () => {
-    const ids = activeTab === "monthly" ? filteredMonthlyReports.map((r) => r.id) : ticketsData.map((t) => t.id)
+    const ids = activeTab === "monthly" ? filteredMonthlyReports.map((r) => r.id) : sortedTickets.map((t) => t.id)
     setSelectedRows((prev) => (prev.length === ids.length ? [] : ids))
   }
 
@@ -155,15 +280,15 @@ export default function ReportsSupportPage() {
 
   const handleTicketSelectAll = () => {
     setSelectedTicketRows((prev) =>
-      prev.length === ticketsData.length ? [] : ticketsData.map((t) => t.id)
+      prev.length === sortedTickets.length ? [] : sortedTickets.map((t) => t.id)
     )
   }
 
-  const displayReports = activeTab === "monthly" ? filteredMonthlyReports : ticketsData
+  const displayReports = activeTab === "monthly" ? filteredMonthlyReports : sortedTickets
   const allSelected =
     activeTab === "monthly"
       ? selectedRows.length === filteredMonthlyReports.length && filteredMonthlyReports.length > 0
-      : selectedTicketRows.length === ticketsData.length && ticketsData.length > 0
+      : selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -263,16 +388,44 @@ export default function ReportsSupportPage() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Period</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("period")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Period</span>
+                        <ReportsSortIcon field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-sm font-medium text-foreground">Description</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("description")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Description</span>
+                        <ReportsSortIcon field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("amount")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Amount</span>
+                        <ReportsSortIcon field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMonthlySort("status")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Status</span>
+                        <ReportsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2"></div>
                   </div>
@@ -285,19 +438,54 @@ export default function ReportsSupportPage() {
                       />
                     </div>
                     <div className="col-span-1">
-                      <span className="text-sm font-medium text-foreground">Ticket ID</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("ticketId")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Ticket ID</span>
+                        <ReportsSortIcon field="ticketId" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-sm font-medium text-foreground">Date</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("date")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Date</span>
+                        <ReportsSortIcon field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-3">
-                      <span className="text-sm font-medium text-foreground">Helper</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("helper")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Helper</span>
+                        <ReportsSortIcon field="helper" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("amount")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Amount</span>
+                        <ReportsSortIcon field="amount" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTicketsSort("status")}
+                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      >
+                        <span className="text-sm font-medium text-foreground">Status</span>
+                        <ReportsSortIcon field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                      </button>
                     </div>
                     <div className="col-span-2"></div>
                   </div>
@@ -355,10 +543,10 @@ export default function ReportsSupportPage() {
                       </div>
                     ))
                   )
-                ) : ticketsData.length === 0 ? (
+                ) : sortedTickets.length === 0 ? (
                   <div className="px-6 py-8 text-center text-muted-foreground">No tickets found</div>
                 ) : (
-                  ticketsData.map((ticket) => (
+                  sortedTickets.map((ticket) => (
                     <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
