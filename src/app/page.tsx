@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
-import { ExternalLink, HelpCircle, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -204,32 +204,32 @@ export default function Dashboard() {
               <h2 className="text-base font-semibold text-foreground">Key stats</h2>
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className="flex gap-5 max-w-fit">
-              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
-                <CardContent className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
-                <CardContent className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-muted-foreground">Total time spent</span>
-                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">Total time spent</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
-                <CardContent className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-muted-foreground">Percentage solved</span>
-                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">Percentage solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
