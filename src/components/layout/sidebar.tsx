@@ -85,7 +85,15 @@ const ProjectLogo = ({
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Settings"])
+  // The Sidebar is mounted per-page (not in a shared layout), so its state
+  // is wiped on every navigation. Derive the initially-expanded parent from
+  // the current path so the active sub-item's parent stays expanded across
+  // sub-item clicks and on hard refresh.
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    if (pathname?.startsWith("/reports/")) return ["Reports"]
+    if (pathname?.startsWith("/settings/")) return ["Settings"]
+    return []
+  })
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { user } = useUser()
   const isAuthenticated = !!user?.id
