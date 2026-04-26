@@ -4,13 +4,15 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Logo } from "@/components/brand/logo"
 import { supabase } from "@/lib/supabase/client"
 import { Loader2, CheckCircle, LogIn, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { HelperInviteAcceptance } from "@/components/auth/helper-invite-acceptance"
-import { useAcceptProjectInvite } from "@/hooks/useProject"
+import { useAcceptProjectInvite, useProjectBranding } from "@/hooks/useProject"
 
 export default function InviteAcceptancePage() {
     const params = useParams()
@@ -30,6 +32,10 @@ export default function InviteAcceptancePage() {
     const { data: onboardingStatus } = useOnboardingStatus()
     const completeOnboarding = useCompleteOnboarding()
     const acceptInvite = useAcceptProjectInvite()
+    const projectIdForBranding = (project?.project_id as string | undefined) ?? ""
+    const { data: brandingData } = useProjectBranding(projectIdForBranding)
+    const projectLogo = brandingData?.logo_url || null
+    const projectName = String(project?.name ?? "the project")
 
     // Check authentication and find invite by token
     useEffect(() => {
@@ -201,7 +207,7 @@ export default function InviteAcceptancePage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+            <div className="min-h-screen flex items-center justify-center bg-muted/50">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
                     <p className="text-muted-foreground">Loading invite...</p>
@@ -212,11 +218,11 @@ export default function InviteAcceptancePage() {
 
     if (error || !project) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
-                            <XCircle className="w-6 h-6 text-red-500" />
+                            <XCircle className="w-6 h-6 text-destructive" />
                             <CardTitle>Invalid invite link</CardTitle>
                         </div>
                         <CardDescription>
@@ -235,7 +241,7 @@ export default function InviteAcceptancePage() {
 
     if (isMember) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
@@ -243,12 +249,12 @@ export default function InviteAcceptancePage() {
                             <CardTitle>You&apos;re already a member</CardTitle>
                         </div>
                         <CardDescription>
-                            You&apos;re already a member of {String(project?.name ?? "this project")}.
+                            You&apos;re already a member of {projectName}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Link href="/">
-                            <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                            <Button variant="default" className="w-full">
                                 Go to dashboard
                             </Button>
                         </Link>
@@ -261,9 +267,9 @@ export default function InviteAcceptancePage() {
     // Show profile completion form if needed
     if (isAuthenticated && needsProfile && inviteData?.invite_type === "helper") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <HelperInviteAcceptance
-                    projectName={String(project?.name ?? "the project")}
+                    projectName={projectName}
                     onComplete={handleProfileComplete}
                 />
             </div>
@@ -271,14 +277,36 @@ export default function InviteAcceptancePage() {
     }
 
     const inviteTypeLabel = inviteData?.invite_type === "helper" ? "as a helper" : "as a member"
+    const projectInitial = projectName?.[0]?.toUpperCase() || "?"
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+        <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
+                    {/* Two-logos-with-dotted-line composition: Githelp ··· Project */}
+                    <div
+                        aria-label={`Connecting Githelp with ${projectName}`}
+                        className="flex items-center justify-center gap-4 mb-4"
+                    >
+                        <div className="flex items-center justify-center w-14 h-14 rounded-full bg-background border border-border shadow-xs text-brand-primary">
+                            <Logo className="w-7 h-7" />
+                        </div>
+                        <div
+                            aria-hidden
+                            className="flex-1 max-w-[80px] border-t-2 border-dashed border-brand-primary/50"
+                        />
+                        <div className="flex items-center justify-center w-14 h-14 rounded-full bg-background border border-border shadow-xs overflow-hidden">
+                            <Avatar className="w-14 h-14">
+                                <AvatarImage src={projectLogo ?? undefined} alt={projectName} />
+                                <AvatarFallback className="bg-brand-primary text-white text-base font-semibold">
+                                    {projectInitial}
+                                </AvatarFallback>
+                            </Avatar>
+                        </div>
+                    </div>
                     <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
                     <CardDescription className="text-base mt-2">
-                        Join <span className="font-semibold">{String(project?.name ?? "this project")}</span> {inviteTypeLabel}
+                        Join <span className="font-semibold">{projectName}</span> {inviteTypeLabel}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -288,7 +316,7 @@ export default function InviteAcceptancePage() {
                                 Sign in to accept this invitation and join the project.
                             </p>
                             <Link href={`/auth/signin?redirect=${encodeURIComponent(`/invite/${token}`)}`}>
-                                <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                                <Button variant="default" className="w-full">
                                     <LogIn className="w-4 h-4 mr-2" />
                                     Sign in to continue
                                 </Button>
@@ -302,7 +330,8 @@ export default function InviteAcceptancePage() {
                             <Button
                                 onClick={handleAcceptInvite}
                                 disabled={isProcessing}
-                                className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="default"
+                                className="w-full"
                             >
                                 {isProcessing ? (
                                     <>
