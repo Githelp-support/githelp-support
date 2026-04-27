@@ -278,7 +278,7 @@ export default function UserSupportChatPage() {
 
   if (!hasSLA && !projectIdParam && !slugParam && !ticketIdParam) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-[30px] py-12">
         <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
           <h1 className="text-2xl font-semibold text-foreground mb-2">Missing project identifier</h1>
           <p className="text-muted-foreground">
@@ -300,7 +300,7 @@ export default function UserSupportChatPage() {
 
   if (ticketIdParam && !existingTicket?.id) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-[30px] py-12">
         <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
           <h1 className="text-2xl font-semibold text-foreground mb-2">Ticket not found</h1>
           <p className="text-muted-foreground">

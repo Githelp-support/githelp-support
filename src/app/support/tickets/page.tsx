@@ -35,7 +35,7 @@ export default function SupportTicketsPage() {
           subtitle="View and manage your support requests"
         />
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto py-6 px-[30px]">
           <div className="mb-6 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {isAuthenticated

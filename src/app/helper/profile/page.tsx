@@ -226,7 +226,7 @@ export default function HelperProfilePage() {
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto py-6 px-[30px]">
             <p className="text-muted-foreground">Select a project to view and edit your helper profile.</p>
           </main>
         </div>
@@ -240,7 +240,7 @@ export default function HelperProfilePage() {
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto py-6 px-[30px]">
             <p className="text-muted-foreground">You are not registered as a helper in this project.</p>
           </main>
         </div>
@@ -254,7 +254,7 @@ export default function HelperProfilePage() {
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile" />
-          <main className="flex-1 overflow-auto p-6 flex items-center justify-center">
+          <main className="flex-1 overflow-auto py-6 px-[30px] flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           </main>
         </div>
@@ -272,7 +272,7 @@ export default function HelperProfilePage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="View and edit your helper details" />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto py-6 px-[30px]">
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div

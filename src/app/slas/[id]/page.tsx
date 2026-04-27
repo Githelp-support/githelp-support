@@ -106,7 +106,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="SLA Details" subtitle="View and manage SLA configuration" />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto py-6 px-[30px]">
           {/* Back navigation */}
           <div className="mb-6">
             <Link

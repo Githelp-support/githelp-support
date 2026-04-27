@@ -289,7 +289,7 @@ export default function PaymentSettingsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="This is a test info" />
-        <main className="flex-1 p-6">
+        <main className="flex-1 py-6 px-[30px]">
           {/* Tab Navigation */}
           <div className="mb-8">
             <div className="flex gap-1">

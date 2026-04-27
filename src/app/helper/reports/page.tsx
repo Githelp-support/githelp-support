@@ -96,7 +96,7 @@ export default function HelperReportsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payouts and Reports" subtitle="Keep track of reports and transactions" />
 
-        <main className="flex-1 overflow-auto p-6 space-y-6">
+        <main className="flex-1 overflow-auto py-6 px-[30px] space-y-6">
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">

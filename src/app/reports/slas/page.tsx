@@ -183,7 +183,7 @@ export default function ReportsSLAsPage() {
           subtitle="Keep track of reports and transactions for your SLAs."
         />
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 py-6 px-[30px] overflow-y-auto">
           {/* Tab Navigation */}
           <div className="mb-6">
             <div className="flex gap-1">

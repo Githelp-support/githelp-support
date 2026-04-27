@@ -165,7 +165,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Helper Details" />
 
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
+        <main className="flex-1 overflow-y-auto bg-background py-4 sm:py-6 px-4 sm:px-[30px] space-y-6">
           {/* Back link */}
           <Link
             href="/helpers"

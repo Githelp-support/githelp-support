@@ -116,7 +116,7 @@ export default function HelperSupportPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Support Dashboard" />
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto py-6 px-[30px]">
           <div className="max-w-7xl space-y-6">
             {!projectId ? (
               <p className="text-muted-foreground">Select a project to see tickets and stats.</p>

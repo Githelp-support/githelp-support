@@ -173,7 +173,7 @@ export default function ReportsSupportPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Reports and Payouts" subtitle="Keep track of reports and transactions for support." />
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 py-6 px-[30px] overflow-y-auto">
           <div className="space-y-6">
             <div className="mb-6">
               <div className="flex gap-1">

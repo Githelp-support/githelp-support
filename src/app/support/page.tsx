@@ -106,7 +106,7 @@ export default function SupportPage() {
 
   if (!projectIdParam && !slugParam) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-[30px] py-12">
         <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
           <h1 className="text-2xl font-semibold text-[#444444] mb-2">Missing project identifier</h1>
           <p className="text-[#868c98] mb-6">
@@ -126,7 +126,7 @@ export default function SupportPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-[30px] py-12">
       <div className="flex items-center gap-4 mb-8">
         <div className="relative">
           <div className="w-20 h-20 bg-white rounded-lg shadow-sm flex items-center justify-center overflow-hidden">
