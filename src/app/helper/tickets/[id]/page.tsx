@@ -24,6 +24,7 @@ import {
   AtSign,
   Mic,
   Video,
+  XCircle,
 } from "lucide-react"
 import { useState, useRef, useEffect, useMemo } from "react"
 import NextLink from "next/link"
@@ -72,6 +73,7 @@ export default function TicketDetailPage() {
   const [isEndTicketDrawerOpen, setIsEndTicketDrawerOpen] = useState(false)
   const [isLogTimeDrawerOpen, setIsLogTimeDrawerOpen] = useState(false)
   const [isAddSelfAsHelperDialogOpen, setIsAddSelfAsHelperDialogOpen] = useState(false)
+  const [isCancelTicketDialogOpen, setIsCancelTicketDialogOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<"claim" | "logTime" | null>(null)
 
   // Fetch ticket and messages
@@ -375,6 +377,35 @@ export default function TicketDetailPage() {
     })
   }
 
+  const handleCancelTicket = async () => {
+    if (!ticketId) return
+
+    try {
+      setJustEndedLocal(true)
+      setIsCancelTicketDialogOpen(false)
+
+      await updateTicket.mutateAsync({
+        id: ticketId,
+        updates: {
+          status: "cancelled",
+          completed_at: new Date().toISOString(),
+        },
+      })
+
+      // Log cancelled event in tickets_events
+      await supabase.from("tickets_events").insert({
+        ticket_id: ticketId,
+        type: "ended",
+        payload: { reason: "cancelled" },
+      })
+
+      toast.success("Ticket cancelled.")
+    } catch (error) {
+      console.error("Failed to cancel ticket:", error)
+      toast.error("Failed to cancel ticket. Please try again.")
+    }
+  }
+
   const handleSeeDetails = () => {
     // Here you would typically show a modal or navigate to a details page
   }
@@ -551,6 +582,15 @@ export default function TicketDetailPage() {
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setIsEndTicketDrawerOpen(true)} className="cursor-pointer">
                           End ticket
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsCancelTicketDialogOpen(true)}
+                          className="cursor-pointer text-destructive hover:bg-destructive/10 border-destructive/40"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Cancel ticket
                         </Button>
                       </div>
                     )}
@@ -884,6 +924,32 @@ export default function TicketDetailPage() {
             >
               <UserPlus className="w-4 h-4 mr-2" />
               Add myself as helper
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel ticket confirmation */}
+      <Dialog open={isCancelTicketDialogOpen} onOpenChange={setIsCancelTicketDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel this ticket?</DialogTitle>
+            <DialogDescription>
+              This will mark the ticket as cancelled and end the support session. The customer will no longer be
+              able to chat in this ticket. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCancelTicketDialogOpen(false)}>
+              Keep ticket
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void handleCancelTicket()}
+              disabled={updateTicket.isPending}
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Cancel ticket
             </Button>
           </DialogFooter>
         </DialogContent>
