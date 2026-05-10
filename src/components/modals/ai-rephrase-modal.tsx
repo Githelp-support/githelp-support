@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, Sparkles, RefreshCw } from "lucide-react"
+import { supabase } from "@/lib/supabase/client"
 
 interface AIRephraseModalProps {
   isOpen: boolean
@@ -19,22 +20,19 @@ export function AIRephraseModal({ isOpen, onClose, originalText }: AIRephraseMod
 
   const handleRephrase = async () => {
     setIsLoading(true)
-
-    // Simulate AI processing delay
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    // Mock AI rephrase response
-    const rephrased = `The user is experiencing an issue with event type discovery in their application. They have configured event types but the system is not recognizing or processing them correctly. They've provided a code example showing a PurchaseEvent record with PurchaseItem containing ItemId, UserId, and PaymentMethodId properties. This appears to be a configuration or implementation bug where the event registration or discovery mechanism is not functioning as expected.
-
-Key points:
-• Event types are configured but not being discovered
-• System behavior doesn't match expectations  
-• Code example shows a record-based event structure
-• Likely related to event registration or discovery pipeline`
-
-    setRephrasedText(rephrased)
-    setHasGenerated(true)
-    setIsLoading(false)
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-rephrase", {
+        body: { text: originalText },
+      })
+      if (error) throw error
+      setRephrasedText(data.rephrased || "Could not generate interpretation.")
+    } catch (err) {
+      console.error("AI rephrase failed:", err)
+      setRephrasedText("Failed to generate AI interpretation. Please try again.")
+    } finally {
+      setHasGenerated(true)
+      setIsLoading(false)
+    }
   }
 
   const handleRegenerate = () => {

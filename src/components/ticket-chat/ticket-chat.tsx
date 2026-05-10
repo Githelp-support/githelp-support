@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Check, Info, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
+import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 
 export type TicketChatMessage = {
   id: string
@@ -51,6 +52,14 @@ export interface TicketChatProps {
   sendDisabled?: boolean
   isEnded?: boolean
 
+  /**
+   * When provided, enables the image attachment button in the chat toolbar.
+   * Format: "{projectId}/{ticketId}" — used as the storage path prefix under the ticket-attachments bucket.
+   */
+  attachmentStoragePrefix?: string
+  /** Called after a successful image upload with the resolved URL */
+  onImageUploaded?: (url: string) => void
+
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
 }
@@ -71,8 +80,12 @@ export function TicketChat(props: TicketChatProps) {
     onSend,
     sendDisabled,
     isEnded,
+    attachmentStoragePrefix,
+    onImageUploaded,
     rightSidebarFooter,
   } = props
+
+  const [imageUploadOpen, setImageUploadOpen] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -183,6 +196,7 @@ export function TicketChat(props: TicketChatProps) {
             onSend={onSend}
             sendDisabled={sendDisabled}
             placeholder="Message #askanything"
+            onImageClick={attachmentStoragePrefix ? () => setImageUploadOpen(true) : undefined}
             toolbarEndContent={
               !isEnded ? (
                 <Button
@@ -195,6 +209,23 @@ export function TicketChat(props: TicketChatProps) {
               ) : undefined
             }
           />
+
+          {attachmentStoragePrefix && (
+            <ImageUploadModal
+              open={imageUploadOpen}
+              onOpenChange={setImageUploadOpen}
+              storagePath={`ticket-attachments/${attachmentStoragePrefix}/${Date.now()}`}
+              onUploadComplete={(url) => {
+                // Insert the image as a markdown reference into the message
+                const imageMarkdown = `\n![attachment](${url})\n`
+                onMessageChange(message + imageMarkdown)
+                onImageUploaded?.(url)
+              }}
+              title="Attach Image"
+              description="Upload an image to attach to this ticket"
+              privateBucket
+            />
+          )}
         </div>
 
         {/* Right Sidebar */}

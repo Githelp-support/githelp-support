@@ -20,7 +20,7 @@ import Link from "next/link"
 const baseUrl =
     (typeof window !== "undefined" && window.location?.origin) ||
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "https://support.githelp.app"
+    "https://app.githelp.app"
 
 export default function InviteContributorsPage() {
     const params = useParams()

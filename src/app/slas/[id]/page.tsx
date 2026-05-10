@@ -1,102 +1,231 @@
 "use client"
 
-import { useState, use } from "react"
+import { useState, use, useMemo } from "react"
 import Link from "next/link"
 import { ArrowLeft, Info, Copy, Edit, ExternalLink, Download } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { useSLA } from "@/hooks/useSLAs"
+import { supabase } from "@/lib/supabase/client"
 
-// Mock data for SLA details
-const slaDetails = {
-  "elastic-software": {
-    id: "elastic-software",
-    name: "Elastic Software",
-    avatar: "E",
-    avatarColor: "#cbbcf6",
-    spaceId: "287LCK684TWV10",
-    agreementDetails: {
-      ratesBeyond: {
-        ticketStartPrice: 10.0,
-        pricePerMinuteFirst60: 1.5,
-        pricePerMinuteAfter60: 1.0,
-      },
-      includedSupport: {
-        totalTimePerMonth: "5 hours",
-        rolloverTime: "Yes",
-        rolloverTimeFromLastMonth: "0 hours",
-      },
-      responseTimes: {
-        maximumResponseTime: "1.5 hour",
-        maximumDownTime: "6 hours",
-      },
-    },
-    stats: {
-      ticketsSolved: 4,
-      totalTimeSpent: "49min",
-      supportTimeRemaining: "4h 11min",
-      percentageSolved: 100,
-    },
-    helpers: [
-      { name: "Evan Sanders", avatar: "E", avatarColor: "#bcedf6", tickets: 3, totalTime: "40m" },
-      { name: "Arman Lato", avatar: "A", avatarColor: "#f6e6bc", tickets: 1, totalTime: "9m" },
-    ],
-    issueTypes: [
-      { name: "Dependency", tickets: 2, totalTime: "26m" },
-      { name: "Best practice", tickets: 2, totalTime: "23m" },
-    ],
-    tickets: [
-      {
-        id: "2734587",
-        date: "19/04/2025",
-        helper: "Arman L.",
-        helperAvatar: "A",
-        amount: "USD 0.00",
-        status: "Completed",
-      },
-      {
-        id: "2734352",
-        date: "16/04/2025",
-        helper: "Evan S.",
-        helperAvatar: "E",
-        amount: "USD 0.00",
-        status: "Completed",
-      },
-      {
-        id: "2733636",
-        date: "08/04/2025",
-        helper: "Evan S.",
-        helperAvatar: "E",
-        amount: "USD 0.00",
-        status: "Completed",
-      },
-      {
-        id: "2732897",
-        date: "09/04/2025",
-        helper: "Arman L.",
-        helperAvatar: "A",
-        amount: "USD 0.00",
-        status: "Completed",
-      },
-    ],
-  },
+// ---- Helpers ----------------------------------------------------------------
+
+function formatMinutes(minutes: number | null | undefined): string {
+  if (minutes == null) return "—"
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h > 0 && m > 0) return `${h}h ${m}min`
+  if (h > 0) return `${h}h`
+  return `${m}min`
 }
+
+function formatMs(ms: number): string {
+  const totalMinutes = Math.floor(ms / 60000)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  if (h > 0 && m > 0) return `${h}h ${m}min`
+  if (h > 0) return `${h}h`
+  return `${m}min`
+}
+
+function centsToDisplay(cents: number | null | undefined, currency = "USD"): string {
+  if (cents == null) return "—"
+  const amount = cents / 100
+  return `${currency} ${amount.toFixed(2)}`
+}
+
+function getInitial(name: string | null | undefined): string {
+  return name ? name.charAt(0).toUpperCase() : "?"
+}
+
+// Simple deterministic colour from a string (same palette as mock data)
+const AVATAR_COLORS = [
+  "#cbbcf6", "#bcedf6", "#f6e6bc", "#f6bcbc", "#bcf6d4", "#d4bcf6",
+]
+function avatarColor(str: string | null | undefined): string {
+  if (!str) return AVATAR_COLORS[0]
+  let hash = 0
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+// ---- Derived-data types -----------------------------------------------------
+
+interface TicketRow {
+  id: string
+  created_at: string
+  status: string
+  sla_id: string | null
+  tickets_time_entries: { time_milliseconds: number; helper_id: string }[]
+  tickets_participants: { participant_id: string; claimed: boolean }[]
+}
+
+interface HelperPublic {
+  helper_id: string
+  user: { name: string } | null
+}
+
+// ---- Page -------------------------------------------------------------------
 
 export default function SLADetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const [timePeriod, setTimePeriod] = useState("current-month")
   const [helpersView, setHelpersView] = useState("view-all")
   const { id } = use(params)
-  const sla = slaDetails[id as keyof typeof slaDetails]
 
-  if (!sla) {
-    return <div>SLA not found</div>
+  // SLA record
+  const { data: sla, isLoading: slaLoading, error: slaError } = useSLA(id)
+
+  // Tickets for this SLA (with time entries + participants)
+  const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
+    queryKey: ["sla-tickets", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("*, tickets_time_entries(*), tickets_participants(*)")
+        .eq("sla_id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+      if (error) throw error
+      return (data ?? []) as TicketRow[]
+    },
+    enabled: !!id,
+    staleTime: 1800000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+
+  // Helpers for this project (to resolve participant_id → name)
+  const { data: projectHelpers = [] } = useQuery<HelperPublic[]>({
+    queryKey: ["sla-helpers", sla?.project_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects_helpers")
+        .select("helper_id, user:users_public(name)")
+        .eq("project_id", sla!.project_id)
+      if (error) throw error
+      // Supabase returns user as array when using foreign tables
+      return ((data ?? []) as any[]).map((h) => ({
+        helper_id: h.helper_id,
+        user: Array.isArray(h.user) ? (h.user[0] ?? null) : (h.user ?? null),
+      })) as HelperPublic[]
+    },
+    enabled: !!sla?.project_id,
+    staleTime: 1800000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  })
+
+  // ---- Filter tickets by period -------------------------------------------
+  const filteredTickets = useMemo(() => {
+    if (!tickets.length) return tickets
+    if (timePeriod === "all-time") return tickets
+    const now = new Date()
+    if (timePeriod === "current-month") {
+      return tickets.filter((t) => {
+        const d = new Date(t.created_at)
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+      })
+    }
+    // month selector values like "april-2025"
+    const parts = timePeriod.split("-")
+    if (parts.length === 2) {
+      const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"]
+      const monthIdx = monthNames.indexOf(parts[0].toLowerCase())
+      const year = parseInt(parts[1], 10)
+      if (monthIdx >= 0 && !isNaN(year)) {
+        return tickets.filter((t) => {
+          const d = new Date(t.created_at)
+          return d.getFullYear() === year && d.getMonth() === monthIdx
+        })
+      }
+    }
+    return tickets
+  }, [tickets, timePeriod])
+
+  // ---- Build helper lookup map --------------------------------------------
+  const helperMap = useMemo(() => {
+    const map = new Map<string, string>()
+    projectHelpers.forEach((h) => {
+      if (h.user?.name) map.set(h.helper_id, h.user.name)
+    })
+    return map
+  }, [projectHelpers])
+
+  // ---- Compute stats ------------------------------------------------------
+  const stats = useMemo(() => {
+    const solved = filteredTickets.filter((t) => t.status === "completed" || t.status === "cancelled").length
+    const totalMs = filteredTickets.flatMap((t) => t.tickets_time_entries).reduce((sum, e) => sum + (e.time_milliseconds ?? 0), 0)
+    const includedMs = (sla?.minutes_included ?? 0) * 60 * 1000
+    const remainingMs = Math.max(0, includedMs - totalMs)
+    const pct = filteredTickets.length > 0 ? Math.round((solved / filteredTickets.length) * 100) : 0
+    return { solved, totalMs, remainingMs, pct }
+  }, [filteredTickets, sla?.minutes_included])
+
+  // ---- Build helpers summary table ----------------------------------------
+  const helpersSummary = useMemo(() => {
+    const map = new Map<string, { name: string; tickets: Set<string>; totalMs: number }>()
+    filteredTickets.forEach((ticket) => {
+      ticket.tickets_time_entries.forEach((entry) => {
+        const hid = entry.helper_id
+        if (!map.has(hid)) {
+          map.set(hid, { name: helperMap.get(hid) ?? hid, tickets: new Set(), totalMs: 0 })
+        }
+        const rec = map.get(hid)!
+        rec.tickets.add(ticket.id)
+        rec.totalMs += entry.time_milliseconds ?? 0
+      })
+    })
+    return Array.from(map.entries()).map(([hid, rec]) => ({
+      id: hid,
+      name: rec.name,
+      tickets: rec.tickets.size,
+      totalMs: rec.totalMs,
+    }))
+  }, [filteredTickets, helperMap])
+
+  // ---- Loading / error states ---------------------------------------------
+  if (slaLoading || ticketsLoading) {
+    return (
+      <div className="flex h-screen bg-muted">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header title="SLA Details" subtitle="View and manage SLA configuration" />
+          <main className="flex-1 flex items-center justify-center">
+            <span className="text-muted-foreground">Loading…</span>
+          </main>
+        </div>
+      </div>
+    )
   }
 
+  if (slaError || !sla) {
+    return (
+      <div className="flex h-screen bg-muted">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header title="SLA Details" subtitle="View and manage SLA configuration" />
+          <main className="flex-1 flex items-center justify-center">
+            <span className="text-muted-foreground">SLA not found.</span>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- Derived display values ---------------------------------------------
+  const slaName = sla.name ?? "Unnamed SLA"
+  const spaceId = sla.space_id ?? "—"
+  const currency = sla.currency ?? "USD"
+
   const copySpaceId = () => {
-    navigator.clipboard.writeText(sla.spaceId)
+    if (sla.space_id) navigator.clipboard.writeText(sla.space_id)
   }
 
   return (
@@ -122,15 +251,15 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
           <div className="flex items-center gap-4 mb-8">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold"
-              style={{ backgroundColor: sla.avatarColor }}
+              style={{ backgroundColor: avatarColor(slaName) }}
             >
-              {sla.avatar}
+              {getInitial(slaName)}
             </div>
             <div>
-              <h1 className="text-2xl font-semibold text-foreground mb-2">{sla.name}</h1>
+              <h1 className="text-2xl font-semibold text-foreground mb-2">{slaName}</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Space ID:</span>
-                <span className="font-mono">{sla.spaceId}</span>
+                <span className="font-mono">{spaceId}</span>
                 <Button variant="ghost" size="sm" onClick={copySpaceId} className="h-auto p-1 hover:bg-brand-primary/10">
                   <Copy className="w-3 h-3" />
                 </Button>
@@ -160,19 +289,19 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Ticket start price</span>
                       <span className="text-sm font-medium">
-                        ${sla.agreementDetails.ratesBeyond.ticketStartPrice.toFixed(2)}
+                        {centsToDisplay(sla.ticket_start_price, currency)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Price/minute - first 60 minutes</span>
                       <span className="text-sm font-medium">
-                        ${sla.agreementDetails.ratesBeyond.pricePerMinuteFirst60.toFixed(2)}
+                        {centsToDisplay(sla.ticket_price_minute_first_60, currency)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Price/minute - after 60 minutes</span>
                       <span className="text-sm font-medium">
-                        ${sla.agreementDetails.ratesBeyond.pricePerMinuteAfter60.toFixed(2)}
+                        {centsToDisplay(sla.ticket_price_minute_after_60, currency)}
                       </span>
                     </div>
                   </div>
@@ -187,18 +316,16 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Total time in SLA/month</span>
                       <span className="text-sm font-medium">
-                        {sla.agreementDetails.includedSupport.totalTimePerMonth}
+                        {formatMinutes(sla.minutes_included)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Rollover time</span>
-                      <span className="text-sm font-medium">{sla.agreementDetails.includedSupport.rolloverTime}</span>
+                      <span className="text-sm font-medium">{sla.minutes_rollover ? "Yes" : "No"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Rollover time from last month</span>
-                      <span className="text-sm font-medium">
-                        {sla.agreementDetails.includedSupport.rolloverTimeFromLastMonth}
-                      </span>
+                      <span className="text-sm font-medium">—</span>
                     </div>
                   </div>
                 </CardContent>
@@ -212,12 +339,12 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Maximum response time</span>
                       <span className="text-sm font-medium">
-                        {sla.agreementDetails.responseTimes.maximumResponseTime}
+                        {formatMinutes(sla.max_response_time_minutes)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Maximum down time</span>
-                      <span className="text-sm font-medium">{sla.agreementDetails.responseTimes.maximumDownTime}</span>
+                      <span className="text-sm font-medium">{formatMinutes(sla.max_downtime)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -274,7 +401,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <span className="text-sm text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{sla.stats.ticketsSolved}</div>
+                  <div className="text-2xl font-semibold text-foreground">{stats.solved}</div>
                 </CardContent>
               </Card>
               <Card className="border-border">
@@ -283,7 +410,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <span className="text-sm text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{sla.stats.totalTimeSpent}</div>
+                  <div className="text-2xl font-semibold text-foreground">{formatMs(stats.totalMs)}</div>
                 </CardContent>
               </Card>
               <Card className="border-border">
@@ -292,7 +419,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <span className="text-sm text-muted-foreground">Support time remaining</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{sla.stats.supportTimeRemaining}</div>
+                  <div className="text-2xl font-semibold text-foreground">{formatMs(stats.remainingMs)}</div>
                 </CardContent>
               </Card>
               <Card className="border-border">
@@ -301,7 +428,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <span className="text-sm text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{sla.stats.percentageSolved}%</div>
+                  <div className="text-2xl font-semibold text-foreground">{stats.pct}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -312,7 +439,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             {/* Helpers */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Helpers ({sla.helpers.length})</h2>
+                <h2 className="text-lg font-semibold text-foreground">Helpers ({helpersSummary.length})</h2>
               </div>
 
               {/* Helper filter tabs */}
@@ -365,28 +492,34 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                         </tr>
                       </thead>
                       <tbody>
-                        {sla.helpers.map((helper, index) => (
-                          <tr key={index} className="border-b border-border hover:bg-muted">
-                            <td className="p-4">
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                                  style={{ backgroundColor: helper.avatarColor }}
-                                >
-                                  {helper.avatar}
-                                </div>
-                                <span className="text-foreground font-medium">{helper.name}</span>
-                              </div>
-                            </td>
-                            <td className="p-4 text-muted-foreground">{helper.tickets}</td>
-                            <td className="p-4 text-muted-foreground">{helper.totalTime}</td>
-                            <td className="p-4">
-                              <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10">
-                                <ExternalLink className="w-4 h-4" />
-                              </Button>
-                            </td>
+                        {helpersSummary.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">No helpers yet</td>
                           </tr>
-                        ))}
+                        ) : (
+                          helpersSummary.map((helper) => (
+                            <tr key={helper.id} className="border-b border-border hover:bg-muted">
+                              <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                                    style={{ backgroundColor: avatarColor(helper.name) }}
+                                  >
+                                    {getInitial(helper.name)}
+                                  </div>
+                                  <span className="text-foreground font-medium">{helper.name}</span>
+                                </div>
+                              </td>
+                              <td className="p-4 text-muted-foreground">{helper.tickets}</td>
+                              <td className="p-4 text-muted-foreground">{formatMs(helper.totalMs)}</td>
+                              <td className="p-4">
+                                <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10">
+                                  <ExternalLink className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -394,9 +527,9 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               </Card>
             </div>
 
-            {/* Issue types */}
+            {/* Issue types — not yet available in DB schema; show placeholder */}
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4">Issue types ({sla.issueTypes.length})</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Issue types</h2>
               <Card className="border-border py-0">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
@@ -409,13 +542,9 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                         </tr>
                       </thead>
                       <tbody>
-                        {sla.issueTypes.map((issueType, index) => (
-                          <tr key={index} className="border-b border-border hover:bg-muted">
-                            <td className="p-4 text-foreground font-medium">{issueType.name}</td>
-                            <td className="p-4 text-muted-foreground">{issueType.tickets}</td>
-                            <td className="p-4 text-muted-foreground">{issueType.totalTime}</td>
-                          </tr>
-                        ))}
+                        <tr>
+                          <td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">No issue types recorded</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -426,7 +555,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
 
           {/* All tickets */}
           <div>
-            <h2 className="text-lg font-semibold text-foreground mb-4">All tickets ({sla.tickets.length})</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">All tickets ({filteredTickets.length})</h2>
             <Card className="border-border py-0">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -445,50 +574,82 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                       </tr>
                     </thead>
                     <tbody>
-                      {sla.tickets.map((ticket) => (
-                        <tr key={ticket.id} className="border-b border-border hover:bg-muted">
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <input type="checkbox" />
-                              <span className="text-foreground font-medium">{ticket.id}</span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-muted-foreground">{ticket.date}</td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-[#bcedf6] flex items-center justify-center text-xs font-semibold">
-                                {ticket.helperAvatar}
-                              </div>
-                              <span className="text-muted-foreground">{ticket.helper}</span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-muted-foreground">{ticket.amount}</td>
-                          <td className="p-4">
-                            <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
-                              ✓ {ticket.status}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                              >
-                                Open
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                              >
-                                <Download className="w-4 h-4 mr-1" />
-                                Download PDF
-                              </Button>
-                            </div>
-                          </td>
+                      {filteredTickets.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="p-4 text-center text-muted-foreground text-sm">No tickets yet</td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredTickets.map((ticket) => {
+                          // Primary helper = participant who claimed the ticket
+                          const claimedParticipant = ticket.tickets_participants.find((p) => p.claimed)
+                          const primaryHelperId = claimedParticipant?.participant_id
+                          const primaryHelperName = primaryHelperId ? (helperMap.get(primaryHelperId) ?? "Unknown") : "—"
+
+                          const ticketMs = ticket.tickets_time_entries.reduce(
+                            (sum, e) => sum + (e.time_milliseconds ?? 0), 0
+                          )
+                          const isCompleted = ticket.status === "completed"
+                          const isCancelled = ticket.status === "cancelled"
+
+                          return (
+                            <tr key={ticket.id} className="border-b border-border hover:bg-muted">
+                              <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <input type="checkbox" />
+                                  <span className="text-foreground font-medium">{ticket.id.slice(0, 8)}</span>
+                                </div>
+                              </td>
+                              <td className="p-4 text-muted-foreground">
+                                {new Date(ticket.created_at).toLocaleDateString("en-GB")}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
+                                    style={{ backgroundColor: avatarColor(primaryHelperName) }}
+                                  >
+                                    {getInitial(primaryHelperName)}
+                                  </div>
+                                  <span className="text-muted-foreground">{primaryHelperName}</span>
+                                </div>
+                              </td>
+                              <td className="p-4 text-muted-foreground">
+                                {ticketMs > 0 ? formatMs(ticketMs) : `${currency} 0.00`}
+                              </td>
+                              <td className="p-4">
+                                {(isCompleted || isCancelled) ? (
+                                  <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
+                                    ✓ {isCompleted ? "Completed" : "Cancelled"}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="border-0 capitalize">
+                                    {ticket.status}
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                                  >
+                                    Open
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                                  >
+                                    <Download className="w-4 h-4 mr-1" />
+                                    Download PDF
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
