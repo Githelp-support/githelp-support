@@ -28,6 +28,8 @@ export interface TicketChatInputProps {
   placeholder?: string
   /** Optional content to render at the end of the toolbar (e.g. "End session" button) */
   toolbarEndContent?: React.ReactNode
+  /** Called when the image/attachment button is clicked */
+  onImageClick?: () => void
 }
 
 export function TicketChatInput({
@@ -37,6 +39,7 @@ export function TicketChatInput({
   sendDisabled,
   placeholder = "Message #askanything",
   toolbarEndContent,
+  onImageClick,
 }: TicketChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null)
@@ -111,7 +114,15 @@ export function TicketChatInput({
         <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("`")} title="Code">
           <Code className="w-[18px] h-[18px]" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Image (placeholder)">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          title="Attach image"
+          onClick={onImageClick}
+          disabled={!onImageClick}
+        >
           <ImageIcon className="w-[18px] h-[18px]" />
         </Button>
         {toolbarEndContent != null && <div className="ml-auto">{toolbarEndContent}</div>}

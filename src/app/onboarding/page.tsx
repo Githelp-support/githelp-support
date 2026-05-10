@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCreateProject, useListUserGithubRepos, useCreateProjectFromGitHub } from "@/hooks/useProject"
-import { useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
+import { useCompleteOnboarding, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Loader2, Plus, Users, Github, ArrowLeft, Check, Search } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
@@ -31,6 +31,7 @@ export default function OnboardingPage() {
     const createFromGitHub = useCreateProjectFromGitHub()
     const completeOnboarding = useCompleteOnboarding()
     const { setSelectedProjectId } = useProjectSelection()
+    const { data: onboardingStatus, isLoading: onboardingStatusLoading } = useOnboardingStatus()
 
     const { data: githubRepos = [], isLoading: isLoadingRepos } = useListUserGithubRepos(githubToken)
 
@@ -58,6 +59,25 @@ export default function OnboardingPage() {
             setStep("create-github")
         }
     }, [searchParams])
+
+    // CRM / admin-seeded users already have a project; this route is public so
+    // AuthGuard does not redirect them away — send them to the app instead of
+    // showing "Create or join" again.
+    //
+    // Do not use `!needsOnboarding` alone: when logged out, useOnboardingStatus
+    // returns needsOnboarding: false (no user), which would wrongly redirect.
+    const hasFinishedOnboardingWizard =
+        onboardingStatus &&
+        (onboardingStatus.isMember || onboardingStatus.onboardingCompleted)
+
+    useEffect(() => {
+        if (onboardingStatusLoading || !onboardingStatus) return
+        const done =
+            onboardingStatus.isMember || onboardingStatus.onboardingCompleted
+        if (done) {
+            router.replace("/")
+        }
+    }, [onboardingStatus, onboardingStatusLoading, router])
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
@@ -137,6 +157,23 @@ export default function OnboardingPage() {
 
     const handleJoinProject = () => {
         router.push("/onboarding/join")
+    }
+
+    if (onboardingStatusLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+            </div>
+        )
+    }
+
+    if (hasFinishedOnboardingWizard) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-muted/50 p-4">
+                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+                <p className="text-sm text-muted-foreground">Taking you to your workspace…</p>
+            </div>
+        )
     }
 
     if (step === "choose") {

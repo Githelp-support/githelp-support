@@ -520,6 +520,10 @@ export default function UserSupportChatPage() {
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
         isEnded={false}
+        attachmentStoragePrefix={ticketId && effectiveProjectId ? `${effectiveProjectId}/${ticketId}` : undefined}
+        onImageUploaded={(url) => {
+          setMessage((prev) => prev + `\n![attachment](${url})\n`)
+        }}
         rightSidebarFooter={
           ticketId ? (
             <div>
