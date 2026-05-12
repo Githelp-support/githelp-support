@@ -11,6 +11,12 @@ import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import {
+    MONTHLY_PREVIEW_STATS,
+    PAYOUT_PREVIEW_ROWS,
+    REPORTS_MONTHLY_PREVIEW_DISCLAIMER,
+    REPORTS_PAYOUTS_PREVIEW_DISCLAIMER,
+} from "@/lib/helper-area-preview-copy"
 
 interface PayoutData {
   id: string
@@ -88,6 +94,12 @@ export default function HelperReportsPage() {
   const handleSelectAll = () => {
     setSelectedRows(selectedRows.length === payouts.length ? [] : payouts.map((payout) => payout.id))
   }
+
+  const showPayoutPreview =
+    !!projectId &&
+    !!helperId &&
+    !isLoading &&
+    payouts.length === 0
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -217,6 +229,54 @@ export default function HelperReportsPage() {
                       Loading payouts...
                     </td>
                   </tr>
+                ) : showPayoutPreview ? (
+                  <>
+                    <tr>
+                      <td colSpan={7} className="px-6 py-3 text-sm text-gray-600 border-b border-dashed border-gray-300 bg-muted/40">
+                        {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
+                      </td>
+                    </tr>
+                    {PAYOUT_PREVIEW_ROWS.map((payout) => (
+                      <tr key={payout.id} role="presentation" className="bg-gray-50/50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Checkbox disabled checked={false} />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>{payout.ticketId}</span>
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                              Preview
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.ticketType}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.amount}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            variant={payout.status === "completed" ? "default" : "secondary"}
+                            className={
+                              payout.status === "completed"
+                                ? "bg-green-100 text-green-800 hover:bg-green-100"
+                                : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+                            }
+                          >
+                            {payout.status === "completed" ? "Completed" : "Pending"}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" type="button" disabled>
+                              Open
+                            </Button>
+                            <Button variant="outline" size="sm" type="button" disabled>
+                              Download PDF
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 ) : payouts.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
@@ -296,8 +356,17 @@ export default function HelperReportsPage() {
 
       {/* Monthly Reports Tab Content */}
       {activeTab === "monthly" && (
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          <p className="text-gray-500">Monthly reports content would go here</p>
+        <div className="bg-white rounded-lg border border-dashed border-gray-300 p-8">
+          <p className="text-sm text-gray-600 mb-6 max-w-2xl">{REPORTS_MONTHLY_PREVIEW_DISCLAIMER}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {MONTHLY_PREVIEW_STATS.map((row) => (
+              <div key={row.label} className="rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Preview</p>
+                <p className="text-sm text-gray-700 mb-2">{row.label}</p>
+                <p className="text-2xl font-semibold text-gray-900">{row.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
         </main>

@@ -19,6 +19,10 @@ import { useCreateProjectInvite, useListProjectInvites, useRevokeProjectInvite }
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import Link from "next/link"
+import {
+    HELPER_LIST_PREVIEW_DISCLAIMER,
+    HELPER_PREVIEW_PLACEHOLDERS,
+} from "@/lib/helper-preview-placeholders"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -610,8 +614,8 @@ export default function HelpersPage() {
                 )
                 }
                 if (currentView === "added") {
-                  return filteredHelpers.length > 0 ? (
-                    filteredHelpers.map((helper, index) => (
+                  if (filteredHelpers.length > 0) {
+                    return filteredHelpers.map((helper, index) => (
                     <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
@@ -658,16 +662,75 @@ export default function HelpersPage() {
                       </div>
                     </div>
                   ))
-                ) : (
-                  <div className="px-6 py-12 text-center">
-                    <p className="text-muted-foreground mb-2">No helpers yet.</p>
-                    <p className="text-sm text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                    <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add new helper
-                    </Button>
-                  </div>
-                )
+                  }
+                  const noRealHelpers = (helpersData?.length ?? 0) === 0
+                  if (noRealHelpers && projectId) {
+                    return (
+                      <>
+                        <div className="px-6 py-5 border-b border-dashed border-border bg-muted/15">
+                          <p className="text-sm text-muted-foreground mb-4 max-w-3xl">
+                            {HELPER_LIST_PREVIEW_DISCLAIMER}
+                          </p>
+                          <div
+                            role="presentation"
+                            aria-hidden
+                            className="rounded-lg border border-dashed border-border divide-y divide-border overflow-hidden bg-background/90 opacity-90"
+                          >
+                            {HELPER_PREVIEW_PLACEHOLDERS.map((h) => (
+                              <div key={h.id} className="px-6 py-4">
+                                <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                                  <div>
+                                    <input type="checkbox" disabled className="rounded border-border opacity-50" />
+                                  </div>
+                                  <div className="col-span-3 flex items-center gap-[18px] min-w-0">
+                                    <div
+                                      className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                      style={{ backgroundColor: h.color }}
+                                    >
+                                      {h.initials}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <span className="text-sm font-medium text-foreground block truncate">{h.name}</span>
+                                      <span className="text-xs text-muted-foreground truncate block">{h.involvement}</span>
+                                    </div>
+                                  </div>
+                                  <div className="col-span-3 flex items-center space-x-2 min-w-0">
+                                    <GithubIcon className="w-4 h-4 text-foreground shrink-0" />
+                                    <span className="text-sm text-[#0F0F11] truncate">{h.githubHandle}</span>
+                                  </div>
+                                  <div className="col-span-2">
+                                    <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-[13px] px-3 py-1">
+                                      {mapCategoryToLabel[h.category]}
+                                    </Badge>
+                                  </div>
+                                  <div className="col-span-3 flex items-center justify-end gap-2">
+                                    <Badge variant="outline" className="text-[11px] font-medium uppercase tracking-wide shrink-0">
+                                      Preview
+                                    </Badge>
+                                    <span className="text-sm text-muted-foreground px-2">—</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="px-6 py-12 text-center">
+                          <p className="text-muted-foreground mb-2">No helpers yet.</p>
+                          <p className="text-sm text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
+                          <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add new helper
+                          </Button>
+                        </div>
+                      </>
+                    )
+                  }
+                  return (
+                    <div className="px-6 py-12 text-center text-muted-foreground">
+                      <p className="mb-2">No helpers match your filters.</p>
+                      <p className="text-sm">Try clearing search or switching category to see your team.</p>
+                    </div>
+                  )
                 }
                 return filteredRequests.length > 0 ? (
                   filteredRequests.map((request, index) => (
