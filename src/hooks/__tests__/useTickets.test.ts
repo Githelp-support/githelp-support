@@ -44,7 +44,7 @@ describe("useTickets", () => {
 
     it("is disabled and returns no data when projectId is not provided", () => {
         vi.mocked(supabase.from).mockReturnValue(
-            mockChain({ data: [], error: null }) as ReturnType<
+            mockChain({ data: [], error: null }) as unknown as ReturnType<
                 typeof supabase.from
             >,
         );
@@ -60,7 +60,7 @@ describe("useTickets", () => {
     it("uses a query key that includes the project ID", async () => {
         const tickets = [{ id: "t1", project_id: "proj-1" }];
         vi.mocked(supabase.from).mockReturnValue(
-            mockChain({ data: tickets, error: null }) as ReturnType<
+            mockChain({ data: tickets, error: null }) as unknown as ReturnType<
                 typeof supabase.from
             >,
         );
@@ -80,7 +80,7 @@ describe("useTickets", () => {
     it("exposes an error when the query fails", async () => {
         const dbError = new Error("DB connection failed");
         vi.mocked(supabase.from).mockReturnValue(
-            mockChain({ data: null, error: dbError }) as ReturnType<
+            mockChain({ data: null, error: dbError }) as unknown as ReturnType<
                 typeof supabase.from
             >,
         );
@@ -100,7 +100,7 @@ describe("useTickets", () => {
             { id: "t2", project_id: "proj-2", title: "Second" },
         ];
         vi.mocked(supabase.from).mockReturnValue(
-            mockChain({ data: tickets, error: null }) as ReturnType<
+            mockChain({ data: tickets, error: null }) as unknown as ReturnType<
                 typeof supabase.from
             >,
         );
