@@ -644,9 +644,9 @@ export default function PaymentSettingsPage() {
                   </div>
 
                   <div className="space-y-6">
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">Start price</span>
+                        <span className="text-sm font-semibold text-foreground">Start price</span>
                         <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <div className="flex items-center gap-2">
@@ -655,7 +655,7 @@ export default function PaymentSettingsPage() {
                           value={startPrice}
                           onChange={(e) => setStartPrice(e.target.value)}
                           className={cn(
-                            "w-[200px] text-right border-border focus-visible:border-ring focus-visible:ring-ring"
+                            "w-[230px] text-right pr-1 border-border focus-visible:border-ring focus-visible:ring-ring"
                           )}
                           placeholder="10.00"
                         />
@@ -663,10 +663,10 @@ export default function PaymentSettingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-6">
-                      <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-wrap gap-10">
+                      <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">Cost/minute - first 60 minutes</span>
+                          <span className="text-sm font-semibold text-foreground">Cost/minute - first 60 minutes</span>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div className="flex items-center gap-2">
@@ -675,7 +675,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteFirst60}
                             onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
                             className={cn(
-                              "w-[200px] text-right border-border focus-visible:border-ring focus-visible:ring-ring"
+                              "w-[230px] text-right pr-1 border-border focus-visible:border-ring focus-visible:ring-ring"
                             )}
                             placeholder="1.50"
                           />
@@ -683,9 +683,9 @@ export default function PaymentSettingsPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">Cost/minute - after 60 minutes</span>
+                          <span className="text-sm font-semibold text-foreground">Cost/minute - after 60 minutes</span>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div className="flex items-center gap-2">
@@ -694,7 +694,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteAfter60}
                             onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
                             className={cn(
-                              "w-[200px] text-right border-border focus-visible:border-ring focus-visible:ring-ring"
+                              "w-[230px] text-right pr-1 border-border focus-visible:border-ring focus-visible:ring-ring"
                             )}
                             placeholder="1.00"
                           />
