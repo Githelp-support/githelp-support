@@ -55,13 +55,16 @@ export default function HelperReportsPage() {
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
-  const { data: helperId } = useCurrentHelper(projectId)
+  const { data: helperId, isFetched: helperFetched } = useCurrentHelper(projectId)
 
-  // Fetch payment transfers for current helper
-  const { data: transfersData, isLoading } = usePaymentTransfers({
-    helperId: helperId || undefined,
+  const transfersQueryEnabled = !!projectId && helperFetched && !!helperId
+
+  // Fetch payment transfers only once we know the current user's helper row (avoids unscoped queries).
+  const { data: transfersData, isLoading: transfersLoading, isFetched: transfersFetched } = usePaymentTransfers({
+    helperId: helperId ?? undefined,
     projectId,
     status: selectedFilter !== "all" ? selectedFilter : undefined,
+    enabled: transfersQueryEnabled,
   })
 
   // Transform transfers to UI format
@@ -95,11 +98,15 @@ export default function HelperReportsPage() {
     setSelectedRows(selectedRows.length === payouts.length ? [] : payouts.map((payout) => payout.id))
   }
 
+  const payoutsListReady =
+    !transfersQueryEnabled || (transfersFetched && !transfersLoading)
+
+  /** Empty payouts after helper resolution; preview also when user has no helper row yet (same empty UI). */
   const showPayoutPreview =
-    !!projectId &&
-    !!helperId &&
-    !isLoading &&
-    payouts.length === 0
+    !!projectId && helperFetched && payoutsListReady && payouts.length === 0
+
+  const showPayoutsBusy =
+    !!projectId && (!helperFetched || (transfersQueryEnabled && transfersLoading))
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -223,7 +230,7 @@ export default function HelperReportsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {isLoading ? (
+                {showPayoutsBusy ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       Loading payouts...
