@@ -209,7 +209,7 @@ export function Sidebar({ className }: SidebarProps) {
     <div
       className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
     >
-      <div className="px-4 pt-5 pb-3 flex items-center justify-between min-h-[40px]">
+      <div className="px-4 pt-3 pb-6 flex items-center justify-between min-h-[40px]">
         {isCollapsed ? (
           selectedProject ? (
             <ProjectLogo
