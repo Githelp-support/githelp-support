@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import {
   useProjectKeywords,
@@ -217,7 +218,6 @@ export default function HelperProfilePage() {
     })
   }
 
-  const helperColors = ["#f4bccc", "#d1f7ea", "#bcedf6", "#f6e6bc", "#cbbcf6"]
   const isLoading = currentHelperLoading || (!!projectId && !!helperId && helperLoading)
 
   if (!projectId) {
@@ -277,7 +277,7 @@ export default function HelperProfilePage() {
           <div className="flex items-center gap-4 mb-8">
             <div
               className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-foreground text-[21px] font-[family-name:var(--font-outfit)] font-normal"
-              style={{ backgroundColor: helperColors[0] }}
+              style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
             >
               {displayAvatar}
             </div>

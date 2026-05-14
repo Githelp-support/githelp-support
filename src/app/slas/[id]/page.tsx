@@ -12,6 +12,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
+import { getAvatarColorHexForId } from "@/lib/constants"
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -43,16 +44,9 @@ function getInitial(name: string | null | undefined): string {
   return name ? name.charAt(0).toUpperCase() : "?"
 }
 
-// Simple deterministic colour from a string (same palette as mock data)
-const AVATAR_COLORS = [
-  "#cbbcf6", "#bcedf6", "#f6e6bc", "#f6bcbc", "#bcf6d4", "#d4bcf6",
-]
-function avatarColor(str: string | null | undefined): string {
-  if (!str) return AVATAR_COLORS[0]
-  let hash = 0
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
+// Shared avatar palette hashed by stable identity, so a helper has the
+// same color on this page as on /helpers, /tickets, /reports etc.
+const avatarColor = (str: string | null | undefined): string => getAvatarColorHexForId(str)
 
 // ---- Derived-data types -----------------------------------------------------
 

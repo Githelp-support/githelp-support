@@ -20,6 +20,7 @@ import {
 import { useHelpers } from "@/hooks/useHelpers"
 import { useCreateProjectInvite } from "@/hooks/useProject"
 import { useProjectAdmins, usePromoteToAdmin } from "@/hooks/useProjectAdmins"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import { toast } from "sonner"
 
 export default function ProjectSettingsPage() {
@@ -199,7 +200,10 @@ export default function ProjectSettingsPage() {
                   <div className="divide-y divide-border rounded-md border border-border overflow-hidden mb-6">
                     {admins.map((admin) => (
                       <div key={admin.user_id} className="flex items-center gap-3 px-4 py-3 bg-card">
-                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground">
+                        <div
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-foreground"
+                          style={{ backgroundColor: getAvatarColorHexForId(admin.user_id) }}
+                        >
                           {getInitials(admin.name, admin.email)}
                         </div>
                         <div className="min-w-0 flex-1">

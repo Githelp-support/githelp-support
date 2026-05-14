@@ -15,6 +15,7 @@ import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeE
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
 const GithubIcon = ({ className }: { className?: string }) => (
@@ -135,8 +136,6 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     })
   }, [helperTicketsData, transfersData])
 
-  const helperColors = ["#f4bccc", "#d1f7ea", "#bcedf6", "#f6e6bc", "#cbbcf6"]
-
   if (helperLoading) {
     return <div>Loading helper...</div>
   }
@@ -149,7 +148,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     id: helperData.helper_id,
     name: helperData.user?.name || "Unknown",
     avatar: (helperData.user?.name || "U")[0].toUpperCase(),
-    avatarColor: helperColors[0],
+    avatarColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id),
     category: helperData.category || "Community",
     discord: helperData.user?.username || "-",
     email: helperData.user?.email || "-",
