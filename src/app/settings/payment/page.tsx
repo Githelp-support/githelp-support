@@ -11,6 +11,7 @@ import { Info, CreditCard } from "lucide-react"
 import { useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
+import { cn } from "@/lib/utils"
 
 export default function PaymentSettingsPage() {
   const [activeTab, setActiveTab] = useState<"helper" | "user">("user")
@@ -74,7 +75,7 @@ export default function PaymentSettingsPage() {
       const contractTypeValue = paymentSettings.extended_contract_type || "ticket"
       const ticketsEnabled = paymentSettings.tickets_enabled ?? false
       const slaEnabled = paymentSettings.sla_enabled ?? false
-      
+
       // Convert cents to dollars for display (database stores in cents)
       const startPriceCents = paymentSettings.ticket_start_price ?? 1000
       const first60Cents = paymentSettings.ticket_price_minute_first_60 ?? 150
@@ -91,7 +92,7 @@ export default function PaymentSettingsPage() {
       // User payment options
       setPaymentByTicket(ticketsEnabled)
       setPaymentBySLA(slaEnabled)
-      
+
       // Set ticket pricing (convert cents to dollars)
       setStartPrice((startPriceCents / 100).toFixed(2))
       setCostPerMinuteFirst60((first60Cents / 100).toFixed(2))
@@ -114,13 +115,13 @@ export default function PaymentSettingsPage() {
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Check if each section has changes
-  const hasTeamChanges = originalValues.core_helper_percentage !== null && 
+  const hasTeamChanges = originalValues.core_helper_percentage !== null &&
     teamMemberRatio[0] !== originalValues.core_helper_percentage
 
-  const hasCommunityChanges = originalValues.community_helper_percentage !== null && 
+  const hasCommunityChanges = originalValues.community_helper_percentage !== null &&
     communityHelperRatio[0] !== originalValues.community_helper_percentage
 
-  const hasConsultantChanges = originalValues.consultant_helper_percentage !== null && 
+  const hasConsultantChanges = originalValues.consultant_helper_percentage !== null &&
     (consultantRatio[0] !== originalValues.consultant_helper_percentage ||
      contractType !== originalValues.extended_contract_type)
 
@@ -331,9 +332,9 @@ export default function PaymentSettingsPage() {
                           <h2 className="text-lg font-semibold text-foreground">Team</h2>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="text-muted-foreground border-border bg-transparent"
                           onClick={handleSaveTeamSettings}
                           disabled={!hasTeamChanges || updatePaymentSettings.isPending || settingsLoading}
@@ -396,9 +397,9 @@ export default function PaymentSettingsPage() {
                           <h2 className="text-lg font-semibold text-foreground">Community</h2>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="text-muted-foreground border-border bg-transparent"
                           onClick={handleSaveCommunitySettings}
                           disabled={!hasCommunityChanges || updatePaymentSettings.isPending || settingsLoading}
@@ -467,9 +468,9 @@ export default function PaymentSettingsPage() {
                           <h2 className="text-lg font-semibold text-foreground">External Consultants and Companies</h2>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="text-muted-foreground border-border bg-transparent"
                           onClick={handleSaveConsultantSettings}
                           disabled={!hasConsultantChanges || updatePaymentSettings.isPending || settingsLoading}
@@ -560,7 +561,7 @@ export default function PaymentSettingsPage() {
                 <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold text-foreground">Users of support</h2>
+                      <h2 className="text-lg font-semibold text-foreground">Payment options</h2>
                       <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <Button
@@ -575,37 +576,54 @@ export default function PaymentSettingsPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-foreground">Payment options</h3>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
+                    <div className="space-y-3">
+                      <label
+                        htmlFor="by-ticket"
+                        className={cn(
+                          "flex items-start gap-3 rounded-md border border-border p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                          paymentByTicket && "border-brand-primary bg-brand-primary/5"
+                        )}
+                      >
                         <Checkbox
                           id="by-ticket"
                           checked={paymentByTicket}
                           onCheckedChange={(checked) => setPaymentByTicket(checked === true)}
-                          className="data-[state=checked]:bg-[#554abf] data-[state=checked]:border-[#554abf]"
+                          className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
                         />
-                        <label
-                          htmlFor="by-ticket"
-                          className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer"
-                        >
-                          By the ticket
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </label>
-                      </div>
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">By the ticket</span>
+                            <Info className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Users pay per support ticket based on the configured ticket cost below.
+                          </p>
+                        </div>
+                      </label>
 
-                      <div className="flex items-center gap-3">
+                      <label
+                        htmlFor="sla"
+                        className={cn(
+                          "flex items-start gap-3 rounded-md border border-border p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                          paymentBySLA && "border-brand-primary bg-brand-primary/5"
+                        )}
+                      >
                         <Checkbox
                           id="sla"
                           checked={paymentBySLA}
                           onCheckedChange={(checked) => setPaymentBySLA(checked === true)}
-                          className="data-[state=checked]:bg-[#554abf] data-[state=checked]:border-[#554abf]"
+                          className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
                         />
-                        <label htmlFor="sla" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                          SLA
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </label>
-                      </div>
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">SLA</span>
+                            <Info className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Users subscribe to a service-level agreement with guaranteed response times.
+                          </p>
+                        </div>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -614,9 +632,9 @@ export default function PaymentSettingsPage() {
                 <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-semibold text-foreground">Ticket cost</h2>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="text-muted-foreground border-border bg-transparent"
                       onClick={handleSaveUserSettings}
                       disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
