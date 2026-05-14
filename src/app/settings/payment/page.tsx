@@ -11,6 +11,7 @@ import { Info, CreditCard } from "lucide-react"
 import { useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
+import { cn } from "@/lib/utils"
 
 export default function PaymentSettingsPage() {
   const [activeTab, setActiveTab] = useState<"helper" | "user">("user")
@@ -557,7 +558,7 @@ export default function PaymentSettingsPage() {
             {activeTab === "user" && (
               <div className="space-y-6">
                 {/* Users of support Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-xl border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
                       <h2 className="text-lg font-semibold text-foreground">Users of support</h2>
@@ -577,17 +578,20 @@ export default function PaymentSettingsPage() {
                   <div className="space-y-4">
                     <h3 className="text-sm font-medium text-foreground">Payment options</h3>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           id="by-ticket"
                           checked={paymentByTicket}
                           onCheckedChange={(checked) => setPaymentByTicket(checked === true)}
-                          className="data-[state=checked]:bg-[#554abf] data-[state=checked]:border-[#554abf]"
+                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
                         />
                         <label
                           htmlFor="by-ticket"
-                          className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer"
+                          className={cn(
+                            "flex items-center gap-2 text-sm cursor-pointer transition-colors",
+                            paymentByTicket ? "text-foreground" : "text-muted-foreground"
+                          )}
                         >
                           By the ticket
                           <Info className="w-4 h-4 text-muted-foreground" />
@@ -599,9 +603,15 @@ export default function PaymentSettingsPage() {
                           id="sla"
                           checked={paymentBySLA}
                           onCheckedChange={(checked) => setPaymentBySLA(checked === true)}
-                          className="data-[state=checked]:bg-[#554abf] data-[state=checked]:border-[#554abf]"
+                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
                         />
-                        <label htmlFor="sla" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                        <label
+                          htmlFor="sla"
+                          className={cn(
+                            "flex items-center gap-2 text-sm cursor-pointer transition-colors",
+                            paymentBySLA ? "text-foreground" : "text-muted-foreground"
+                          )}
+                        >
                           SLA
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </label>
@@ -611,12 +621,15 @@ export default function PaymentSettingsPage() {
                 </div>
 
                 {/* Ticket cost Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-xl border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-foreground">Ticket cost</h2>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold text-foreground">Ticket cost</h2>
+                      <Info className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="text-muted-foreground border-border bg-transparent"
                       onClick={handleSaveUserSettings}
                       disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
@@ -625,93 +638,93 @@ export default function PaymentSettingsPage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4 items-center">
+                  <div className="divide-y divide-border">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center py-4 first:pt-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Start price</span>
+                        <span className="text-sm text-foreground">Start price</span>
                         <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Input
                           type="number"
                           value={startPrice}
                           onChange={(e) => setStartPrice(e.target.value)}
-                          className="flex-1 text-right border-border focus-visible:border-ring focus-visible:ring-ring"
+                          className="flex-1 text-right"
                           placeholder="10.00"
                         />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/ticket</span>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap min-w-[80px]">USD/ticket</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center py-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Cost/minute - first 60 minutes</span>
+                        <span className="text-sm text-foreground">Cost/minute - first 60 minutes</span>
                         <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Input
                           type="number"
                           value={costPerMinuteFirst60}
                           onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
-                          className="flex-1 text-right border-border focus-visible:border-ring focus-visible:ring-ring"
+                          className="flex-1 text-right"
                           placeholder="1.50"
                         />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap min-w-[80px]">USD/minute</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center py-4 last:pb-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Cost/minute - after 60 minutes</span>
+                        <span className="text-sm text-foreground">Cost/minute - after 60 minutes</span>
                         <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Input
                           type="number"
                           value={costPerMinuteAfter60}
                           onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
-                          className="flex-1 text-right border-border focus-visible:border-ring focus-visible:ring-ring"
+                          className="flex-1 text-right"
                           placeholder="1.00"
                         />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap min-w-[80px]">USD/minute</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Set up payouts Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-xl border border-border p-6">
                   <div className="flex items-center gap-2 mb-6">
                     <h2 className="text-lg font-semibold text-foreground">Set up payouts</h2>
                     <Info className="w-4 h-4 text-muted-foreground" />
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="flex flex-col items-center text-center py-4">
                     {/* GitHub to Stripe flow */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-foreground rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-14 h-14 bg-foreground rounded-full flex items-center justify-center shadow-sm">
+                        <svg className="w-7 h-7 text-background" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                         </svg>
                       </div>
-                      <div className="flex-1 h-px bg-border relative">
-                        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-2">
-                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="block w-2 h-2 rounded-full bg-border" />
+                        <span className="block w-2 h-2 rounded-full bg-border" />
+                        <span className="block w-2 h-2 rounded-full bg-border" />
                       </div>
-                      <div className="w-12 h-12 bg-[#554abf] rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">S</span>
+                      <div className="w-14 h-14 bg-[#635BFF] rounded-full flex items-center justify-center shadow-sm">
+                        <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M13.479 9.883c-1.626-.604-2.512-1.067-2.512-1.803 0-.622.511-.977 1.423-.977 1.667 0 3.379.642 4.558 1.22l.666-4.111c-.935-.446-2.847-1.177-5.49-1.177-1.87 0-3.425.488-4.536 1.4-1.155.954-1.756 2.334-1.756 4.003 0 3.023 1.847 4.312 4.847 5.403 1.936.688 2.579 1.18 2.579 1.926 0 .722-.62 1.135-1.756 1.135-1.357 0-3.582-.665-5.041-1.524l-.665 4.156c1.245.711 3.55 1.426 5.952 1.426 1.978 0 3.624-.467 4.736-1.357 1.245-.99 1.89-2.444 1.89-4.27 0-3.091-1.889-4.378-4.895-5.45z" />
+                        </svg>
                       </div>
                     </div>
 
-                    <p className="text-sm text-muted-foreground mb-6">
+                    <p className="text-sm text-muted-foreground mb-6 max-w-md">
                       All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
                       payouts from support.
                     </p>
 
-                    <Button className="bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                    <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white">
                       <CreditCard className="w-4 h-4 mr-2" />
                       Set up payouts
                     </Button>
