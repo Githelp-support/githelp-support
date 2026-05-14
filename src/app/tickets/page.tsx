@@ -13,15 +13,14 @@ import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
-
-// Ticket avatar colors (matches Helpers page rotation)
-const ticketColors = ["#f4bccc", "#d0f6bc", "#bcedf6", "#f6e6bc", "#cbbcf6"]
+import { getAvatarColorHexForId } from "@/lib/constants"
 
 interface Ticket {
   id: string
   title: string
   description: string
   user: {
+    id: string | null
     name: string
     avatar: string
   }
@@ -96,6 +95,7 @@ export default function TicketsPage() {
       title: ticket.title,
       description: ticket.description,
       user: {
+        id: ticket.created_by ?? null,
         name: ticket.user?.name || "Unknown",
         avatar: (ticket.user?.name || "U")[0].toUpperCase(),
       },
@@ -387,14 +387,14 @@ export default function TicketsPage() {
             {isLoading ? (
               <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
             ) : filteredTickets.length > 0 ? (
-              filteredTickets.map((ticket, index) => (
+              filteredTickets.map((ticket) => (
               <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
                 <div className="grid grid-cols-12 gap-4 items-center">
                   <div className="col-span-4">
                     <div className="flex items-start gap-[18px]">
                       <div
                         className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                        style={{ backgroundColor: ticketColors[index % ticketColors.length] }}
+                        style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
                       >
                         {ticket.user.avatar}
                       </div>

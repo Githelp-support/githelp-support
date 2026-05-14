@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { getAvatarColorHexForId } from "@/lib/constants";
 import { useHelpers } from "./useHelpers";
 import { useTimeEntries } from "./useTimeEntries";
 import { formatTime, calculateTotalTime } from "./useTimeEntries";
@@ -84,7 +85,7 @@ export function useDashboardStats(projectId?: string) {
                 .eq("project_id", projectId);
 
             // Calculate helper stats
-            const helperStats: HelperStats[] = helpers.map((helper, index) => {
+            const helperStats: HelperStats[] = helpers.map((helper) => {
                 const helperTimeEntries = timeEntries.filter(
                     (entry) => entry.helper_id === helper.helper_id
                 );
@@ -97,13 +98,6 @@ export function useDashboardStats(projectId?: string) {
                         )
                     ).length || 0;
 
-                const helperColors = [
-                    "#f4bccc",
-                    "#d0f6bc",
-                    "#bcedf6",
-                    "#f6e6bc",
-                    "#cbbcf6",
-                ];
                 // DB stores "core" | "extended" | "community"; map display labels for legacy/UI values
                 const categoryMap: Record<string, string> = {
                     "Core team": "core",
@@ -124,7 +118,7 @@ export function useDashboardStats(projectId?: string) {
                     initial: (helper.user?.name || "U")[0].toUpperCase(),
                     tickets: ticketsWorkedOn > 0 ? ticketsWorkedOn : "-",
                     time: totalTime > 0 ? formatTime(totalTime) : "-",
-                    color: helperColors[index % helperColors.length],
+                    color: getAvatarColorHexForId(helper.user_id ?? helper.helper_id),
                     category,
                 };
             });

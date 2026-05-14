@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
 
@@ -36,8 +37,6 @@ function ReportsSortIcon<T extends string>({
   )
 }
 
-const HELPER_COLORS = ["#f4bccc", "#d0f6bc", "#f6e6bc", "#bcedf6", "#cbbcf6", "#82c95f"]
-
 function formatDate(dateString: string) {
   const date = new Date(dateString)
   const day = String(date.getDate()).padStart(2, "0")
@@ -60,7 +59,7 @@ function getShortTicketId(ticketId: string | null): string {
   return first.replace(/^0+/, "") || first.slice(0, 8)
 }
 
-function getHelperInitialAndColor(helperName: string | undefined, index: number) {
+function getHelperInitialAndColor(helperName: string | undefined, helperId: string | null | undefined) {
   const name = helperName || "?"
   const initial = name
     .split(/[\s.]/)
@@ -69,7 +68,7 @@ function getHelperInitialAndColor(helperName: string | undefined, index: number)
     .join("")
     .toUpperCase()
     .slice(0, 2) || "?"
-  const color = HELPER_COLORS[index % HELPER_COLORS.length]
+  const color = getAvatarColorHexForId(helperId ?? name)
   return { initial, color }
 }
 
@@ -137,9 +136,9 @@ export default function ReportsSupportPage() {
   const ticketsData = useMemo(() => {
     if (!transfersData) return []
 
-    let list = transfersData.map((transfer, index) => {
+    let list = transfersData.map((transfer) => {
       const helperName = (transfer.helper as { user?: { name?: string } } | null)?.user?.name ?? "Unknown"
-      const { initial, color } = getHelperInitialAndColor(helperName, index)
+      const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper_id)
       const dateStr = transfer.completed_at || transfer.created_at
       return {
         id: transfer.id,

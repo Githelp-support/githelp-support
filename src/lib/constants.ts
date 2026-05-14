@@ -36,3 +36,26 @@ export function getAvatarColorClass(index: number): string {
 export function getAvatarColorHex(index: number): string {
   return avatarColorsHex[index % avatarColorsHex.length]
 }
+
+/**
+ * Deterministic per-identity color lookup. Same id → same color across every
+ * page, no matter what order rows arrived in. Prefer passing a stable id
+ * (user_id, helper_id, ticket_id); fall back to email or name only if no id
+ * is available.
+ */
+function hashStringToIndex(input: string | null | undefined, modulo: number): number {
+  const s = (input ?? "").trim() || "?"
+  let hash = 0
+  for (let i = 0; i < s.length; i++) {
+    hash = (Math.imul(hash, 31) + s.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash) % modulo
+}
+
+export function getAvatarColorClassForId(id: string | null | undefined): string {
+  return avatarColorClasses[hashStringToIndex(id, avatarColorClasses.length)]
+}
+
+export function getAvatarColorHexForId(id: string | null | undefined): string {
+  return avatarColorsHex[hashStringToIndex(id, avatarColorsHex.length)]
+}
