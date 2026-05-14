@@ -122,9 +122,9 @@ export default function Dashboard() {
 
   const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
     if (currentSort?.column !== column) {
-      return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+      return <ChevronsUpDown className="w-4 h-4 text-[#55555D]" />
     }
-    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-[#55555D]" /> : <ChevronDown className="w-4 h-4 text-[#55555D]" />
   }
 
   const sortedHelpers = sortHelpers(filteredHelpers)
@@ -137,7 +137,7 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Overview" subtitle="Stats and insight" />
 
-        <main className="flex-1 px-8 py-6 space-y-8 overflow-y-auto">
+        <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
           {/* Time Filters */}
           <div className="flex gap-2">
             <Button
@@ -205,28 +205,28 @@ export default function Dashboard() {
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-border h-28 py-0 justify-center">
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
                 <CardContent className="px-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border h-28 py-0 justify-center">
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
                 <CardContent className="px-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Total time spent</span>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border h-28 py-0 justify-center">
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
                 <CardContent className="px-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Percentage solved</span>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <div className="text-2xl font-semibold text-foreground">{keyStats.percentageSolved}%</div>
@@ -252,10 +252,10 @@ export default function Dashboard() {
                   onChange={(value) => setHelperFilter(value as typeof helperFilter)}
                 />
               </div>
-              <Card className="border-border/60 rounded-lg py-0 shadow-none">
+              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-[#55555D]">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleHelperSort("name")}
@@ -280,7 +280,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {sortedHelpers.map((helper, index) => (
-                    <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
+                    <div key={index} className="px-4 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 flex items-center gap-3">
                           <div
@@ -318,10 +318,10 @@ export default function Dashboard() {
                   onChange={(value) => setIssueFilter(value as typeof issueFilter)}
                 />
               </div>
-              <Card className="border-border/60 rounded-lg py-0 shadow-none">
+              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-[#55555D]">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleIssueSort("name")}
@@ -346,7 +346,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {sortedIssueTypes.map((issue, index) => (
-                    <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
+                    <div key={index} className="px-4 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
                         <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
