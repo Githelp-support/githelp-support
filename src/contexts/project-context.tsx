@@ -12,6 +12,10 @@ interface ProjectContextValue {
 
 const ProjectContext = createContext<ProjectContextValue | undefined>(undefined)
 
+// sessionStorage keeps each browser tab independent; localStorage is only used
+// as a fallback default for *fresh* tabs (so reopening the app lands you on
+// your last project). Live tabs do NOT sync to each other — that previously
+// caused flicker when changing project in one tab while another was open.
 const STORAGE_KEY = "selectedProjectId"
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
@@ -20,14 +24,16 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
   const [selectedProjectId, setSelectedProjectIdState] = useState<string | null>(() => {
     if (typeof window === "undefined") return null
-    return localStorage.getItem(STORAGE_KEY)
+    return sessionStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY)
   })
 
   useEffect(() => {
     if (typeof window === "undefined") return
     if (selectedProjectId) {
+      sessionStorage.setItem(STORAGE_KEY, selectedProjectId)
       localStorage.setItem(STORAGE_KEY, selectedProjectId)
     } else {
+      sessionStorage.removeItem(STORAGE_KEY)
       localStorage.removeItem(STORAGE_KEY)
     }
   }, [selectedProjectId])
@@ -61,16 +67,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }
   }, [projectsLoading, userProjects, selectedProjectId])
   /* eslint-enable react-hooks/set-state-in-effect */
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const onStorage = (e: StorageEvent) => {
-      if (e.key !== STORAGE_KEY) return
-      setSelectedProjectIdState(e.newValue)
-    }
-    window.addEventListener("storage", onStorage)
-    return () => window.removeEventListener("storage", onStorage)
-  }, [])
 
   const value = useMemo<ProjectContextValue>(
     () => ({
