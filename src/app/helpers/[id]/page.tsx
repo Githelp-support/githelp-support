@@ -137,11 +137,31 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   }, [helperTicketsData, transfersData])
 
   if (helperLoading) {
-    return <div>Loading helper...</div>
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header title="Helper Details" />
+          <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
+            <div>Loading helper...</div>
+          </main>
+        </div>
+      </div>
+    )
   }
 
   if (!helperData) {
-    return <div>Helper not found</div>
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header title="Helper Details" />
+          <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
+            <div>Helper not found</div>
+          </main>
+        </div>
+      </div>
+    )
   }
 
   const helper = {
