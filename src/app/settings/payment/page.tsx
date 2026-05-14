@@ -561,7 +561,7 @@ export default function PaymentSettingsPage() {
                 <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold text-foreground">Users of support</h2>
+                      <h2 className="text-lg font-semibold text-foreground">Payment options</h2>
                       <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <Button
@@ -576,8 +576,6 @@ export default function PaymentSettingsPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-foreground">Payment options</h3>
-
                     <div className="space-y-3">
                       <label
                         htmlFor="by-ticket"
