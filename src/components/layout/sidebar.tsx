@@ -89,7 +89,15 @@ const ProjectLogo = ({
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Settings"])
+  // The Sidebar is mounted per-page (not in a shared layout), so its state
+  // is wiped on every navigation. Derive the initially-expanded parent from
+  // the current path so the active sub-item's parent stays expanded across
+  // sub-item clicks and on hard refresh.
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    if (pathname?.startsWith("/reports/")) return ["Reports"]
+    if (pathname?.startsWith("/settings/")) return ["Settings"]
+    return []
+  })
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { user } = useUser()
   const isAuthenticated = !!user?.id
@@ -124,7 +132,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
-      prev.includes(itemName) ? prev.filter((item) => item !== itemName) : [...prev, itemName],
+      prev.includes(itemName) ? prev.filter((item) => item !== itemName) : [itemName],
     )
   }
 
@@ -325,26 +333,47 @@ export function Sidebar({ className }: SidebarProps) {
               <div key={item.name}>
                 {item.subItems ? (
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(item.name)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                    <div
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                       title={isCollapsed ? item.name : undefined}
                     >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                        <FlaticonIcon iconClass={item.icon} />
-                      </span>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          if (!isExpanded) setExpandedItems([item.name])
+                        }}
+                        onKeyDown={(e) => {
+                          if ((e.key === "Enter" || e.key === " ") && !isExpanded) {
+                            e.preventDefault()
+                            setExpandedItems([item.name])
+                          }
+                        }}
+                        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
+                      >
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                          <FlaticonIcon iconClass={item.icon} />
+                        </span>
+                        {!isCollapsed && <span>{item.name}</span>}
+                      </div>
                       {!isCollapsed && (
-                        <>
-                          {item.name}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleExpanded(item.name)
+                          }}
+                          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${item.name}`}
+                          className="shrink-0 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+                        >
                           <ChevronRight
-                            className={`w-4 h-4 ml-auto opacity-70 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                            className={`h-4 w-4 opacity-70 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                           />
-                        </>
+                        </button>
                       )}
-                    </button>
+                    </div>
                     {!isCollapsed && isExpanded && (
                       <div className="relative mt-0.5 space-y-0.5">
                         {/* Vertical guide line, centered under the parent icon column.
@@ -378,7 +407,7 @@ export function Sidebar({ className }: SidebarProps) {
                     )}
                   </div>
                 ) : (
-                  <Link href={item.href}>
+                  <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
                       className={`flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
                         isActive ? activeClasses : inactiveClasses
