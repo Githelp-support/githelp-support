@@ -122,8 +122,8 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
 
   return (
     <>
-      <header className="bg-background px-8 pt-3 pb-6">
-        <div className="flex items-start justify-between gap-8 min-h-[40px]">
+      <header className="sticky top-0 z-30 bg-background px-8 pt-3 pb-6">
+        <div className="flex items-center justify-between gap-8">
           <div className="flex items-center gap-4">
             {showBackButton && (
               <button
