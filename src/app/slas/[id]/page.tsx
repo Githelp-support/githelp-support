@@ -187,7 +187,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
   // ---- Loading / error states ---------------------------------------------
   if (slaLoading || ticketsLoading) {
     return (
-      <div className="flex h-screen bg-muted">
+      <div className="flex h-screen overflow-hidden bg-muted">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="SLA Details" subtitle="View and manage SLA configuration" />
@@ -201,7 +201,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
 
   if (slaError || !sla) {
     return (
-      <div className="flex h-screen bg-muted">
+      <div className="flex h-screen overflow-hidden bg-muted">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="SLA Details" subtitle="View and manage SLA configuration" />
@@ -223,7 +223,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="flex h-screen bg-muted">
+    <div className="flex h-screen overflow-hidden bg-muted">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">

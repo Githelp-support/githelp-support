@@ -78,7 +78,7 @@ export default function HelperSettingsPage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Settings" subtitle="Helper settings" />
@@ -92,7 +92,7 @@ export default function HelperSettingsPage() {
 
   if (!currentHelperLoading && projectId && helperId === null) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Settings" subtitle="Helper settings" />
@@ -106,7 +106,7 @@ export default function HelperSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Settings" subtitle="Helper settings" />
@@ -119,7 +119,7 @@ export default function HelperSettingsPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">

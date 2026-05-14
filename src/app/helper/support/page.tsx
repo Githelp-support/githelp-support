@@ -129,7 +129,7 @@ export default function HelperSupportPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Support Dashboard" />

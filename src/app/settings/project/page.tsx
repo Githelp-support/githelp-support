@@ -159,11 +159,11 @@ export default function ProjectSettingsPage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Project Settings" subtitle="Manage keywords and help categories" />
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-6 overflow-y-auto">
             <p className="text-muted-foreground">Select a project to manage its keywords and help categories.</p>
           </main>
         </div>
@@ -172,7 +172,7 @@ export default function ProjectSettingsPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
