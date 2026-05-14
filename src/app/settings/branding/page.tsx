@@ -62,9 +62,9 @@ export default function BrandingSettingsPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Branding" subtitle="Customize your project logo and primary color" />
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-4xl space-y-6">

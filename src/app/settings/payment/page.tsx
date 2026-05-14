@@ -286,11 +286,11 @@ export default function PaymentSettingsPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="This is a test info" />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 overflow-y-auto">
           {/* Tab Navigation */}
           <div className="mb-8">
             <div className="flex gap-1">

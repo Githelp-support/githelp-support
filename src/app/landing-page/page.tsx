@@ -82,9 +82,9 @@ export default function LandingPageSettings() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Landing page" subtitle="Customize your landing page branding and resources" />
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-4xl">

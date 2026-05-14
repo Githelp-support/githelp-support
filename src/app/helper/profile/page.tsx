@@ -222,7 +222,7 @@ export default function HelperProfilePage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile for the selected project" />
@@ -236,7 +236,7 @@ export default function HelperProfilePage() {
 
   if (!currentHelperLoading && projectId && helperId === null) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile for the selected project" />
@@ -250,7 +250,7 @@ export default function HelperProfilePage() {
 
   if (isLoading || !helperData) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile" />
@@ -266,7 +266,7 @@ export default function HelperProfilePage() {
   const displayAvatar = (displayName || "U")[0].toUpperCase()
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
