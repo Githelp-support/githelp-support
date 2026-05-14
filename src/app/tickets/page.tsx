@@ -201,45 +201,85 @@ export default function TicketsPage() {
         <main className="flex-1 p-6 space-y-6 overflow-y-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-4">
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <User className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Total Tickets</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.total}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              aria-pressed={statusFilter === "all"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "all" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.total}</div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Total Tickets</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
 
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Available</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.available}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("available")}
+              aria-pressed={statusFilter === "available"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "available" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.available}</div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Available</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
 
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <MessageCircle className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">In Progress</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.inProgress}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("in-progress")}
+              aria-pressed={statusFilter === "in-progress"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "in-progress" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">In Progress</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
 
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <User className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Completed</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.completed}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("completed")}
+              aria-pressed={statusFilter === "completed"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "completed" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Completed</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
           </div>
 
           {/* Filters */}
