@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tag, FolderOpen, Plus, Trash2, Loader2 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tag, FolderOpen, Plus, Trash2, Loader2, Shield, Copy, Check } from "lucide-react"
 import { useProjectSelection } from "@/contexts/project-context"
 import {
   useProjectKeywords,
@@ -16,21 +17,41 @@ import {
   useCreateProjectHelpCategory,
   useDeleteProjectHelpCategory,
 } from "@/hooks/useHelperKeywords"
+import { useHelpers } from "@/hooks/useHelpers"
+import { useCreateProjectInvite } from "@/hooks/useProject"
+import { useProjectAdmins, usePromoteToAdmin } from "@/hooks/useProjectAdmins"
 import { toast } from "sonner"
 
 export default function ProjectSettingsPage() {
   const [newKeyword, setNewKeyword] = useState("")
   const [newCategory, setNewCategory] = useState("")
+  const [promoteHelperId, setPromoteHelperId] = useState<string>("")
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [latestInviteLink, setLatestInviteLink] = useState<string | null>(null)
+  const [copiedInvite, setCopiedInvite] = useState(false)
 
   const { selectedProjectId: projectId } = useProjectSelection()
 
   const { data: keywords = [], isLoading: keywordsLoading } = useProjectKeywords(projectId ?? undefined)
   const { data: helpCategories = [], isLoading: categoriesLoading } = useProjectHelpCategories(projectId ?? undefined)
+  const { data: admins = [], isLoading: adminsLoading } = useProjectAdmins(projectId ?? undefined)
+  const { data: helpers = [], isLoading: helpersLoading } = useHelpers(projectId ?? undefined)
 
   const createKeyword = useCreateProjectKeyword(projectId ?? undefined)
   const deleteKeyword = useDeleteProjectKeyword(projectId ?? undefined)
   const createCategory = useCreateProjectHelpCategory(projectId ?? undefined)
   const deleteCategory = useDeleteProjectHelpCategory(projectId ?? undefined)
+  const promoteToAdmin = usePromoteToAdmin()
+  const createInvite = useCreateProjectInvite()
+
+  const adminUserIds = useMemo(() => new Set(admins.map((a) => a.user_id)), [admins])
+  const promotableHelpers = useMemo(
+    () =>
+      helpers.filter(
+        (h) => h.user_id && !adminUserIds.has(h.user_id),
+      ),
+    [helpers, adminUserIds],
+  )
 
   const handleAddKeyword = async () => {
     const value = newKeyword.trim()
@@ -80,6 +101,61 @@ export default function ProjectSettingsPage() {
     }
   }
 
+  const handlePromoteHelper = async () => {
+    if (!promoteHelperId || !projectId) return
+    try {
+      await promoteToAdmin.mutateAsync({ projectId, userId: promoteHelperId })
+      setPromoteHelperId("")
+      toast.success("Helper promoted to admin")
+    } catch (error) {
+      console.error("Failed to promote helper:", error)
+      const message =
+        error instanceof Error ? error.message : "Failed to promote helper. Please try again."
+      toast.error(message)
+    }
+  }
+
+  const handleInviteAdmin = async () => {
+    if (!projectId) return
+    const email = inviteEmail.trim()
+    try {
+      const invite = await createInvite.mutateAsync({
+        project_id: projectId,
+        invite_type: "admin",
+        ...(email ? { email } : {}),
+      })
+      setInviteEmail("")
+      setLatestInviteLink(invite.invite_url)
+      setCopiedInvite(false)
+      toast.success(email ? `Admin invite sent to ${email}` : "Admin invite link created")
+    } catch (error) {
+      console.error("Failed to create admin invite:", error)
+      toast.error("Failed to create admin invite. Please try again.")
+    }
+  }
+
+  const handleCopyInvite = async () => {
+    if (!latestInviteLink) return
+    try {
+      await navigator.clipboard.writeText(latestInviteLink)
+      setCopiedInvite(true)
+      setTimeout(() => setCopiedInvite(false), 2000)
+    } catch {
+      toast.error("Could not copy link")
+    }
+  }
+
+  const getInitials = (name: string | null, email: string | null) => {
+    const source = (name || email || "?").trim()
+    return source
+      .split(/[\s.@]/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?"
+  }
+
   if (!projectId) {
     return (
       <div className="flex h-screen">
@@ -101,6 +177,125 @@ export default function ProjectSettingsPage() {
         <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-4xl space-y-8">
+            {/* Admins */}
+            <Card className="border-border">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-muted-foreground" />
+                  <h2 className="text-lg font-semibold text-foreground">Admins</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Admins can manage helpers, settings, payouts, and invite other admins.
+                </p>
+
+                {adminsLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading admins...
+                  </div>
+                ) : admins.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No admins yet.</p>
+                ) : (
+                  <div className="divide-y divide-border rounded-md border border-border overflow-hidden mb-6">
+                    {admins.map((admin) => (
+                      <div key={admin.user_id} className="flex items-center gap-3 px-4 py-3 bg-card">
+                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground">
+                          {getInitials(admin.name, admin.email)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {admin.name || admin.email || "Unknown"}
+                          </p>
+                          {admin.email && (
+                            <p className="text-xs text-muted-foreground truncate">{admin.email}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Promote an existing helper</p>
+                    <div className="flex gap-2">
+                      <Select
+                        value={promoteHelperId}
+                        onValueChange={setPromoteHelperId}
+                        disabled={helpersLoading || promotableHelpers.length === 0}
+                      >
+                        <SelectTrigger className="max-w-xs">
+                          <SelectValue
+                            placeholder={
+                              helpersLoading
+                                ? "Loading helpers..."
+                                : promotableHelpers.length === 0
+                                ? "No helpers available"
+                                : "Choose helper"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {promotableHelpers.map((h) => (
+                            <SelectItem key={h.helper_id} value={h.user_id ?? h.helper_id}>
+                              {h.user?.name || h.user?.email || h.user_id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        onClick={handlePromoteHelper}
+                        disabled={!promoteHelperId || promoteToAdmin.isPending}
+                      >
+                        {promoteToAdmin.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        Promote
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Invite a new admin</p>
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="email@example.com (optional)"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleInviteAdmin()}
+                        className="max-w-xs"
+                      />
+                      <Button size="sm" onClick={handleInviteAdmin} disabled={createInvite.isPending}>
+                        {createInvite.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        Create invite
+                      </Button>
+                    </div>
+                    {latestInviteLink && (
+                      <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
+                        <code className="flex-1 truncate text-muted-foreground">{latestInviteLink}</code>
+                        <button
+                          type="button"
+                          onClick={handleCopyInvite}
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Copy invite link"
+                        >
+                          {copiedInvite ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Keywords / Topics */}
             <Card className="border-border">
               <CardContent className="p-6">
