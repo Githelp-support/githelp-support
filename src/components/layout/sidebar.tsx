@@ -207,7 +207,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div
-      className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-[calc(100vh-var(--banner-height,0px))] overflow-hidden ${className}`}
     >
       <div className="px-4 pt-4 pb-3 flex items-center justify-between min-h-[40px]">
         {isCollapsed ? (
@@ -321,7 +321,7 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       )}
 
-      <nav className="flex-1 px-3 pb-3 overflow-y-auto min-h-0">
+      <nav className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
         <div className="space-y-0.5">
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
