@@ -488,7 +488,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                       <tbody>
                         {helpersSummary.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">No helpers yet</td>
+                            <td colSpan={4} className="p-4 text-center text-muted-foreground text-[13px]">No helpers yet</td>
                           </tr>
                         ) : (
                           helpersSummary.map((helper) => (
@@ -537,7 +537,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                       </thead>
                       <tbody>
                         <tr>
-                          <td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">No issue types recorded</td>
+                          <td colSpan={3} className="p-4 text-center text-muted-foreground text-[13px]">No issue types recorded</td>
                         </tr>
                       </tbody>
                     </table>
@@ -570,7 +570,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <tbody>
                       {filteredTickets.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="p-4 text-center text-muted-foreground text-sm">No tickets yet</td>
+                          <td colSpan={6} className="p-4 text-center text-muted-foreground text-[13px]">No tickets yet</td>
                         </tr>
                       ) : (
                         filteredTickets.map((ticket) => {

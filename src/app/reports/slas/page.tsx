@@ -456,7 +456,7 @@ export default function ReportsSLAsPage() {
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading reports...</div>
                   ) : sortedReports.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">No reports found</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[13px]">No reports found</div>
                   ) : (
                     sortedReports.map((report) => (
                     <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
@@ -574,7 +574,7 @@ export default function ReportsSLAsPage() {
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
                   ) : sortedTickets.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">No tickets found</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[13px]">No tickets found</div>
                   ) : (
                     sortedTickets.map((ticket) => (
                     <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">

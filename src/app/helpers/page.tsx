@@ -661,8 +661,8 @@ export default function HelpersPage() {
                   if (noRealHelpers && projectId) {
                     return (
                       <div className="px-6 py-12 text-center">
-                        <p className="text-muted-foreground mb-2">No helpers yet.</p>
-                        <p className="text-sm text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
+                        <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
+                        <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
                         <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
                           <Plus className="w-4 h-4 mr-2" />
                           Add new helper
@@ -672,8 +672,8 @@ export default function HelpersPage() {
                   }
                   return (
                     <div className="px-6 py-12 text-center text-muted-foreground">
-                      <p className="mb-2">No helpers match your filters.</p>
-                      <p className="text-sm">Try clearing search or switching category to see your team.</p>
+                      <p className="text-[13px] mb-2">No helpers match your filters.</p>
+                      <p className="text-[13px]">Try clearing search or switching category to see your team.</p>
                     </div>
                   )
                 }
