@@ -122,7 +122,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
 
   return (
     <>
-      <header className="bg-background border-b border-border px-8 py-3">
+      <header className="bg-background px-8 pt-3 pb-6">
         <div className="flex items-center justify-between gap-8">
           <div className="flex items-center gap-4">
             {showBackButton && (
@@ -138,7 +138,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+                <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
                 {info && (
                   <div className="relative group">
                     <Info className="w-5 h-5 text-muted-foreground cursor-help" />

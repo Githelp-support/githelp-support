@@ -2,11 +2,10 @@
 
 import { useState } from "react"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
-import { ExternalLink, HelpCircle, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -145,7 +144,7 @@ export default function Dashboard() {
               variant={timeFilter === "current" ? "lavender" : "outline"}
               size="sm"
               className={cn(
-                "rounded-lg px-4 text-[13px] font-medium",
+                "rounded-lg px-4 text-sm font-medium",
                 timeFilter === "current"
                   ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
                   : "text-muted-foreground hover:bg-brand-primary hover:text-white"
@@ -168,7 +167,7 @@ export default function Dashboard() {
                 <SelectTrigger
                   size="sm"
                   variant={timeFilter === "choose" ? "lavender" : "outline"}
-                  className="w-[160px] rounded-lg text-[13px] font-medium"
+                  className="w-[160px] rounded-lg text-sm font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
                 </SelectTrigger>
@@ -185,7 +184,7 @@ export default function Dashboard() {
               variant={timeFilter === "all" ? "lavender" : "outline"}
               size="sm"
               className={cn(
-                "rounded-lg px-4 text-[13px] font-medium",
+                "rounded-lg px-4 text-sm font-medium",
                 timeFilter !== "all"
                   ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
                   : undefined
@@ -205,32 +204,32 @@ export default function Dashboard() {
               <h2 className="text-base font-semibold text-foreground">Key stats</h2>
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className="flex gap-5 max-w-fit">
-              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
-                <CardContent className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-border h-28 py-0 justify-center">
+                <CardContent className="px-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
-                <CardContent className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-muted-foreground">Total time spent</span>
-                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+              <Card className="border-border h-28 py-0 justify-center">
+                <CardContent className="px-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">Total time spent</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border/60 min-w-[200px] rounded-lg py-0 shadow-none">
-                <CardContent className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-muted-foreground">Percentage solved</span>
-                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+              <Card className="border-border h-28 py-0 justify-center">
+                <CardContent className="px-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-muted-foreground">Percentage solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-2xl font-semibold text-foreground">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -255,8 +254,8 @@ export default function Dashboard() {
               </div>
               <Card className="border-border/60 rounded-lg py-0 shadow-none">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-4 py-2.5 border-b border-border/60">
-                    <div className="grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleHelperSort("name")}
@@ -284,18 +283,16 @@ export default function Dashboard() {
                     <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 flex items-center gap-3">
-                          <Avatar className="w-7 h-7 rounded-[11px]">
-                            <AvatarFallback
-                              style={{ backgroundColor: helper.color }}
-                              className="text-foreground text-xs font-medium rounded-[11px] font-[family-name:var(--font-outfit)]"
-                            >
-                              {helper.initial}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-[13px] text-foreground">{helper.name}</span>
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: helper.color }}
+                          >
+                            {helper.initial}
+                          </div>
+                          <span className="text-sm text-foreground">{helper.name}</span>
                         </div>
-                        <div className="col-span-3 text-[13px] text-foreground">{helper.tickets}</div>
-                        <div className="col-span-2 text-[13px] text-foreground">{helper.time}</div>
+                        <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
+                        <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
                         <div className="col-span-1 flex justify-end">
                           <Link href={`/helpers/${helper.id}`}>
                             <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
@@ -323,8 +320,8 @@ export default function Dashboard() {
               </div>
               <Card className="border-border/60 rounded-lg py-0 shadow-none">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-4 py-2.5 border-b border-border/60">
-                    <div className="grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-border/60">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleIssueSort("name")}
@@ -351,9 +348,9 @@ export default function Dashboard() {
                   {sortedIssueTypes.map((issue, index) => (
                     <div key={index} className="px-4 py-2.5 border-b border-border/40 last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 text-[13px] text-foreground">{issue.name}</div>
-                        <div className="col-span-3 text-[13px] text-foreground">{issue.tickets}</div>
-                        <div className="col-span-3 text-[13px] text-foreground">{issue.time}</div>
+                        <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
+                        <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
+                        <div className="col-span-3 text-sm text-foreground">{issue.time}</div>
                       </div>
                     </div>
                   ))}

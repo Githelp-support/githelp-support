@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { MessageCircle, Mail, Github, Info, Loader2, Tag } from "lucide-react"
+import { ChevronsUpDown, Github, Info, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -276,7 +276,7 @@ export default function HelperProfilePage() {
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold"
+              className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-foreground text-[21px] font-[family-name:var(--font-outfit)] font-normal"
               style={{ backgroundColor: helperColors[0] }}
             >
               {displayAvatar}
@@ -290,34 +290,19 @@ export default function HelperProfilePage() {
           </div>
 
           {/* Editable contact information */}
-          <Card className="mb-8 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Contact information</h2>
-              <div className="space-y-4 max-w-md">
-                <FormField label="Display name">
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <Input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your name"
-                      className="bg-background"
-                    />
-                  </div>
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Contact information</h2>
+            <div className="space-y-4">
+              <div className="flex gap-5">
+                <FormField label="Display name" className="flex-1 max-w-md">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className="bg-background"
+                  />
                 </FormField>
-                <FormField label="Email">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email"
-                      className="bg-background"
-                    />
-                  </div>
-                </FormField>
-                <FormField label="GitHub username">
+                <FormField label="GitHub username" className="flex-1 max-w-md pl-5">
                   <div className="flex items-center gap-2">
                     <Github className="w-5 h-5 text-muted-foreground shrink-0" />
                     {gitHubConnected ? (
@@ -337,90 +322,94 @@ export default function HelperProfilePage() {
                     )}
                   </div>
                 </FormField>
-                <Button
-                  onClick={handleSaveProfile}
-                  disabled={updateUserProfile.isPending}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-white"
-                >
-                  {updateUserProfile.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Save contact details"
-                  )}
-                </Button>
               </div>
-            </CardContent>
-          </Card>
+              <FormField label="Email" className="max-w-md">
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className="bg-background"
+                />
+              </FormField>
+              <Button
+                onClick={handleSaveProfile}
+                disabled={updateUserProfile.isPending}
+                variant="outline"
+                className="border-border"
+                style={{ marginTop: "22px" }}
+              >
+                {updateUserProfile.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Save contact details"
+                )}
+              </Button>
+            </div>
+          </section>
 
           {/* Editable category */}
-          <Card className="mb-8 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Helper category</h2>
-              <div className="flex items-center gap-4 flex-wrap">
-                <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="core">Core team</SelectItem>
-                    <SelectItem value="extended">Extended team</SelectItem>
-                    <SelectItem value="community">Community</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={handleSaveCategory}
-                  disabled={updateHelper.isPending}
-                  variant="outline"
-                  className="border-border"
-                >
-                  {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Project keywords / topics */}
-          <Card className="mb-8 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Tag className="w-5 h-5 text-muted-foreground" />
-                Topics & keywords
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Select the project topics you can help with. This helps route relevant tickets to you.
-              </p>
-              {projectKeywords.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No keywords defined for this project yet.</p>
-              ) : (
-                <div className="flex flex-wrap gap-3 mb-4">
-                  {projectKeywords.map((kw) => (
-                    <label
-                      key={kw.id}
-                      className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
-                    >
-                      <Checkbox
-                        checked={selectedKeywords.includes(kw.id)}
-                        onCheckedChange={() => handleKeywordToggle(kw.id)}
-                      />
-                      <span className="text-sm font-medium">{kw.value}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Helper category</h2>
+            <div className="flex items-center gap-4 flex-wrap">
+              <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="core">Core team</SelectItem>
+                  <SelectItem value="extended">Extended team</SelectItem>
+                  <SelectItem value="community">Community</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
-                onClick={handleSaveKeywords}
-                disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
+                onClick={handleSaveCategory}
+                disabled={updateHelper.isPending}
                 variant="outline"
                 className="border-border"
               >
-                {setHelperKeywords.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Save topics"
-                )}
+                {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
+
+          {/* Project keywords / topics */}
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Topics & keywords</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Select the project topics you can help with. This helps route relevant tickets to you.
+            </p>
+            {projectKeywords.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No keywords defined for this project yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {projectKeywords.map((kw) => (
+                  <label
+                    key={kw.id}
+                    className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
+                  >
+                    <Checkbox
+                      checked={selectedKeywords.includes(kw.id)}
+                      onCheckedChange={() => handleKeywordToggle(kw.id)}
+                    />
+                    <span className="text-sm font-medium">{kw.value}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <Button
+              onClick={handleSaveKeywords}
+              disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
+              variant="outline"
+              className="border-border mt-[22px]"
+            >
+              {setHelperKeywords.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Save topics"
+              )}
+            </Button>
+          </section>
 
           {/* Time period filters */}
           <div className="flex gap-2 mb-6">
@@ -520,71 +509,83 @@ export default function HelperProfilePage() {
           {/* All tickets */}
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">All tickets</h2>
-            <Card className="border-border py-0">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border bg-brand-primary/10">
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Ticket ID</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Ticket type</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tickets.map((ticket) => (
-                        <tr key={ticket.fullId || ticket.id} className="border-b border-border hover:bg-muted">
-                          <td className="p-4">
-                            <span className="text-foreground font-medium">{ticket.id}</span>
-                          </td>
-                          <td className="p-4 text-muted-foreground">{ticket.date}</td>
-                          <td className="p-4 text-muted-foreground">{ticket.type}</td>
-                          <td className="p-4 text-muted-foreground">{ticket.amount}</td>
-                          <td className="p-4">
-                            <Badge
-                              variant="secondary"
-                              className={
-                                ticket.status === "Completed"
-                                  ? "bg-status-success-bg text-status-success-text border-0"
-                                  : "bg-status-warning-bg text-status-warning-text border-0"
-                              }
-                            >
-                              {ticket.status === "Completed" && "✓ "}
-                              {ticket.status}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            {ticket.fullId ? (
-                              <Link href={`/helper/tickets/${ticket.fullId}`}>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                                >
-                                  Open
-                                </Button>
-                              </Link>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                                disabled
-                              >
-                                Open
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <span className="text-sm font-medium text-foreground">Ticket ID</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <span className="text-sm font-medium text-foreground">Date</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <span className="text-sm font-medium text-foreground">Ticket type</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <span className="text-sm font-medium text-foreground">Amount</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <span className="text-sm font-medium text-foreground">Status</span>
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="col-span-2"></div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.fullId || ticket.id}
+                  className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]"
+                >
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-2">
+                      <span className="text-foreground font-medium">{ticket.id}</span>
+                    </div>
+                    <div className="col-span-2 text-muted-foreground">{ticket.date}</div>
+                    <div className="col-span-2 text-muted-foreground">{ticket.type}</div>
+                    <div className="col-span-2 text-muted-foreground">{ticket.amount}</div>
+                    <div className="col-span-2">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          ticket.status === "Completed"
+                            ? "bg-status-success-bg text-status-success-text border-0"
+                            : "bg-status-warning-bg text-status-warning-text border-0"
+                        }
+                      >
+                        {ticket.status === "Completed" && "✓ "}
+                        {ticket.status}
+                      </Badge>
+                    </div>
+                    <div className="col-span-2">
+                      {ticket.fullId ? (
+                        <Link href={`/helper/tickets/${ticket.fullId}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                          >
+                            Open
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                          disabled
+                        >
+                          Open
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </main>
       </div>

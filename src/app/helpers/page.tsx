@@ -437,13 +437,13 @@ export default function HelpersPage() {
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
               <Select value={currentView} onValueChange={(value) => handleViewChange(value as "added" | "requests" | "invited")}>
-                <SelectTrigger className="w-full h-[46px] data-[size=default]:h-[46px] border-input focus-visible:ring-ring rounded-lg text-[13px]">
+                <SelectTrigger className="w-full h-[46px] data-[size=default]:h-[46px] border-input focus-visible:ring-ring rounded-lg text-[14px] font-normal">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="added">Added</SelectItem>
-                  <SelectItem value="requests">Requests</SelectItem>
-                  <SelectItem value="invited">Invites</SelectItem>
+                  <SelectItem value="added" className="text-[14px] font-normal">Added</SelectItem>
+                  <SelectItem value="requests" className="text-[14px] font-normal">Requests</SelectItem>
+                  <SelectItem value="invited" className="text-[14px] font-normal">Invites</SelectItem>
                 </SelectContent>
               </Select>
               <div className="relative">

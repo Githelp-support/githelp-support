@@ -17,13 +17,15 @@ import { toast } from "sonner"
 interface ImageUploadModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  storagePath: string // e.g., "projects_public/{projectId}/logo.png"
+  storagePath: string // e.g., "bucketName/path/to/file" or "ticket-attachments/{projectId}/{ticketId}/{filename}"
   onUploadComplete: (url: string) => void
   title?: string
   description?: string
   maxFileSizeMB?: number
   acceptedFileTypes?: string[]
   currentImageUrl?: string | null
+  /** Set to true when the target bucket is private — uses a signed URL instead of a public URL */
+  privateBucket?: boolean
 }
 
 export function ImageUploadModal({
@@ -36,6 +38,7 @@ export function ImageUploadModal({
   maxFileSizeMB = 6, // Default 6MB based on bucket limit
   acceptedFileTypes = ["image/*"],
   currentImageUrl,
+  privateBucket = false,
 }: ImageUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null)
@@ -115,15 +118,27 @@ export function ImageUploadModal({
         return
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(filePath)
-
-      const publicUrl = urlData.publicUrl
+      // Get URL — signed for private buckets, public for public buckets
+      let fileUrl: string
+      if (privateBucket) {
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from(bucketName)
+          .createSignedUrl(filePath, 60 * 60) // 1 hour
+        if (signedError || !signedData?.signedUrl) {
+          console.error("Signed URL error:", signedError)
+          toast.error("Failed to retrieve upload URL. Please try again.")
+          return
+        }
+        fileUrl = signedData.signedUrl
+      } else {
+        const { data: urlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePath)
+        fileUrl = urlData.publicUrl
+      }
 
       // Call the completion callback
-      onUploadComplete(publicUrl)
+      onUploadComplete(fileUrl)
 
       toast.success("Image uploaded successfully!")
       

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
+import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
 import { useTimeEntries, useCreateTimeEntry, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
@@ -73,6 +74,7 @@ export default function TicketDetailPage() {
   const [isLogTimeDrawerOpen, setIsLogTimeDrawerOpen] = useState(false)
   const [isAddSelfAsHelperDialogOpen, setIsAddSelfAsHelperDialogOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<"claim" | "logTime" | null>(null)
+  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false)
 
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId)
@@ -662,6 +664,7 @@ export default function TicketDetailPage() {
               onSend={handleSendMessage}
               sendDisabled={!message.trim() || isTicketEnded}
               placeholder="Message #askanything"
+              onImageClick={ticket?.project_id ? () => setIsImageUploadOpen(true) : undefined}
               toolbarEndContent={
                 !isTicketEnded ? (
                   <Button
@@ -675,6 +678,20 @@ export default function TicketDetailPage() {
                 ) : undefined
               }
             />
+
+            {ticket?.project_id && (
+              <ImageUploadModal
+                open={isImageUploadOpen}
+                onOpenChange={setIsImageUploadOpen}
+                storagePath={`ticket-attachments/${ticket.project_id}/${ticketId}/${Date.now()}`}
+                onUploadComplete={(url) => {
+                  setMessage((prev) => prev + `\n![attachment](${url})\n`)
+                }}
+                title="Attach Image"
+                description="Upload an image to attach to this ticket"
+                privateBucket
+              />
+            )}
           </div>
 
           {/* Right Sidebar */}

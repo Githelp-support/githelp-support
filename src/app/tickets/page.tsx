@@ -4,16 +4,18 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ArrowUpDown } from "lucide-react"
+import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
+
+// Ticket avatar colors (matches Helpers page rotation)
+const ticketColors = ["#f4bccc", "#d0f6bc", "#bcedf6", "#f6e6bc", "#cbbcf6"]
 
 interface Ticket {
   id: string
@@ -53,7 +55,7 @@ type SortDirection = "asc" | "desc"
 
 function TicketsSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
   if (sortField !== field) {
-    return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
   }
   return sortDirection === "asc" ? (
     <ChevronUp className="w-4 h-4 text-brand-primary" />
@@ -199,45 +201,85 @@ export default function TicketsPage() {
         <main className="flex-1 p-6 space-y-6 overflow-y-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-4">
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <User className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Total Tickets</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.total}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              aria-pressed={statusFilter === "all"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "all" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.total}</div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Total Tickets</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
 
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Available</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.available}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("available")}
+              aria-pressed={statusFilter === "available"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "available" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.available}</div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Available</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
 
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <MessageCircle className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">In Progress</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.inProgress}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("in-progress")}
+              aria-pressed={statusFilter === "in-progress"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "in-progress" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">In Progress</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
 
-            <Card className="border-border/60 py-0 shadow-none">
-              <CardContent className="px-5 py-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <User className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Completed</span>
-                </div>
-                <div className="text-xl font-bold text-foreground">{stats.completed}</div>
-              </CardContent>
-            </Card>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("completed")}
+              aria-pressed={statusFilter === "completed"}
+              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            >
+              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+                {statusFilter === "completed" && (
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                )}
+                <CardContent className="px-5 py-4">
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Completed</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
           </div>
 
           {/* Filters */}
@@ -292,125 +334,121 @@ export default function TicketsPage() {
           </div>
 
           {/* Tickets Table */}
-          <Card className="border-border py-0">
-            <CardContent className="p-0">
-              <div className="bg-brand-primary/10 px-6 py-4 border-b border-border">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground">
+          <div className="bg-white rounded-lg border border-border overflow-hidden">
+            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                <div className="col-span-4 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("title")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Ticket</span>
+                    <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("type")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Type</span>
+                    <TicketsSortIcon field="type" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("priority")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Priority</span>
+                    <TicketsSortIcon field="priority" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("status")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Status</span>
+                    <TicketsSortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("createdAt")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Created</span>
+                    <TicketsSortIcon field="createdAt" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            {isLoading ? (
+              <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
+            ) : filteredTickets.length > 0 ? (
+              filteredTickets.map((ticket, index) => (
+              <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
+                <div className="grid grid-cols-12 gap-4 items-center">
                   <div className="col-span-4">
-                    <button type="button"
-                      onClick={() => handleSort("title")}
-                      className="flex items-center gap-2 hover:text-brand-primary cursor-pointer"
-                    >
-                      Ticket
-                      <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    <div className="flex items-start gap-[18px]">
+                      <div
+                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        style={{ backgroundColor: ticketColors[index % ticketColors.length] }}
+                      >
+                        {ticket.user.avatar}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/helper/tickets/${ticket.id}`}>
+                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                            {ticket.title}
+                          </h4>
+                        </Link>
+                        <p className="text-sm text-muted-foreground">{ticket.user.name}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
+                          </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="col-span-2">
-                    <button type="button"
-                      onClick={() => handleSort("type")}
-                      className="flex items-center gap-2 hover:text-brand-primary cursor-pointer"
-                    >
-                      Type
-                      <TicketsSortIcon field="type" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                      {ticket.type}
+                    </Badge>
                   </div>
                   <div className="col-span-2">
-                    <button type="button"
-                      onClick={() => handleSort("priority")}
-                      className="flex items-center gap-2 hover:text-brand-primary cursor-pointer"
-                    >
-                      Priority
-                      <TicketsSortIcon field="priority" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
+                      {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                    </Badge>
                   </div>
                   <div className="col-span-2">
-                    <button type="button"
-                      onClick={() => handleSort("status")}
-                      className="flex items-center gap-2 hover:text-brand-primary cursor-pointer"
-                    >
-                      Status
-                      <TicketsSortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
+                        {ticket.status === "in-progress"
+                          ? "In Progress"
+                          : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      </Badge>
+                      {ticket.helper && (
+                        <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-white text-xs font-medium shrink-0">
+                          {ticket.helper.avatar}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="col-span-2">
-                    <button type="button"
-                      onClick={() => handleSort("createdAt")}
-                      className="flex items-center gap-2 hover:text-brand-primary cursor-pointer"
-                    >
-                      Created
-                      <TicketsSortIcon field="createdAt" sortField={sortField} sortDirection={sortDirection} />
-                    </button>
+                    <div className="text-sm text-muted-foreground">
+                      <div>{ticket.createdAt.split(", ")[0]}</div>
+                      <div className="text-xs text-muted-foreground">{ticket.createdAt.split(", ")[1]}</div>
+                    </div>
                   </div>
                 </div>
               </div>
-              {isLoading ? (
-                <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
-              ) : filteredTickets.length > 0 ? (
-                filteredTickets.map((ticket, index) => (
-                <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-4">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="bg-[#f4bccc] text-foreground text-sm">
-                            {ticket.user.avatar}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <Link href={`/helper/tickets/${ticket.id}`}>
-                            <h4 className="font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                              {ticket.title}
-                            </h4>
-                          </Link>
-                          <p className="text-sm text-muted-foreground">{ticket.user.name}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{ticket.description}</p>
-                            <div className="flex items-center gap-1 mt-1">
-                              <MessageCircle className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
-                            </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                        {ticket.type}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2">
-                      <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
-                          {ticket.status === "in-progress"
-                            ? "In Progress"
-                            : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                        </Badge>
-                        {ticket.helper && (
-                          <Avatar className="w-5 h-5">
-                            <AvatarFallback className="bg-brand-primary text-white text-xs">
-                              {ticket.helper.avatar}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <div className="text-sm text-muted-foreground">
-                        <div>{ticket.createdAt.split(", ")[0]}</div>
-                        <div className="text-xs text-muted-foreground">{ticket.createdAt.split(", ")[1]}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-              ) : (
-                <div className="px-6 py-8 text-center text-muted-foreground">No tickets found</div>
-              )}
-            </CardContent>
-          </Card>
+            ))
+            ) : (
+              <div className="px-6 py-8 text-center text-muted-foreground">No tickets found</div>
+            )}
+          </div>
 
         </main>
       </div>
