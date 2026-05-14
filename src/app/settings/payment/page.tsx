@@ -700,24 +700,24 @@ export default function PaymentSettingsPage() {
 
                 {/* Set up payouts Section */}
                 <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center gap-2.5 mb-10">
-                    <h2 className="text-[20px] leading-[1.5] font-semibold text-foreground tracking-[-0.2px]">
+                  <div className="flex items-center gap-2 mb-6">
+                    <h2 className="text-lg font-semibold text-foreground">
                       Set up payouts
                     </h2>
-                    <Info className="w-2.5 h-2.5 text-muted-foreground" />
+                    <Info className="w-4 h-4 text-muted-foreground" />
                   </div>
 
                   {/* Githelp to Stripe flow */}
-                  <div className="flex items-center gap-[5px] mb-10">
-                    <div className="w-[42px] h-[42px] text-foreground">
-                      <Logo className="w-[42px] h-[42px]" />
+                  <div className="flex items-center gap-[5px] mb-6">
+                    <div className="w-[42px] h-[42px] bg-[#55555D] rounded-[16px] flex items-center justify-center text-[#55555D]">
+                      <Logo className="w-[26px] h-[26px]" />
                     </div>
                     <div className="flex items-center gap-[5px] px-[2px] w-[22px] justify-center">
-                      <span className="block w-1 h-1 rounded-full bg-border" />
-                      <span className="block w-1 h-1 rounded-full bg-border" />
-                      <span className="block w-1 h-1 rounded-full bg-border" />
+                      <span className="block w-1 h-1 rounded-full bg-[#9EA1A7]" />
+                      <span className="block w-1 h-1 rounded-full bg-[#9EA1A7]" />
+                      <span className="block w-1 h-1 rounded-full bg-[#9EA1A7]" />
                     </div>
-                    <div className="w-[42px] h-[42px] bg-[#635bff] rounded-full flex items-center justify-center">
+                    <div className="w-[42px] h-[42px] bg-[#635BFF] rounded-[16px] flex items-center justify-center">
                       <svg
                         className="w-5 h-5"
                         viewBox="0 0 32 32"
@@ -730,15 +730,15 @@ export default function PaymentSettingsPage() {
                     </div>
                   </div>
 
-                  <p className="text-[17px] leading-[1.5] text-muted-foreground tracking-[-0.34px] max-w-[502px] mb-10">
+                  <p className="text-sm text-muted-foreground max-w-[502px] mb-6">
                     All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
                     payouts from support.
                   </p>
 
                   <Button
-                    className="bg-[#635bff] hover:bg-[#5046e5] text-white rounded-[10px] h-auto px-5 py-2.5 gap-[15px] text-[17px] font-normal leading-[1.5] tracking-[-0.34px]"
+                    className="bg-[#635BFF] hover:bg-[#635BFF]/90 text-white rounded-xl px-5 py-2.5 text-[13px] font-medium shadow-sm"
                   >
-                    <Landmark className="size-[18px]" strokeWidth={2} />
+                    <Landmark className="w-4 h-4 mr-2" />
                     Set up payouts
                   </Button>
                 </div>
