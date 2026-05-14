@@ -321,7 +321,7 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       )}
 
-      <nav className="flex-1 px-3 pb-3">
+      <nav className="flex-1 px-3 pb-3 overflow-y-auto min-h-0">
         <div className="space-y-0.5">
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
