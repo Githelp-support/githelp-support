@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus"
+import { SandboxBanner } from "@/components/layout/sandbox-banner"
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -95,5 +96,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return null // Will redirect in useEffect
   }
 
-  return <>{children}</>
+  return (
+    <>
+      <SandboxBanner />
+      {children}
+    </>
+  )
 }

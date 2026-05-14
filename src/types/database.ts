@@ -19,6 +19,7 @@ export type Database = {
                     updated_at: string;
                     deleted_at: string | null;
                     open_for_new_helpers: boolean;
+                    sandbox: boolean;
                 };
                 Insert: Partial<{
                     id: number;
@@ -34,6 +35,7 @@ export type Database = {
                     updated_at: string;
                     deleted_at: string | null;
                     open_for_new_helpers: boolean;
+                    sandbox: boolean;
                 }>;
                 Update: Partial<{
                     id: number;
@@ -49,6 +51,7 @@ export type Database = {
                     updated_at: string;
                     deleted_at: string | null;
                     open_for_new_helpers: boolean;
+                    sandbox: boolean;
                 }>;
             };
             projects_invites: {
