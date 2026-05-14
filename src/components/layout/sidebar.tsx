@@ -209,7 +209,7 @@ export function Sidebar({ className }: SidebarProps) {
     <div
       className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen overflow-hidden ${className}`}
     >
-      <div className="px-4 pt-5 pb-3 flex items-center justify-between min-h-[40px]">
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between min-h-[40px]">
         {isCollapsed ? (
           selectedProject ? (
             <ProjectLogo
@@ -249,7 +249,7 @@ export function Sidebar({ className }: SidebarProps) {
       )}
 
       {!isCollapsed && (
-        <div className="px-3 pb-4">
+        <div className="px-3 pb-3">
           {!isAuthenticated ? (
             <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
               <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
@@ -321,7 +321,7 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       )}
 
-      <nav className="flex-1 px-3 pb-4 overflow-y-auto">
+      <nav className="flex-1 px-3 pb-3">
         <div className="space-y-0.5">
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
@@ -427,7 +427,7 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </nav>
 
-      <div className="px-3 py-3 border-t border-sidebar-border space-y-0.5">
+      <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5">
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
           const className = `flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
@@ -458,7 +458,7 @@ export function Sidebar({ className }: SidebarProps) {
         })}
       </div>
 
-      <div className="px-3 py-3 border-t border-sidebar-border">
+      <div className="px-3 py-2.5 border-t border-sidebar-border">
         <div className={`flex items-center gap-3 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
           <Avatar className="w-8 h-8 rounded-[13px] shrink-0">
             <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[13px] font-[family-name:var(--font-outfit)]">{user.avatar}</AvatarFallback>
