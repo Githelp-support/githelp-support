@@ -8,27 +8,48 @@ export interface ProjectAdmin {
   created_at: string
 }
 
-/** All non-deleted projects_members with role='admin', joined with users_public. */
+/**
+ * All non-deleted projects_members with role='admin'.
+ *
+ * projects_members.user_id is a FK to auth.users (not users_public), so
+ * PostgREST can't auto-embed users_public via the relationship graph. We
+ * fetch the member rows and then look up the matching users_public rows
+ * separately.
+ */
 export function useProjectAdmins(projectId?: string) {
   return useQuery({
     queryKey: ["project-admins", projectId],
     queryFn: async (): Promise<ProjectAdmin[]> => {
       if (!projectId) return []
-      const { data, error } = await supabase
+      const { data: members, error: membersError } = await supabase
         .from("projects_members")
-        .select("user_id, created_at, user:users_public(name, email)")
+        .select("user_id, created_at")
         .eq("project_id", projectId)
         .eq("role", "admin")
         .is("deleted_at", null)
         .order("created_at", { ascending: true })
 
-      if (error) throw error
-      return (data || []).map((row: any) => ({
-        user_id: row.user_id,
-        created_at: row.created_at,
-        name: row.user?.name ?? null,
-        email: row.user?.email ?? null,
-      }))
+      if (membersError) throw membersError
+      if (!members || members.length === 0) return []
+
+      const userIds = members.map((m) => m.user_id)
+      const { data: profiles, error: profilesError } = await supabase
+        .from("users_public")
+        .select("id, name, email")
+        .in("id", userIds)
+
+      if (profilesError) throw profilesError
+      const byId = new Map((profiles || []).map((p: any) => [p.id, p]))
+
+      return members.map((m) => {
+        const profile = byId.get(m.user_id)
+        return {
+          user_id: m.user_id,
+          created_at: m.created_at,
+          name: profile?.name ?? null,
+          email: profile?.email ?? null,
+        }
+      })
     },
     enabled: !!projectId,
     staleTime: 60_000,
