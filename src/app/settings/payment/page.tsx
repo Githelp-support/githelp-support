@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Info, CreditCard, Github, ArrowRight } from "lucide-react"
+import { Info, CreditCard, ArrowRight } from "lucide-react"
 import { useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
+import { Logo } from "@/components/brand/logo"
 import { cn } from "@/lib/utils"
 
 export default function PaymentSettingsPage() {
@@ -705,15 +706,15 @@ export default function PaymentSettingsPage() {
                   </div>
 
                   <div className="space-y-6">
-                    {/* GitHub → Stripe flow */}
+                    {/* Githelp → Stripe flow */}
                     <div className="flex items-center justify-center gap-4 py-2">
                       <div
                         className={cn(
                           "w-14 h-14 rounded-full flex items-center justify-center",
-                          "bg-foreground text-background"
+                          "bg-brand-primary text-white"
                         )}
                       >
-                        <Github className="w-7 h-7" strokeWidth={1.75} />
+                        <Logo variant="dark" className="w-7 h-7" />
                       </div>
                       <div className="flex-1 relative flex items-center">
                         <div className="w-full border-t border-dashed border-border" />
@@ -729,10 +730,10 @@ export default function PaymentSettingsPage() {
                       <div
                         className={cn(
                           "w-14 h-14 rounded-full flex items-center justify-center",
-                          "bg-brand-primary text-white"
+                          "bg-[#635BFF] text-white"
                         )}
                       >
-                        <span className="font-semibold text-xl leading-none">S</span>
+                        <span className="font-semibold text-2xl leading-none italic">S</span>
                       </div>
                     </div>
 
