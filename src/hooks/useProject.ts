@@ -427,7 +427,7 @@ export function useCreateProjectInvite() {
     return useMutation({
         mutationFn: async (payload: {
             project_id: string;
-            invite_type: "member" | "helper";
+            invite_type: "member" | "helper" | "admin";
             category?: "core" | "extended" | "community";
             email?: string;
             github_username?: string;
@@ -460,7 +460,7 @@ export function useCreateProjectInvite() {
 
 export function useListProjectInvites(
     projectId?: string,
-    inviteType?: "member" | "helper",
+    inviteType?: "member" | "helper" | "admin",
 ) {
     return useQuery({
         queryKey: ["project-invites", projectId, inviteType],

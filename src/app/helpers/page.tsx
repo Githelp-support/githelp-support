@@ -610,8 +610,8 @@ export default function HelpersPage() {
                 )
                 }
                 if (currentView === "added") {
-                  return filteredHelpers.length > 0 ? (
-                    filteredHelpers.map((helper, index) => (
+                  if (filteredHelpers.length > 0) {
+                    return filteredHelpers.map((helper, index) => (
                     <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
@@ -658,16 +658,26 @@ export default function HelpersPage() {
                       </div>
                     </div>
                   ))
-                ) : (
-                  <div className="px-6 py-12 text-center">
-                    <p className="text-muted-foreground mb-2">No helpers yet.</p>
-                    <p className="text-sm text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                    <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add new helper
-                    </Button>
-                  </div>
-                )
+                  }
+                  const noRealHelpers = (helpersData?.length ?? 0) === 0
+                  if (noRealHelpers && projectId) {
+                    return (
+                      <div className="px-6 py-12 text-center">
+                        <p className="text-muted-foreground mb-2">No helpers yet.</p>
+                        <p className="text-sm text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
+                        <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add new helper
+                        </Button>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div className="px-6 py-12 text-center text-muted-foreground">
+                      <p className="mb-2">No helpers match your filters.</p>
+                      <p className="text-sm">Try clearing search or switching category to see your team.</p>
+                    </div>
+                  )
                 }
                 return filteredRequests.length > 0 ? (
                   filteredRequests.map((request, index) => (

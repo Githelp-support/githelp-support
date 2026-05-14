@@ -9,6 +9,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Clock, Users, Plus, Sparkles } from "lucide-react"
 import { useMemo } from "react"
+import { toast } from "sonner"
+import {
+    SUPPORT_TICKET_PREVIEW_CARDS,
+    SUPPORT_TICKETS_PREVIEW_DISCLAIMER,
+} from "@/lib/helper-area-preview-copy"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
@@ -111,6 +116,18 @@ export default function HelperSupportPage() {
 
   const todayFormatted = formatDuration(todayMinutes)
 
+  const showSupportTicketPreview =
+    !!projectId &&
+    !ticketsLoading &&
+    availableTickets.length === 0 &&
+    activeTickets.length === 0
+
+  const previewRates = rates ?? {
+    startPrice: "USD 10.00",
+    first60: "USD 1.50/min",
+    after60: "USD 1.00/min",
+  }
+
   return (
     <div className="flex h-screen">
       <Sidebar />
@@ -172,7 +189,103 @@ export default function HelperSupportPage() {
                 {/* Available Tickets */}
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-foreground">Available Tickets</h2>
-                  {formattedAvailable.length === 0 ? (
+                  {formattedAvailable.length === 0 && showSupportTicketPreview ? (
+                    <div className="space-y-4">
+                      <p
+                        role="status"
+                        className="text-sm text-muted-foreground rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3"
+                      >
+                        {SUPPORT_TICKETS_PREVIEW_DISCLAIMER}
+                      </p>
+                      {SUPPORT_TICKET_PREVIEW_CARDS.map((ticket) => (
+                        <Card
+                          key={ticket.id}
+                          className="border border-dashed border-border opacity-95"
+                          role="presentation"
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                              <Avatar className="w-10 h-10">
+                                <AvatarFallback className="bg-[#d9dce8] text-foreground">{ticket.avatar}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 space-y-4">
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <h3 className="font-medium text-foreground">{ticket.title}</h3>
+                                    <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                                      Preview
+                                    </Badge>
+                                    <span className="text-sm text-muted-foreground">• {ticket.timestamp}</span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mb-3">{ticket.description}</p>
+
+                                  <div className="space-y-3">
+                                    {ticket.topics.length > 0 && (
+                                      <div>
+                                        <p className="text-sm font-medium text-foreground mb-1">Other topics</p>
+                                        <div className="flex gap-2 flex-wrap">
+                                          {ticket.topics.map((topic) => (
+                                            <Badge key={topic} variant="secondary" className="bg-muted text-muted-foreground">
+                                              {topic}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground mb-1">Type of help</p>
+                                      <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
+                                        {ticket.helpType}
+                                      </Badge>
+                                    </div>
+
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground mb-2">Rates</p>
+                                      <div className="grid grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                          <p className="text-muted-foreground">Start price</p>
+                                          <p className="font-medium text-foreground">{previewRates.startPrice}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-muted-foreground">First 60 min</p>
+                                          <p className="font-medium text-foreground">{previewRates.first60}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-muted-foreground">After 60 min</p>
+                                          <p className="font-medium text-foreground">{previewRates.after60}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="cursor-default"
+                                    onClick={() => toast.info("Preview only — this is not a real ticket.")}
+                                  >
+                                    Claim ticket
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-brand-primary text-brand-primary cursor-default"
+                                    onClick={() => toast.info("Preview only — this is not a real ticket.")}
+                                  >
+                                    <Sparkles className="w-4 h-4" />
+                                    Rephrase with AI
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : formattedAvailable.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No available tickets right now.</p>
                   ) : (
                     formattedAvailable.map((ticket) => (

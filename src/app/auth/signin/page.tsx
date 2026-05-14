@@ -4,15 +4,20 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { loginUserGoogle, signInWithGitHub } from "@/lib/supabase/auth"
+import { Input } from "@/components/ui/input"
+import { loginUserGoogle, signInWithEmail, signInWithGitHub } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
+import { Loader2, Mail } from "lucide-react"
 
 export default function SignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [email, setEmail] = useState("")
+  const [isSendingEmailLink, setIsSendingEmailLink] = useState(false)
+  const [emailLinkSentTo, setEmailLinkSentTo] = useState<string | null>(null)
+  const [emailLinkError, setEmailLinkError] = useState<string | null>(null)
 
   const redirectTo = searchParams.get("redirect") || "/"
 
@@ -46,6 +51,28 @@ export default function SignInPage() {
     } catch (error) {
       console.error("Sign in error:", error)
       setIsLoading(false)
+    }
+  }
+
+  const handleEmailLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = email.trim()
+    if (!trimmed) return
+    setEmailLinkError(null)
+    setIsSendingEmailLink(true)
+    try {
+      await signInWithEmail(
+        trimmed,
+        window.location.origin + "/auth/confirmed?redirect=" + encodeURIComponent(redirectTo),
+      )
+      setEmailLinkSentTo(trimmed)
+    } catch (error) {
+      console.error("Email link sign in error:", error)
+      const message =
+        error instanceof Error ? error.message : "Could not send sign-in link. Please try again."
+      setEmailLinkError(message)
+    } finally {
+      setIsSendingEmailLink(false)
     }
   }
 
@@ -122,6 +149,70 @@ export default function SignInPage() {
               </>
             )}
           </Button>
+
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          {emailLinkSentTo ? (
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm text-foreground">
+              <p className="font-medium">Check your inbox</p>
+              <p className="text-muted-foreground mt-1">
+                We sent a sign-in link to <span className="font-medium text-foreground">{emailLinkSentTo}</span>.
+                Click it to finish signing in.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailLinkSentTo(null)
+                  setEmail("")
+                }}
+                className="mt-2 text-xs text-brand-primary hover:underline"
+              >
+                Use a different email
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleEmailLinkSubmit} className="space-y-2">
+              <Input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading || isSendingEmailLink}
+              />
+              {emailLinkError && (
+                <p className="text-xs text-destructive">{emailLinkError}</p>
+              )}
+              <Button
+                type="submit"
+                disabled={isLoading || isSendingEmailLink || !email.trim()}
+                className="w-full"
+                size="lg"
+                variant="outline"
+              >
+                {isSendingEmailLink ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending link...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-5 h-5 mr-2" />
+                    Email me a sign-in link
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
