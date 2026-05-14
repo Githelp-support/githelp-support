@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Info, CreditCard } from "lucide-react"
+import { Info, Landmark } from "lucide-react"
 import { useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
+import { Logo } from "@/components/brand/logo"
 import { cn } from "@/lib/utils"
 
 export default function PaymentSettingsPage() {
@@ -699,41 +700,47 @@ export default function PaymentSettingsPage() {
 
                 {/* Set up payouts Section */}
                 <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <h2 className="text-lg font-semibold text-foreground">Set up payouts</h2>
-                    <Info className="w-4 h-4 text-muted-foreground" />
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* GitHub to Stripe flow */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-foreground rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 h-px bg-border relative">
-                        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-2">
-                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="w-12 h-12 bg-[#554abf] rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">S</span>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-6">
-                      All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
-                      payouts from support.
-                    </p>
-
-                    <Button className="bg-[#554abf] hover:bg-[#4a3fa3] text-white">
-                      <CreditCard className="w-4 h-4 mr-2" />
+                  <div className="flex items-center gap-2.5 mb-10">
+                    <h2 className="text-[20px] leading-[1.5] font-semibold text-foreground tracking-[-0.2px]">
                       Set up payouts
-                    </Button>
+                    </h2>
+                    <Info className="w-2.5 h-2.5 text-muted-foreground" />
                   </div>
+
+                  {/* Githelp to Stripe flow */}
+                  <div className="flex items-center gap-[5px] mb-10">
+                    <div className="w-[42px] h-[42px] text-foreground">
+                      <Logo className="w-[42px] h-[42px]" />
+                    </div>
+                    <div className="flex items-center gap-[5px] px-[2px] w-[22px] justify-center">
+                      <span className="block w-1 h-1 rounded-full bg-border" />
+                      <span className="block w-1 h-1 rounded-full bg-border" />
+                      <span className="block w-1 h-1 rounded-full bg-border" />
+                    </div>
+                    <div className="w-[42px] h-[42px] bg-[#635bff] rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5"
+                        viewBox="0 0 32 32"
+                        fill="white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden
+                      >
+                        <path d="M16.064 9.717c-1.808-.671-2.793-1.187-2.793-2.003 0-.687.566-1.082 1.575-1.082 1.853 0 3.762.714 5.071 1.358l.741-4.578c-1.04-.405-3.155-1.069-5.638-1.069-2.143 0-3.93.495-5.265 1.395-1.396.939-2.116 2.275-2.116 3.823 0 2.802 1.717 4.003 4.515 5.022 1.808.671 2.424 1.123 2.424 1.83 0 .687-.581 1.082-1.686 1.082-1.387 0-3.616-.671-5.071-1.535l-.751 4.633c1.25.671 3.563 1.327 5.987 1.327 1.872 0 3.43-.443 4.482-1.254 1.176-.876 1.776-2.182 1.776-3.864 0-2.852-1.737-4.054-4.515-5.036z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <p className="text-[17px] leading-[1.5] text-muted-foreground tracking-[-0.34px] max-w-[502px] mb-10">
+                    All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
+                    payouts from support.
+                  </p>
+
+                  <Button
+                    className="bg-[#635bff] hover:bg-[#5046e5] text-white rounded-[10px] h-auto px-5 py-2.5 gap-[15px] text-[17px] font-normal leading-[1.5] tracking-[-0.34px]"
+                  >
+                    <Landmark className="size-[18px]" strokeWidth={2} />
+                    Set up payouts
+                  </Button>
                 </div>
               </div>
             )}
