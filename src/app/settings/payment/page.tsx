@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Info, CreditCard } from "lucide-react"
+import { Info, CreditCard, Github, ArrowRight } from "lucide-react"
 import { useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
+import { cn } from "@/lib/utils"
 
 export default function PaymentSettingsPage() {
   const [activeTab, setActiveTab] = useState<"helper" | "user">("user")
@@ -557,11 +558,16 @@ export default function PaymentSettingsPage() {
             {activeTab === "user" && (
               <div className="space-y-6">
                 {/* Users of support Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold text-foreground">Users of support</h2>
-                      <Info className="w-4 h-4 text-muted-foreground" />
+                <div className="bg-card rounded-xl border border-border p-6">
+                  <div className="flex items-start justify-between gap-4 mb-6">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold text-foreground">Users of support</h2>
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Choose how users pay for support on this project.
+                      </p>
                     </div>
                     <Button
                       variant="outline"
@@ -574,49 +580,80 @@ export default function PaymentSettingsPage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <h3 className="text-sm font-medium text-foreground">Payment options</h3>
 
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
+                    <div className="grid gap-3">
+                      <label
+                        htmlFor="by-ticket"
+                        className={cn(
+                          "flex items-start gap-3 rounded-lg border bg-background p-4 cursor-pointer transition-colors",
+                          paymentByTicket
+                            ? "border-brand-primary bg-brand-primary/5"
+                            : "border-border hover:bg-muted/40"
+                        )}
+                      >
                         <Checkbox
                           id="by-ticket"
                           checked={paymentByTicket}
                           onCheckedChange={(checked) => setPaymentByTicket(checked === true)}
-                          className="data-[state=checked]:bg-[#554abf] data-[state=checked]:border-[#554abf]"
+                          className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
                         />
-                        <label
-                          htmlFor="by-ticket"
-                          className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer"
-                        >
-                          By the ticket
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </label>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">By the ticket</span>
+                            <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Users pay per ticket based on the configured ticket price.
+                          </p>
+                        </div>
+                      </label>
 
-                      <div className="flex items-center gap-3">
+                      <label
+                        htmlFor="sla"
+                        className={cn(
+                          "flex items-start gap-3 rounded-lg border bg-background p-4 cursor-pointer transition-colors",
+                          paymentBySLA
+                            ? "border-brand-primary bg-brand-primary/5"
+                            : "border-border hover:bg-muted/40"
+                        )}
+                      >
                         <Checkbox
                           id="sla"
                           checked={paymentBySLA}
                           onCheckedChange={(checked) => setPaymentBySLA(checked === true)}
-                          className="data-[state=checked]:bg-[#554abf] data-[state=checked]:border-[#554abf]"
+                          className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
                         />
-                        <label htmlFor="sla" className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                          SLA
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </label>
-                      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">SLA</span>
+                            <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Users pay a recurring fee under a service-level agreement.
+                          </p>
+                        </div>
+                      </label>
                     </div>
                   </div>
                 </div>
 
                 {/* Ticket cost Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-foreground">Ticket cost</h2>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                <div className="bg-card rounded-xl border border-border p-6">
+                  <div className="flex items-start justify-between gap-4 mb-6">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold text-foreground">Ticket cost</h2>
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Set the price users pay to open and resolve a ticket.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="text-muted-foreground border-border bg-transparent"
                       onClick={handleSaveUserSettings}
                       disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
@@ -625,93 +662,109 @@ export default function PaymentSettingsPage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4 items-center">
+                  <div className="divide-y divide-border">
+                    <div className="flex items-center justify-between gap-4 py-4 first:pt-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Start price</span>
-                        <Info className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">Start price</span>
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={startPrice}
-                          onChange={(e) => setStartPrice(e.target.value)}
-                          className="flex-1 text-right border-border focus-visible:border-ring focus-visible:ring-ring"
-                          placeholder="10.00"
-                        />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/ticket</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Cost/minute - first 60 minutes</span>
-                        <Info className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={costPerMinuteFirst60}
-                          onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
-                          className="flex-1 text-right border-border focus-visible:border-ring focus-visible:ring-ring"
-                          placeholder="1.50"
-                        />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            type="number"
+                            value={startPrice}
+                            onChange={(e) => setStartPrice(e.target.value)}
+                            className="w-32 pl-7 text-right"
+                            placeholder="10.00"
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap w-24">USD/ticket</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 items-center">
+                    <div className="flex items-center justify-between gap-4 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Cost/minute - after 60 minutes</span>
-                        <Info className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">Cost/minute &mdash; first 60 minutes</span>
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            type="number"
+                            value={costPerMinuteFirst60}
+                            onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
+                            className="w-32 pl-7 text-right"
+                            placeholder="1.50"
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap w-24">USD/minute</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-4 py-4 last:pb-0">
                       <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={costPerMinuteAfter60}
-                          onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
-                          className="flex-1 text-right border-border focus-visible:border-ring focus-visible:ring-ring"
-                          placeholder="1.00"
-                        />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
+                        <span className="text-sm font-medium text-foreground">Cost/minute &mdash; after 60 minutes</span>
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            type="number"
+                            value={costPerMinuteAfter60}
+                            onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
+                            className="w-32 pl-7 text-right"
+                            placeholder="1.00"
+                          />
+                        </div>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap w-24">USD/minute</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Set up payouts Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <h2 className="text-lg font-semibold text-foreground">Set up payouts</h2>
-                    <Info className="w-4 h-4 text-muted-foreground" />
+                <div className="bg-card rounded-xl border border-border p-6">
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold text-foreground">Set up payouts</h2>
+                      <Info className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Connect your repository to Stripe to start receiving payouts.
+                    </p>
                   </div>
 
-                  <div className="space-y-6">
-                    {/* GitHub to Stripe flow */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-foreground rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                        </svg>
+                  <div className="flex flex-col items-center text-center py-2">
+                    {/* GitHub to Stripe connector */}
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-foreground shadow-sm">
+                        <Github className="w-7 h-7 text-background" />
                       </div>
-                      <div className="flex-1 h-px bg-border relative">
-                        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-2">
-                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
+                      <div className="flex items-center">
+                        <span className="block w-10 h-px bg-border" />
+                        <ArrowRight className="w-4 h-4 text-muted-foreground mx-1" />
+                        <span className="block w-10 h-px bg-border" />
                       </div>
-                      <div className="w-12 h-12 bg-[#554abf] rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">S</span>
+                      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-brand-primary shadow-sm">
+                        <span className="text-white font-bold text-xl leading-none">S</span>
                       </div>
                     </div>
 
-                    <p className="text-sm text-muted-foreground mb-6">
+                    <p className="text-sm text-muted-foreground max-w-md mb-6">
                       All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
                       payouts from support.
                     </p>
 
-                    <Button className="bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                    <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white">
                       <CreditCard className="w-4 h-4 mr-2" />
                       Set up payouts
                     </Button>
