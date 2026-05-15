@@ -280,7 +280,7 @@ export default function SLAsPage() {
                 </div>
               ))
               ) : (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[13px]">No SLAs found</div>
+                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No SLAs found</div>
               )}
             </div>
           </div>
