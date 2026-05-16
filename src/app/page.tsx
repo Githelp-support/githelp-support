@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
-import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown, Ticket, Clock, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,6 +13,13 @@ import { TabSelector } from "@/components/ui/tab-selector"
 import Link from "next/link"
 import { useProjectSelection } from "@/contexts/project-context"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
+import { avatarColorClasses, avatarColorsHex } from "@/lib/constants"
+
+function getAvatarClassFromHex(hex: string | undefined | null): string | null {
+  if (!hex) return null
+  const idx = avatarColorsHex.findIndex((c) => c.toLowerCase() === hex.toLowerCase())
+  return idx >= 0 ? avatarColorClasses[idx] : null
+}
 
 export default function Dashboard() {
   const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
@@ -122,9 +129,9 @@ export default function Dashboard() {
 
   const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
     if (currentSort?.column !== column) {
-      return <ChevronsUpDown className="w-4 h-4 text-[#55555D]" />
+      return <ChevronsUpDown className="w-3.5 h-3.5 text-text-tertiary" />
     }
-    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-[#55555D]" /> : <ChevronDown className="w-4 h-4 text-[#55555D]" />
+    return currentSort.direction === "asc" ? <ChevronUp className="w-3.5 h-3.5 text-text-muted" /> : <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
   }
 
   const sortedHelpers = sortHelpers(filteredHelpers)
@@ -137,99 +144,129 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Overview" subtitle="Stats and insight" />
 
-        <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
-          {/* Time Filters */}
-          <div className="flex gap-2">
-            <Button
-              variant={timeFilter === "current" ? "lavender" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-sm font-medium",
-                timeFilter === "current"
-                  ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
-              )}
-              onClick={() => {
-                setTimeFilter("current")
-                setSelectedMonth("")
-              }}
-            >
-              Current month
-            </Button>
-            <div className="relative">
-              <Select
-                value={selectedMonth}
-                onValueChange={(value) => {
-                  setSelectedMonth(value)
-                  setTimeFilter("choose")
-                }}
-              >
-                <SelectTrigger
+        <main className="flex-1 px-8 py-6 space-y-10 overflow-y-auto bg-page-muted">
+          {/* Page Intro */}
+          <div>
+            <div className="flex items-end justify-between gap-4 pb-5">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Overview</p>
+                <h1 className="text-lg font-semibold text-foreground mt-1">Stats and insight</h1>
+              </div>
+              <div className="inline-flex items-center gap-1 rounded-lg bg-bg-subtle p-1 border border-border/70 shadow-inner">
+                <Button
+                  variant="ghost"
                   size="sm"
-                  variant={timeFilter === "choose" ? "lavender" : "outline"}
-                  className="w-[160px] rounded-lg text-sm font-medium"
+                  className={cn(
+                    "h-7 rounded-md px-3 text-sm font-medium transition-all",
+                    timeFilter === "current"
+                      ? "bg-background text-brand-primary shadow-[0_0_7px_0_rgba(134,140,152,0.30)] hover:bg-background hover:text-brand-primary"
+                      : "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+                  )}
+                  onClick={() => {
+                    setTimeFilter("current")
+                    setSelectedMonth("")
+                  }}
                 >
-                  <SelectValue placeholder="Choose month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  Current month
+                </Button>
+                <Select
+                  value={selectedMonth}
+                  onValueChange={(value) => {
+                    setSelectedMonth(value)
+                    setTimeFilter("choose")
+                  }}
+                >
+                  <SelectTrigger
+                    size="sm"
+                    className={cn(
+                      "w-[160px] h-7 rounded-md border-0 px-3 text-sm font-medium shadow-none transition-all",
+                      timeFilter === "choose"
+                        ? "bg-background text-brand-primary [&_svg]:text-brand-primary shadow-[0_0_7px_0_rgba(134,140,152,0.30)] hover:bg-background"
+                        : "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+                    )}
+                  >
+                    <SelectValue placeholder="Choose month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-7 rounded-md px-3 text-sm font-medium transition-all",
+                    timeFilter === "all"
+                      ? "bg-background text-brand-primary shadow-[0_0_7px_0_rgba(134,140,152,0.30)] hover:bg-background hover:text-brand-primary"
+                      : "bg-transparent text-muted-foreground hover:bg-transparent hover:text-foreground"
+                  )}
+                  onClick={() => {
+                    setTimeFilter("all")
+                    setSelectedMonth("")
+                  }}
+                >
+                  All time
+                </Button>
+              </div>
             </div>
-            <Button
-              variant={timeFilter === "all" ? "lavender" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-sm font-medium",
-                timeFilter !== "all"
-                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
-                  : undefined
-              )}
-              onClick={() => {
-                setTimeFilter("all")
-                setSelectedMonth("")
-              }}
-            >
-              All time
-            </Button>
+            <div className="border-b border-border" />
           </div>
 
           {/* Key Stats */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-base font-semibold text-foreground">Key stats</h2>
+              <span aria-hidden="true" className="w-1.5 h-1.5 rounded-sm bg-brand-primary" />
+              <h2 className="text-sm font-medium uppercase tracking-[0.08em] text-text-muted">Key stats</h2>
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
+              <Card className="border-border-subtle shadow-none py-5 bg-gradient-to-b from-background to-bg-subtle">
                 <CardContent className="px-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Number of tickets solved</span>
+                      <Info className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-avatar-5 flex items-center justify-center shrink-0">
+                      <Ticket className="w-4 h-4 text-foreground" />
+                    </div>
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-3xl font-semibold tracking-tight text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-xs text-muted-foreground mt-1">this period</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
+              <Card className="border-border-subtle shadow-none py-5 bg-gradient-to-b from-background to-bg-subtle">
                 <CardContent className="px-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Total time spent</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Total time spent</span>
+                      <Info className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-avatar-2 flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4 text-foreground" />
+                    </div>
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-3xl font-semibold tracking-tight text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-xs text-muted-foreground mt-1">this period</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
+              <Card className="border-border-subtle shadow-none py-5 bg-gradient-to-b from-background to-bg-subtle">
                 <CardContent className="px-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Percentage solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Percentage solved</span>
+                      <Info className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-avatar-4 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-foreground" />
+                    </div>
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-3xl font-semibold tracking-tight text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-xs text-muted-foreground mt-1">this period</div>
                 </CardContent>
               </Card>
             </div>
@@ -239,8 +276,14 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-8">
             {/* Helpers Table */}
             <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
-              <div className="mb-4">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-sm bg-brand-primary" />
+                  <h2 className="text-sm font-medium uppercase tracking-[0.08em] text-text-muted">Helpers</h2>
+                  <span className="rounded-full bg-bg-subtle text-text-muted px-2 py-0.5 text-xs">
+                    {filteredHelpers.length}
+                  </span>
+                </div>
                 <TabSelector
                   options={[
                     { value: "all", label: "View all" },
@@ -252,26 +295,26 @@ export default function Dashboard() {
                   onChange={(value) => setHelperFilter(value as typeof helperFilter)}
                 />
               </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+              <Card className="border border-border-subtle rounded-xl py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-[#55555D]">
+                  <div className="bg-bg-subtle px-6 py-2.5 border-b border-border-subtle">
+                    <div className="grid grid-cols-12 gap-4 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                       <div
-                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-text-muted"
                         onClick={() => handleHelperSort("name")}
                       >
                         Name
                         {getSortIcon("name", helperSort)}
                       </div>
                       <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-text-muted"
                         onClick={() => handleHelperSort("tickets")}
                       >
                         No of tickets
                         {getSortIcon("tickets", helperSort)}
                       </div>
                       <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-text-muted"
                         onClick={() => handleHelperSort("time")}
                       >
                         Total time
@@ -279,36 +322,51 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                  {sortedHelpers.map((helper, index) => (
-                    <div key={index} className="px-4 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 flex items-center gap-3">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: helper.color }}
-                          >
-                            {helper.initial}
+                  {sortedHelpers.map((helper, index) => {
+                    const avatarClass = getAvatarClassFromHex(helper.color)
+                    return (
+                      <div
+                        key={index}
+                        className="px-4 py-2.5 border-b border-border-subtle/60 last:border-b-0 transition-colors hover:bg-page-muted"
+                      >
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-6 flex items-center gap-3">
+                            <div
+                              className={cn(
+                                "w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0",
+                                avatarClass
+                              )}
+                              style={avatarClass ? undefined : { backgroundColor: helper.color }}
+                            >
+                              {helper.initial}
+                            </div>
+                            <span className="text-sm text-foreground">{helper.name}</span>
                           </div>
-                          <span className="text-sm text-foreground">{helper.name}</span>
-                        </div>
-                        <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
-                        <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
-                        <div className="col-span-1 flex justify-end">
-                          <Link href={`/helpers/${helper.id}`}>
-                            <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
-                          </Link>
+                          <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
+                          <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
+                          <div className="col-span-1 flex justify-end">
+                            <Link href={`/helpers/${helper.id}`}>
+                              <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
+                            </Link>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </CardContent>
               </Card>
             </div>
 
             {/* Issue Types Table */}
             <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
-              <div className="mb-4">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-sm bg-brand-primary" />
+                  <h2 className="text-sm font-medium uppercase tracking-[0.08em] text-text-muted">Issue types</h2>
+                  <span className="rounded-full bg-bg-subtle text-text-muted px-2 py-0.5 text-xs">
+                    {filteredIssueTypes.length}
+                  </span>
+                </div>
                 <TabSelector
                   options={[
                     { value: "all", label: "View all" },
@@ -318,26 +376,26 @@ export default function Dashboard() {
                   onChange={(value) => setIssueFilter(value as typeof issueFilter)}
                 />
               </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+              <Card className="border border-border-subtle rounded-xl py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-[#55555D]">
+                  <div className="bg-bg-subtle px-6 py-2.5 border-b border-border-subtle">
+                    <div className="grid grid-cols-12 gap-4 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                       <div
-                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-text-muted"
                         onClick={() => handleIssueSort("name")}
                       >
                         Name
                         {getSortIcon("name", issueSort)}
                       </div>
                       <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-text-muted"
                         onClick={() => handleIssueSort("tickets")}
                       >
                         No of tickets
                         {getSortIcon("tickets", issueSort)}
                       </div>
                       <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-text-muted"
                         onClick={() => handleIssueSort("time")}
                       >
                         Total time
@@ -346,7 +404,10 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {sortedIssueTypes.map((issue, index) => (
-                    <div key={index} className="px-4 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                    <div
+                      key={index}
+                      className="px-4 py-2.5 border-b border-border-subtle/60 last:border-b-0 transition-colors hover:bg-page-muted"
+                    >
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
                         <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
