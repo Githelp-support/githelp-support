@@ -327,7 +327,7 @@ export function Sidebar({ className }: SidebarProps) {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
             const activeClasses = "bg-brand-primary/10 text-brand-primary"
-            const inactiveClasses = "text-[#55555D] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            const inactiveClasses = "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
 
             return (
               <div key={item.name}>
@@ -431,7 +431,7 @@ export function Sidebar({ className }: SidebarProps) {
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
           const className = `flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
-            isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-[#55555D] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
           }`
           const content = (
             <>
