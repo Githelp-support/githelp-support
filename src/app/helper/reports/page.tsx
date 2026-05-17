@@ -232,7 +232,7 @@ export default function HelperReportsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {showPayoutsBusy ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500 text-[14px]">
                       Loading payouts...
                     </td>
                   </tr>
@@ -286,7 +286,7 @@ export default function HelperReportsPage() {
                   </>
                 ) : payouts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500 text-[14px]">
                       No payouts found
                     </td>
                   </tr>

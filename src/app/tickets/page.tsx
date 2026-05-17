@@ -446,7 +446,7 @@ export default function TicketsPage() {
               </div>
             ))
             ) : (
-              <div className="px-6 py-8 text-center text-muted-foreground">No tickets found</div>
+              <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
             )}
           </div>
 
