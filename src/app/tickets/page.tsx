@@ -207,7 +207,7 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "all"}
               className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "all" && (
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
                 )}
@@ -227,7 +227,7 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "available"}
               className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "available" && (
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
                 )}
@@ -247,7 +247,7 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "in-progress"}
               className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "in-progress" && (
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
                 )}
@@ -267,7 +267,7 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "completed"}
               className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-border/60 py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "completed" && (
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
                 )}
@@ -334,7 +334,7 @@ export default function TicketsPage() {
           </div>
 
           {/* Tickets Table */}
-          <div className="bg-white rounded-lg border border-border overflow-hidden">
+          <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
             <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
               <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
                 <div className="col-span-4 flex items-center space-x-2">
