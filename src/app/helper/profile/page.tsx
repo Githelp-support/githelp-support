@@ -1,10 +1,8 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import Link from "next/link"
-import { ChevronsUpDown, Github, Info, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Github, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -17,9 +15,6 @@ import {
   useHelperKeywords,
   useSetHelperKeywords,
 } from "@/hooks/useHelperKeywords"
-import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeEntries"
-import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
-import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useUser } from "@/contexts/user-context"
@@ -29,8 +24,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
 
 export default function HelperProfilePage() {
-  const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
-  const [selectedMonth, setSelectedMonth] = useState<string>("")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [category, setCategory] = useState<"core" | "extended" | "community">("community")
@@ -43,15 +36,6 @@ export default function HelperProfilePage() {
 
   const { data: helperId, isLoading: currentHelperLoading } = useCurrentHelper(projectId)
   const { data: helperData, isLoading: helperLoading } = useHelper(helperId ?? "")
-  const { data: helperTicketsData } = useHelperTickets(helperId ?? "", projectId)
-  const { data: timeEntriesData } = useTimeEntries({
-    helperId: helperId ?? "",
-    projectId,
-  })
-  const { data: transfersData } = usePaymentTransfers({
-    helperId: helperId ?? "",
-    projectId,
-  })
 
   const { data: projectKeywords = [] } = useProjectKeywords(projectId)
   const { data: selectedKeywordIds } = useHelperKeywords(helperId ?? undefined, projectId)
@@ -125,68 +109,6 @@ export default function HelperProfilePage() {
       setSelectedKeywords(selectedKeywordIds)
     }
   }, [selectedKeywordIds])
-
-  const generateMonthOptions = () => {
-    const months = []
-    const now = new Date()
-    for (let i = 1; i <= 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthName = date.toLocaleDateString("en-US", { month: "long" })
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-      months.push({ value, label: `${monthName} ${date.getFullYear()}`, monthYear: `${monthName} ${date.getFullYear()}` })
-    }
-    return months
-  }
-
-  const monthOptions = generateMonthOptions()
-
-  const stats = useMemo(() => {
-    if (!timeEntriesData) return { ticketsSolved: 0, totalTime: "0min", percentageSolved: 0 }
-    const completedTickets = new Set(timeEntriesData.map((entry) => entry.ticket_id))
-    const totalTime = calculateTotalTime(timeEntriesData)
-    return {
-      ticketsSolved: completedTickets.size,
-      totalTime: formatTime(totalTime),
-      percentageSolved: 85,
-    }
-  }, [timeEntriesData])
-
-  const tickets = useMemo(() => {
-    if (!helperTicketsData || helperTicketsData.length === 0) {
-      if (!transfersData) return []
-      return transfersData.map((transfer) => ({
-        id: transfer.ticket_id?.slice(0, 5) || "-",
-        fullId: transfer.ticket_id ?? "",
-        date: transfer.completed_at ? new Date(transfer.completed_at).toLocaleDateString("en-GB") : "-",
-        type: "Bug",
-        amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
-        status: transfer.status === "completed" ? "Completed" : "In progress",
-      }))
-    }
-    const transfersMap = new Map((transfersData || []).map((t) => [t.ticket_id, t]))
-    return helperTicketsData.map((ticket) => {
-      const transfer = transfersMap.get(ticket.id)
-      return {
-        id: ticket.id.slice(0, 5),
-        fullId: ticket.id,
-        date: ticket.completed_at
-          ? new Date(ticket.completed_at).toLocaleDateString("en-GB")
-          : ticket.created_at
-            ? new Date(ticket.created_at).toLocaleDateString("en-GB")
-            : "-",
-        type: "Bug",
-        amount: transfer ? formatAmount(transfer.amount_smallest_unit, transfer.currency) : "-",
-        status:
-          ticket.status === "completed"
-            ? "Completed"
-            : ticket.status === "in-progress"
-              ? "In progress"
-              : ticket.status === "available"
-                ? "Available"
-                : "Unknown",
-      }
-    })
-  }, [helperTicketsData, transfersData])
 
   const handleSaveProfile = async () => {
     if (!user?.id) return
@@ -410,183 +332,6 @@ export default function HelperProfilePage() {
               )}
             </Button>
           </section>
-
-          {/* Time period filters */}
-          <div className="flex gap-2 mb-6">
-            <Button
-              variant={timeFilter === "current" ? "default" : "outline"}
-              size="sm"
-              className={
-                timeFilter === "current"
-                  ? "bg-brand-primary hover:bg-brand-primary/90 text-white"
-                  : "border-border text-muted-foreground bg-transparent hover:bg-gray-50"
-              }
-              onClick={() => {
-                setTimeFilter("current")
-                setSelectedMonth("")
-              }}
-            >
-              Current month
-            </Button>
-            <Select
-              value={selectedMonth}
-              onValueChange={(value) => {
-                setSelectedMonth(value)
-                setTimeFilter("choose")
-              }}
-            >
-              <SelectTrigger
-                className={`w-[180px] h-9 text-sm ${
-                  timeFilter === "choose"
-                    ? "bg-brand-primary text-white border-brand-primary hover:bg-brand-primary/90"
-                    : "border-border text-muted-foreground bg-transparent hover:bg-gray-50"
-                }`}
-              >
-                <SelectValue placeholder="Choose month" />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant={timeFilter === "all" ? "default" : "outline"}
-              size="sm"
-              className={
-                timeFilter === "all"
-                  ? "bg-brand-primary hover:bg-brand-primary/90 text-white"
-                  : "border-border text-muted-foreground bg-transparent hover:bg-gray-50"
-              }
-              onClick={() => {
-                setTimeFilter("all")
-                setSelectedMonth("")
-              }}
-            >
-              All time
-            </Button>
-          </div>
-
-          {/* Key stats */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Key stats</h2>
-              <Info className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.ticketsSolved}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Total time spent</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.totalTime}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Percentage solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.percentageSolved}%</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* All tickets */}
-          <div>
-            <h2 className="text-lg font-semibold text-foreground mb-4">All tickets</h2>
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                  <div className="col-span-2 flex items-center space-x-2">
-                    <span className="text-sm font-medium text-foreground">Ticket ID</span>
-                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="col-span-2 flex items-center space-x-2">
-                    <span className="text-sm font-medium text-foreground">Date</span>
-                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="col-span-2 flex items-center space-x-2">
-                    <span className="text-sm font-medium text-foreground">Ticket type</span>
-                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="col-span-2 flex items-center space-x-2">
-                    <span className="text-sm font-medium text-foreground">Amount</span>
-                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="col-span-2 flex items-center space-x-2">
-                    <span className="text-sm font-medium text-foreground">Status</span>
-                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="col-span-2"></div>
-                </div>
-              </div>
-              {tickets.map((ticket) => (
-                <div
-                  key={ticket.fullId || ticket.id}
-                  className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]"
-                >
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-2">
-                      <span className="text-foreground font-medium">{ticket.id}</span>
-                    </div>
-                    <div className="col-span-2 text-muted-foreground">{ticket.date}</div>
-                    <div className="col-span-2 text-muted-foreground">{ticket.type}</div>
-                    <div className="col-span-2 text-muted-foreground">{ticket.amount}</div>
-                    <div className="col-span-2">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          ticket.status === "Completed"
-                            ? "bg-status-success-bg text-status-success-text border-0"
-                            : "bg-status-warning-bg text-status-warning-text border-0"
-                        }
-                      >
-                        {ticket.status === "Completed" && "✓ "}
-                        {ticket.status}
-                      </Badge>
-                    </div>
-                    <div className="col-span-2">
-                      {ticket.fullId ? (
-                        <Link href={`/helper/tickets/${ticket.fullId}`}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                          >
-                            Open
-                          </Button>
-                        </Link>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                          disabled
-                        >
-                          Open
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </main>
       </div>
     </div>
