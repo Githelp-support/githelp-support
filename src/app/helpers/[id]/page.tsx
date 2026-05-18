@@ -73,21 +73,20 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
   const monthOptions = generateMonthOptions()
 
-  // Calculate stats from time entries
   const stats = useMemo(() => {
-    if (!timeEntriesData) {
-      return { ticketsSolved: 0, totalTime: "0min", percentageSolved: 0 }
-    }
-
-    const completedTickets = new Set(timeEntriesData.map((entry) => entry.ticket_id))
-    const totalTime = calculateTotalTime(timeEntriesData)
+    const totalTime = timeEntriesData ? calculateTotalTime(timeEntriesData) : 0
+    const tickets = helperTicketsData ?? []
+    const completedCount = tickets.filter((t) => t.status === "completed").length
 
     return {
-      ticketsSolved: completedTickets.size,
+      ticketsSolved: completedCount,
       totalTime: formatTime(totalTime),
-      percentageSolved: 85, // TODO: Calculate from actual completion rate
+      percentageSolved:
+        tickets.length > 0
+          ? Math.round((completedCount / tickets.length) * 100)
+          : 0,
     }
-  }, [timeEntriesData])
+  }, [timeEntriesData, helperTicketsData])
 
   // Transform helper tickets to ticket list
   const tickets = useMemo(() => {
