@@ -205,31 +205,31 @@ export default function Dashboard() {
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
-                <CardContent className="px-5">
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+                <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
-                <CardContent className="px-5">
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+                <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center">
-                <CardContent className="px-5">
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+                <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-2xl font-semibold text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-[22px] font-[550] text-foreground">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
