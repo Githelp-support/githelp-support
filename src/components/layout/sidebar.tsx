@@ -60,6 +60,13 @@ const sizeRadiusMap: Record<string, string> = {
 // branding is still loading. AvatarImage is only mounted when we actually
 // have a non-empty logo URL, ensuring the fallback never gets gated behind
 // the branding fetch.
+//
+// We key the Radix Avatar Root on `logoUrl|projectName` so it fully remounts
+// whenever the project changes. Radix's Avatar keeps an internal
+// `imageLoadingStatus` state on the Root; without remounting, transitioning
+// from a project with a logo to one without (or between logos that resolve
+// at different speeds) can leave the state stuck at "loaded" — at which
+// point AvatarFallback won't render and the icon visually disappears.
 const ProjectLogo = ({
   logoUrl,
   projectName,
@@ -74,7 +81,7 @@ const ProjectLogo = ({
   const hasLogo = typeof logoUrl === "string" && logoUrl.length > 0
 
   return (
-    <Avatar className={`${size} ${radius}`}>
+    <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${radius}`}>
       {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
       <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
         {firstLetter}
