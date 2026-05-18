@@ -145,7 +145,7 @@ export default function InviteContributorsPage() {
                         </div>
                         <Button variant="outline" asChild>
                             <Link href={`/projects/${projectId}`}>
-                                <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
+                                <ArrowRight className="w-4 h-4 rotate-180" />
                                 Back to project
                             </Link>
                         </Button>
@@ -235,12 +235,12 @@ export default function InviteContributorsPage() {
                             >
                                 {createInvite.isPending ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin" />
                                         Inviting...
                                     </>
                                 ) : (
                                     <>
-                                        <Users className="w-4 h-4 mr-2" />
+                                        <Users className="w-4 h-4" />
                                         Invite {selectedContributors.size} as helpers
                                     </>
                                 )}

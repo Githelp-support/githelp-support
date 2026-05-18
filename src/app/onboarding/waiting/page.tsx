@@ -101,7 +101,7 @@ export default function WaitingPage() {
                             >
                                 {isCreating ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin" />
                                         Creating...
                                     </>
                                 ) : (
@@ -148,7 +148,7 @@ export default function WaitingPage() {
                                 <Link href="/onboarding/join">
                                     <Button variant="outline" className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white">
                                         Find a project
-                                        <ArrowRight className="w-4 h-4 ml-2" />
+                                        <ArrowRight className="w-4 h-4" />
                                     </Button>
                                 </Link>
                             </div>

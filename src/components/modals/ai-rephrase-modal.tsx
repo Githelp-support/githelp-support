@@ -79,7 +79,7 @@ export function AIRephraseModal({ isOpen, onClose, originalText }: AIRephraseMod
                   size="sm"
                   className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <RefreshCw className="w-4 h-4" />
                   Regenerate
                 </Button>
               )}
@@ -94,7 +94,7 @@ export function AIRephraseModal({ isOpen, onClose, originalText }: AIRephraseMod
                       Click &quot;Generate AI Interpretation&quot; to get a clearer understanding of the user&apos;s request.
                     </p>
                     <Button onClick={handleRephrase} variant="lavender">
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      <Sparkles className="w-4 h-4" />
                       Generate AI Interpretation
                     </Button>
                   </div>

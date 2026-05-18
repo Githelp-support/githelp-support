@@ -289,7 +289,7 @@ export default function InviteAcceptancePage() {
                             </p>
                             <Link href={`/auth/signin?redirect=${encodeURIComponent(`/invite/${token}`)}`}>
                                 <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
-                                    <LogIn className="w-4 h-4 mr-2" />
+                                    <LogIn className="w-4 h-4" />
                                     Sign in to continue
                                 </Button>
                             </Link>
@@ -306,7 +306,7 @@ export default function InviteAcceptancePage() {
                             >
                                 {isProcessing ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin" />
                                         Joining...
                                     </>
                                 ) : (

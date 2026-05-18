@@ -44,7 +44,7 @@ export default function SupportTicketsPage() {
             </p>
             <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
               <Link href="/support/chat">
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 New support request
               </Link>
             </Button>
@@ -75,7 +75,7 @@ export default function SupportTicketsPage() {
                 <p className="text-muted-foreground mb-4">You have not created any support tickets yet.</p>
                 <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
                   <Link href="/support/chat">
-                    <Plus className="mr-2 h-4 w-4" />
+                    <Plus className="h-4 w-4" />
                     New support request
                   </Link>
                 </Button>

@@ -738,7 +738,7 @@ export default function PaymentSettingsPage() {
                     </p>
 
                     <Button className="bg-[#554abf] hover:bg-[#4a3fa3] text-white">
-                      <CreditCard className="w-4 h-4 mr-2" />
+                      <CreditCard className="w-4 h-4" />
                       Set up payouts
                     </Button>
                   </div>

@@ -235,7 +235,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("choose")}
                         >
-                            <ArrowLeft className="w-4 h-4 mr-1" />
+                            <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-bold">Create a new project</CardTitle>
@@ -292,7 +292,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("create")}
                         >
-                            <ArrowLeft className="w-4 h-4 mr-1" />
+                            <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-bold">Import from GitHub</CardTitle>
@@ -310,7 +310,7 @@ export default function OnboardingPage() {
                                     onClick={handleConnectGitHub}
                                     className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white"
                                 >
-                                    <Github className="w-5 h-5 mr-2" />
+                                    <Github className="w-5 h-5" />
                                     Connect with GitHub
                                 </Button>
                             </div>
@@ -328,7 +328,7 @@ export default function OnboardingPage() {
                                     onClick={handleReauthorizeGitHub}
                                     className="w-full"
                                 >
-                                    <Github className="w-4 h-4 mr-2" />
+                                    <Github className="w-4 h-4" />
                                     Re-authorize with GitHub to grant more permissions
                                 </Button>
                             </div>
@@ -366,9 +366,9 @@ export default function OnboardingPage() {
                                                     )}
                                                 </div>
                                                 {isCreating ? (
-                                                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0 ml-2" />
+                                                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0" />
                                                 ) : (
-                                                    <Check className="w-5 h-5 text-muted-foreground flex-shrink-0 ml-2" />
+                                                    <Check className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                                                 )}
                                             </button>
                                         ))}
@@ -407,7 +407,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("create")}
                         >
-                            <ArrowLeft className="w-4 h-4 mr-1" />
+                            <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-bold">Create a new project</CardTitle>
@@ -449,7 +449,7 @@ export default function OnboardingPage() {
                             >
                                 {isCreating ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin" />
                                         Creating...
                                     </>
                                 ) : (
