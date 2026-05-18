@@ -530,13 +530,13 @@ export default function HelpersPage() {
                 if (!projectId) {
                   return (
                     <div className="px-6 py-12 text-center">
-                      <p className="text-muted-foreground mb-2">Select a project from the sidebar to view helpers.</p>
-                      <p className="text-sm text-muted-foreground">If you don&apos;t see any projects, you may need to create one or be invited to a project first.</p>
+                      <p className="text-[13px] text-muted-foreground mb-2">Select a project from the sidebar to view helpers.</p>
+                      <p className="text-[13px] text-muted-foreground">If you don&apos;t see any projects, you may need to create one or be invited to a project first.</p>
                     </div>
                   )
                 }
                 if (helpersLoading || requestsLoading || invitesLoading) {
-                  return <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                  return <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">Loading...</div>
                 }
                 if (currentView === "invited") {
                   return helperInvitesData && helperInvitesData.length > 0 ? (
@@ -604,7 +604,7 @@ export default function HelpersPage() {
                       </div>
                     ))
                 ) : (
-                  <div className="px-6 py-8 text-center text-muted-foreground">No pending invites</div>
+                  <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending invites</div>
                 )
                 }
                 if (currentView === "added") {
@@ -661,8 +661,8 @@ export default function HelpersPage() {
                   if (noRealHelpers && projectId) {
                     return (
                       <div className="px-6 py-12 text-center">
-                        <p className="text-[14px] text-muted-foreground mb-2">No helpers yet.</p>
-                        <p className="text-[14px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
+                        <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
+                        <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
                         <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
                           <Plus className="w-4 h-4 mr-2" />
                           Add new helper
@@ -672,8 +672,8 @@ export default function HelpersPage() {
                   }
                   return (
                     <div className="px-6 py-12 text-center text-muted-foreground">
-                      <p className="text-[14px] mb-2">No helpers match your filters.</p>
-                      <p className="text-[14px]">Try clearing search or switching category to see your team.</p>
+                      <p className="text-[13px] mb-2">No helpers match your filters.</p>
+                      <p className="text-[13px]">Try clearing search or switching category to see your team.</p>
                     </div>
                   )
                 }
@@ -721,7 +721,7 @@ export default function HelpersPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="px-6 py-8 text-center text-muted-foreground">No pending requests</div>
+                  <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending requests</div>
                 )
               })()}
             </div>
