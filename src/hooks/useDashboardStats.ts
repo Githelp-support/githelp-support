@@ -150,18 +150,16 @@ export function useDashboardStats(projectId?: string) {
             });
 
             // Calculate key stats
-            // Count tickets that have time entries (work has been done on them)
-            const ticketsWithWork =
-                tickets?.filter((ticket) =>
-                    timeEntries.some((entry) => entry.ticket_id === ticket.id)
-                ) || [];
-            const totalTicketsSolved = ticketsWithWork.length;
+            const completedTickets =
+                tickets?.filter((ticket) => ticket.status === "completed") ||
+                [];
+            const totalTicketsSolved = completedTickets.length;
             const totalTime = calculateTotalTime(timeEntries);
             const totalTimeSpent = totalTime > 0 ? formatTime(totalTime) : "-";
             const percentageSolved =
                 tickets && tickets.length > 0
                     ? Math.round(
-                          (ticketsWithWork.length / tickets.length) * 100
+                          (completedTickets.length / tickets.length) * 100
                       )
                     : 0;
 
