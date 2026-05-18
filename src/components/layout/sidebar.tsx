@@ -278,7 +278,7 @@ export function Sidebar({ className }: SidebarProps) {
                       projectName={selectedProject?.name || ""}
                       size="w-6 h-6"
                     />
-                    <span className="text-sm font-semibold text-sidebar-foreground truncate">
+                    <span className="text-sm font-[550] text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -504,10 +504,10 @@ function ProjectLogoWithBranding({
         size="w-5 h-5"
       />
       <span
-        className={`truncate text-sm font-medium ${
+        className={`truncate text-sm ${
           isSelected
-            ? ""
-            : "text-[#818185] group-focus:text-sidebar-foreground"
+            ? "font-[550]"
+            : "font-medium text-[#818185] group-focus:font-[550] group-focus:text-sidebar-foreground"
         }`}
       >
         {project.name}
