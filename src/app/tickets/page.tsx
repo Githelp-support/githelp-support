@@ -205,11 +205,11 @@ export default function TicketsPage() {
               type="button"
               onClick={() => setStatusFilter("all")}
               aria-pressed={statusFilter === "all"}
-              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "all" && (
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.total}</div>
@@ -225,11 +225,11 @@ export default function TicketsPage() {
               type="button"
               onClick={() => setStatusFilter("available")}
               aria-pressed={statusFilter === "available"}
-              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "available" && (
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.available}</div>
@@ -245,11 +245,11 @@ export default function TicketsPage() {
               type="button"
               onClick={() => setStatusFilter("in-progress")}
               aria-pressed={statusFilter === "in-progress"}
-              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "in-progress" && (
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
@@ -265,11 +265,11 @@ export default function TicketsPage() {
               type="button"
               onClick={() => setStatusFilter("completed")}
               aria-pressed={statusFilter === "completed"}
-              className="text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "completed" && (
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
