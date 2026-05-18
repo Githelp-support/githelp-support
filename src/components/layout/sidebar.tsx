@@ -466,7 +466,7 @@ export function Sidebar({ className }: SidebarProps) {
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
-              <div className="text-sm font-medium text-[#55555E] mt-1 truncate">
+              <div className="text-xs font-medium text-muted-foreground mt-1 truncate">
                 Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </div>
             </div>
