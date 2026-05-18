@@ -302,7 +302,7 @@ export function Sidebar({ className }: SidebarProps) {
                   className="text-brand-primary"
                   onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4" />
                   Add new
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -316,7 +316,7 @@ export function Sidebar({ className }: SidebarProps) {
                 className="w-full text-brand-primary"
                 onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" />
                 Create Project
               </Button>
             </div>

@@ -107,7 +107,7 @@ export default function LandingPageSettings() {
                     target="_blank"
                   >
                     <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent cursor-pointer">
-                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <ExternalLink className="w-4 h-4" />
                       Open
                     </Button>
                   </Link>
@@ -119,12 +119,12 @@ export default function LandingPageSettings() {
                   >
                     {copied ? (
                       <>
-                        <Check className="w-4 h-4 mr-2" />
+                        <Check className="w-4 h-4" />
                         Copied!
                       </>
                     ) : (
                       <>
-                        <Copy className="w-4 h-4 mr-2" />
+                        <Copy className="w-4 h-4" />
                         Copy link
                       </>
                     )}
@@ -167,7 +167,7 @@ export default function LandingPageSettings() {
                       disabled={!newResourceName || !newResourceUrl || createResource.isPending}
                       variant="lavender"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-4 h-4" />
                       {createResource.isPending ? "Adding..." : "Add resource"}
                     </Button>
                   </div>

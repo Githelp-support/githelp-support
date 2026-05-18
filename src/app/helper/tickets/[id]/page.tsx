@@ -741,8 +741,8 @@ export default function TicketDetailPage() {
                   <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
                 )}
                 {!isTicketEnded && (
-                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10 text-[13px]">
-                    <Plus className="w-4 h-4 mr-1" />
+                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
+                    <Plus className="w-4 h-4" />
                     Invite other helper
                   </Button>
                 )}
@@ -920,7 +920,7 @@ export default function TicketDetailPage() {
               onClick={handleAddSelfAsHelper}
               disabled={addSelfAsHelper.isPending}
             >
-              <UserPlus className="w-4 h-4 mr-2" />
+              <UserPlus className="w-4 h-4" />
               Add myself as helper
             </Button>
           </DialogFooter>

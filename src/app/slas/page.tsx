@@ -187,7 +187,7 @@ export default function SLAsPage() {
               variant="lavender"
               onClick={() => setIsCreateSLADrawerOpen(true)}
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4" />
               Create new SLA
             </Button>
           </div>

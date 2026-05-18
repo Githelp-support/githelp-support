@@ -269,7 +269,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                 <Info className="w-4 h-4 text-muted-foreground" />
               </div>
               <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent">
-                <Edit className="w-4 h-4 mr-2" />
+                <Edit className="w-4 h-4" />
                 Edit agreement
               </Button>
             </div>
@@ -635,7 +635,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                     size="sm"
                                     className="border-border text-muted-foreground hover:bg-muted bg-transparent"
                                   >
-                                    <Download className="w-4 h-4 mr-1" />
+                                    <Download className="w-4 h-4" />
                                     Download PDF
                                   </Button>
                                 </div>

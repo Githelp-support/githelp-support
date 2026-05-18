@@ -260,7 +260,7 @@ export function TicketChat(props: TicketChatProps) {
 
               {!isEnded && (
                 <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4" />
                   Invite other helper
                 </Button>
               )}

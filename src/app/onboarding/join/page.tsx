@@ -139,7 +139,7 @@ export default function JoinProjectPage() {
                                     variant="outline"
                                     className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white border-[#24292e]"
                                 >
-                                    <Github className="w-4 h-4 mr-2" />
+                                    <Github className="w-4 h-4" />
                                     Connect with GitHub
                                 </Button>
                             ) : loadingContributed ? (
@@ -181,7 +181,7 @@ export default function JoinProjectPage() {
                                                             <Loader2 className="w-4 h-4 animate-spin" />
                                                         ) : (
                                                             <>
-                                                                <Users className="w-4 h-4 mr-1" />
+                                                                <Users className="w-4 h-4" />
                                                                 Request
                                                             </>
                                                         )}
@@ -201,7 +201,7 @@ export default function JoinProjectPage() {
                             variant="outline"
                             className="w-full"
                         >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
                     </div>

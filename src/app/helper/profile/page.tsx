@@ -238,7 +238,7 @@ export default function HelperProfilePage() {
                         className="text-white hover:opacity-90"
                         style={{ backgroundColor: "#24292e" }}
                       >
-                        <Github className="w-4 h-4 mr-2" />
+                        <Github className="w-4 h-4" />
                         Connect with GitHub
                       </Button>
                     )}

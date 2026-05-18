@@ -235,7 +235,7 @@ export function ImageUploadModal({
                 asChild
               >
                 <span>
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Upload className="h-4 w-4" />
                   {selectedFile ? "Change Image" : "Select Image"}
                 </span>
               </Button>
@@ -253,7 +253,7 @@ export function ImageUploadModal({
           <Button onClick={handleUpload} disabled={!selectedFile || isUploading}>
             {isUploading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Uploading...
               </>
             ) : (

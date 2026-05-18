@@ -195,12 +195,12 @@ export default function ProjectLandingPage() {
                                     >
                                         {createRequest.isPending ? (
                                             <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                <Loader2 className="w-4 h-4 animate-spin" />
                                                 Submitting...
                                             </>
                                         ) : (
                                             <>
-                                                <Users className="w-4 h-4 mr-2" />
+                                                <Users className="w-4 h-4" />
                                                 Request to become a helper
                                             </>
                                         )}
@@ -212,7 +212,7 @@ export default function ProjectLandingPage() {
                                         </p>
                                         <Link href={`/auth/signin?redirect=${encodeURIComponent(`/projects/${projectId}`)}`}>
                                             <Button className="bg-[#554abf] hover:bg-[#4a3fa3] text-white">
-                                                <LogIn className="w-4 h-4 mr-2" />
+                                                <LogIn className="w-4 h-4" />
                                                 Sign in to continue
                                             </Button>
                                         </Link>

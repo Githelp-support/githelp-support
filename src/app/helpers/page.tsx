@@ -419,12 +419,12 @@ export default function HelpersPage() {
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
-                  <UserPlus className="w-4 h-4 mr-2" />
+                  <UserPlus className="w-4 h-4" />
                   Add myself as helper
                 </Button>
               )}
               <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4" />
                 Add new helper
               </Button>
             </div>
@@ -664,7 +664,7 @@ export default function HelpersPage() {
                         <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
                         <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
                         <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
-                          <Plus className="w-4 h-4 mr-2" />
+                          <Plus className="w-4 h-4" />
                           Add new helper
                         </Button>
                       </div>
