@@ -670,9 +670,6 @@ export default function TicketDetailPage() {
                   </div>
                 </div>
               </div>
-              
-              {/* Full-width line under chat */}
-              <div className="w-full border-b border-border"></div>
             </div>
             </div>
 
@@ -744,8 +741,8 @@ export default function TicketDetailPage() {
                   <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
                 )}
                 {!isTicketEnded && (
-                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
-                    <Plus className="w-4 h-4 mr-2" />
+                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10 text-[13px]">
+                    <Plus className="w-4 h-4 mr-1" />
                     Invite other helper
                   </Button>
                 )}
