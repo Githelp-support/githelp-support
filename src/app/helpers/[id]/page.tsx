@@ -229,7 +229,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           </Card>
 
           {/* Time period filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button
               variant={timeFilter === "current" ? "lavender" : "outline"}
               size="sm"
@@ -327,7 +327,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
           {/* All tickets */}
           <div className="space-y-4">
-            <h2 className="text-base font-semibold text-foreground mb-3">All tickets</h2>
+            <h2 className="text-base font-semibold text-foreground">All tickets</h2>
             <Card className="border-border rounded-xl shadow-none py-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
