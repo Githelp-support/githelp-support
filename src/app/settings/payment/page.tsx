@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
@@ -715,17 +716,23 @@ export default function PaymentSettingsPage() {
 
                   <div className="mt-8 flex flex-col gap-10">
                     {/* GitHub → Stripe connection */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex size-[42px] shrink-0 items-center justify-center rounded-lg bg-[#24292f]">
+                    <div className="flex items-center gap-1">
+                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[10px]">
                         <Logo className="size-6 text-[#24292f]" variant="dark" />
                       </div>
-                      <div className="flex items-center gap-1 px-0.5">
+                      <div className="flex items-center gap-1.5 px-0.5">
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                       </div>
-                      <div className="flex size-[42px] shrink-0 items-center justify-center rounded-lg bg-[#635bff]">
-                        <span className="text-lg font-bold leading-none text-white">S</span>
+                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[10px]">
+                        <Image
+                          src="/images/stripe-s.png"
+                          alt="Stripe"
+                          width={22}
+                          height={22}
+                          className="size-[22px] object-contain mix-blend-lighten"
+                        />
                       </div>
                     </div>
 
