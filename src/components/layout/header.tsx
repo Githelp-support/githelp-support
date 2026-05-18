@@ -122,7 +122,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-background px-8 pt-3 pb-6">
+      <header className="sticky top-0 z-30 bg-background px-8 pt-5 pb-6">
         <div className="flex items-center justify-between gap-8">
           <div className="flex items-center gap-4">
             {showBackButton && (
@@ -149,7 +149,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                   </div>
                 )}
               </div>
-              {subtitle && <p className="mt-0.5 text-sm font-normal text-muted-foreground/80">{subtitle}</p>}
+              {subtitle && <p className="mt-0.5 text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>}
             </div>
           </div>
           <div className="flex items-center gap-4">
