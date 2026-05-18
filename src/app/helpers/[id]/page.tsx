@@ -94,7 +94,8 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       // Fallback to transfers if no tickets found via participants
       if (!transfersData) return []
       return transfersData.map((transfer) => ({
-        id: transfer.ticket_id?.slice(0, 5) || "-",
+        id: transfer.ticket_id ?? "",
+        displayId: transfer.ticket_id?.slice(0, 5) || "-",
         date: transfer.completed_at ? new Date(transfer.completed_at).toLocaleDateString("en-GB") : "-",
         type: "Bug", // TODO: Get from ticket
         amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
@@ -113,7 +114,8 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     return helperTicketsData.map((ticket) => {
       const transfer = transfersMap.get(ticket.id)
       return {
-        id: ticket.id.slice(0, 5),
+        id: ticket.id,
+        displayId: ticket.id.slice(0, 5),
         date: ticket.completed_at
           ? new Date(ticket.completed_at).toLocaleDateString("en-GB")
           : ticket.created_at
@@ -372,7 +374,16 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
-                              <span className="text-sm text-foreground font-semibold">{ticket.id}</span>
+                              {ticket.id ? (
+                                <Link
+                                  href={`/helper/tickets/${ticket.id}`}
+                                  className="text-sm text-foreground font-semibold hover:text-brand-primary"
+                                >
+                                  {ticket.displayId}
+                                </Link>
+                              ) : (
+                                <span className="text-sm text-foreground font-semibold">{ticket.displayId}</span>
+                              )}
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.date}</td>
@@ -394,13 +405,25 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2 justify-end">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-lg border-border text-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
-                              >
-                                Open
-                              </Button>
+                              {ticket.id ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-lg border-border text-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+                                  asChild
+                                >
+                                  <Link href={`/helper/tickets/${ticket.id}`}>Open</Link>
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-lg border-border text-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+                                  disabled
+                                >
+                                  Open
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
