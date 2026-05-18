@@ -180,7 +180,7 @@ export default function SLAsPage() {
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-border focus-visible:border-ring"
+                className="pl-10 border-border"
               />
             </div>
             <Button
