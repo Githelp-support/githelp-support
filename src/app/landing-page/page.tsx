@@ -7,7 +7,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { FormField } from "@/components/ui/form-field"
 import { Plus, Trash2, ExternalLink, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useUserProjects, useProjectResources, useCreateProjectResource, useDeleteProjectResource } from "@/hooks/useProject"
@@ -92,8 +92,8 @@ export default function LandingPageSettings() {
             <div className="bg-white rounded-lg border border-border p-6 mb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-1">Your support page</h3>
-                  <p className="text-sm text-[#818185]">Share this link with your users to access support</p>
+                  <h3 className="text-sm mb-1" style={{ color: '#0A0A0A', fontWeight: 550 }}>Your support page</h3>
+                  <p className="text-sm text-[#0A0A0A]">Share this link with your users to access support</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link
@@ -137,36 +137,30 @@ export default function LandingPageSettings() {
             <div className="space-y-6">
               {/* Add Resource Section */}
                 <div className="bg-white rounded-lg border border-border p-6">
-                  <h2 className="text-lg font-semibold text-foreground mb-6">Add resource</h2>
+                  <h2 className="text-base font-semibold text-foreground mb-6">Add resource</h2>
 
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="resource-name" className="text-sm font-medium text-foreground">
-                        Name
-                      </Label>
+                    <FormField label="Name" id="resource-name">
                       <Input
                         id="resource-name"
                         type="text"
                         value={newResourceName}
                         onChange={(e) => setNewResourceName(e.target.value)}
-                        className="mt-2 border-border"
+                        className="bg-background border-border"
                         placeholder="e.g., Documentation"
                       />
-                    </div>
+                    </FormField>
 
-                    <div>
-                      <Label htmlFor="resource-url" className="text-sm font-medium text-foreground">
-                        URL
-                      </Label>
+                    <FormField label="URL" id="resource-url">
                       <Input
                         id="resource-url"
                         type="url"
                         value={newResourceUrl}
                         onChange={(e) => setNewResourceUrl(e.target.value)}
-                        className="mt-2 border-border"
+                        className="bg-background border-border"
                         placeholder="https://example.com"
                       />
-                    </div>
+                    </FormField>
 
                     <Button
                       onClick={handleAddResource}
@@ -182,7 +176,7 @@ export default function LandingPageSettings() {
                 {/* Resources List Section */}
                 <div className="bg-white rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-foreground">Resources</h2>
+                    <h2 className="text-base font-semibold text-foreground">Resources</h2>
                     <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent">
                       Save
                     </Button>
