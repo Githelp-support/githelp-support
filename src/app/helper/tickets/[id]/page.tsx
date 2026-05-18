@@ -40,6 +40,7 @@ import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
 import { supabase } from "@/lib/supabase/client"
 import { useUser } from "@/contexts/user-context"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -58,6 +59,7 @@ interface Message {
   timestamp: string
   avatar?: string
   senderName?: string
+  senderId?: string
   type?: "claimed" | "ended"
 }
 
@@ -204,6 +206,7 @@ export default function TicketDetailPage() {
         }),
         avatar: claimer.name?.[0]?.toUpperCase() || "H",
         senderName: claimer.name || "Helper",
+        senderId: claimer.id,
         type: "claimed",
       })
     }
@@ -222,6 +225,7 @@ export default function TicketDetailPage() {
         }),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
         senderName: msg.sender?.name || "Unknown",
+        senderId: msg.sender_id ?? msg.sender?.id,
         type: undefined,
       }))
     )
@@ -229,11 +233,14 @@ export default function TicketDetailPage() {
 
   /** First user message in the chat, or ticket description as fallback (for "Info about issue"). */
   const firstIssueMessage = useMemo(() => {
+    const ticketCreatorId =
+      (ticketDetails?.user as { id?: string } | undefined)?.id ?? ticket?.created_by ?? undefined
     const firstUser = messagesData?.find((m: { sender_type: string }) => m.sender_type === "user")
     if (firstUser) {
       return {
         content: firstUser.content,
         senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "Customer",
+        senderId: (firstUser as { sender_id?: string }).sender_id ?? ticketCreatorId,
         timestamp: firstUser.created_at,
       }
     }
@@ -241,11 +248,17 @@ export default function TicketDetailPage() {
       return {
         content: ticket?.description ?? ticketDetails?.description ?? "",
         senderName: ticketDetails?.user?.name ?? "Customer",
+        senderId: ticketCreatorId,
         timestamp: ticket?.created_at ?? "",
       }
     }
-    return { content: "", senderName: ticketDetails?.user?.name ?? "Customer", timestamp: ticket?.created_at ?? "" }
-  }, [messagesData, ticket?.description, ticket?.created_at, ticketDetails?.user?.name, ticketDetails?.description])
+    return {
+      content: "",
+      senderName: ticketDetails?.user?.name ?? "Customer",
+      senderId: ticketCreatorId,
+      timestamp: ticket?.created_at ?? "",
+    }
+  }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -439,40 +452,42 @@ export default function TicketDetailPage() {
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
                 <div className="bg-white rounded-t-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
-                  <div className="p-4">
-                    <div className="max-w-4xl space-y-6">
+                  <div className="px-6 py-5">
+                    <div className="max-w-4xl flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
                 <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-muted text-foreground">
-                          {firstIssueMessage.senderName?.[0]?.toUpperCase() ?? "C"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h2 className="font-medium text-foreground">{firstIssueMessage.senderName}</h2>
-                        <p className="text-sm text-muted-foreground">
-                          {firstIssueMessage.timestamp
-                            ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "—"}
-                        </p>
+                    <div className="flex gap-3">
+                      <div
+                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        style={{ backgroundColor: getAvatarColorHexForId(firstIssueMessage.senderId) }}
+                      >
+                        {firstIssueMessage.senderName?.[0]?.toUpperCase() ?? "C"}
                       </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-medium text-foreground mb-2">Info about issue</h3>
-                      <div className="space-y-3">
-                        {firstIssueMessage.content ? (
-                          <MarkdownContent content={firstIssueMessage.content} className="text-sm text-muted-foreground" />
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No description provided.</p>
-                        )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
+                          <span className="text-xs" style={{ color: '#818185' }}>
+                            {firstIssueMessage.timestamp
+                              ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "—"}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-foreground mb-2">Info about issue</h3>
+                          <div className="space-y-3">
+                            {firstIssueMessage.content ? (
+                              <MarkdownContent content={firstIssueMessage.content} className="text-sm text-muted-foreground" />
+                            ) : (
+                              <p className="text-sm text-muted-foreground">No description provided.</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -560,51 +575,52 @@ export default function TicketDetailPage() {
                 </div>
 
                 {/* Chat Messages */}
-                <div className="space-y-4">
+                <div className="flex flex-col" style={{ rowGap: '20.8px' }}>
                   {messages.map((msg) => (
                     <div key={msg.id} className="flex gap-3">
                       {msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended") ? (
                         <div className="flex items-center gap-3 w-full">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback className="bg-brand-primary text-white">{msg.avatar || "H"}</AvatarFallback>
-                          </Avatar>
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
+                          >
+                            {msg.avatar || "H"}
+                          </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium text-foreground">{msg.senderName}</span>
-                              <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                              <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{msg.senderName}</span>
+                              <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2 text-sm" style={{ color: '#0A0A0A' }}>
                               <Check className="w-4 h-4 text-brand-primary shrink-0" />
-                              <MarkdownContent content={msg.content} className="text-sm text-muted-foreground" />
+                              <MarkdownContent content={msg.content} className="text-sm" />
                             </div>
                           </div>
                         </div>
                       ) : (
                         <>
                           {msg.sender !== "system" && (
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback
-                                className={`text-white text-sm ${
-                                  msg.sender === "helper" ? "bg-brand-primary" : "bg-muted text-foreground"
-                                }`}
-                              >
-                                {msg.avatar}
-                              </AvatarFallback>
-                            </Avatar>
+                            <div
+                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
+                            >
+                              {msg.avatar}
+                            </div>
                           )}
                           <div className={`flex-1 ${msg.sender === "system" ? "text-center" : ""}`}>
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-medium text-foreground">{msg.senderName}</span>
-                                <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                                <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{msg.senderName}</span>
+                                <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
                               </div>
                             )}
                             <div
                               className={
                                 msg.sender === "system"
                                   ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg inline-block text-sm"
-                                  : "text-sm text-muted-foreground"
+                                  : "text-sm"
                               }
+                              style={msg.sender !== "system" ? { color: '#0A0A0A' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
                             </div>
@@ -615,9 +631,12 @@ export default function TicketDetailPage() {
                   ))}
                   {isTicketEnded && (
                     <div className="flex gap-3 pt-2">
-                      <Avatar className="w-8 h-8 shrink-0">
-                        <AvatarFallback className="bg-brand-primary text-white">H</AvatarFallback>
-                      </Avatar>
+                      <div
+                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        style={{ backgroundColor: getAvatarColorHexForId(claimer?.id) }}
+                      >
+                        {claimer?.name?.[0]?.toUpperCase() || "H"}
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Check className="w-4 h-4 text-brand-primary shrink-0" />
@@ -709,15 +728,12 @@ export default function TicketDetailPage() {
                       const avatarInitial = participant.user.name?.[0]?.toUpperCase() || "U"
                       return (
                         <div key={participant.id} className="flex items-center gap-2">
-                          <Avatar className="w-6 h-6">
-                            <AvatarFallback
-                              className={`${
-                                isCurrentUser ? "bg-brand-primary text-white" : "bg-muted text-foreground"
-                              } text-xs`}
-                            >
-                              {avatarInitial}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: getAvatarColorHexForId(participant.user.id) }}
+                          >
+                            {avatarInitial}
+                          </div>
                           <span className="text-sm text-muted-foreground">
                             {isCurrentUser ? "You" : participant.user.name}
                           </span>
