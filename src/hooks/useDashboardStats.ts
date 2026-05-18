@@ -23,6 +23,32 @@ export interface IssueTypeStats {
     applied: boolean;
 }
 
+export const UNCATEGORIZED_ISSUE_TYPE = "Uncategorized";
+
+function buildIssueTypeStatsRow(
+    name: string,
+    ticketIds: string[],
+    tickets: { id: string }[],
+    timeEntries: { ticket_id: string; duration?: number | null }[]
+): IssueTypeStats {
+    const ticketsWithWork = tickets.filter(
+        (ticket) =>
+            ticketIds.includes(ticket.id) &&
+            timeEntries.some((entry) => entry.ticket_id === ticket.id)
+    );
+    const categoryTimeEntries = timeEntries.filter((entry) =>
+        ticketIds.includes(entry.ticket_id)
+    );
+    const totalTime = calculateTotalTime(categoryTimeEntries);
+
+    return {
+        name,
+        tickets: ticketsWithWork.length > 0 ? ticketsWithWork.length : "-",
+        time: totalTime > 0 ? formatTime(totalTime) : "-",
+        applied: ticketsWithWork.length > 0,
+    };
+}
+
 export interface KeyStats {
     totalTicketsSolved: number;
     totalTimeSpent: string;
@@ -153,18 +179,9 @@ export function useDashboardStats(projectId?: string) {
                 };
             }
 
-            if (!helpCategories || helpCategories.length === 0) {
-                return {
-                    helperStats,
-                    issueTypeStats: [],
-                    keyStats,
-                };
-            }
-
-            // Get ticket IDs for this project
             const projectTicketIds = tickets.map((t) => t.id);
+            const categories = helpCategories ?? [];
 
-            // Fetch categories for all tickets in this project
             const {
                 data: ticketsHelpCategories,
                 error: ticketsHelpCategoriesError,
@@ -180,16 +197,20 @@ export function useDashboardStats(projectId?: string) {
                 );
             }
 
-            if (!helpCategories || helpCategories.length === 0) {
-                return {
-                    helperStats,
-                    issueTypeStats: [],
-                };
-            }
+            const validCategoryIds = new Set(categories.map((c) => c.id));
+            const categorizedTicketIds = new Set<string>();
+            ticketsHelpCategories?.forEach((thc) => {
+                if (
+                    validCategoryIds.has(thc.help_category_id) &&
+                    projectTicketIds.includes(thc.ticket_id)
+                ) {
+                    categorizedTicketIds.add(thc.ticket_id);
+                }
+            });
 
-            // Create a map of category_id -> ticket_ids for efficient lookup
             const categoryToTicketsMap = new Map<number, string[]>();
             ticketsHelpCategories?.forEach((thc) => {
+                if (!validCategoryIds.has(thc.help_category_id)) return;
                 const existing =
                     categoryToTicketsMap.get(thc.help_category_id) || [];
                 if (!existing.includes(thc.ticket_id)) {
@@ -198,43 +219,32 @@ export function useDashboardStats(projectId?: string) {
                 categoryToTicketsMap.set(thc.help_category_id, existing);
             });
 
-            // Calculate issue type stats by summing up tickets per category
-            const issueTypeStats: IssueTypeStats[] = helpCategories.map(
+            const issueTypeStats: IssueTypeStats[] = categories.map(
                 (category) => {
-                    // Get all ticket IDs for this category
                     const categoryTicketIds =
                         categoryToTicketsMap.get(category.id) || [];
-
-                    // Filter to only include tickets that exist in our project tickets
                     const validTicketIds = categoryTicketIds.filter(
                         (ticketId) => projectTicketIds.includes(ticketId)
                     );
-
-                    // Only count tickets that have time entries (work has been done)
-                    const categoryTicketsWithWork = tickets.filter(
-                        (ticket) =>
-                            validTicketIds.includes(ticket.id) &&
-                            timeEntries.some(
-                                (entry) => entry.ticket_id === ticket.id
-                            )
+                    return buildIssueTypeStatsRow(
+                        category.value,
+                        validTicketIds,
+                        tickets,
+                        timeEntries
                     );
-
-                    // Calculate time spent on tickets in this category
-                    const categoryTimeEntries = timeEntries.filter((entry) =>
-                        validTicketIds.includes(entry.ticket_id)
-                    );
-                    const totalTime = calculateTotalTime(categoryTimeEntries);
-
-                    return {
-                        name: category.value,
-                        tickets:
-                            categoryTicketsWithWork.length > 0
-                                ? categoryTicketsWithWork.length
-                                : "-",
-                        time: totalTime > 0 ? formatTime(totalTime) : "-",
-                        applied: categoryTicketsWithWork.length > 0,
-                    };
                 }
+            );
+
+            const uncategorizedTicketIds = projectTicketIds.filter(
+                (ticketId) => !categorizedTicketIds.has(ticketId)
+            );
+            issueTypeStats.push(
+                buildIssueTypeStatsRow(
+                    UNCATEGORIZED_ISSUE_TYPE,
+                    uncategorizedTicketIds,
+                    tickets,
+                    timeEntries
+                )
             );
 
             return {
