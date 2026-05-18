@@ -268,7 +268,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                 onValueChange={(value) => handleInputChange("category", value)}
                 required
               >
-                <SelectTrigger className="w-full h-10 rounded-lg border-border focus-visible:ring-ring">
+                <SelectTrigger className="w-full h-10 rounded-lg border-border">
                   <SelectValue placeholder="Pick helper category" />
                 </SelectTrigger>
                 <SelectContent>

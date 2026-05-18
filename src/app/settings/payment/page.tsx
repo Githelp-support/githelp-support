@@ -655,7 +655,7 @@ export default function PaymentSettingsPage() {
                           value={startPrice}
                           onChange={(e) => setStartPrice(e.target.value)}
                           className={cn(
-                            "w-[230px] text-right pr-1 border-border focus-visible:border-ring focus-visible:ring-ring"
+                            "w-[230px] text-right pr-1 border-border"
                           )}
                           placeholder="10.00"
                         />
@@ -675,7 +675,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteFirst60}
                             onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
                             className={cn(
-                              "w-[230px] text-right pr-1 border-border focus-visible:border-ring focus-visible:ring-ring"
+                              "w-[230px] text-right pr-1 border-border"
                             )}
                             placeholder="1.50"
                           />
@@ -694,7 +694,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteAfter60}
                             onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
                             className={cn(
-                              "w-[230px] text-right pr-1 border-border focus-visible:border-ring focus-visible:ring-ring"
+                              "w-[230px] text-right pr-1 border-border"
                             )}
                             placeholder="1.00"
                           />
