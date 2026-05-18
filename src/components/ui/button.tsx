@@ -54,10 +54,21 @@ function Button({
   const wrappedChildren = asChild
     ? children
     : React.Children.map(children, (child) => {
-        if (typeof child === "string" || typeof child === "number") {
-          return <span className="w-auto">{child}</span>
+        if (child === null || child === undefined || typeof child === "boolean") {
+          return child
         }
-        return child
+        if (typeof child === "string" || typeof child === "number") {
+          return (
+            <span className="inline-flex w-auto shrink-0 items-center">
+              {child}
+            </span>
+          )
+        }
+        return (
+          <span className="inline-flex w-auto shrink-0 items-center">
+            {child}
+          </span>
+        )
       })
 
   return (
