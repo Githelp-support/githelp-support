@@ -124,11 +124,11 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     <>
       <header className="sticky top-0 z-30 bg-background px-8 pt-5 pb-6">
         <div className="flex items-center justify-between gap-8">
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-4">
             {showBackButton && (
               <button
                 onClick={handleBackClick}
-                className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer flex items-center gap-2"
+                className="mt-1 p-1 hover:bg-muted rounded-md transition-colors cursor-pointer flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
                 {backButtonText && (
