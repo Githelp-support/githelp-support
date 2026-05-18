@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Image from "next/image"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
@@ -726,12 +725,10 @@ export default function PaymentSettingsPage() {
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                       </div>
                       <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[11px]">
-                        <Image
-                          src="/images/stripe-s.png"
+                        <img
+                          src="/images/stripe-svg.svg"
                           alt="Stripe"
-                          width={22}
-                          height={22}
-                          className="size-[22px] object-contain mix-blend-lighten"
+                          className="size-[22px] object-contain"
                         />
                       </div>
                     </div>
