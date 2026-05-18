@@ -460,13 +460,13 @@ export function Sidebar({ className }: SidebarProps) {
 
       <div className="px-3 py-2.5 border-t border-sidebar-border">
         <div className={`flex items-center gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
-          <Avatar className="w-8 h-8 rounded-[13px] shrink-0">
-            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[13px] font-[family-name:var(--font-outfit)]">{user.avatar}</AvatarFallback>
+          <Avatar className="w-8 h-8 rounded-[11px] shrink-0">
+            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[11px] font-medium">{user.avatar}</AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
-              <div className="text-xs text-[#818185] mt-1 truncate">
+              <div className="text-xs font-medium text-muted-foreground mt-1 truncate">
                 Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </div>
             </div>
