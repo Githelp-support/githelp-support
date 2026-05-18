@@ -173,7 +173,11 @@ export default function Dashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   {monthOptions.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
+                    <SelectItem
+                      key={month.value}
+                      value={month.value}
+                      className="text-[#818185] focus:text-accent-foreground data-[state=checked]:text-accent-foreground"
+                    >
                       {month.label}
                     </SelectItem>
                   ))}
