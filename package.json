@@ -6,6 +6,7 @@
     },
     "scripts": {
         "dev": "next dev",
+        "dev:prod": "dotenv -e .env.production.local -- next dev",
         "build": "next build",
         "start": "next start",
         "lint": "eslint .",
@@ -83,6 +84,7 @@
         "@types/react": "19.2.14",
         "@types/react-dom": "19.2.3",
         "@vitejs/plugin-react": "^6.0.1",
+        "dotenv-cli": "^8.0.0",
         "eslint": "^9.39.4",
         "eslint-config-next": "16.1.6",
         "jsdom": "^28.1.0",
