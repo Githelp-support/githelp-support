@@ -176,7 +176,7 @@ export default function Dashboard() {
                     <SelectItem
                       key={month.value}
                       value={month.value}
-                      className="text-[#818185] focus:text-accent-foreground data-[state=checked]:text-accent-foreground"
+                      className="text-[#818185] focus:text-accent-foreground focus:font-[550] data-[state=checked]:text-accent-foreground data-[state=checked]:font-[550]"
                     >
                       {month.label}
                     </SelectItem>
