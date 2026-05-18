@@ -46,15 +46,27 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
-// Corner radius map: 1/2.55 of the element pixel size
-// w-5=20px→8px, w-6=24px→9px, w-8=32px→13px
+// Corner radius map: 11/32 of the element pixel size (matches Helpers table avatar on Overview page)
+// w-5=20px→7px, w-6=24px→8px, w-8=32px→11px
 const sizeRadiusMap: Record<string, string> = {
-  "w-5 h-5": "rounded-[8px]",
-  "w-6 h-6": "rounded-[9px]",
-  "w-8 h-8": "rounded-[13px]",
+  "w-5 h-5": "rounded-[7px]",
+  "w-6 h-6": "rounded-[8px]",
+  "w-8 h-8": "rounded-[11px]",
 }
 
-// Project Logo Component with Avatar Placeholder
+// Project Logo Component with Avatar Placeholder.
+// The AvatarFallback (colored shape with first letter) is ALWAYS rendered,
+// so the default "DP" icon shows whenever the project has no logo or while
+// branding is still loading. AvatarImage is only mounted when we actually
+// have a non-empty logo URL, ensuring the fallback never gets gated behind
+// the branding fetch.
+//
+// We key the Radix Avatar Root on `logoUrl|projectName` so it fully remounts
+// whenever the project changes. Radix's Avatar keeps an internal
+// `imageLoadingStatus` state on the Root; without remounting, transitioning
+// from a project with a logo to one without (or between logos that resolve
+// at different speeds) can leave the state stuck at "loaded" — at which
+// point AvatarFallback won't render and the icon visually disappears.
 const ProjectLogo = ({
   logoUrl,
   projectName,
@@ -66,20 +78,11 @@ const ProjectLogo = ({
 }) => {
   const firstLetter = projectName?.[0]?.toUpperCase() || "?"
   const radius = sizeRadiusMap[size] || "rounded-[9px]"
-
-  if (logoUrl) {
-    return (
-      <Avatar className={`${size} ${radius}`}>
-        <AvatarImage src={logoUrl} alt={projectName} />
-        <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
-          {firstLetter}
-        </AvatarFallback>
-      </Avatar>
-    )
-  }
+  const hasLogo = typeof logoUrl === "string" && logoUrl.length > 0
 
   return (
-    <Avatar className={`${size} ${radius}`}>
+    <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${radius}`}>
+      {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
       <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
         {firstLetter}
       </AvatarFallback>
@@ -275,7 +278,7 @@ export function Sidebar({ className }: SidebarProps) {
                       projectName={selectedProject?.name || ""}
                       size="w-6 h-6"
                     />
-                    <span className="text-sm font-semibold text-sidebar-foreground truncate">
+                    <span className="text-sm font-[550] text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -493,14 +496,22 @@ function ProjectLogoWithBranding({
   return (
     <DropdownMenuItem
       onClick={() => onSelect(project)}
-      className={`gap-2 ${isSelected ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
+      className={`group gap-2 ${isSelected ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
     >
       <ProjectLogo
         logoUrl={logoUrl}
         projectName={project.name}
         size="w-5 h-5"
       />
-      <span className="truncate text-sm font-medium">{project.name}</span>
+      <span
+        className={`truncate text-sm ${
+          isSelected
+            ? "font-[550]"
+            : "font-medium text-[#818185] group-focus:font-[550] group-focus:text-sidebar-foreground"
+        }`}
+      >
+        {project.name}
+      </span>
     </DropdownMenuItem>
   )
 }
