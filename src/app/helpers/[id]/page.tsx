@@ -196,10 +196,10 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
           {/* Profile header + Contact information */}
           <Card className="border-border rounded-lg shadow-none">
-            <CardContent className="px-5 py-5 space-y-5">
+            <CardContent className="px-[30px] py-[30px] space-y-5">
               <div className="flex items-center gap-4">
                 <div
-                  className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                  className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-[21px] font-medium text-foreground shrink-0"
                   style={{ backgroundColor: helper.avatarColor }}
                 >
                   {helper.avatar}
@@ -211,8 +211,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   </Badge>
                 </div>
               </div>
-              <div className="border-t border-border" />
-              <div className="space-y-3">
+              <div className="space-y-3 pl-[10px]">
                 <div className="flex items-center gap-2.5">
                   <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                   <span className="text-sm text-foreground/80 truncate">{helper.discord}</span>
