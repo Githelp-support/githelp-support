@@ -717,7 +717,7 @@ export default function PaymentSettingsPage() {
                   <div className="mt-8 flex flex-col gap-10">
                     {/* GitHub → Stripe connection */}
                     <div className="flex items-center gap-1">
-                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[10px]">
+                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[11px]">
                         <Logo className="size-6 text-[#24292f]" variant="dark" />
                       </div>
                       <div className="flex items-center gap-1.5 px-0.5">
@@ -725,7 +725,7 @@ export default function PaymentSettingsPage() {
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                       </div>
-                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[10px]">
+                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[11px]">
                         <Image
                           src="/images/stripe-s.png"
                           alt="Stripe"
