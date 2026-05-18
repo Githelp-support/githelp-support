@@ -149,7 +149,7 @@ export default function LandingPageSettings() {
                         type="text"
                         value={newResourceName}
                         onChange={(e) => setNewResourceName(e.target.value)}
-                        className="mt-2 border-border focus-visible:border-ring focus-visible:ring-ring"
+                        className="mt-2 border-border"
                         placeholder="e.g., Documentation"
                       />
                     </div>
@@ -163,7 +163,7 @@ export default function LandingPageSettings() {
                         type="url"
                         value={newResourceUrl}
                         onChange={(e) => setNewResourceUrl(e.target.value)}
-                        className="mt-2 border-border focus-visible:border-ring focus-visible:ring-ring"
+                        className="mt-2 border-border"
                         placeholder="https://example.com"
                       />
                     </div>

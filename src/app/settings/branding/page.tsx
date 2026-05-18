@@ -149,7 +149,7 @@ export default function BrandingSettingsPage() {
                       type="text"
                       value={primaryColor}
                       onChange={(e) => setEditedColor(e.target.value)}
-                      className="max-w-xs border-border focus-visible:border-ring focus-visible:ring-ring"
+                      className="max-w-xs border-border"
                       placeholder="#554abf"
                     />
                     <p className="text-xs text-muted-foreground mt-2">

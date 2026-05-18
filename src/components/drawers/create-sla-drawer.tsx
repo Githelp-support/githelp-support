@@ -124,7 +124,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="Choose name"
                   value={formData.contractName}
                   onChange={(e) => handleInputChange("contractName", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                   required
                 />
               </div>
@@ -135,7 +135,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="First and last name"
                   value={formData.mainContactPerson}
                   onChange={(e) => handleInputChange("mainContactPerson", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                   required
                 />
               </div>
@@ -147,7 +147,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="Type in address"
                   value={formData.emailAddress}
                   onChange={(e) => handleInputChange("emailAddress", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                   required
                 />
               </div>
@@ -196,7 +196,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                     type="number"
                     value={formData.monthlyHours}
                     onChange={(e) => handleInputChange("monthlyHours", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                   />
                 </div>
 
@@ -228,7 +228,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="USD 0.00"
                   value={formData.subscriptionCost}
                   onChange={(e) => handleInputChange("subscriptionCost", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                 />
               </div>
 
@@ -241,7 +241,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   value={formData.paymentFrequency}
                   onValueChange={(value) => handleInputChange("paymentFrequency", value)}
                 >
-                  <SelectTrigger className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="h-9 text-sm border-gray-300 focus:border-brand-primary">
                     <SelectValue placeholder="Choose" />
                   </SelectTrigger>
                   <SelectContent>
@@ -267,7 +267,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                     placeholder="USD 0.00"
                     value={formData.startPrice}
                     onChange={(e) => handleInputChange("startPrice", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                   />
                 </div>
 
@@ -277,7 +277,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                     placeholder="USD 0.00"
                     value={formData.firstSixtyMinRate}
                     onChange={(e) => handleInputChange("firstSixtyMinRate", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                   />
                 </div>
 
@@ -287,7 +287,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                     placeholder="USD 0.00"
                     value={formData.afterSixtyMinRate}
                     onChange={(e) => handleInputChange("afterSixtyMinRate", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                   />
                 </div>
               </div>
@@ -306,7 +306,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="0.0 hours"
                   value={formData.maxResponseTime}
                   onChange={(e) => handleInputChange("maxResponseTime", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                 />
               </div>
 
@@ -319,7 +319,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="0.0 hours"
                   value={formData.maxDownTime}
                   onChange={(e) => handleInputChange("maxDownTime", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
                 />
               </div>
             </div>
