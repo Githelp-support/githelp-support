@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
-import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
+import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
 
 type MonthlySortField = "period" | "description" | "amount" | "status"
@@ -137,7 +137,7 @@ export default function ReportsSupportPage() {
     if (!transfersData) return []
 
     let list = transfersData.map((transfer) => {
-      const helperName = (transfer.helper as { user?: { name?: string } } | null)?.user?.name ?? "Unknown"
+      const helperName = getHelperDisplayName(transfer.helper)
       const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper_id)
       const dateStr = transfer.completed_at || transfer.created_at
       return {

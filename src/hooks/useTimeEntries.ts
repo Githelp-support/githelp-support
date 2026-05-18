@@ -76,11 +76,20 @@ export function useTimeEntries(
             if (error) throw error;
 
             // Transform nested data and filter by projectId if provided
-            let entries = (data || []).map((entry: any) => ({
-                ...entry,
-                ticket: entry.ticket || null,
-                helper: entry.helper?.[0] || null,
-            })) as TimeEntryWithDetails[];
+            let entries = (data || []).map((entry: any) => {
+                const rawHelper = entry.helper;
+                const helper =
+                    rawHelper == null
+                        ? null
+                        : Array.isArray(rawHelper)
+                          ? rawHelper[0] ?? null
+                          : rawHelper;
+                return {
+                    ...entry,
+                    ticket: entry.ticket || null,
+                    helper,
+                };
+            }) as TimeEntryWithDetails[];
 
             // Filter by projectId after fetching (since we need to check via ticket relationship)
             if (filters?.projectId) {
