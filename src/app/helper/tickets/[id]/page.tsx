@@ -451,42 +451,41 @@ export default function TicketDetailPage() {
             <div className="flex-1 flex flex-col min-h-0">
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
-                <div className="bg-white rounded-t-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+                <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
                   <div className="px-6 py-5">
                     <div className="max-w-4xl flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
-                <div className="space-y-4">
-                    <div className="flex gap-3">
-                      <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                        style={{ backgroundColor: getAvatarColorHexForId(firstIssueMessage.senderId) }}
-                      >
-                        {firstIssueMessage.senderName?.[0]?.toUpperCase() ?? "C"}
+                <div className="flex gap-3">
+                  <div
+                    className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                    style={{ backgroundColor: getAvatarColorHexForId(firstIssueMessage.senderId) }}
+                  >
+                    {firstIssueMessage.senderName?.[0]?.toUpperCase() ?? "C"}
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
+                        <span className="text-xs" style={{ color: '#818185' }}>
+                          {firstIssueMessage.timestamp
+                            ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "—"}
+                        </span>
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
-                          <span className="text-xs" style={{ color: '#818185' }}>
-                            {firstIssueMessage.timestamp
-                              ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "—"}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-foreground mb-2">Info about issue</h3>
-                          <div className="space-y-3">
-                            {firstIssueMessage.content ? (
-                              <MarkdownContent content={firstIssueMessage.content} className="text-sm text-muted-foreground" />
-                            ) : (
-                              <p className="text-sm text-muted-foreground">No description provided.</p>
-                            )}
-                          </div>
+                      <div>
+                        <h3 className="text-sm font-medium mb-2" style={{ color: '#0A0A0A' }}>Info about issue</h3>
+                        <div className="space-y-3" style={{ color: '#0A0A0A' }}>
+                          {firstIssueMessage.content ? (
+                            <MarkdownContent content={firstIssueMessage.content} className="text-sm" />
+                          ) : (
+                            <p className="text-sm">No description provided.</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -571,7 +570,7 @@ export default function TicketDetailPage() {
                         </Button>
                       </div>
                     )}
-
+                  </div>
                 </div>
 
                 {/* Chat Messages */}
@@ -690,7 +689,7 @@ export default function TicketDetailPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsEndTicketDrawerOpen(true)}
-                    className="cursor-pointer text-foreground font-semibold text-[15px] hover:bg-transparent"
+                    className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
                   >
                     End session
                   </Button>
@@ -715,12 +714,12 @@ export default function TicketDetailPage() {
 
           {/* Right Sidebar */}
           <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pt-6">
+            <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
               {/* People in Chat */}
               <div>
-                <h3 className="font-medium text-foreground mb-3">People in this chat</h3>
+                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>People in this chat</h3>
                 {participantsLoading ? (
-                  <div className="text-center text-muted-foreground text-sm py-4">Loading...</div>
+                  <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
                 ) : allParticipants.length > 0 ? (
                   <div className="space-y-2 mb-3">
                     {allParticipants.map((participant) => {
@@ -734,7 +733,7 @@ export default function TicketDetailPage() {
                           >
                             {avatarInitial}
                           </div>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground">
                             {isCurrentUser ? "You" : participant.user.name}
                           </span>
                         </div>
@@ -742,7 +741,7 @@ export default function TicketDetailPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground text-sm py-4">-</div>
+                  <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
                 )}
                 {!isTicketEnded && (
                   <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
@@ -752,10 +751,13 @@ export default function TicketDetailPage() {
                 )}
               </div>
 
+              {/* Divider */}
+              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+
               {/* Other Topics — from ticket keywords */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="font-medium text-foreground">Other topics in this chat</h3>
+                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Other topics in this chat</h3>
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
@@ -767,14 +769,17 @@ export default function TicketDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">—</p>
+                  <p className="text-[13px] text-muted-foreground">—</p>
                 )}
               </div>
+
+              {/* Divider */}
+              <div className="border-t border-border my-6 -ml-5 -mr-4" />
 
               {/* Logged Time */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="font-medium text-foreground">Logged time</h3>
+                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {timeEntries.length > 0 && (
@@ -786,9 +791,9 @@ export default function TicketDetailPage() {
                             <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
                               <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
                             </div>
-                            <span className="text-sm text-muted-foreground capitalize">{entry.type}</span>
+                            <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground">
                             {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
                           </span>
                         </div>
@@ -796,8 +801,8 @@ export default function TicketDetailPage() {
                       </div>
                     ))}
                     <div className="flex items-center justify-between py-2 font-medium">
-                      <span className="text-sm text-foreground">Total</span>
-                      <span className="text-sm text-foreground">{getTotalLoggedTime().formatted}</span>
+                      <span className="text-[13px] text-foreground">Total</span>
+                      <span className="text-[13px] text-foreground">{getTotalLoggedTime().formatted}</span>
                     </div>
                   </div>
                 )}
@@ -819,12 +824,15 @@ export default function TicketDetailPage() {
                 )}
               </div>
 
+              {/* Divider */}
+              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+
               {/* Active Tickets — 3 latest claimed by this helper */}
               <div>
-                <h3 className="font-medium text-foreground mb-3">Active tickets</h3>
-                <div className="-mx-4">
+                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets</h3>
+                <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
-                    <p className="text-sm text-muted-foreground px-3">No active tickets</p>
+                    <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
                   ) : (
                     activeTicketsSidebar.map((item) => (
                       <NextLink
@@ -844,7 +852,7 @@ export default function TicketDetailPage() {
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
-                                <h4 className="font-medium text-foreground text-sm truncate">{item.title}</h4>
+                                <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
                                 {item.hasNotification && (
                                   <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
                                 )}

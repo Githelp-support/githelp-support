@@ -13,8 +13,9 @@ export interface MarkdownContentProps {
   className?: string
 }
 
-/** Base styles so markdown matches original chat message look: text-sm, same color, normal line-height */
-const baseMessageClasses = "text-sm text-muted-foreground leading-normal font-normal"
+/** Base styles so markdown matches original chat message look: text-sm, same color, normal line-height.
+ * Color is inherited so callers can control message color via parent styles. */
+const baseMessageClasses = "text-sm leading-normal font-normal"
 
 /** Normalize content: literal \n in text and escaped \\n from DB become real newlines */
 function normalizeNewlines(text: string): string {
@@ -68,22 +69,22 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
             return <br className="my-0.5 block h-0 w-full overflow-hidden" />
           },
           p({ children }) {
-            return <p className="mb-2 last:mb-0 text-sm text-muted-foreground leading-normal">{children}</p>
+            return <p className="mb-2 last:mb-0 text-sm leading-normal">{children}</p>
           },
           ul({ children }) {
-            return <ul className="list-disc list-inside mb-2 space-y-0.5 text-sm text-muted-foreground">{children}</ul>
+            return <ul className="list-disc list-inside mb-2 space-y-0.5 text-sm">{children}</ul>
           },
           ol({ children }) {
-            return <ol className="list-decimal list-inside mb-2 space-y-0.5 text-sm text-muted-foreground">{children}</ol>
+            return <ol className="list-decimal list-inside mb-2 space-y-0.5 text-sm">{children}</ol>
           },
           li({ children }) {
-            return <li className="text-sm text-muted-foreground leading-normal">{children}</li>
+            return <li className="text-sm leading-normal">{children}</li>
           },
           strong({ children }) {
-            return <strong className="font-semibold text-muted-foreground">{children}</strong>
+            return <strong className="font-semibold">{children}</strong>
           },
           em({ children }) {
-            return <em className="italic text-muted-foreground">{children}</em>
+            return <em className="italic">{children}</em>
           },
         }}
       >
