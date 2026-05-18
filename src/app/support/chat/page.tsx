@@ -1,20 +1,22 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { Sidebar } from "@/components/layout/sidebar"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
-import { Check, Info } from "lucide-react"
+import { Check, Info, Search } from "lucide-react"
+import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
-import { useSearchParams } from "next/navigation"
-import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding } from "@/hooks/useProject"
+import { useSearchParams, useRouter } from "next/navigation"
+import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { useCreateTicket } from "@/hooks/useTickets"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
-import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
+import { useTicketWithDetails, useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
@@ -53,12 +55,14 @@ void python
 
 export default function UserSupportChatPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { user, setProjectRole } = useUser()
   const [message, setMessage] = useState("")
   const [ticketCreated, setTicketCreated] = useState(false)
   const [ticketId, setTicketId] = useState("")
   const [topics] = useState<string[]>([])
   const [helpType] = useState<string[]>([])
+  const [projectSearch, setProjectSearch] = useState("")
   /** When user creates ticket without being signed in, first message is not persisted; we show it locally. */
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
 
@@ -68,6 +72,28 @@ export default function UserSupportChatPage() {
   const ticketIdParam = searchParams.get("ticket")
   const slaId = searchParams.get("sla")
   const hasSLA = !!slaId
+  const noParams = !hasSLA && !projectIdParam && !slugParam && !ticketIdParam
+
+  // When the page is opened without any context (e.g. clicking "Support" in
+  // the sidebar), we need to either send the user to their last ticket or let
+  // them pick a project to get support from. These hooks only fetch when
+  // `noParams` is true so they don't run on the normal chat flow.
+  const { data: userTicketsForResolve = [], isLoading: userTicketsLoadingForResolve } =
+    useUserTickets(noParams && user?.id ? user.id : undefined)
+  const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects({
+    enabled: noParams,
+  })
+  const latestUserTicket = userTicketsForResolve[0]
+
+  // If the user has at least one ticket, redirect to the most recent one so
+  // they land on their "last support page" instead of an empty chooser.
+  useEffect(() => {
+    if (!noParams) return
+    if (!latestUserTicket) return
+    router.replace(
+      `/support/chat?ticket=${latestUserTicket.id}&project=${latestUserTicket.project_id}`,
+    )
+  }, [noParams, latestUserTicket, router])
 
   const { data: existingTicket, isLoading: existingTicketLoading } = useTicketWithDetails(ticketIdParam || undefined)
   const projectIdFromTicket = existingTicket?.project_id
@@ -276,16 +302,82 @@ export default function UserSupportChatPage() {
     return { timeEntriesDisplay: entries, totalLoggedFormatted: formatted }
   }, [timeEntriesFromDb])
 
-  if (!hasSLA && !projectIdParam && !slugParam && !ticketIdParam) {
-    return (
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-          <h1 className="text-2xl font-semibold text-foreground mb-2">Missing project identifier</h1>
-          <p className="text-muted-foreground">
-            Please open this page using a link that includes either <span className="font-semibold">?slug=</span> or{" "}
-            <span className="font-semibold">?project=</span> (unless you are entering via an SLA link or opening a ticket from My tickets).
-          </p>
+  if (noParams) {
+    // While we look up the user's latest ticket, show a small loading state.
+    // The redirect to that ticket is handled by the effect above.
+    const resolving =
+      (isAuthenticated && userTicketsLoadingForResolve) || !!latestUserTicket
+    if (resolving) {
+      return (
+        <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
+          <div className="text-muted-foreground">Loading your support…</div>
         </div>
+      )
+    }
+
+    // No tickets (or not signed in) → let the user pick a project to get
+    // support from.
+    const filteredProjects = allProjects.filter((p) =>
+      p.name.toLowerCase().includes(projectSearch.trim().toLowerCase()),
+    )
+
+    return (
+      <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-6 py-12">
+            <h1 className="text-2xl font-semibold text-foreground mb-2">
+              Which project do you need support with?
+            </h1>
+            <p className="text-muted-foreground mb-6">
+              {isAuthenticated
+                ? "You have no support tickets yet. Pick a project to start a new conversation."
+                : "Pick a project to start a new support conversation."}
+            </p>
+
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search projects"
+                value={projectSearch}
+                onChange={(e) => setProjectSearch(e.target.value)}
+                className="pl-10"
+                autoFocus
+              />
+            </div>
+
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
+              {allProjectsLoading ? (
+                <div className="px-4 py-6 text-sm text-muted-foreground">
+                  Loading projects…
+                </div>
+              ) : filteredProjects.length === 0 ? (
+                <div className="px-4 py-6 text-sm text-muted-foreground">
+                  No projects match &ldquo;{projectSearch}&rdquo;.
+                </div>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {filteredProjects.map((p) => (
+                    <li key={p.project_id}>
+                      <Link
+                        href={`/support/chat?slug=${encodeURIComponent(p.slug)}`}
+                        className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="text-sm font-medium text-foreground">
+                          {p.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Get support
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
     )
   }

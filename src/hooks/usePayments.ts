@@ -30,6 +30,8 @@ export interface PaymentTransfer {
   helper?: {
     user?: {
       name: string
+      username: string | null
+      email: string | null
     }
   }
   ticket?: {
@@ -81,7 +83,7 @@ export function usePaymentTransfers(filters?: {
         .select(`
           *,
           helper:projects_helpers(
-            user:users_public(name)
+            user:users_public(name, username, email)
           ),
           ticket:tickets(id, title, sla:slas(name))
         `)
@@ -103,13 +105,21 @@ export function usePaymentTransfers(filters?: {
       const { data, error } = await query
       if (error) throw error
 
-      // Transform nested data
-      return (data || []).map((transfer: any) => ({
-        ...transfer,
-        helper: transfer.helper?.[0] || null,
-        ticket: transfer.ticket || null,
-        sla: transfer.ticket?.sla || null,
-      })) as PaymentTransfer[]
+      // Transform nested data (many-to-one embeds are objects, not arrays)
+      return (data || []).map((transfer: any) => {
+        const rawHelper = transfer.helper
+        const helper = rawHelper == null
+          ? null
+          : Array.isArray(rawHelper)
+            ? rawHelper[0] ?? null
+            : rawHelper
+        return {
+          ...transfer,
+          helper,
+          ticket: transfer.ticket || null,
+          sla: transfer.ticket?.sla || null,
+        }
+      }) as PaymentTransfer[]
     },
     enabled: enabledProp !== false,
     retry: false,
@@ -117,6 +127,13 @@ export function usePaymentTransfers(filters?: {
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   })
+}
+
+export function getHelperDisplayName(
+  helper: PaymentTransfer["helper"],
+): string {
+  const user = helper?.user
+  return user?.name || user?.username || user?.email || "Unknown"
 }
 
 // Helper function to format amount from cents to dollars

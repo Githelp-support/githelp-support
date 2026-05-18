@@ -18,7 +18,7 @@ type ProjectPaymentSettingsUpdate =
 type ProjectBrandingUpdate =
     Database["public"]["Tables"]["projects_branding"]["Update"];
 
-export function useProjects() {
+export function useProjects(options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: ["projects"],
         queryFn: async () => {
@@ -31,6 +31,7 @@ export function useProjects() {
             if (error) throw error;
             return data as Project[];
         },
+        enabled: options?.enabled ?? true,
         retry: false,
         staleTime: 1800000,
         refetchOnReconnect: false,

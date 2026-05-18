@@ -275,6 +275,22 @@ export default function HelpersPage() {
       }
     })
 
+  const filteredInvites = useMemo(() => {
+    if (!helperInvitesData) return []
+    return helperInvitesData.filter((invite) => {
+      if (!invite.is_active) return false
+      const matchesCategory =
+        selectedCategory === "All helpers" || invite.category === selectedCategory
+      const identifier =
+        invite.invitee_identifier || invite.email || invite.github_username || ""
+      const matchesSearch =
+        searchQuery === "" ||
+        identifier.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (invite.github_username?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+      return matchesCategory && matchesSearch
+    })
+  }, [helperInvitesData, selectedCategory, searchQuery])
+
   const filteredRequests = pendingRequests
     .filter((request) => {
       const matchesSearch =
@@ -539,10 +555,8 @@ export default function HelpersPage() {
                   return <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">Loading...</div>
                 }
                 if (currentView === "invited") {
-                  return helperInvitesData && helperInvitesData.length > 0 ? (
-                  helperInvitesData
-                    .filter((invite) => invite.is_active)
-                    .map((invite) => (
+                  if (filteredInvites.length > 0) {
+                  return filteredInvites.map((invite) => (
                       <div key={invite.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                         <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                           <div>
@@ -603,9 +617,19 @@ export default function HelpersPage() {
                         </div>
                       </div>
                     ))
-                ) : (
-                  <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending invites</div>
-                )
+                  }
+                  const hasActiveInvites = helperInvitesData?.some((invite) => invite.is_active)
+                  if (!hasActiveInvites) {
+                    return (
+                      <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending invites</div>
+                    )
+                  }
+                  return (
+                    <div className="px-6 py-12 text-center text-muted-foreground">
+                      <p className="text-[13px] mb-2">No invites match your filters.</p>
+                      <p className="text-[13px]">Try clearing search or switching category to see invites.</p>
+                    </div>
+                  )
                 }
                 if (currentView === "added") {
                   if (filteredHelpers.length > 0) {
