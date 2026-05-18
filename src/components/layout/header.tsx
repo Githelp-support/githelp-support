@@ -157,7 +157,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               onClick={() => setIsNotificationsOpen(true)}
               className="relative p-1 hover:bg-muted rounded-md transition-colors cursor-pointer"
             >
-              <Bell className="w-5 h-5 text-muted-foreground" />
+              <Bell className="w-3.5 h-3.5 text-muted-foreground" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-destructive text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {unreadCount}
@@ -165,8 +165,8 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               )}
             </button>
             <div className="flex items-center gap-2">
-              <Avatar className="w-8 h-8 rounded-[13px]">
-                <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[13px] font-[family-name:var(--font-outfit)]">{user.avatar}</AvatarFallback>
+              <Avatar className="w-8 h-8 rounded-[11px]">
+                <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[11px] font-medium">{user.avatar}</AvatarFallback>
               </Avatar>
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer">
