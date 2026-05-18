@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-[14px] whitespace-nowrap rounded-[10px] text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 [&>*]:w-auto outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex w-fit items-center justify-center gap-[14px] whitespace-nowrap rounded-[10px] text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 [&_svg]:block outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
@@ -51,33 +51,13 @@ function Button({
   }) {
   const Comp = asChild ? Slot : "button"
 
-  const wrappedChildren = asChild
-    ? children
-    : React.Children.map(children, (child) => {
-        if (child === null || child === undefined || typeof child === "boolean") {
-          return child
-        }
-        if (typeof child === "string" || typeof child === "number") {
-          return (
-            <span className="inline-flex w-auto shrink-0 items-center">
-              {child}
-            </span>
-          )
-        }
-        return (
-          <span className="inline-flex w-auto shrink-0 items-center">
-            {child}
-          </span>
-        )
-      })
-
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      {wrappedChildren}
+      {children}
     </Comp>
   )
 }
