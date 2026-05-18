@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft } from "lucide-react"
+import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft, HelpCircle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -194,25 +194,24 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             Back to list of helpers
           </Link>
 
-          {/* Profile header */}
-          <div className="flex items-center gap-5">
-            <div
-              className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-black text-base font-semibold shrink-0 font-[family-name:var(--font-outfit)]"
-              style={{ backgroundColor: helper.avatarColor }}
-            >
-              {helper.avatar}
-            </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <h1 className="text-xl font-bold text-foreground">{helper.name}</h1>
-              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Contact information */}
+          {/* Profile header + Contact information */}
           <Card className="border-border rounded-lg shadow-none">
-            <CardContent className="px-5 py-[6px]">
+            <CardContent className="px-5 py-5 space-y-5">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                  style={{ backgroundColor: helper.avatarColor }}
+                >
+                  {helper.avatar}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-xl font-bold text-foreground">{helper.name}</h1>
+                  <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
+                    {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
+                  </Badge>
+                </div>
+              </div>
+              <div className="border-t border-border" />
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5">
                   <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
@@ -291,37 +290,37 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Key stats */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-sm font-medium text-foreground">Key stats</h2>
-              <Info className="w-3.5 h-3.5 text-muted-foreground/60" />
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-base font-semibold text-foreground">Key stats</h2>
+              <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              <Card className="border-border rounded-xl shadow-none">
-                <CardContent className="px-5 py-[11px]">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs text-muted-foreground/70">Number of tickets solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground/50" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+                <CardContent className="px-[30px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{helper.stats.ticketsSolved}</div>
+                  <div className="text-[22px] font-[550] text-foreground">{helper.stats.ticketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border rounded-xl shadow-none">
-                <CardContent className="px-5 py-[11px]">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs text-muted-foreground/70">Total time spent</span>
-                    <Info className="w-3 h-3 text-muted-foreground/50" />
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+                <CardContent className="px-[30px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-muted-foreground">Total time spent</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{helper.stats.totalTime}</div>
+                  <div className="text-[22px] font-[550] text-foreground">{helper.stats.totalTime}</div>
                 </CardContent>
               </Card>
-              <Card className="border-border rounded-xl shadow-none">
-                <CardContent className="px-5 py-[11px]">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs text-muted-foreground/70">Percentage solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground/50" />
+              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+                <CardContent className="px-[30px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-muted-foreground">Percentage solved</span>
+                    <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-xl font-bold text-foreground">{helper.stats.percentageSolved}%</div>
+                  <div className="text-[22px] font-[550] text-foreground">{helper.stats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -329,7 +328,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
           {/* All tickets */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">All tickets</h2>
+            <h2 className="text-base font-semibold text-foreground mb-3">All tickets</h2>
             <Card className="border-border rounded-xl shadow-none py-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
