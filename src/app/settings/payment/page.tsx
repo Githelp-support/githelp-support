@@ -448,7 +448,7 @@ export default function PaymentSettingsPage() {
                           </div>
                         </div>
 
-                        <div className="bg-muted rounded-md p-3 mt-4">
+                        <div className="bg-muted rounded-md px-5 py-3 mt-4">
                           <p className="text-[13px] text-muted-foreground">Payment to community helper can&apos;t be below 85%</p>
                         </div>
                       </div>
