@@ -79,12 +79,7 @@ const getMonthYear = (dateString: string) => {
 
 // Helper function to get initial and color for SLA
 const getSlaInitialAndColor = (slaName: string, index: number) => {
-  const initials = slaName
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
+  const initials = (slaName || '?').trim().charAt(0).toUpperCase() || '?'
   const colors = ["#82c95f", "#f09191", "#4aa19e", "#cbbcf6", "#f4bccc"]
   return {
     initial: initials,

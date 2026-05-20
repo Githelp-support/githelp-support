@@ -147,14 +147,7 @@ export default function ProjectSettingsPage() {
   }
 
   const getInitials = (name: string | null, email: string | null) => {
-    const source = (name || email || "?").trim()
-    return source
-      .split(/[\s.@]/)
-      .map((w) => w[0])
-      .filter(Boolean)
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "?"
+    return (name || email || "?").trim().charAt(0).toUpperCase() || "?"
   }
 
   if (!projectId) {
