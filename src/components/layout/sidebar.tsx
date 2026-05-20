@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useUser } from "@/contexts/user-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
@@ -92,6 +92,7 @@ const ProjectLogo = ({
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   // The Sidebar is mounted per-page (not in a shared layout), so its state
   // is wiped on every navigation. Derive the initially-expanded parent from
   // the current path so the active sub-item's parent stays expanded across
@@ -130,7 +131,11 @@ export function Sidebar({ className }: SidebarProps) {
   }
 
   const handleProjectSelect = (project: Project) => {
+    const isDifferentProject = project.project_id !== selectedProjectId
     setSelectedProjectId(project.project_id)
+    if (isDifferentProject) {
+      router.push("/")
+    }
   }
 
   const toggleExpanded = (itemName: string) => {
