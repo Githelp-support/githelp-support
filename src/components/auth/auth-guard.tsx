@@ -97,9 +97,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   return (
-    <>
+    <div className="flex h-dvh flex-col overflow-hidden">
       <SandboxBanner />
-      {children}
-    </>
+      <div className="min-h-0 flex-1 overflow-hidden [&>*]:!h-full">
+        {children}
+      </div>
+    </div>
   )
 }

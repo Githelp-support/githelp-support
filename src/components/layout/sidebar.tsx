@@ -215,7 +215,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div
-      className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-[calc(100vh-var(--banner-height,0px))] overflow-hidden ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-full overflow-hidden ${className}`}
     >
       <div className="px-4 pt-4 pb-3 flex items-center justify-between min-h-[40px]">
         {isCollapsed ? (
@@ -275,7 +275,7 @@ export function Sidebar({ className }: SidebarProps) {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2 min-h-[44px] bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 min-h-[44px] bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <ProjectLogo
@@ -290,7 +290,11 @@ export function Sidebar({ className }: SidebarProps) {
                   <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent
+                align="start"
+                className="w-56"
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
                 {userProjects.map((project) => {
                   const isSelected = selectedProject?.project_id === project.project_id
                   return (
