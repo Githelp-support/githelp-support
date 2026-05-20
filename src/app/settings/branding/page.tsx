@@ -75,7 +75,7 @@ export default function BrandingSettingsPage() {
               </div>
 
               <div className="space-y-6">
-                <Label className="text-[17px] leading-normal tracking-tight text-text-muted">
+                <Label className="text-[13px] leading-normal tracking-tight text-text-muted">
                   Project logo
                 </Label>
                 <div className="flex items-center gap-4">
@@ -128,7 +128,7 @@ export default function BrandingSettingsPage() {
               </div>
 
               <div className="space-y-6">
-                <Label htmlFor="primary-color" className="text-[17px] leading-normal tracking-tight text-text-muted">
+                <Label htmlFor="primary-color" className="text-[13px] leading-normal tracking-tight text-text-muted">
                   Choose a primary color
                 </Label>
                 <div className="flex items-center gap-4">
