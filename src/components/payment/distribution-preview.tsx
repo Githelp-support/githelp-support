@@ -37,15 +37,15 @@ export function DistributionPreview({
   ]
 
   return (
-    <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-4">
+    <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-5">
       <h4 className="text-sm font-semibold text-foreground mb-4">
-        1 hour of support - Distribution
+        1st hour of support - Distribution
       </h4>
       <div className="space-y-3">
         {rows.map(({ label, amount }) => (
           <div
             key={label}
-            className="flex items-center justify-between text-sm"
+            className="flex items-center text-sm pl-[10px]"
           >
             <span className="text-muted-foreground">{label}</span>
             <span className="text-foreground font-medium tabular-nums">
@@ -54,7 +54,7 @@ export function DistributionPreview({
           </div>
         ))}
       </div>
-      <div className="border-t border-border mt-3 pt-3 flex items-center justify-between">
+      <div className="border-t border-border mt-3 pt-3 flex items-center">
         <span className="text-sm font-bold text-brand-primary">Sum</span>
         <span className="text-sm font-bold text-brand-primary tabular-nums">
           {formatCurrency(oneHourTotal)}

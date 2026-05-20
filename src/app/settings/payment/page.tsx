@@ -326,11 +326,11 @@ export default function PaymentSettingsPage() {
               <div className="space-y-6">
                 {/* Team Section */}
                 <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex flex-col sm:flex-row gap-6">
+                  <div className="flex flex-col sm:flex-row gap-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-semibold text-foreground">Team</h2>
+                          <h2 className="text-base font-semibold text-foreground">Team</h2>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
@@ -345,7 +345,7 @@ export default function PaymentSettingsPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-foreground">Sharing ratio</h3>
+                        <h3 className="text-[13px] font-semibold text-foreground">Sharing ratio</h3>
 
                         <div className="space-y-6">
                           <div>
@@ -391,11 +391,11 @@ export default function PaymentSettingsPage() {
 
                 {/* Community Section */}
                 <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex flex-col sm:flex-row gap-6">
+                  <div className="flex flex-col sm:flex-row gap-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-semibold text-foreground">Community</h2>
+                          <h2 className="text-base font-semibold text-foreground">Community</h2>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
@@ -410,7 +410,7 @@ export default function PaymentSettingsPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-foreground">Sharing ratio</h3>
+                        <h3 className="text-[13px] font-semibold text-foreground">Sharing ratio</h3>
 
                         <div className="space-y-6">
                           <div>
@@ -462,11 +462,11 @@ export default function PaymentSettingsPage() {
 
                 {/* External Consultants Section */}
                 <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex flex-col sm:flex-row gap-6">
+                  <div className="flex flex-col sm:flex-row gap-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-semibold text-foreground">External Consultants and Companies</h2>
+                          <h2 className="text-base font-semibold text-foreground">External Consultants and Companies</h2>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
@@ -482,7 +482,7 @@ export default function PaymentSettingsPage() {
 
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-sm font-medium text-foreground mb-4">Type of contract</h3>
+                          <h3 className="text-[13px] font-semibold text-foreground mb-4">Type of contract</h3>
                           <div className="space-y-3">
                             <label className="flex items-center gap-3 cursor-pointer">
                               <input
@@ -491,7 +491,7 @@ export default function PaymentSettingsPage() {
                                 value="ticket"
                                 checked={contractType === "ticket"}
                                 onChange={(e) => setContractType(e.target.value as "ticket")}
-                                className="w-4 h-4 text-[#554abf] border-border focus:ring-[#554abf] focus:ring-2 cursor-pointer"
+                                className="w-4 h-4 text-[#554abf] border-border focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                               />
                               <span className="text-sm text-muted-foreground">By the ticket</span>
                             </label>
@@ -502,7 +502,7 @@ export default function PaymentSettingsPage() {
                                 value="outside"
                                 checked={contractType === "outside"}
                                 onChange={(e) => setContractType(e.target.value as "outside")}
-                                className="w-4 h-4 text-[#554abf] border-border focus:ring-[#554abf] focus:ring-2 cursor-pointer"
+                                className="w-4 h-4 text-[#554abf] border-border focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                               />
                               <span className="text-sm text-muted-foreground">Payment outside Githelp</span>
                             </label>
@@ -510,7 +510,7 @@ export default function PaymentSettingsPage() {
                         </div>
 
                         <div>
-                          <h3 className="text-sm font-medium text-foreground mb-4">Sharing ratio</h3>
+                          <h3 className="text-[13px] font-semibold text-foreground mb-4">Sharing ratio</h3>
                           <div className="space-y-6">
                             <div>
                               <div className="flex items-center justify-between mb-3">
