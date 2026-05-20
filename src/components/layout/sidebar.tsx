@@ -324,7 +324,7 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       )}
 
-      <nav className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
+      <nav className="flex flex-1 flex-col px-3 overflow-hidden min-h-0">
         <div className="space-y-0.5">
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
@@ -428,6 +428,12 @@ export function Sidebar({ className }: SidebarProps) {
             )
           })}
         </div>
+        {/* Flexible bottom gap that replaces the old fixed `pb-3`: it grows to
+            keep the nav list top-aligned when height is abundant and shrinks
+            (down to a small minimum) as the SandboxBanner reduces available
+            height — so every menu item stays visible and the menu never
+            becomes scrollable. */}
+        <div aria-hidden className="min-h-3 flex-1" />
       </nav>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5">
