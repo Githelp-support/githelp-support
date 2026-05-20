@@ -3,8 +3,7 @@ import { supabase } from "@/lib/supabase/client";
 import { getAvatarColorHexForId } from "@/lib/constants";
 import { useHelpers } from "./useHelpers";
 import { useTimeEntries } from "./useTimeEntries";
-import { formatTime, calculateTotalTime } from "./useTimeEntries";
-import type { TimeEntry } from "./useTimeEntries";
+import { formatTime, calculateTotalTime, type TimeEntry } from "./useTimeEntries";
 
 export interface HelperStats {
     id: string;
