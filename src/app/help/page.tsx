@@ -63,7 +63,7 @@ export default function HelpPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Help" subtitle="Get help with common issues" />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto px-[34px] py-6">
           <div className="max-w-3xl mx-auto space-y-8">
             {/* Intro */}
             <div className="flex items-start gap-4">

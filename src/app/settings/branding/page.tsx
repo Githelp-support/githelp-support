@@ -66,7 +66,7 @@ export default function BrandingSettingsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Branding" subtitle="Customize your project logo and primary color" />
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 px-[34px] py-6 overflow-auto">
           <div className="max-w-4xl space-y-6">
             {/* Logo Upload Section */}
             <div className="bg-white rounded-lg border border-border p-6">

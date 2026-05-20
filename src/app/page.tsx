@@ -137,7 +137,7 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Overview" subtitle="Stats and insight" />
 
-        <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
+        <main className="flex-1 px-[34px] py-6 space-y-[62px] overflow-y-auto">
           {/* Time Filters */}
           <div className="flex gap-2">
             <Button

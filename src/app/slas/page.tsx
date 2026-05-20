@@ -130,7 +130,7 @@ export default function SLAsPage() {
         <Header title="Your SLAs" subtitle="Manage your Service Level Agreements" />
 
         {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 px-[34px] py-6 overflow-y-auto">
           {/* Filter tabs */}
           <div className="mb-6">
             <div className="flex gap-1">

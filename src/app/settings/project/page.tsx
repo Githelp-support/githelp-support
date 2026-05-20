@@ -156,7 +156,7 @@ export default function ProjectSettingsPage() {
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Project Settings" subtitle="Manage keywords and help categories" />
-          <main className="flex-1 p-6 overflow-y-auto">
+          <main className="flex-1 px-[34px] py-6 overflow-y-auto">
             <p className="text-muted-foreground">Select a project to manage its keywords and help categories.</p>
           </main>
         </div>
@@ -169,7 +169,7 @@ export default function ProjectSettingsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 px-[34px] py-6 overflow-y-auto">
           <div className="max-w-4xl space-y-8">
             {/* Admins */}
             <Card className="border-[#E1E1E1] shadow-none rounded-lg py-0">

@@ -374,7 +374,7 @@ export default function HelpersPage() {
         <Header title="List of helpers" subtitle="Manage your support team" />
 
         {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 px-[34px] py-6 overflow-y-auto">
           {/* Filter tabs and Add button */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex space-x-1">
