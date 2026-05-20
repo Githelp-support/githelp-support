@@ -241,7 +241,7 @@ export default function ProjectSettingsPage() {
                       </Select>
                       <Button
                         size="sm"
-                        className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
+                        className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
                         onClick={handlePromoteHelper}
                         disabled={!promoteHelperId || promoteToAdmin.isPending}
                       >
@@ -268,7 +268,7 @@ export default function ProjectSettingsPage() {
                       />
                       <Button
                         size="sm"
-                        className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
+                        className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
                         onClick={handleInviteAdmin}
                         disabled={createInvite.isPending}
                       >
@@ -318,7 +318,7 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
-                    className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
+                    className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
                     onClick={handleAddKeyword}
                     disabled={!newKeyword.trim() || createKeyword.isPending}
                   >
@@ -339,7 +339,7 @@ export default function ProjectSettingsPage() {
                     {keywords.map((kw) => (
                       <div
                         key={kw.id}
-                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2.5 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2 bg-muted/50"
                       >
                         <span className="text-[13px] font-medium">{kw.value}</span>
                         <button
@@ -378,7 +378,7 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
-                    className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
+                    className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
                     onClick={handleAddCategory}
                     disabled={!newCategory.trim() || createCategory.isPending}
                   >
@@ -399,7 +399,7 @@ export default function ProjectSettingsPage() {
                     {helpCategories.map((cat) => (
                       <div
                         key={cat.id}
-                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2.5 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2 bg-muted/50"
                       >
                         <span className="text-[13px] font-medium">{cat.value}</span>
                         <button
