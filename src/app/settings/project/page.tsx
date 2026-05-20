@@ -309,7 +309,7 @@ export default function ProjectSettingsPage() {
                   Keywords help categorize tickets and let helpers indicate which topics they can help with.
                 </p>
 
-                <div className="flex gap-2 mb-6">
+                <div className="flex gap-2 mb-9">
                   <Input
                     placeholder="Add a keyword (e.g. Events, Kafka, React)"
                     value={newKeyword}
@@ -368,7 +368,7 @@ export default function ProjectSettingsPage() {
                   Help categories classify ticket types (e.g. Bug, Best practice, Documentation).
                 </p>
 
-                <div className="flex gap-2 mb-6">
+                <div className="flex gap-2 mb-9">
                   <Input
                     placeholder="Add a category (e.g. Bug, Documentation)"
                     value={newCategory}
