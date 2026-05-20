@@ -92,8 +92,8 @@ export default function LandingPageSettings() {
             <div className="bg-white rounded-lg border border-border p-6 mb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm mb-1" style={{ color: '#0A0A0A', fontWeight: 550 }}>Your support page</h3>
-                  <p className="text-sm text-[#0A0A0A]">Share this link with your users to access support</p>
+                  <h3 className="text-sm mb-2" style={{ color: '#0A0A0A', fontWeight: 550 }}>Your support page</h3>
+                  <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link
