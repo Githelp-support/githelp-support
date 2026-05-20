@@ -32,12 +32,15 @@ export function SandboxBanner() {
       )
     }
 
+    // Measure the banner's full border-box height (padding + border included)
+    // so the sidebar's `100vh - var(--banner-height)` keeps an identical
+    // top/bottom spacing whether or not the banner is shown. ResizeObserver's
+    // `contentRect` excludes padding/border, so re-measure with
+    // getBoundingClientRect on every resize to stay consistent.
     updateHeight(node.getBoundingClientRect().height)
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        updateHeight(entry.contentRect.height)
-      }
+    const observer = new ResizeObserver(() => {
+      updateHeight(node.getBoundingClientRect().height)
     })
     observer.observe(node)
 
