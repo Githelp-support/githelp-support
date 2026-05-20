@@ -21,13 +21,24 @@ export function DistributionPreview({
   const projectAmount = amountToSplit - helperAmount
   const githelpAmount = 0
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", {
+  /** Splits a currency value into its symbol and numeric parts so they can be spaced apart. */
+  const formatCurrency = (value: number) => {
+    const parts = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value)
+    }).formatToParts(value)
+    const symbol = parts
+      .filter((p) => p.type === "currency")
+      .map((p) => p.value)
+      .join("")
+    const amount = parts
+      .filter((p) => p.type !== "currency")
+      .map((p) => p.value)
+      .join("")
+    return { symbol, amount }
+  }
 
   const rows = [
     { label: "Helper", amount: helperAmount },
@@ -36,28 +47,35 @@ export function DistributionPreview({
     { label: "Stripe", amount: stripeFee },
   ]
 
+  const sumMoney = formatCurrency(oneHourTotal)
+
   return (
-    <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-4">
-      <h4 className="text-sm font-semibold text-foreground mb-4">
-        1 hour of support - Distribution
+    <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-5">
+      <h4 className="text-[14px] font-semibold text-foreground mb-4">
+        1st hour of support - Distribution
       </h4>
       <div className="space-y-3">
-        {rows.map(({ label, amount }) => (
-          <div
-            key={label}
-            className="flex items-center justify-between text-sm"
-          >
-            <span className="text-muted-foreground">{label}</span>
-            <span className="text-foreground font-medium tabular-nums">
-              {formatCurrency(amount)}
-            </span>
-          </div>
-        ))}
+        {rows.map(({ label, amount }) => {
+          const money = formatCurrency(amount)
+          return (
+            <div
+              key={label}
+              className="grid grid-cols-3 items-center text-[14px]"
+            >
+              <span className="col-span-2 pl-[10px] text-muted-foreground">{label}</span>
+              <span className="text-foreground font-medium tabular-nums">
+                <span className="mr-[3px]">{money.symbol}</span>
+                {money.amount}
+              </span>
+            </div>
+          )
+        })}
       </div>
-      <div className="border-t border-border mt-3 pt-3 flex items-center justify-between">
-        <span className="text-sm font-bold text-brand-primary">Sum</span>
-        <span className="text-sm font-bold text-brand-primary tabular-nums">
-          {formatCurrency(oneHourTotal)}
+      <div className="border-t border-border mt-3 pt-3 grid grid-cols-3 items-center">
+        <span className="col-span-2 text-[14px] font-bold text-brand-primary">Sum</span>
+        <span className="text-[14px] font-bold text-brand-primary tabular-nums">
+          <span className="mr-[3px]">{sumMoney.symbol}</span>
+          {sumMoney.amount}
         </span>
       </div>
     </div>
