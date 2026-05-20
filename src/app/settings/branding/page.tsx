@@ -70,7 +70,7 @@ export default function BrandingSettingsPage() {
           <div className="max-w-4xl space-y-6">
             {/* Logo Upload Section */}
             <div className="bg-white rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-[12px]">
+              <div className="flex items-center justify-between mb-[8px]">
                 <h2 className="text-base font-semibold text-foreground">Logo</h2>
               </div>
 
@@ -114,7 +114,9 @@ export default function BrandingSettingsPage() {
 
             {/* Primary Color Section */}
             <div className="bg-white rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-[12px]">
+              {/* mb-[4px] (not 8px) so the visual gap to the label below is 8px:
+                  the sm Button (h-8) is taller than the h2 and, centered, overhangs ~4px */}
+              <div className="flex items-center justify-between mb-[4px]">
                 <h2 className="text-base font-semibold text-foreground">Primary color</h2>
                 <Button
                   variant="outline"
