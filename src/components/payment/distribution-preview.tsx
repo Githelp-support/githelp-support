@@ -45,17 +45,17 @@ export function DistributionPreview({
         {rows.map(({ label, amount }) => (
           <div
             key={label}
-            className="flex items-center text-sm pl-[10px]"
+            className="grid grid-cols-3 items-center text-sm"
           >
-            <span className="text-muted-foreground">{label}</span>
+            <span className="col-span-2 pl-[10px] text-muted-foreground">{label}</span>
             <span className="text-foreground font-medium tabular-nums">
               {formatCurrency(amount)}
             </span>
           </div>
         ))}
       </div>
-      <div className="border-t border-border mt-3 pt-3 flex items-center">
-        <span className="text-sm font-bold text-brand-primary">Sum</span>
+      <div className="border-t border-border mt-3 pt-3 grid grid-cols-3 items-center">
+        <span className="col-span-2 text-sm font-bold text-brand-primary">Sum</span>
         <span className="text-sm font-bold text-brand-primary tabular-nums">
           {formatCurrency(oneHourTotal)}
         </span>
