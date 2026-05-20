@@ -51,7 +51,7 @@ export function DistributionPreview({
 
   return (
     <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-5">
-      <h4 className="text-[13px] font-semibold text-foreground mb-4">
+      <h4 className="text-[14px] font-semibold text-foreground mb-4">
         1st hour of support - Distribution
       </h4>
       <div className="space-y-3">
@@ -60,7 +60,7 @@ export function DistributionPreview({
           return (
             <div
               key={label}
-              className="grid grid-cols-3 items-center text-[13px]"
+              className="grid grid-cols-3 items-center text-[14px]"
             >
               <span className="col-span-2 pl-[10px] text-muted-foreground">{label}</span>
               <span className="text-foreground font-medium tabular-nums">
@@ -72,8 +72,8 @@ export function DistributionPreview({
         })}
       </div>
       <div className="border-t border-border mt-3 pt-3 grid grid-cols-3 items-center">
-        <span className="col-span-2 text-[13px] font-bold text-brand-primary">Sum</span>
-        <span className="text-[13px] font-bold text-brand-primary tabular-nums">
+        <span className="col-span-2 text-[14px] font-bold text-brand-primary">Sum</span>
+        <span className="text-[14px] font-bold text-brand-primary tabular-nums">
           <span className="mr-[3px]">{sumMoney.symbol}</span>
           {sumMoney.amount}
         </span>
