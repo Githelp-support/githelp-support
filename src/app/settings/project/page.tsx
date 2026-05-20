@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tag, FolderOpen, Plus, Trash2, Loader2, Shield, Copy, Check } from "lucide-react"
+import { Plus, Trash2, Loader2, Copy, Check } from "lucide-react"
 import { useProjectSelection } from "@/contexts/project-context"
 import {
   useProjectKeywords,
@@ -179,11 +179,10 @@ export default function ProjectSettingsPage() {
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-4xl space-y-8">
             {/* Admins */}
-            <Card className="border-border">
+            <Card className="border-[#E1E1E1] shadow-none rounded-lg">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 h-5 text-muted-foreground" />
-                  <h2 className="text-lg font-semibold text-foreground">Admins</h2>
+                  <h2 className="text-base font-semibold text-foreground">Admins</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Admins can manage helpers, settings, payouts, and invite other admins.
@@ -201,7 +200,7 @@ export default function ProjectSettingsPage() {
                     {admins.map((admin) => (
                       <div key={admin.user_id} className="flex items-center gap-3 px-4 py-3 bg-card">
                         <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-foreground"
+                          className="w-9 h-9 rounded-[12px] flex items-center justify-center text-sm font-medium text-foreground"
                           style={{ backgroundColor: getAvatarColorHexForId(admin.user_id) }}
                         >
                           {getInitials(admin.name, admin.email)}
@@ -221,7 +220,7 @@ export default function ProjectSettingsPage() {
 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-foreground mb-2">Promote an existing helper</p>
+                    <p className="text-[13px] font-semibold text-foreground mb-2">Promote an existing helper</p>
                     <div className="flex gap-2">
                       <Select
                         value={promoteHelperId}
@@ -263,7 +262,7 @@ export default function ProjectSettingsPage() {
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-foreground mb-2">Invite a new admin</p>
+                    <p className="text-[13px] font-semibold text-foreground mb-2">Invite a new admin</p>
                     <div className="flex gap-2">
                       <Input
                         type="email"
@@ -301,11 +300,10 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Keywords / Topics */}
-            <Card className="border-border">
+            <Card className="border-[#E1E1E1] shadow-none rounded-lg">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Tag className="w-5 h-5 text-muted-foreground" />
-                  <h2 className="text-lg font-semibold text-foreground">Keywords & topics</h2>
+                  <h2 className="text-base font-semibold text-foreground">Keywords & topics</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Keywords help categorize tickets and let helpers indicate which topics they can help with.
@@ -361,11 +359,10 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Help categories */}
-            <Card className="border-border">
+            <Card className="border-[#E1E1E1] shadow-none rounded-lg">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <FolderOpen className="w-5 h-5 text-muted-foreground" />
-                  <h2 className="text-lg font-semibold text-foreground">Help categories</h2>
+                  <h2 className="text-base font-semibold text-foreground">Help categories</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Help categories classify ticket types (e.g. Bug, Best practice, Documentation).
