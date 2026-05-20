@@ -248,13 +248,14 @@ export default function ProjectSettingsPage() {
                       </Select>
                       <Button
                         size="sm"
+                        className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
                         onClick={handlePromoteHelper}
                         disabled={!promoteHelperId || promoteToAdmin.isPending}
                       >
                         {promoteToAdmin.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="size-[18px] animate-spin" />
                         ) : (
-                          <Plus className="w-4 h-4" />
+                          <Plus className="size-[18px]" />
                         )}
                         Promote
                       </Button>
@@ -272,11 +273,16 @@ export default function ProjectSettingsPage() {
                         onKeyDown={(e) => e.key === "Enter" && handleInviteAdmin()}
                         className="max-w-xs"
                       />
-                      <Button size="sm" onClick={handleInviteAdmin} disabled={createInvite.isPending}>
+                      <Button
+                        size="sm"
+                        className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
+                        onClick={handleInviteAdmin}
+                        disabled={createInvite.isPending}
+                      >
                         {createInvite.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="size-[18px] animate-spin" />
                         ) : (
-                          <Plus className="w-4 h-4" />
+                          <Plus className="size-[18px]" />
                         )}
                         Create invite
                       </Button>
@@ -319,10 +325,11 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
+                    className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
                     onClick={handleAddKeyword}
                     disabled={!newKeyword.trim() || createKeyword.isPending}
                   >
-                    {createKeyword.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {createKeyword.isPending ? <Loader2 className="size-[18px] animate-spin" /> : <Plus className="size-[18px]" />}
                     Add
                   </Button>
                 </div>
@@ -378,10 +385,11 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
+                    className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
                     onClick={handleAddCategory}
                     disabled={!newCategory.trim() || createCategory.isPending}
                   >
-                    {createCategory.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    {createCategory.isPending ? <Loader2 className="size-[18px] animate-spin" /> : <Plus className="size-[18px]" />}
                     Add
                   </Button>
                 </div>
