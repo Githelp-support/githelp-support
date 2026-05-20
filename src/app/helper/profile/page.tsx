@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Github, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -22,6 +22,17 @@ import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
 import { Checkbox } from "@/components/ui/checkbox"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
+
+const GithubIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+  </svg>
+)
 
 export default function HelperProfilePage() {
   const [name, setName] = useState("")
@@ -198,22 +209,22 @@ export default function HelperProfilePage() {
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-12 h-12 rounded-[18.8px] flex items-center justify-center text-foreground text-[21px] font-[family-name:var(--font-outfit)] font-normal"
+              className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-[21px] font-medium text-foreground shrink-0"
               style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
             >
               {displayAvatar}
             </div>
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-semibold text-foreground">{displayName}</h1>
-              <Badge variant="secondary" className="bg-brand-primary/10 text-muted-foreground border-0">
-                {category}
+              <h1 className="text-base font-semibold text-foreground">{displayName}</h1>
+              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
+                {category.toLowerCase() === "core" ? "Core team" : category}
               </Badge>
             </div>
           </div>
 
           {/* Editable contact information */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Contact information</h2>
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+            <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">
                 <FormField label="Display name" className="flex-1 max-w-md">
@@ -226,7 +237,7 @@ export default function HelperProfilePage() {
                 </FormField>
                 <FormField label="GitHub username" className="flex-1 max-w-md pl-5">
                   <div className="flex items-center gap-2">
-                    <Github className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <GithubIcon className="w-5 h-5 text-muted-foreground shrink-0" />
                     {gitHubConnected ? (
                       <span className="text-sm text-foreground font-medium">
                         {gitHubUsername ?? "Connected"}
@@ -238,7 +249,7 @@ export default function HelperProfilePage() {
                         className="text-white hover:opacity-90"
                         style={{ backgroundColor: "#24292e" }}
                       >
-                        <Github className="w-4 h-4" />
+                        <GithubIcon className="w-4 h-4" />
                         Connect with GitHub
                       </Button>
                     )}
@@ -271,8 +282,8 @@ export default function HelperProfilePage() {
           </section>
 
           {/* Editable category */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Helper category</h2>
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+            <h2 className="text-base font-semibold text-foreground mb-4">Helper category</h2>
             <div className="flex items-center gap-4 flex-wrap">
               <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
                 <SelectTrigger className="w-[180px]">
@@ -296,8 +307,8 @@ export default function HelperProfilePage() {
           </section>
 
           {/* Project keywords / topics */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Topics & keywords</h2>
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+            <h2 className="text-base font-semibold text-foreground mb-4">Topics & keywords</h2>
             <p className="text-sm text-muted-foreground mb-4">
               Select the project topics you can help with. This helps route relevant tickets to you.
             </p>
