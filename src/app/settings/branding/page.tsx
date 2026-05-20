@@ -70,12 +70,12 @@ export default function BrandingSettingsPage() {
           <div className="max-w-4xl space-y-6">
             {/* Logo Upload Section */}
             <div className="bg-white rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <h2 className="text-base font-semibold text-foreground">Logo</h2>
               </div>
 
               <div className="space-y-6">
-                <Label className="text-sm font-medium text-foreground">
+                <Label className="text-[17px] leading-normal tracking-tight text-text-muted">
                   Project logo
                 </Label>
                 <div className="flex items-center gap-4">
@@ -114,7 +114,7 @@ export default function BrandingSettingsPage() {
 
             {/* Primary Color Section */}
             <div className="bg-white rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <h2 className="text-base font-semibold text-foreground">Primary color</h2>
                 <Button
                   variant="outline"
@@ -128,7 +128,7 @@ export default function BrandingSettingsPage() {
               </div>
 
               <div className="space-y-6">
-                <Label htmlFor="primary-color" className="text-sm font-medium text-foreground">
+                <Label htmlFor="primary-color" className="text-[17px] leading-normal tracking-tight text-text-muted">
                   Choose a primary color
                 </Label>
                 <div className="flex items-center gap-4">
