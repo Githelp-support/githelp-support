@@ -511,8 +511,8 @@ function ProjectLogoWithBranding({
       <span
         className={`truncate text-sm ${
           isSelected
-            ? "font-[550]"
-            : "font-medium text-[#818185] group-focus:font-[550] group-focus:text-sidebar-foreground"
+            ? "font-[500]"
+            : "font-medium text-[#55555E] group-focus:text-sidebar-foreground"
         }`}
       >
         {project.name}
