@@ -688,6 +688,9 @@ export function useAcceptProjectInvite() {
             queryClient.invalidateQueries({
                 queryKey: ["helpers", data.project_id],
             });
+            queryClient.invalidateQueries({
+                queryKey: ["project-invites", data.project_id],
+            });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         },
     });

@@ -21,6 +21,25 @@ import { useUser } from "@/contexts/user-context"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import Link from "next/link"
 
+function isPendingInvite(invite: {
+  is_active: boolean
+  uses_count: number
+  max_uses: number | null
+  github_username: string | null
+  email: string | null
+  invite_type: string
+}) {
+  if (!invite.is_active) return false
+
+  const isMultiUseLink =
+    !invite.github_username &&
+    !invite.email &&
+    invite.invite_type !== "admin" &&
+    (invite.max_uses === null || invite.uses_count < invite.max_uses)
+
+  return isMultiUseLink || invite.uses_count === 0
+}
+
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
     className={className}
@@ -278,7 +297,7 @@ export default function HelpersPage() {
   const filteredInvites = useMemo(() => {
     if (!helperInvitesData) return []
     return helperInvitesData.filter((invite) => {
-      if (!invite.is_active) return false
+      if (!isPendingInvite(invite)) return false
       const matchesCategory =
         selectedCategory === "All helpers" || invite.category === selectedCategory
       const identifier =
@@ -618,7 +637,7 @@ export default function HelpersPage() {
                       </div>
                     ))
                   }
-                  const hasActiveInvites = helperInvitesData?.some((invite) => invite.is_active)
+                  const hasActiveInvites = helperInvitesData?.some((invite) => isPendingInvite(invite))
                   if (!hasActiveInvites) {
                     return (
                       <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending invites</div>
