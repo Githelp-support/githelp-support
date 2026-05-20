@@ -413,10 +413,10 @@ export default function TicketsPage() {
                       <div className="flex-1 min-w-0">
                         <Link href={`/helper/tickets/${ticket.id}`}>
                           <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                            {ticket.title}
+                            {ticket.user.name}
                           </h4>
                         </Link>
-                        <p className="text-sm text-muted-foreground">{ticket.user.name}</p>
+                        <p className="text-sm text-muted-foreground">{ticket.title}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <MessageCircle className="w-3 h-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
