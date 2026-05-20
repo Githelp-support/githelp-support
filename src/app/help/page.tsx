@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { HelpCircle, MessageCircle, BookOpen, Mail, ArrowRight } from "lucide-react"
+import { MessageCircle, BookOpen, Mail, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -66,20 +66,15 @@ export default function HelpPage() {
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-3xl mx-auto space-y-8">
             {/* Intro */}
-            <div className="flex items-start gap-4">
-              <div className="rounded-full bg-brand-primary/10 p-3 shrink-0">
-                <HelpCircle className="w-8 h-8 text-brand-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground mb-1">Having an issue?</h2>
-                <p className="text-muted-foreground">
-                  Use the topics below to find answers. If you still need help, reach out through support or create a ticket for your project.
-                </p>
-              </div>
+            <div>
+              <h2 className="text-base font-semibold text-foreground mb-1">Having an issue?</h2>
+              <p className="text-sm text-muted-foreground">
+                Use the topics below to find answers. If you still need help, reach out through support or create a ticket for your project.
+              </p>
             </div>
 
             {/* FAQ */}
-            <Card className="border-border">
+            <Card className="border-[#E1E1E1] shadow-none rounded-lg">
               <CardContent className="p-0">
                 <Accordion type="single" collapsible className="w-full">
                   {FAQ_ITEMS.map((item, index) => (
@@ -97,7 +92,7 @@ export default function HelpPage() {
             </Card>
 
             {/* Get support CTA */}
-            <Card className="border-border bg-muted/30">
+            <Card className="border-[#E1E1E1] shadow-none rounded-lg bg-muted/30">
               <CardContent className="p-6">
                 <h3 className="font-semibold text-foreground mb-2">Still need help?</h3>
                 <p className="text-sm text-muted-foreground mb-4">
