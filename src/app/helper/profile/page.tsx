@@ -223,7 +223,7 @@ export default function HelperProfilePage() {
           </div>
 
           {/* Editable contact information */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">
@@ -282,7 +282,7 @@ export default function HelperProfilePage() {
           </section>
 
           {/* Editable category */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Helper category</h2>
             <div className="flex items-center gap-4 flex-wrap">
               <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
@@ -307,7 +307,7 @@ export default function HelperProfilePage() {
           </section>
 
           {/* Project keywords / topics */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] px-[38px] py-[40px]">
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Topics & keywords</h2>
             <p className="text-sm text-muted-foreground mb-4">
               Select the project topics you can help with. This helps route relevant tickets to you.
