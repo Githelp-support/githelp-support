@@ -159,7 +159,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
             >
               <Bell className="w-4 h-4 text-[#55555E]" strokeWidth={1.95} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-destructive text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
