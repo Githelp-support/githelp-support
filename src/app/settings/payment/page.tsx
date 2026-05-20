@@ -562,7 +562,7 @@ export default function PaymentSettingsPage() {
                 <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold text-foreground">Payment options</h2>
+                      <h2 className="text-base font-semibold text-foreground">Payment options</h2>
                       <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <Button
@@ -632,7 +632,7 @@ export default function PaymentSettingsPage() {
                 {/* Ticket cost Section */}
                 <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-foreground">Ticket cost</h2>
+                    <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
                     <Button
                       variant="outline"
                       size="sm"
@@ -656,7 +656,7 @@ export default function PaymentSettingsPage() {
                           value={startPrice}
                           onChange={(e) => setStartPrice(e.target.value)}
                           className={cn(
-                            "w-[230px] text-right pr-1 border-border"
+                            "w-[230px] text-right pr-[3px] border-border"
                           )}
                           placeholder="10.00"
                         />
@@ -676,7 +676,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteFirst60}
                             onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
                             className={cn(
-                              "w-[230px] text-right pr-1 border-border"
+                              "w-[230px] text-right pr-[3px] border-border"
                             )}
                             placeholder="1.50"
                           />
@@ -695,7 +695,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteAfter60}
                             onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
                             className={cn(
-                              "w-[230px] text-right pr-1 border-border"
+                              "w-[230px] text-right pr-[3px] border-border"
                             )}
                             placeholder="1.00"
                           />
@@ -709,14 +709,14 @@ export default function PaymentSettingsPage() {
                 {/* Set up payouts Section */}
                 <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-semibold tracking-tight text-text-heading">Set up payouts</h2>
-                    <Info className="size-2.5 text-muted-foreground" />
+                    <h2 className="text-base font-semibold text-foreground">Set up payouts</h2>
+                    <Info className="w-4 h-4 text-muted-foreground" />
                   </div>
 
                   <div className="mt-8 flex flex-col gap-10">
                     {/* GitHub → Stripe connection */}
                     <div className="flex items-center gap-1">
-                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[11px]">
+                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[14px]">
                         <Logo className="size-6 text-[#24292f]" variant="dark" />
                       </div>
                       <div className="flex items-center gap-1.5 px-0.5">
@@ -724,7 +724,7 @@ export default function PaymentSettingsPage() {
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                       </div>
-                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[11px]">
+                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[14px]">
                         <img
                           src="/images/stripe-svg.svg"
                           alt="Stripe"
@@ -733,13 +733,13 @@ export default function PaymentSettingsPage() {
                       </div>
                     </div>
 
-                    <p className="max-w-[502px] text-[17px] leading-normal tracking-tight text-text-muted">
+                    <p className="max-w-[502px] text-sm leading-normal tracking-tight text-text-muted">
                       All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
                       payouts from support.
                     </p>
 
-                    <Button className="h-auto w-fit gap-[15px] rounded-[10px] bg-[#635bff] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal tracking-tight text-white hover:bg-[#5851e5]">
-                      <Landmark className="size-[18px]" />
+                    <Button className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]">
+                      <Landmark className="w-4 h-4" />
                       Set up payouts
                     </Button>
                   </div>
