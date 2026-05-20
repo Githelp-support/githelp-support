@@ -241,14 +241,14 @@ export default function ProjectSettingsPage() {
                       </Select>
                       <Button
                         size="sm"
-                        className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
+                        className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
                         onClick={handlePromoteHelper}
                         disabled={!promoteHelperId || promoteToAdmin.isPending}
                       >
                         {promoteToAdmin.isPending ? (
-                          <Loader2 className="size-[18px] animate-spin" />
+                          <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <Plus className="size-[18px]" />
+                          <Plus className="size-4" />
                         )}
                         Promote
                       </Button>
@@ -268,14 +268,14 @@ export default function ProjectSettingsPage() {
                       />
                       <Button
                         size="sm"
-                        className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
+                        className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
                         onClick={handleInviteAdmin}
                         disabled={createInvite.isPending}
                       >
                         {createInvite.isPending ? (
-                          <Loader2 className="size-[18px] animate-spin" />
+                          <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <Plus className="size-[18px]" />
+                          <Plus className="size-4" />
                         )}
                         Create invite
                       </Button>
@@ -318,11 +318,11 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
-                    className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
+                    className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
                     onClick={handleAddKeyword}
                     disabled={!newKeyword.trim() || createKeyword.isPending}
                   >
-                    {createKeyword.isPending ? <Loader2 className="size-[18px] animate-spin" /> : <Plus className="size-[18px]" />}
+                    {createKeyword.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
                     Add
                   </Button>
                 </div>
@@ -339,9 +339,9 @@ export default function ProjectSettingsPage() {
                     {keywords.map((kw) => (
                       <div
                         key={kw.id}
-                        className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2.5 bg-muted/50"
                       >
-                        <span className="text-sm font-medium">{kw.value}</span>
+                        <span className="text-[13px] font-medium">{kw.value}</span>
                         <button
                           type="button"
                           onClick={() => handleDeleteKeyword(kw.id)}
@@ -349,7 +349,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-destructive p-0.5"
                           aria-label={`Remove ${kw.value}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
@@ -378,11 +378,11 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
-                    className="h-auto gap-[15px] px-5 py-2.5 has-[>svg]:px-5 text-[17px] font-normal"
+                    className="h-auto gap-[10px] px-5 py-2.5 has-[>svg]:px-5 text-[13px] font-medium"
                     onClick={handleAddCategory}
                     disabled={!newCategory.trim() || createCategory.isPending}
                   >
-                    {createCategory.isPending ? <Loader2 className="size-[18px] animate-spin" /> : <Plus className="size-[18px]" />}
+                    {createCategory.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
                     Add
                   </Button>
                 </div>
@@ -399,9 +399,9 @@ export default function ProjectSettingsPage() {
                     {helpCategories.map((cat) => (
                       <div
                         key={cat.id}
-                        className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2.5 bg-muted/50"
                       >
-                        <span className="text-sm font-medium">{cat.value}</span>
+                        <span className="text-[13px] font-medium">{cat.value}</span>
                         <button
                           type="button"
                           onClick={() => handleDeleteCategory(cat.id)}
@@ -409,7 +409,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-destructive p-0.5"
                           aria-label={`Remove ${cat.value}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
