@@ -61,13 +61,7 @@ function getShortTicketId(ticketId: string | null): string {
 
 function getHelperInitialAndColor(helperName: string | undefined, helperId: string | null | undefined) {
   const name = helperName || "?"
-  const initial = name
-    .split(/[\s.]/)
-    .map((w) => w[0])
-    .filter(Boolean)
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "?"
+  const initial = (helperName || "?").trim().charAt(0).toUpperCase() || "?"
   const color = getAvatarColorHexForId(helperId ?? name)
   return { initial, color }
 }
