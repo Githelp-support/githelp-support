@@ -212,7 +212,7 @@ export default function Dashboard() {
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
+                    <span className="text-sm text-text-muted">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTicketsSolved}</div>
@@ -221,7 +221,7 @@ export default function Dashboard() {
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Total time spent</span>
+                    <span className="text-sm text-text-muted">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTimeSpent}</div>
@@ -230,7 +230,7 @@ export default function Dashboard() {
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Percentage solved</span>
+                    <span className="text-sm text-text-muted">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
                   <div className="text-[22px] font-[550] text-foreground">{keyStats.percentageSolved}%</div>
