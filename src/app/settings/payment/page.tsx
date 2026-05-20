@@ -647,7 +647,7 @@ export default function PaymentSettingsPage() {
                   <div className="space-y-6">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-foreground">Start price</span>
+                        <span className="text-[13px] font-semibold text-foreground">Start price</span>
                         <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <div className="flex items-center gap-2">
@@ -667,7 +667,7 @@ export default function PaymentSettingsPage() {
                     <div className="flex flex-wrap gap-10">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">Cost/minute - first 60 minutes</span>
+                          <span className="text-[13px] font-semibold text-foreground">Cost/minute - first 60 minutes</span>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div className="flex items-center gap-2">
@@ -686,7 +686,7 @@ export default function PaymentSettingsPage() {
 
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">Cost/minute - after 60 minutes</span>
+                          <span className="text-[13px] font-semibold text-foreground">Cost/minute - after 60 minutes</span>
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <div className="flex items-center gap-2">
