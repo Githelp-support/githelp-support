@@ -182,7 +182,31 @@ export default function TicketsPage() {
     return filtered
   }
 
+  const getSortedPreviewCards = () => {
+    const cards = [...SUPPORT_TICKET_PREVIEW_CARDS]
+    if (sortField === "title" || sortField === "createdAt") {
+      cards.sort((a, b) => {
+        let aValue: string | number
+        let bValue: string | number
+        if (sortField === "title") {
+          aValue = a.title.toLowerCase()
+          bValue = b.title.toLowerCase()
+        } else {
+          aValue = new Date(a.timestamp.split(", ")[0].split(".").reverse().join("-")).getTime()
+          bValue = new Date(b.timestamp.split(", ")[0].split(".").reverse().join("-")).getTime()
+        }
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
+        return 0
+      })
+    }
+    return cards
+  }
+
   const filteredTickets = getSortedTickets()
+  const sortedPreviewCards = getSortedPreviewCards()
+  const visibleTicketCount =
+    statusFilter === "available" ? sortedPreviewCards.length : filteredTickets.length
 
   const getStatusColor = (status: string) =>
     getTicketStatusBadgeClass(status)
@@ -361,144 +385,38 @@ export default function TicketsPage() {
             </Select>
 
             <div className="ml-auto text-sm text-muted-foreground">
-              {filteredTickets.length} ticket{filteredTickets.length !== 1 ? "s" : ""}
+              {visibleTicketCount} ticket{visibleTicketCount !== 1 ? "s" : ""}
             </div>
           </div>
 
           {/* Tickets Table */}
           <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                <div className="col-span-4 flex items-center space-x-2">
-                  <button type="button"
-                    onClick={() => handleSort("title")}
-                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                  >
-                    <span className="text-sm font-medium text-foreground">Ticket</span>
-                    <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center space-x-2">
-                  <button type="button"
-                    onClick={() => handleSort("type")}
-                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                  >
-                    <span className="text-sm font-medium text-foreground">Type</span>
-                    <TicketsSortIcon field="type" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center space-x-2">
-                  <button type="button"
-                    onClick={() => handleSort("priority")}
-                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                  >
-                    <span className="text-sm font-medium text-foreground">Priority</span>
-                    <TicketsSortIcon field="priority" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center space-x-2">
-                  <button type="button"
-                    onClick={() => handleSort("status")}
-                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                  >
-                    <span className="text-sm font-medium text-foreground">Status</span>
-                    <TicketsSortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </div>
-                <div className="col-span-2 flex items-center space-x-2">
-                  <button type="button"
-                    onClick={() => handleSort("createdAt")}
-                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                  >
-                    <span className="text-sm font-medium text-foreground">Created</span>
-                    <TicketsSortIcon field="createdAt" sortField={sortField} sortDirection={sortDirection} />
-                  </button>
-                </div>
-              </div>
-            </div>
-            {isLoading ? (
-              <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
-            ) : filteredTickets.length > 0 ? (
-              filteredTickets.map((ticket) => (
-              <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-4">
-                    <div className="flex items-start gap-[18px]">
-                      <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                        style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
-                      >
-                        {ticket.user.avatar}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <Link href={`/helper/tickets/${ticket.id}`}>
-                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                            {ticket.user.name}
-                          </h4>
-                        </Link>
-                        <p className="text-sm text-muted-foreground">{ticket.title}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <MessageCircle className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
-                          </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                      {ticket.type}
-                    </Badge>
-                  </div>
-                  <div className="col-span-2">
-                    <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
-                      {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                    </Badge>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="flex items-center gap-2">
-                      <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
-                        {ticket.status === "in-progress"
-                          ? "In Progress"
-                          : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                      </Badge>
-                      {ticket.helper && (
-                        <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-white text-xs font-medium shrink-0">
-                          {ticket.helper.avatar}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="text-sm text-muted-foreground">
-                      <div>{ticket.createdAt.split(", ")[0]}</div>
-                      <div className="text-xs text-muted-foreground">{ticket.createdAt.split(", ")[1]}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-            ) : (
-              <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
-            )}
-          </div>
-
-          {/* Available Tickets — shown only when the "Available" stat card is selected */}
-          {statusFilter === "available" && (
-          <div>
-            <h2 className="text-base font-semibold text-foreground mb-3">Available Tickets</h2>
-            <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+            {statusFilter === "available" ? (
+            <>
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                  <div className="col-span-9 flex items-center">
-                    <span className="text-sm font-medium text-foreground">Ticket</span>
+                  <div className="col-span-9 flex items-center space-x-2">
+                    <button type="button"
+                      onClick={() => handleSort("title")}
+                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                    >
+                      <span className="text-sm font-medium text-foreground">Ticket</span>
+                      <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
+                    </button>
                   </div>
-                  <div className="col-span-2 flex items-center">
-                    <span className="text-sm font-medium text-foreground">Created</span>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <button type="button"
+                      onClick={() => handleSort("createdAt")}
+                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                    >
+                      <span className="text-sm font-medium text-foreground">Created</span>
+                      <TicketsSortIcon field="createdAt" sortField={sortField} sortDirection={sortDirection} />
+                    </button>
                   </div>
                   <div className="col-span-1" aria-hidden="true" />
                 </div>
               </div>
-              {SUPPORT_TICKET_PREVIEW_CARDS.map((card) => {
+              {sortedPreviewCards.map((card) => {
                 const isExpanded = expandedPreviewCards.includes(card.id)
                 return (
                   <div
@@ -613,9 +531,125 @@ export default function TicketsPage() {
                   </div>
                 )
               })}
+            </>
+            ) : (
+            <>
+            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                <div className="col-span-4 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("title")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Ticket</span>
+                    <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("type")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Type</span>
+                    <TicketsSortIcon field="type" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("priority")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Priority</span>
+                    <TicketsSortIcon field="priority" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("status")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Status</span>
+                    <TicketsSortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button type="button"
+                    onClick={() => handleSort("createdAt")}
+                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-foreground">Created</span>
+                    <TicketsSortIcon field="createdAt" sortField={sortField} sortDirection={sortDirection} />
+                  </button>
+                </div>
+              </div>
             </div>
+            {isLoading ? (
+              <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
+            ) : filteredTickets.length > 0 ? (
+              filteredTickets.map((ticket) => (
+              <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  <div className="col-span-4">
+                    <div className="flex items-start gap-[18px]">
+                      <div
+                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                      >
+                        {ticket.user.avatar}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/helper/tickets/${ticket.id}`}>
+                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                            {ticket.user.name}
+                          </h4>
+                        </Link>
+                        <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                      {ticket.type}
+                    </Badge>
+                  </div>
+                  <div className="col-span-2">
+                    <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
+                      {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                    </Badge>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
+                        {ticket.status === "in-progress"
+                          ? "In Progress"
+                          : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      </Badge>
+                      {ticket.helper && (
+                        <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-white text-xs font-medium shrink-0">
+                          {ticket.helper.avatar}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-sm text-muted-foreground">
+                      <div>{ticket.createdAt.split(", ")[0]}</div>
+                      <div className="text-xs text-muted-foreground">{ticket.createdAt.split(", ")[1]}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+            ) : (
+              <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
+            )}
+            </>
+            )}
           </div>
-          )}
 
         </main>
       </div>
