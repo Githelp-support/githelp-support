@@ -18,6 +18,7 @@ export default function HelperOverviewPage() {
   const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
   const [selectedMonth, setSelectedMonth] = useState<string>("")
   const [issueFilter, setIssueFilter] = useState<"all" | "applied">("all")
+  const [ticketFilter, setTicketFilter] = useState<"all" | "last24h">("all")
 
   const [issueSort, setIssueSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
 
@@ -55,6 +56,13 @@ export default function HelperOverviewPage() {
   const keyStats = helperStats?.keyStats || { totalTicketsSolved: 0, totalTimeSpent: "-", percentageSolved: 0 }
 
   const filteredIssueTypes = issueFilter === "all" ? allIssueTypes : allIssueTypes.filter((issue) => issue.applied)
+
+  const filteredInProgressTickets =
+    ticketFilter === "all"
+      ? inProgressTickets
+      : inProgressTickets.filter(
+          (ticket) => Date.now() - new Date(ticket.created_at).getTime() <= 24 * 60 * 60 * 1000
+        )
 
   const sortIssueTypes = (issues: typeof allIssueTypes) => {
     if (!issueSort) return issues
@@ -208,9 +216,9 @@ export default function HelperOverviewPage() {
           </div>
 
           {/* Tables */}
-          <div className="grid grid-cols-5 gap-8">
-            {/* Issue Types Table — width increased by 20% relative to an even split */}
-            <div className="col-span-3">
+          <div className="grid grid-cols-2 gap-8">
+            {/* Issue Types Table */}
+            <div>
               <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
               <div className="mb-4">
                 <TabSelector
@@ -263,8 +271,18 @@ export default function HelperOverviewPage() {
             </div>
 
             {/* Tickets In Progress Table */}
-            <div className="col-span-2">
-              <h2 className="text-base font-semibold text-foreground mb-3">Tickets in progress ({inProgressTickets.length})</h2>
+            <div>
+              <h2 className="text-base font-semibold text-foreground mb-3">Tickets in progress ({filteredInProgressTickets.length})</h2>
+              <div className="mb-4">
+                <TabSelector
+                  options={[
+                    { value: "all", label: "All" },
+                    { value: "last24h", label: "Started last 24 hours" },
+                  ]}
+                  value={ticketFilter}
+                  onChange={(value) => setTicketFilter(value as typeof ticketFilter)}
+                />
+              </div>
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
                   <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
@@ -274,15 +292,21 @@ export default function HelperOverviewPage() {
                       <div className="col-span-3">Priority</div>
                     </div>
                   </div>
-                  {inProgressTickets.map((ticket) => (
-                    <div key={ticket.id} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 text-sm text-foreground">{ticket.title}</div>
-                        <div className="col-span-3 text-sm text-foreground">{formatStatus(ticket.status)}</div>
-                        <div className="col-span-3 text-sm text-foreground">{formatPriority(ticket.priority)}</div>
-                      </div>
+                  {filteredInProgressTickets.length === 0 ? (
+                    <div className="px-6 py-2.5">
+                      <div className="text-sm text-muted-foreground">No tickets to show</div>
                     </div>
-                  ))}
+                  ) : (
+                    filteredInProgressTickets.map((ticket) => (
+                      <div key={ticket.id} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-6 text-sm text-foreground">{ticket.title}</div>
+                          <div className="col-span-3 text-sm text-foreground">{formatStatus(ticket.status)}</div>
+                          <div className="col-span-3 text-sm text-foreground">{formatPriority(ticket.priority)}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>
