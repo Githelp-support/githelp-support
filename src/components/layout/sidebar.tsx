@@ -183,8 +183,8 @@ export function Sidebar({ className }: SidebarProps) {
       href: "#",
       icon: "fi-rr-settings",
       subItems: [
-        { name: "Availability", href: "/helper/settings/availability", icon: "fi-rr-list-check" },
         { name: "Profile", href: "/helper/settings/profile", icon: "fi-rr-user" },
+        { name: "Availability", href: "/helper/settings/availability", icon: "fi-rr-list-check" },
       ],
     },
   ]
