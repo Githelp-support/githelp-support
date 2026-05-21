@@ -273,10 +273,22 @@ export default function HelperReportsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" type="button" disabled>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            >
                               Open
                             </Button>
-                            <Button variant="outline" size="sm" type="button" disabled>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            >
                               Download PDF
                             </Button>
                           </div>
@@ -292,7 +304,7 @@ export default function HelperReportsPage() {
                   </tr>
                 ) : (
                   payouts.map((payout) => (
-                  <tr key={payout.id} className="hover:bg-gray-50">
+                  <tr key={payout.id} className="hover:bg-[#f7f9ff]">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Checkbox
                         checked={selectedRows.includes(payout.id)}
@@ -344,10 +356,18 @@ export default function HelperReportsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        >
                           Open
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        >
                           Download PDF
                         </Button>
                       </div>

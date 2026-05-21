@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Bell, Clock, ToggleRight } from "lucide-react"
+import { Loader2, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -22,6 +21,9 @@ interface NotificationSettings {
   slackNewTickets: boolean
   slackAssignments: boolean
   slackMentions: boolean
+  discordNewTickets: boolean
+  discordAssignments: boolean
+  discordMentions: boolean
 }
 
 interface AvailabilitySettings {
@@ -50,6 +52,9 @@ export default function HelperSettingsPage() {
     slackNewTickets: false,
     slackAssignments: false,
     slackMentions: false,
+    discordNewTickets: false,
+    discordAssignments: false,
+    discordMentions: false,
   })
 
   // TODO: Load from backend
@@ -60,14 +65,21 @@ export default function HelperSettingsPage() {
     workingHoursEnd: "17:00",
   })
 
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSavingAvailability, setIsSavingAvailability] = useState(false)
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false)
 
-  const handleSave = async () => {
-    setIsSaving(true)
-    // TODO: Persist settings to backend
-    // await supabase.from("helper_settings").upsert({ helper_id: helperId, ...notifications, ...availability })
+  const handleSaveAvailability = async () => {
+    setIsSavingAvailability(true)
+    // TODO: Persist availability settings to backend
     await new Promise((resolve) => setTimeout(resolve, 500)) // simulate async
-    setIsSaving(false)
+    setIsSavingAvailability(false)
+  }
+
+  const handleSaveNotifications = async () => {
+    setIsSavingNotifications(true)
+    // TODO: Persist notification settings to backend
+    await new Promise((resolve) => setTimeout(resolve, 500)) // simulate async
+    setIsSavingNotifications(false)
   }
 
   const toggleNotification = (key: keyof NotificationSettings) => {
@@ -127,205 +139,249 @@ export default function HelperSettingsPage() {
 
         <main className="flex-1 overflow-auto p-6 max-w-2xl">
           {/* Availability */}
-          <Card className="mb-6 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-                <ToggleRight className="w-5 h-5 text-muted-foreground" />
-                Availability
-              </h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Control whether you can be assigned new tickets.
-              </p>
+          <div className="bg-white rounded-lg border border-border p-6 mb-6">
+            <h2 className="text-lg font-semibold text-foreground mb-1">
+              Availability
+            </h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Control whether you can be assigned new tickets.
+            </p>
 
-              <div className="flex items-center justify-between py-3 border-b border-border">
-                <div>
-                  <Label htmlFor="available" className="text-sm font-medium text-foreground">
-                    Available for new tickets
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    When off, new tickets will not be assigned to you.
-                  </p>
-                </div>
-                <Switch
-                  id="available"
-                  checked={availability.available}
-                  onCheckedChange={(checked) =>
-                    setAvailability((prev) => ({ ...prev, available: checked }))
-                  }
-                />
+            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+              <div>
+                <Label htmlFor="available" className="text-sm font-medium text-foreground">
+                  Available for new tickets
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  When off, new tickets will not be assigned to you.
+                </p>
               </div>
+              <Switch
+                id="available"
+                checked={availability.available}
+                onCheckedChange={(checked) =>
+                  setAvailability((prev) => ({ ...prev, available: checked }))
+                }
+              />
+            </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-border">
-                <div>
-                  <Label htmlFor="working-hours-enabled" className="text-sm font-medium text-foreground">
-                    Set working hours
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Optionally restrict availability to a time window.
-                  </p>
-                </div>
-                <Switch
-                  id="working-hours-enabled"
-                  checked={availability.workingHoursEnabled}
-                  onCheckedChange={(checked) =>
-                    setAvailability((prev) => ({ ...prev, workingHoursEnabled: checked }))
-                  }
-                />
+            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+              <div>
+                <Label htmlFor="working-hours-enabled" className="text-sm font-medium text-foreground">
+                  Set working hours
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Optionally restrict availability to a time window.
+                </p>
               </div>
+              <Switch
+                id="working-hours-enabled"
+                checked={availability.workingHoursEnabled}
+                onCheckedChange={(checked) =>
+                  setAvailability((prev) => ({ ...prev, workingHoursEnabled: checked }))
+                }
+              />
+            </div>
 
-              {availability.workingHoursEnabled && (
-                <div className="pt-4 flex items-center gap-4 flex-wrap">
-                  <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm text-muted-foreground w-10">From</Label>
-                    <Select
-                      value={availability.workingHoursStart}
-                      onValueChange={(v) =>
-                        setAvailability((prev) => ({ ...prev, workingHoursStart: v }))
-                      }
-                    >
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HOURS.map((h) => (
-                          <SelectItem key={h.value} value={h.value}>
-                            {h.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm text-muted-foreground w-10">To</Label>
-                    <Select
-                      value={availability.workingHoursEnd}
-                      onValueChange={(v) =>
-                        setAvailability((prev) => ({ ...prev, workingHoursEnd: v }))
-                      }
-                    >
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HOURS.map((h) => (
-                          <SelectItem key={h.value} value={h.value}>
-                            {h.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            {availability.workingHoursEnabled && (
+              <div className="pt-4 flex items-center gap-4 flex-wrap">
+                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex items-center gap-3">
+                  <Label className="text-sm text-muted-foreground w-10">From</Label>
+                  <Select
+                    value={availability.workingHoursStart}
+                    onValueChange={(v) =>
+                      setAvailability((prev) => ({ ...prev, workingHoursStart: v }))
+                    }
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HOURS.map((h) => (
+                        <SelectItem key={h.value} value={h.value}>
+                          {h.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+                <div className="flex items-center gap-3">
+                  <Label className="text-sm text-muted-foreground w-10">To</Label>
+                  <Select
+                    value={availability.workingHoursEnd}
+                    onValueChange={(v) =>
+                      setAvailability((prev) => ({ ...prev, workingHoursEnd: v }))
+                    }
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HOURS.map((h) => (
+                        <SelectItem key={h.value} value={h.value}>
+                          {h.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={handleSaveAvailability}
+              disabled={isSavingAvailability}
+              variant="outline"
+              className="border-border mt-[22px]"
+            >
+              {isSavingAvailability ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Save availability"
               )}
-            </CardContent>
-          </Card>
+            </Button>
+          </div>
 
           {/* Notification preferences */}
-          <Card className="mb-6 border-border">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-                <Bell className="w-5 h-5 text-muted-foreground" />
-                Notification preferences
-              </h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Choose how you want to be notified about activity.
-              </p>
+          <div className="bg-white rounded-lg border border-border p-6 mb-6">
+            <h2 className="text-lg font-semibold text-foreground mb-1">
+              Notification preferences
+            </h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Choose how you want to be notified about activity.
+            </p>
 
-              {/* Email */}
-              <div className="mb-5">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
-                  Email
-                </h3>
-                <div className="space-y-0 divide-y divide-border">
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="email-new-tickets" className="text-sm text-foreground cursor-pointer">
-                      New tickets
-                    </Label>
-                    <Switch
-                      id="email-new-tickets"
-                      checked={notifications.emailNewTickets}
-                      onCheckedChange={() => toggleNotification("emailNewTickets")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="email-assignments" className="text-sm text-foreground cursor-pointer">
-                      Ticket assignments
-                    </Label>
-                    <Switch
-                      id="email-assignments"
-                      checked={notifications.emailAssignments}
-                      onCheckedChange={() => toggleNotification("emailAssignments")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="email-mentions" className="text-sm text-foreground cursor-pointer">
-                      Mentions
-                    </Label>
-                    <Switch
-                      id="email-mentions"
-                      checked={notifications.emailMentions}
-                      onCheckedChange={() => toggleNotification("emailMentions")}
-                    />
-                  </div>
+            {/* Email */}
+            <div className="mb-5">
+              <h3 className="text-[13px] font-semibold text-foreground mb-3">
+                Email
+              </h3>
+              <div className="space-y-0 divide-y divide-gray-100">
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="email-new-tickets" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    New tickets
+                  </Label>
+                  <Switch
+                    id="email-new-tickets"
+                    checked={notifications.emailNewTickets}
+                    onCheckedChange={() => toggleNotification("emailNewTickets")}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="email-assignments" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    Ticket assignments
+                  </Label>
+                  <Switch
+                    id="email-assignments"
+                    checked={notifications.emailAssignments}
+                    onCheckedChange={() => toggleNotification("emailAssignments")}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="email-mentions" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    Mentions
+                  </Label>
+                  <Switch
+                    id="email-mentions"
+                    checked={notifications.emailMentions}
+                    onCheckedChange={() => toggleNotification("emailMentions")}
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Slack */}
-              <div>
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
-                  Slack
-                </h3>
-                <div className="space-y-0 divide-y divide-border">
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="slack-new-tickets" className="text-sm text-foreground cursor-pointer">
-                      New tickets
-                    </Label>
-                    <Switch
-                      id="slack-new-tickets"
-                      checked={notifications.slackNewTickets}
-                      onCheckedChange={() => toggleNotification("slackNewTickets")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="slack-assignments" className="text-sm text-foreground cursor-pointer">
-                      Ticket assignments
-                    </Label>
-                    <Switch
-                      id="slack-assignments"
-                      checked={notifications.slackAssignments}
-                      onCheckedChange={() => toggleNotification("slackAssignments")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="slack-mentions" className="text-sm text-foreground cursor-pointer">
-                      Mentions
-                    </Label>
-                    <Switch
-                      id="slack-mentions"
-                      checked={notifications.slackMentions}
-                      onCheckedChange={() => toggleNotification("slackMentions")}
-                    />
-                  </div>
+            {/* Slack */}
+            <div className="mb-5">
+              <h3 className="text-[13px] font-semibold text-foreground mb-3">
+                Slack
+              </h3>
+              <div className="space-y-0 divide-y divide-gray-100">
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="slack-new-tickets" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    New tickets
+                  </Label>
+                  <Switch
+                    id="slack-new-tickets"
+                    checked={notifications.slackNewTickets}
+                    onCheckedChange={() => toggleNotification("slackNewTickets")}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="slack-assignments" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    Ticket assignments
+                  </Label>
+                  <Switch
+                    id="slack-assignments"
+                    checked={notifications.slackAssignments}
+                    onCheckedChange={() => toggleNotification("slackAssignments")}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="slack-mentions" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    Mentions
+                  </Label>
+                  <Switch
+                    id="slack-mentions"
+                    checked={notifications.slackMentions}
+                    onCheckedChange={() => toggleNotification("slackMentions")}
+                  />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="bg-brand-primary hover:bg-brand-primary/90 text-white"
-          >
-            {isSaving ? (
-              <>
+            {/* Discord */}
+            <div>
+              <h3 className="text-[13px] font-semibold text-foreground mb-3">
+                Discord
+              </h3>
+              <div className="space-y-0 divide-y divide-gray-100">
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="discord-new-tickets" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    New tickets
+                  </Label>
+                  <Switch
+                    id="discord-new-tickets"
+                    checked={notifications.discordNewTickets}
+                    onCheckedChange={() => toggleNotification("discordNewTickets")}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="discord-assignments" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    Ticket assignments
+                  </Label>
+                  <Switch
+                    id="discord-assignments"
+                    checked={notifications.discordAssignments}
+                    onCheckedChange={() => toggleNotification("discordAssignments")}
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <Label htmlFor="discord-mentions" className="text-sm text-foreground cursor-pointer pl-1.5">
+                    Mentions
+                  </Label>
+                  <Switch
+                    id="discord-mentions"
+                    checked={notifications.discordMentions}
+                    onCheckedChange={() => toggleNotification("discordMentions")}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSaveNotifications}
+              disabled={isSavingNotifications}
+              variant="outline"
+              className="border-border mt-[22px]"
+            >
+              {isSavingNotifications ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              "Save settings"
-            )}
-          </Button>
+              ) : (
+                "Save preferences"
+              )}
+            </Button>
+          </div>
         </main>
       </div>
     </div>
