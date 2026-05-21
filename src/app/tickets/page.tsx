@@ -456,7 +456,7 @@ export default function TicketsPage() {
                               <div className="mt-4 space-y-4">
                                 {/* Other topics */}
                                 <div>
-                                  <h4 className="text-sm font-medium text-foreground mb-2">Other topics</h4>
+                                  <h4 className="text-[13px] font-semibold text-foreground mb-2">Other topics</h4>
                                   <div className="flex gap-2 flex-wrap">
                                     {card.topics.map((topic) => (
                                       <Badge key={topic} variant="secondary" className="bg-muted text-muted-foreground">
@@ -468,7 +468,7 @@ export default function TicketsPage() {
 
                                 {/* Type of help */}
                                 <div>
-                                  <h4 className="text-sm font-medium text-foreground mb-2">Type of help</h4>
+                                  <h4 className="text-[13px] font-semibold text-foreground mb-2">Type of help</h4>
                                   <div className="flex gap-2 flex-wrap">
                                     <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
                                       {card.helpType}
@@ -478,7 +478,7 @@ export default function TicketsPage() {
 
                                 {/* Rates */}
                                 <div>
-                                  <h4 className="text-sm font-medium text-foreground mb-3">Rates</h4>
+                                  <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
                                   <div className="grid grid-cols-3 gap-4">
                                     <div className="bg-card border border-border rounded-lg p-3">
                                       <p className="text-sm text-muted-foreground mb-1">Start price</p>
