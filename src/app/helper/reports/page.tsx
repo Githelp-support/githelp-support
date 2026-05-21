@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Filter } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -35,6 +35,14 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
+// Helper function to get the "Month Year" label used by the month filter
+const getMonthYear = (dateString: string) => {
+  const date = new Date(dateString)
+  const month = date.toLocaleDateString("en-US", { month: "long" })
+  const year = date.getFullYear()
+  return `${month} ${year}`
+}
+
 type SortField = "ticketId" | "date" | "ticketType" | "amount" | "status"
 type MonthlySortField = "month" | "ticketsClosed" | "hoursLogged" | "earnings"
 type SortDirection = "asc" | "desc"
@@ -52,7 +60,7 @@ function TicketsSortIcon({ field, sortField, sortDirection }: { field: string; s
 
 export default function HelperReportsPage() {
   const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("payouts")
-  const [selectedFilter, setSelectedFilter] = useState("all")
+  const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -70,14 +78,29 @@ export default function HelperReportsPage() {
   const { data: transfersData, isLoading: transfersLoading, isFetched: transfersFetched } = usePaymentTransfers({
     helperId: helperId ?? undefined,
     projectId,
-    status: selectedFilter !== "all" ? selectedFilter : undefined,
     enabled: transfersQueryEnabled,
   })
+
+  // Generate the last 12 months for the month filter dropdown
+  const months = useMemo(() => {
+    const result: string[] = []
+    const currentDate = new Date()
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+      result.push(date.toLocaleDateString("en-US", { month: "long", year: "numeric" }))
+    }
+    return result
+  }, [])
 
   // Transform transfers to UI format
   const payouts: PayoutData[] = useMemo(() => {
     if (!transfersData) return []
-    return transfersData.map((transfer) => ({
+    let list = transfersData
+    if (selectedFilter === "current" || selectedMonth) {
+      const targetMonth = selectedMonth || getMonthYear(new Date().toISOString())
+      list = list.filter((transfer) => getMonthYear(transfer.created_at) === targetMonth)
+    }
+    return list.map((transfer) => ({
       id: transfer.id,
       ticketId: transfer.ticket_id?.slice(0, 7) || "-",
       date: transfer.created_at ? formatDate(transfer.created_at) : "-",
@@ -86,7 +109,7 @@ export default function HelperReportsPage() {
       status: transfer.status as "pending" | "completed",
       hasPendingIndicator: transfer.status === "pending",
     }))
-  }, [transfersData])
+  }, [transfersData, selectedFilter, selectedMonth])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -160,51 +183,73 @@ export default function HelperReportsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">Filters:</span>
-        </div>
-
-        <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-          <SelectTrigger
+      <div className="flex gap-2">
+        {activeTab === "payouts" && (
+          <Button
+            variant={selectedFilter === "current" ? "default" : "outline"}
             size="sm"
-            variant={selectedFilter !== "all" ? "lavender" : "outline"}
-            className="w-[140px] rounded-lg text-sm font-medium"
+            className={
+              selectedFilter === "current"
+                ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
+                : "h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+            }
+            onClick={() => {
+              setSelectedFilter("current")
+              setSelectedMonth("")
+            }}
           >
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger
-            size="sm"
-            variant={selectedMonth !== "" ? "lavender" : "outline"}
-            className="w-[140px] rounded-lg text-sm font-medium"
-          >
+            Current month
+          </Button>
+        )}
+        <Select
+          value={selectedMonth}
+          onValueChange={(v) => {
+            setSelectedMonth(v)
+            if (v) setSelectedFilter("all")
+          }}
+        >
+          <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
             <SelectValue placeholder="Choose month" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="january" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">January</SelectItem>
-            <SelectItem value="february" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">February</SelectItem>
-            <SelectItem value="march" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">March</SelectItem>
-            <SelectItem value="april" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">April</SelectItem>
-            <SelectItem value="may" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">May</SelectItem>
-            <SelectItem value="june" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">June</SelectItem>
+            {months.map((month) => (
+              <SelectItem key={month} value={month}>
+                {month}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
+        <Button
+          variant={selectedFilter === "all" ? "default" : "outline"}
+          size="sm"
+          className="h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+          onClick={() => {
+            setSelectedFilter("all")
+            setSelectedMonth("")
+          }}
+        >
+          All
+        </Button>
       </div>
 
       {/* Payouts Table */}
       {activeTab === "payouts" && (
+        <>
+        {showPayoutPreview && (
+          <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">
+            {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
+          </div>
+        )}
         <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
           <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-            <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-              <div className="col-span-1 flex items-center">
-                <Checkbox checked={selectedRows.length === payouts.length && payouts.length > 0} onCheckedChange={handleSelectAll} />
+            <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-border"
+                  checked={selectedRows.length === payouts.length && payouts.length > 0}
+                  onChange={handleSelectAll}
+                />
               </div>
               <div className="col-span-2 flex items-center space-x-2">
                 <button type="button"
@@ -261,13 +306,10 @@ export default function HelperReportsPage() {
             <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payouts...</div>
           ) : showPayoutPreview ? (
             <>
-              <div className="px-6 py-3 text-sm text-gray-600 border-b border-dashed border-gray-300 bg-muted/40">
-                {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
-              </div>
               {PAYOUT_PREVIEW_ROWS.map((payout) => (
                 <div key={payout.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-1 flex items-center">
+                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                    <div className="flex items-center">
                       <Checkbox disabled checked={false} />
                     </div>
                     <div className="col-span-2 text-sm text-gray-900">
@@ -278,8 +320,12 @@ export default function HelperReportsPage() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="col-span-1 text-sm text-gray-900">{payout.date}</div>
-                    <div className="col-span-2 text-sm text-gray-900">{payout.ticketType}</div>
+                    <div className="col-span-1 text-sm text-muted-foreground">{payout.date}</div>
+                    <div className="col-span-2">
+                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                        {payout.ticketType}
+                      </Badge>
+                    </div>
                     <div className="col-span-1 text-sm text-gray-900">{payout.amount}</div>
                     <div className="col-span-2">
                       <Badge
@@ -312,8 +358,8 @@ export default function HelperReportsPage() {
           ) : (
             payouts.map((payout) => (
               <div key={payout.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-1 flex items-center">
+                <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                  <div className="flex items-center">
                     <Checkbox
                       checked={selectedRows.includes(payout.id)}
                       onCheckedChange={() => handleRowSelect(payout.id)}
@@ -325,8 +371,12 @@ export default function HelperReportsPage() {
                       {payout.hasPendingIndicator && <div className="w-2 h-2 bg-red-500 rounded-full"></div>}
                     </div>
                   </div>
-                  <div className="col-span-1 text-sm text-gray-900">{payout.date}</div>
-                  <div className="col-span-2 text-sm text-gray-900">{payout.ticketType}</div>
+                  <div className="col-span-1 text-sm text-muted-foreground">{payout.date}</div>
+                  <div className="col-span-2">
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                      {payout.ticketType}
+                    </Badge>
+                  </div>
                   <div className="col-span-1 text-sm text-gray-900">{payout.amount}</div>
                   <div className="col-span-2">
                     <Badge
@@ -377,6 +427,7 @@ export default function HelperReportsPage() {
             ))
           )}
         </div>
+        </>
       )}
 
       {/* Monthly Reports Tab Content */}
