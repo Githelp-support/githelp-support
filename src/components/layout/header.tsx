@@ -154,7 +154,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setIsNotificationsOpen(true)}
+              onClick={() => setIsNotificationsOpen((prev) => !prev)}
               className="relative p-1 hover:bg-muted rounded-md transition-colors cursor-pointer"
             >
               <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
