@@ -482,18 +482,20 @@ export default function TicketsPage() {
             )}
           </div>
 
-          {/* Available Tickets */}
+          {/* Available Tickets — shown only when the "Available" stat card is selected */}
+          {statusFilter === "available" && (
           <div>
             <h2 className="text-base font-semibold text-foreground mb-3">Available Tickets</h2>
             <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                  <div className="col-span-10 flex items-center">
+                  <div className="col-span-9 flex items-center">
                     <span className="text-sm font-medium text-foreground">Ticket</span>
                   </div>
                   <div className="col-span-2 flex items-center">
                     <span className="text-sm font-medium text-foreground">Created</span>
                   </div>
+                  <div className="col-span-1" aria-hidden="true" />
                 </div>
               </div>
               {SUPPORT_TICKET_PREVIEW_CARDS.map((card) => {
@@ -501,11 +503,20 @@ export default function TicketsPage() {
                 return (
                   <div
                     key={card.id}
-                    role="presentation"
-                    className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => togglePreviewCard(card.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        togglePreviewCard(card.id)
+                      }
+                    }}
+                    aria-expanded={isExpanded}
+                    className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50 cursor-pointer hover:bg-gray-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
                   >
                     <div className="grid grid-cols-12 gap-4 items-start">
-                      <div className="col-span-10">
+                      <div className="col-span-9">
                         <div className="flex items-start gap-[18px]">
                           <div
                             className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
@@ -521,7 +532,7 @@ export default function TicketsPage() {
                               </Badge>
                             </div>
                             <p className="text-sm font-medium text-foreground mt-0.5">{card.title}</p>
-                            <p className="text-sm text-muted-foreground mt-1">{card.description}</p>
+                            <p className="text-sm text-muted-foreground mt-1 truncate">{card.description}</p>
 
                             {isExpanded && (
                               <div className="mt-4 space-y-4">
@@ -583,19 +594,6 @@ export default function TicketsPage() {
                               </div>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => togglePreviewCard(card.id)}
-                            aria-expanded={isExpanded}
-                            aria-label={isExpanded ? "Collapse ticket details" : "Expand ticket details"}
-                            className="shrink-0 text-muted-foreground hover:text-brand-primary cursor-pointer"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="w-5 h-5" />
-                            ) : (
-                              <ChevronDown className="w-5 h-5" />
-                            )}
-                          </button>
                         </div>
                       </div>
                       <div className="col-span-2">
@@ -604,12 +602,20 @@ export default function TicketsPage() {
                           <div className="text-xs text-muted-foreground">{card.timestamp.split(", ")[1]}</div>
                         </div>
                       </div>
+                      <div className="col-span-1 flex justify-end">
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
               })}
             </div>
           </div>
+          )}
 
         </main>
       </div>
