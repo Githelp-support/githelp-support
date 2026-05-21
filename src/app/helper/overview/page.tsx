@@ -215,8 +215,8 @@ export default function HelperOverviewPage() {
             </div>
           </div>
 
-          {/* Tables — Issue types column is 20% wider than Tickets in progress (60/40 split) */}
-          <div className="grid grid-cols-[3fr_2fr] gap-8">
+          {/* Tables — Issue types and Tickets in progress share equal width */}
+          <div className="grid grid-cols-2 gap-8">
             {/* Issue Types Table */}
             <div>
               <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
