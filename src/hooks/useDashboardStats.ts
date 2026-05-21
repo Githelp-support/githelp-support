@@ -25,7 +25,7 @@ export interface IssueTypeStats {
 
 export const UNCATEGORIZED_ISSUE_TYPE = "Uncategorized";
 
-function buildIssueTypeStatsRow(
+export function buildIssueTypeStatsRow(
     name: string,
     ticketIds: string[],
     tickets: { id: string }[],

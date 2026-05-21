@@ -174,6 +174,7 @@ export function Sidebar({ className }: SidebarProps) {
   ]
 
   const helperNavigationItems: NavigationItem[] = [
+    { name: "Overview", href: "/helper/overview", icon: "fi-rr-apps" },
     { name: "Profile", href: "/helper/profile", icon: "fi-rr-user" },
     { name: "Support", href: "/helper/support", icon: "fi-rr-comments" },
     { name: "Tickets", href: "/tickets", icon: "fi-rr-comments" },
