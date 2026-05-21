@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Bell, Clock, ToggleRight } from "lucide-react"
+import { Loader2, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -22,6 +22,9 @@ interface NotificationSettings {
   slackNewTickets: boolean
   slackAssignments: boolean
   slackMentions: boolean
+  discordNewTickets: boolean
+  discordAssignments: boolean
+  discordMentions: boolean
 }
 
 interface AvailabilitySettings {
@@ -50,6 +53,9 @@ export default function HelperSettingsPage() {
     slackNewTickets: false,
     slackAssignments: false,
     slackMentions: false,
+    discordNewTickets: false,
+    discordAssignments: false,
+    discordMentions: false,
   })
 
   // TODO: Load from backend
@@ -60,14 +66,23 @@ export default function HelperSettingsPage() {
     workingHoursEnd: "17:00",
   })
 
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSavingAvailability, setIsSavingAvailability] = useState(false)
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false)
 
-  const handleSave = async () => {
-    setIsSaving(true)
+  const handleSaveAvailability = async () => {
+    setIsSavingAvailability(true)
     // TODO: Persist settings to backend
-    // await supabase.from("helper_settings").upsert({ helper_id: helperId, ...notifications, ...availability })
+    // await supabase.from("helper_settings").upsert({ helper_id: helperId, ...availability })
     await new Promise((resolve) => setTimeout(resolve, 500)) // simulate async
-    setIsSaving(false)
+    setIsSavingAvailability(false)
+  }
+
+  const handleSaveNotifications = async () => {
+    setIsSavingNotifications(true)
+    // TODO: Persist settings to backend
+    // await supabase.from("helper_settings").upsert({ helper_id: helperId, ...notifications })
+    await new Promise((resolve) => setTimeout(resolve, 500)) // simulate async
+    setIsSavingNotifications(false)
   }
 
   const toggleNotification = (key: keyof NotificationSettings) => {
@@ -128,10 +143,9 @@ export default function HelperSettingsPage() {
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-2xl">
             {/* Availability */}
-            <Card className="mb-6 border-border">
+            <Card className="mb-6 rounded-lg border-border">
               <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-                  <ToggleRight className="w-5 h-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground mb-1">
                   Availability
                 </h2>
                 <p className="text-sm text-muted-foreground mb-5">
@@ -219,14 +233,26 @@ export default function HelperSettingsPage() {
                     </div>
                   </div>
                 )}
+
+                <Button
+                  onClick={handleSaveAvailability}
+                  disabled={isSavingAvailability}
+                  variant="outline"
+                  className="border-border mt-[22px]"
+                >
+                  {isSavingAvailability ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Save availability"
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
             {/* Notification preferences */}
-            <Card className="mb-6 border-border">
+            <Card className="mb-6 rounded-lg border-border">
               <CardContent className="p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground mb-1">
                   Notification preferences
                 </h2>
                 <p className="text-sm text-muted-foreground mb-5">
@@ -235,11 +261,11 @@ export default function HelperSettingsPage() {
 
                 {/* Email */}
                 <div className="mb-5">
-                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
+                  <h3 className="text-[13px] font-semibold text-foreground mb-3">
                     Email
                   </h3>
-                  <div className="space-y-0 divide-y divide-border">
-                    <div className="flex items-center justify-between py-3">
+                  <div className="space-y-0 divide-y divide-gray-100">
+                    <div className="flex items-center justify-between py-3 pl-1.5">
                       <Label htmlFor="email-new-tickets" className="text-sm text-foreground cursor-pointer">
                         New tickets
                       </Label>
@@ -249,7 +275,7 @@ export default function HelperSettingsPage() {
                         onCheckedChange={() => toggleNotification("emailNewTickets")}
                       />
                     </div>
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center justify-between py-3 pl-1.5">
                       <Label htmlFor="email-assignments" className="text-sm text-foreground cursor-pointer">
                         Ticket assignments
                       </Label>
@@ -259,7 +285,7 @@ export default function HelperSettingsPage() {
                         onCheckedChange={() => toggleNotification("emailAssignments")}
                       />
                     </div>
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center justify-between py-3 pl-1.5">
                       <Label htmlFor="email-mentions" className="text-sm text-foreground cursor-pointer">
                         Mentions
                       </Label>
@@ -273,12 +299,12 @@ export default function HelperSettingsPage() {
                 </div>
 
                 {/* Slack */}
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-3">
+                <div className="mb-5">
+                  <h3 className="text-[13px] font-semibold text-foreground mb-3">
                     Slack
                   </h3>
-                  <div className="space-y-0 divide-y divide-border">
-                    <div className="flex items-center justify-between py-3">
+                  <div className="space-y-0 divide-y divide-gray-100">
+                    <div className="flex items-center justify-between py-3 pl-1.5">
                       <Label htmlFor="slack-new-tickets" className="text-sm text-foreground cursor-pointer">
                         New tickets
                       </Label>
@@ -288,7 +314,7 @@ export default function HelperSettingsPage() {
                         onCheckedChange={() => toggleNotification("slackNewTickets")}
                       />
                     </div>
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center justify-between py-3 pl-1.5">
                       <Label htmlFor="slack-assignments" className="text-sm text-foreground cursor-pointer">
                         Ticket assignments
                       </Label>
@@ -298,7 +324,7 @@ export default function HelperSettingsPage() {
                         onCheckedChange={() => toggleNotification("slackAssignments")}
                       />
                     </div>
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center justify-between py-3 pl-1.5">
                       <Label htmlFor="slack-mentions" className="text-sm text-foreground cursor-pointer">
                         Mentions
                       </Label>
@@ -310,23 +336,60 @@ export default function HelperSettingsPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Discord */}
+                <div>
+                  <h3 className="text-[13px] font-semibold text-foreground mb-3">
+                    Discord
+                  </h3>
+                  <div className="space-y-0 divide-y divide-gray-100">
+                    <div className="flex items-center justify-between py-3 pl-1.5">
+                      <Label htmlFor="discord-new-tickets" className="text-sm text-foreground cursor-pointer">
+                        New tickets
+                      </Label>
+                      <Switch
+                        id="discord-new-tickets"
+                        checked={notifications.discordNewTickets}
+                        onCheckedChange={() => toggleNotification("discordNewTickets")}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between py-3 pl-1.5">
+                      <Label htmlFor="discord-assignments" className="text-sm text-foreground cursor-pointer">
+                        Ticket assignments
+                      </Label>
+                      <Switch
+                        id="discord-assignments"
+                        checked={notifications.discordAssignments}
+                        onCheckedChange={() => toggleNotification("discordAssignments")}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between py-3 pl-1.5">
+                      <Label htmlFor="discord-mentions" className="text-sm text-foreground cursor-pointer">
+                        Mentions
+                      </Label>
+                      <Switch
+                        id="discord-mentions"
+                        checked={notifications.discordMentions}
+                        onCheckedChange={() => toggleNotification("discordMentions")}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSaveNotifications}
+                  disabled={isSavingNotifications}
+                  variant="outline"
+                  className="border-border mt-[22px]"
+                >
+                  {isSavingNotifications ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Save preferences"
+                  )}
+                </Button>
               </CardContent>
             </Card>
-
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                "Save settings"
-              )}
-            </Button>
           </div>
         </main>
       </div>
