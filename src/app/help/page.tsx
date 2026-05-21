@@ -63,8 +63,8 @@ export default function HelpPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Help" subtitle="Get help with common issues" />
 
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-3xl mx-auto space-y-8">
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl space-y-8">
             {/* Intro */}
             <div>
               <h2 className="text-base font-semibold text-foreground mb-1">Having an issue?</h2>
