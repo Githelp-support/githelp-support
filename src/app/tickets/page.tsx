@@ -3,17 +3,19 @@
 import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
+import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 
 interface Ticket {
   id: string
@@ -69,6 +71,7 @@ export default function TicketsPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [expandedPreviewCards, setExpandedPreviewCards] = useState<string[]>([])
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -86,6 +89,12 @@ export default function TicketsPage() {
   const ratePerMinute = paymentSettings?.ticket_price_minute_first_60 
     ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) 
     : "1.50"
+  const startPrice = paymentSettings?.ticket_start_price
+    ? (paymentSettings.ticket_start_price / 100).toFixed(2)
+    : "10.00"
+  const after60Price = paymentSettings?.ticket_price_minute_after_60
+    ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2)
+    : "1.00"
 
   // Transform tickets to UI format
   const tickets = useMemo(() => {
@@ -191,6 +200,12 @@ export default function TicketsPage() {
 
   const stats = getTicketStats()
 
+  const togglePreviewCard = (id: string) => {
+    setExpandedPreviewCards((prev) =>
+      prev.includes(id) ? prev.filter((cardId) => cardId !== id) : [...prev, id]
+    )
+  }
+
   return (
     <div className="h-screen flex overflow-hidden">
       <Sidebar />
@@ -280,6 +295,11 @@ export default function TicketsPage() {
                 </CardContent>
               </Card>
             </button>
+          </div>
+
+          {/* Preview disclaimer banner */}
+          <div className="rounded-lg border border-dashed border-gray-300 bg-muted/40 px-6 py-3">
+            <p className="text-sm text-gray-600">{SUPPORT_TICKETS_PREVIEW_DISCLAIMER}</p>
           </div>
 
           {/* Filters */}
@@ -460,6 +480,135 @@ export default function TicketsPage() {
             ) : (
               <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
             )}
+          </div>
+
+          {/* Available Tickets */}
+          <div>
+            <h2 className="text-base font-semibold text-foreground mb-3">Available Tickets</h2>
+            <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                  <div className="col-span-10 flex items-center">
+                    <span className="text-sm font-medium text-foreground">Ticket</span>
+                  </div>
+                  <div className="col-span-2 flex items-center">
+                    <span className="text-sm font-medium text-foreground">Created</span>
+                  </div>
+                </div>
+              </div>
+              {SUPPORT_TICKET_PREVIEW_CARDS.map((card) => {
+                const isExpanded = expandedPreviewCards.includes(card.id)
+                return (
+                  <div
+                    key={card.id}
+                    role="presentation"
+                    className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50"
+                  >
+                    <div className="grid grid-cols-12 gap-4 items-start">
+                      <div className="col-span-10">
+                        <div className="flex items-start gap-[18px]">
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: getAvatarColorHexForId(card.id) }}
+                          >
+                            {card.avatar}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-medium text-foreground">{card.customer}</h4>
+                              <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                                Preview
+                              </Badge>
+                            </div>
+                            <p className="text-sm font-medium text-foreground mt-0.5">{card.title}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{card.description}</p>
+
+                            {isExpanded && (
+                              <div className="mt-4 space-y-4">
+                                {/* Other topics */}
+                                <div>
+                                  <h4 className="font-medium text-foreground mb-2">Other topics</h4>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {card.topics.map((topic) => (
+                                      <Badge key={topic} variant="secondary" className="bg-muted text-muted-foreground">
+                                        {topic}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Type of help */}
+                                <div>
+                                  <h4 className="font-medium text-foreground mb-2">Type of help</h4>
+                                  <div className="flex gap-2 flex-wrap">
+                                    <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
+                                      {card.helpType}
+                                    </Badge>
+                                  </div>
+                                </div>
+
+                                {/* Rates */}
+                                <div>
+                                  <h4 className="font-medium text-foreground mb-3">Rates</h4>
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <div className="bg-card border border-border rounded-lg p-3">
+                                      <p className="text-sm text-muted-foreground mb-1">Start price</p>
+                                      <p className="font-medium text-foreground">USD {startPrice}</p>
+                                    </div>
+                                    <div className="bg-card border border-border rounded-lg p-3">
+                                      <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
+                                      <p className="font-medium text-foreground">USD {ratePerMinute}/min</p>
+                                    </div>
+                                    <div className="bg-card border border-border rounded-lg p-3">
+                                      <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
+                                      <p className="font-medium text-foreground">USD {after60Price}/min</p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3">
+                                  <Button variant="lavender" disabled>
+                                    Claim ticket
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    disabled
+                                    className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                  >
+                                    <Sparkles className="w-4 h-4" />
+                                    Rephrase with AI
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => togglePreviewCard(card.id)}
+                            aria-expanded={isExpanded}
+                            aria-label={isExpanded ? "Collapse ticket details" : "Expand ticket details"}
+                            className="shrink-0 text-muted-foreground hover:text-brand-primary cursor-pointer"
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="w-5 h-5" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="text-sm text-muted-foreground">
+                          <div>{card.timestamp.split(", ")[0]}</div>
+                          <div className="text-xs text-muted-foreground">{card.timestamp.split(", ")[1]}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
         </main>
