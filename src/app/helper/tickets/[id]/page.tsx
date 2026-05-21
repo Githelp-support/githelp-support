@@ -465,7 +465,7 @@ export default function TicketDetailPage() {
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
+                        <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
                         <span className="text-xs" style={{ color: '#818185' }}>
                           {firstIssueMessage.timestamp
                             ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
@@ -479,8 +479,8 @@ export default function TicketDetailPage() {
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium mb-2" style={{ color: '#0A0A0A' }}>Info about issue</h3>
-                        <div className="space-y-3" style={{ color: '#0A0A0A' }}>
+                        <h3 className="text-sm font-medium mb-2" style={{ color: '#2E2D31' }}>Info about issue</h3>
+                        <div className="space-y-3" style={{ color: '#2E2D31' }}>
                           {firstIssueMessage.content ? (
                             <MarkdownContent content={firstIssueMessage.content} className="text-sm" />
                           ) : (
@@ -587,10 +587,10 @@ export default function TicketDetailPage() {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{msg.senderName}</span>
+                              <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
                               <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm" style={{ color: '#0A0A0A' }}>
+                            <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
                               <Check className="w-4 h-4 text-brand-primary shrink-0" />
                               <MarkdownContent content={msg.content} className="text-sm" />
                             </div>
@@ -609,7 +609,7 @@ export default function TicketDetailPage() {
                           <div className={`flex-1 ${msg.sender === "system" ? "text-center" : ""}`}>
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm" style={{ color: '#0A0A0A', fontWeight: 550 }}>{msg.senderName}</span>
+                                <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
                                 <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
                               </div>
                             )}
@@ -619,7 +619,7 @@ export default function TicketDetailPage() {
                                   ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg inline-block text-sm"
                                   : "text-sm"
                               }
-                              style={msg.sender !== "system" ? { color: '#0A0A0A' } : undefined}
+                              style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
                             </div>

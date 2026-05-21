@@ -259,7 +259,7 @@ export default function Dashboard() {
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
                   <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#2E2D31]">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleHelperSort("name")}
@@ -325,7 +325,7 @@ export default function Dashboard() {
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
                   <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#2E2D31]">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleIssueSort("name")}
