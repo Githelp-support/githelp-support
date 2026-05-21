@@ -63,7 +63,7 @@ export function NotificationsPanel({
   return (
     <>
       <div className="fixed right-4 top-16 w-96 bg-card shadow-2xl z-50 flex flex-col rounded-lg border border-border max-h-[80vh]">
-        <div className="flex items-center justify-between px-6 py-[18px] border-b border-border">
+        <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
           <h2 className="text-base font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
             <X className="w-5 h-5 text-muted-foreground" />
