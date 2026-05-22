@@ -307,7 +307,7 @@ export default function HelperReportsPage() {
           ) : showPayoutPreview ? (
             <>
               {PAYOUT_PREVIEW_ROWS.map((payout) => (
-                <div key={payout.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50">
+                <div key={payout.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
                   <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                     <div className="flex items-center">
                       <Checkbox disabled checked={false} />
@@ -345,7 +345,6 @@ export default function HelperReportsPage() {
                           variant="outline"
                           size="sm"
                           type="button"
-                          disabled
                           className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                         >
                           Open
@@ -354,7 +353,6 @@ export default function HelperReportsPage() {
                           variant="outline"
                           size="sm"
                           type="button"
-                          disabled
                           className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                         >
                           Download PDF
