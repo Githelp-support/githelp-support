@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useDashboardStats } from "@/hooks/useDashboardStats"
-import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,17 +9,17 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TabSelector } from "@/components/ui/tab-selector"
-import Link from "next/link"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useCurrentHelper } from "@/hooks/useCurrentHelper"
+import { useHelperDashboardStats } from "@/hooks/useHelperDashboardStats"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
 
-export default function Dashboard() {
+export default function HelperOverviewPage() {
   const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
   const [selectedMonth, setSelectedMonth] = useState<string>("")
-  const [helperFilter, setHelperFilter] = useState<"all" | "core" | "extended" | "community">("all")
   const [issueFilter, setIssueFilter] = useState<"all" | "applied">("all")
+  const [ticketFilter, setTicketFilter] = useState<"all" | "last24h">("all")
 
-  const [helperSort, setHelperSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
   const [issueSort, setIssueSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
 
   const generateMonthOptions = () => {
@@ -48,38 +47,22 @@ export default function Dashboard() {
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
 
-  // Fetch dashboard stats
-  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats(projectId)
+  // Resolve the current helper, then fetch stats scoped to that helper.
+  const { data: helperId } = useCurrentHelper(projectId)
+  const { data: helperStats } = useHelperDashboardStats(projectId, helperId ?? undefined)
 
-  const allHelpers = dashboardStats?.helperStats || []
-  const allIssueTypes = dashboardStats?.issueTypeStats || []
-  const keyStats = dashboardStats?.keyStats || { totalTicketsSolved: 0, totalTimeSpent: "-", percentageSolved: 0 }
-
-  const filteredHelpers =
-    helperFilter === "all" ? allHelpers : allHelpers.filter((helper) => helper.category === helperFilter)
+  const allIssueTypes = helperStats?.issueTypeStats || []
+  const inProgressTickets = helperStats?.inProgressTickets || []
+  const keyStats = helperStats?.keyStats || { totalTicketsSolved: 0, totalTimeSpent: "-", percentageSolved: 0 }
 
   const filteredIssueTypes = issueFilter === "all" ? allIssueTypes : allIssueTypes.filter((issue) => issue.applied)
 
-  const sortHelpers = (helpers: typeof allHelpers) => {
-    if (!helperSort) return helpers
-
-    return [...helpers].sort((a, b) => {
-      let aValue: string | number = a[helperSort.column as keyof typeof a] as string | number
-      let bValue: string | number = b[helperSort.column as keyof typeof b] as string | number
-
-      if (helperSort.column === "tickets") {
-        aValue = aValue === "-" ? 0 : Number.parseInt(String(aValue), 10)
-        bValue = bValue === "-" ? 0 : Number.parseInt(String(bValue), 10)
-      } else if (helperSort.column === "time") {
-        aValue = parseTimeDisplayToMinutes(String(aValue))
-        bValue = parseTimeDisplayToMinutes(String(bValue))
-      }
-
-      if (aValue < bValue) return helperSort.direction === "asc" ? -1 : 1
-      if (aValue > bValue) return helperSort.direction === "asc" ? 1 : -1
-      return 0
-    })
-  }
+  const filteredInProgressTickets =
+    ticketFilter === "all"
+      ? inProgressTickets
+      : inProgressTickets.filter(
+          (ticket) => Date.now() - new Date(ticket.created_at).getTime() <= 24 * 60 * 60 * 1000
+        )
 
   const sortIssueTypes = (issues: typeof allIssueTypes) => {
     if (!issueSort) return issues
@@ -102,15 +85,6 @@ export default function Dashboard() {
     })
   }
 
-  const handleHelperSort = (column: string) => {
-    setHelperSort((prev) => {
-      if (prev?.column === column) {
-        return prev.direction === "asc" ? { column, direction: "desc" } : null
-      }
-      return { column, direction: "asc" }
-    })
-  }
-
   const handleIssueSort = (column: string) => {
     setIssueSort((prev) => {
       if (prev?.column === column) {
@@ -127,8 +101,10 @@ export default function Dashboard() {
     return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-[#55555D]" /> : <ChevronDown className="w-4 h-4 text-[#55555D]" />
   }
 
-  const sortedHelpers = sortHelpers(filteredHelpers)
   const sortedIssueTypes = sortIssueTypes(filteredIssueTypes)
+
+  const formatStatus = (status: string) => status.charAt(0).toUpperCase() + status.slice(1).replace("-", " ")
+  const formatPriority = (priority: string) => priority.charAt(0).toUpperCase() + priority.slice(1)
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -239,76 +215,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Tables */}
+          {/* Tables — Issue types and Tickets in progress share equal width */}
           <div className="grid grid-cols-2 gap-8">
-            {/* Helpers Table */}
-            <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
-              <div className="mb-4">
-                <TabSelector
-                  options={[
-                    { value: "all", label: "View all" },
-                    { value: "core", label: "Core team" },
-                    { value: "extended", label: "Extended team" },
-                    { value: "community", label: "Community" },
-                  ]}
-                  value={helperFilter}
-                  onChange={(value) => setHelperFilter(value as typeof helperFilter)}
-                />
-              </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#2E2D31]">
-                      <div
-                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleHelperSort("name")}
-                      >
-                        Name
-                        {getSortIcon("name", helperSort)}
-                      </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleHelperSort("tickets")}
-                      >
-                        No of tickets
-                        {getSortIcon("tickets", helperSort)}
-                      </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleHelperSort("time")}
-                      >
-                        Total time
-                        {getSortIcon("time", helperSort)}
-                      </div>
-                    </div>
-                  </div>
-                  {sortedHelpers.map((helper, index) => (
-                    <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 flex items-center gap-3">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: helper.color }}
-                          >
-                            {helper.initial}
-                          </div>
-                          <span className="text-sm text-foreground">{helper.name}</span>
-                        </div>
-                        <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
-                        <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
-                        <div className="col-span-1 flex justify-end">
-                          <Link href={`/helpers/${helper.id}`}>
-                            <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Issue Types Table */}
             <div>
               <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
@@ -325,7 +233,7 @@ export default function Dashboard() {
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
                   <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#2E2D31]">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleIssueSort("name")}
@@ -358,6 +266,47 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Tickets In Progress Table */}
+            <div>
+              <h2 className="text-base font-semibold text-foreground mb-3">Tickets in progress ({filteredInProgressTickets.length})</h2>
+              <div className="mb-4">
+                <TabSelector
+                  options={[
+                    { value: "all", label: "All" },
+                    { value: "last24h", label: "Started last 24 hours" },
+                  ]}
+                  value={ticketFilter}
+                  onChange={(value) => setTicketFilter(value as typeof ticketFilter)}
+                />
+              </div>
+              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
+                      <div className="col-span-6">Ticket</div>
+                      <div className="col-span-3">Status</div>
+                      <div className="col-span-3">Priority</div>
+                    </div>
+                  </div>
+                  {filteredInProgressTickets.length === 0 ? (
+                    <div className="px-6 py-2.5">
+                      <div className="text-sm text-muted-foreground">No tickets to show</div>
+                    </div>
+                  ) : (
+                    filteredInProgressTickets.map((ticket) => (
+                      <div key={ticket.id} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-6 text-sm text-foreground">{ticket.title}</div>
+                          <div className="col-span-3 text-sm text-foreground">{formatStatus(ticket.status)}</div>
+                          <div className="col-span-3 text-sm text-foreground">{formatPriority(ticket.priority)}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>

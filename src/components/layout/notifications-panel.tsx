@@ -44,6 +44,8 @@ export function NotificationsPanel({
     }
   }
 
+  const stripQuotes = (text: string) => text.replace(/^["“”]+|["“”]+$/g, "")
+
   const handleNotificationClick = (notification: Notification) => {
     onNotificationClick(notification)
     if (notification.route) {
@@ -61,8 +63,8 @@ export function NotificationsPanel({
   return (
     <>
       <div className="fixed right-4 top-16 w-96 bg-card shadow-2xl z-50 flex flex-col rounded-lg border border-border max-h-[80vh]">
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
+        <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
+          <h2 className="text-base font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -73,7 +75,7 @@ export function NotificationsPanel({
             <div className="p-6 text-center text-muted-foreground">No notifications</div>
           ) : (
             <div className="p-4 space-y-4">
-              {notifications.map((notification) => (
+              {notifications.slice(0, 4).map((notification) => (
                 <div
                   key={notification.id}
                   className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
@@ -84,11 +86,23 @@ export function NotificationsPanel({
                       {notification.type.replace("_", " ")}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">{notification.timestamp}</span>
+                      <span
+                        className={`text-xs ${
+                          !notification.isRead ? "text-[#2E2D31]" : "text-[#868686]"
+                        }`}
+                      >
+                        {notification.timestamp}
+                      </span>
                       {!notification.isRead && <div className="w-2 h-2 bg-brand-primary rounded-full" />}
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{notification.content}</p>
+                  <p
+                    className={`text-sm leading-relaxed ${
+                      !notification.isRead ? "text-[#2E2D31]" : "text-[#868686]"
+                    }`}
+                  >
+                    {stripQuotes(notification.content)}
+                  </p>
                 </div>
               ))}
             </div>

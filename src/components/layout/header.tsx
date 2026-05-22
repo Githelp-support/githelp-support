@@ -154,12 +154,12 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setIsNotificationsOpen(true)}
+              onClick={() => setIsNotificationsOpen((prev) => !prev)}
               className="relative p-1 hover:bg-muted rounded-md transition-colors cursor-pointer"
             >
-              <Bell className="w-4 h-4 text-[#55555E]" strokeWidth={1.95} />
+              <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
