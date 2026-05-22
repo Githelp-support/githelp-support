@@ -369,7 +369,7 @@ export default function HelperReportsPage() {
             <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No payouts found</div>
           ) : (
             payouts.map((payout) => (
-              <div key={payout.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
+              <div key={payout.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
                 <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                   <div className="flex items-center">
                     <Checkbox
@@ -426,10 +426,18 @@ export default function HelperReportsPage() {
                   </div>
                   <div className="col-span-3">
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                      >
                         Open
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                      >
                         Download PDF
                       </Button>
                     </div>
