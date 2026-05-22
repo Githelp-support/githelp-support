@@ -128,7 +128,7 @@ export const linkGitHubIdentity = async () => {
             provider: "github",
             options: {
                 scopes: "repo read:user read:org",
-                redirectTo: window.location.origin + "/helper/profile",
+                redirectTo: window.location.origin + "/helper/settings/profile",
             },
         });
         if (error) throw error;

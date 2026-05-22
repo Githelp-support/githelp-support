@@ -100,6 +100,7 @@ export function Sidebar({ className }: SidebarProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
     if (pathname?.startsWith("/reports/")) return ["Reports"]
     if (pathname?.startsWith("/settings/")) return ["Settings"]
+    if (pathname?.startsWith("/helper/settings/")) return ["Settings"]
     return []
   })
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -176,10 +177,17 @@ export function Sidebar({ className }: SidebarProps) {
   const helperNavigationItems: NavigationItem[] = [
     { name: "Overview", href: "/helper/overview", icon: "fi-rr-apps" },
     { name: "Profile", href: "/helper/profile", icon: "fi-rr-user" },
-    { name: "Support", href: "/helper/support", icon: "fi-rr-comments" },
     { name: "Tickets", href: "/tickets", icon: "fi-rr-comments" },
     { name: "Reports", href: "/helper/reports", icon: "fi-rr-document" },
-    { name: "Settings", href: "/helper/settings", icon: "fi-rr-settings" },
+    {
+      name: "Settings",
+      href: "#",
+      icon: "fi-rr-settings",
+      subItems: [
+        { name: "Profile", href: "/helper/settings/profile", icon: "fi-rr-user" },
+        { name: "Availability", href: "/helper/settings/availability", icon: "fi-rr-list-check" },
+      ],
+    },
   ]
 
   const userNavigationItems: NavigationItem[] = [

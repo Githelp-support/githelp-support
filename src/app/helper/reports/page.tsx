@@ -326,8 +326,104 @@ export default function HelperReportsPage() {
                         {payout.ticketType}
                       </Badge>
                     </div>
-                    <div className="col-span-1 text-sm text-gray-900">{payout.amount}</div>
-                    <div className="col-span-2">
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {showPayoutsBusy ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500 text-[14px]">
+                      Loading payouts...
+                    </td>
+                  </tr>
+                ) : showPayoutPreview ? (
+                  <>
+                    <tr>
+                      <td colSpan={7} className="px-6 py-3 text-sm text-gray-600 border-b border-dashed border-gray-300 bg-muted/40">
+                        {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
+                      </td>
+                    </tr>
+                    {PAYOUT_PREVIEW_ROWS.map((payout) => (
+                      <tr key={payout.id} role="presentation" className="bg-gray-50/50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Checkbox disabled checked={false} />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span>{payout.ticketId}</span>
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                              Preview
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.ticketType}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.amount}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            variant={payout.status === "completed" ? "default" : "secondary"}
+                            className={
+                              payout.status === "completed"
+                                ? "bg-green-100 text-green-800 hover:bg-green-100"
+                                : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+                            }
+                          >
+                            {payout.status === "completed" ? "Completed" : "Pending"}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            >
+                              Open
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            >
+                              Download PDF
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                ) : payouts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500 text-[14px]">
+                      No payouts found
+                    </td>
+                  </tr>
+                ) : (
+                  payouts.map((payout) => (
+                  <tr key={payout.id} className="hover:bg-[#f7f9ff]">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedRows.includes(payout.id)}
+                        onCheckedChange={() => handleRowSelect(payout.id)}
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex items-center gap-2">
+                        {payout.ticketId}
+                        {payout.hasPendingIndicator && <div className="w-2 h-2 bg-red-500 rounded-full"></div>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.date}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.ticketType}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payout.amount}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <Badge
                         variant={payout.status === "completed" ? "default" : "secondary"}
                         className={
@@ -341,10 +437,18 @@ export default function HelperReportsPage() {
                     </div>
                     <div className="col-span-3">
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" type="button" disabled>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        >
                           Open
                         </Button>
-                        <Button variant="outline" size="sm" type="button" disabled>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        >
                           Download PDF
                         </Button>
                       </div>
