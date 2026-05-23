@@ -10,9 +10,13 @@ interface UsePaymentStatusArgs {
   scopeId: string
 }
 
+export type PaymentStatusData = ConnectStatusFields & {
+  default_payment_method_id: string | null
+}
+
 /**
- * Read Connect status fields for an organization or a user. Returns null when
- * no row exists yet (i.e. before payments-create-account has run).
+ * Read Connect status fields + the default payment method id for an
+ * organization or a user. Returns null when no row exists yet.
  */
 export function usePaymentStatus({ scope, scopeId }: UsePaymentStatusArgs) {
   const table = scope === "organization"
@@ -24,16 +28,16 @@ export function usePaymentStatus({ scope, scopeId }: UsePaymentStatusArgs) {
     retry: false,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
-    queryFn: async (): Promise<ConnectStatusFields | null> => {
+    queryFn: async (): Promise<PaymentStatusData | null> => {
       const { data, error } = await supabase
         .from(table)
         .select(
-          "stripe_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_payouts_enabled",
+          "stripe_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_payouts_enabled, default_payment_method_id",
         )
         .eq("id", scopeId)
         .maybeSingle()
       if (error) throw error
-      return data as ConnectStatusFields | null
+      return data as PaymentStatusData | null
     },
   })
 }
