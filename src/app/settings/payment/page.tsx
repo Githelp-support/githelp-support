@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Info, Landmark } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
-import { useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
+import { useProject, useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
+import { useStartPaymentConnect } from "@/hooks/usePaymentConnect"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
 import { cn } from "@/lib/utils"
@@ -22,6 +23,22 @@ export default function PaymentSettingsPage() {
   // Fetch payment settings from database
   const { data: paymentSettings, isLoading: settingsLoading } = useProjectPaymentSettings(projectId || "")
   const updatePaymentSettings = useUpdateProjectPaymentSettings()
+
+  // Project (used for organization_id when starting Connect onboarding)
+  const { data: project } = useProject(projectId || "")
+  const startConnect = useStartPaymentConnect()
+
+  const handleSetupPayouts = async () => {
+    if (!project?.organization_id) return
+    try {
+      const { url } = await startConnect.mutateAsync({
+        organizationId: project.organization_id,
+      })
+      window.location.assign(url)
+    } catch (err) {
+      console.error("Failed to start Connect onboarding:", err)
+    }
+  }
 
   // Team sharing ratios (core_helper_percentage)
   const [teamMemberRatio, setTeamMemberRatio] = useState([50])
@@ -738,9 +755,13 @@ export default function PaymentSettingsPage() {
                       payouts from support.
                     </p>
 
-                    <Button className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]">
+                    <Button
+                      className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                      onClick={handleSetupPayouts}
+                      disabled={!project?.organization_id || startConnect.isPending}
+                    >
                       <Landmark className="w-4 h-4" />
-                      Set up payouts
+                      {startConnect.isPending ? "Starting..." : "Set up payouts"}
                     </Button>
                   </div>
                 </div>
