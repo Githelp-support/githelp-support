@@ -34,6 +34,7 @@ export type AuthorizeTicketResult =
       stripePaymentIntentId?: string
       holdAmountSmallestUnit?: number
       holdExpiresAt?: string
+      clientSecret?: string
     }
 
 /**
@@ -83,6 +84,7 @@ export function useAuthorizeTicket() {
         stripePaymentIntentId: data.stripe_payment_intent_id as string | undefined,
         holdAmountSmallestUnit: data.hold_amount_smallest_unit as number | undefined,
         holdExpiresAt: data.hold_expires_at as string | undefined,
+        clientSecret: data.client_secret as string | undefined,
       }
     },
   })

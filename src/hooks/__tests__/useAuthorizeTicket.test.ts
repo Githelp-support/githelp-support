@@ -111,6 +111,31 @@ describe("useAuthorizeTicket", () => {
         );
     });
 
+    it("forwards client_secret on requires_action responses", async () => {
+        vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
+            data: {
+                payment_id: "pay-action",
+                stripe_payment_intent_id: "pi_action",
+                status: "requires_action",
+                client_secret: "pi_action_secret_abc",
+                hold_amount_smallest_unit: 5500,
+                hold_expires_at: "2026-06-01T00:00:00Z",
+            },
+            error: null,
+        } as never);
+        const { result } = renderHook(() => useAuthorizeTicket(), {
+            wrapper: makeWrapper(),
+        });
+        const out = await result.current.mutateAsync({
+            ticketId: "ticket-action",
+            payerType: "user",
+        });
+        expect(out.status).toBe("requires_action");
+        if (out.status === "requires_action") {
+            expect(out.clientSecret).toBe("pi_action_secret_abc");
+        }
+    });
+
     it("rejects when the function returns an error", async () => {
         vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
             data: null,
