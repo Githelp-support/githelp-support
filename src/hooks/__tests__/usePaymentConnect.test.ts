@@ -68,3 +68,52 @@ describe("useStartPaymentConnect", () => {
         });
     });
 });
+
+import { useStartHelperPaymentConnect } from "../usePaymentConnect";
+
+describe("useStartHelperPaymentConnect", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("invokes payments-create-account then payments-link-account with scope=user", async () => {
+        vi.mocked(supabase.functions.invoke)
+            .mockResolvedValueOnce({
+                data: { scope: "user", stripe_account_id: "acct_helper_1" },
+                error: null,
+            } as never)
+            .mockResolvedValueOnce({
+                data: { scope: "user", url: "https://connect.stripe.com/onboarding/helper" },
+                error: null,
+            } as never);
+
+        const { result } = renderHook(() => useStartHelperPaymentConnect(), {
+            wrapper: makeWrapper(),
+        });
+
+        const out = await result.current.mutateAsync();
+
+        expect(out).toEqual({ url: "https://connect.stripe.com/onboarding/helper" });
+        expect(supabase.functions.invoke).toHaveBeenNthCalledWith(
+            1,
+            "payments-create-account",
+            { body: { scope: "user" } },
+        );
+        expect(supabase.functions.invoke).toHaveBeenNthCalledWith(
+            2,
+            "payments-link-account",
+            { body: { scope: "user" } },
+        );
+    });
+
+    it("rejects if payments-create-account returns an error", async () => {
+        vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
+            data: null,
+            error: { message: "nope" },
+        } as never);
+        const { result } = renderHook(() => useStartHelperPaymentConnect(), {
+            wrapper: makeWrapper(),
+        });
+        await waitFor(async () => {
+            await expect(result.current.mutateAsync()).rejects.toThrow("nope");
+        });
+    });
+});
