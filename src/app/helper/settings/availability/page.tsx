@@ -259,7 +259,7 @@ export default function HelperSettingsPage() {
               </h3>
               <div className="space-y-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="email-new-tickets" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="email-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     New tickets
                   </Label>
                   <Switch
@@ -269,7 +269,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="email-assignments" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="email-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Ticket assignments
                   </Label>
                   <Switch
@@ -279,7 +279,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="email-mentions" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="email-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Mentions
                   </Label>
                   <Switch
@@ -298,7 +298,7 @@ export default function HelperSettingsPage() {
               </h3>
               <div className="space-y-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="slack-new-tickets" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="slack-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     New tickets
                   </Label>
                   <Switch
@@ -308,7 +308,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="slack-assignments" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="slack-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Ticket assignments
                   </Label>
                   <Switch
@@ -318,7 +318,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="slack-mentions" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="slack-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Mentions
                   </Label>
                   <Switch
@@ -337,7 +337,7 @@ export default function HelperSettingsPage() {
               </h3>
               <div className="space-y-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="discord-new-tickets" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="discord-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     New tickets
                   </Label>
                   <Switch
@@ -347,7 +347,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="discord-assignments" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="discord-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Ticket assignments
                   </Label>
                   <Switch
@@ -357,7 +357,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="discord-mentions" className="text-sm text-muted-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="discord-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Mentions
                   </Label>
                   <Switch
