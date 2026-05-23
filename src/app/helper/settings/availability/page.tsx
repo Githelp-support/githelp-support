@@ -137,7 +137,8 @@ export default function HelperSettingsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Settings" subtitle="Manage your notification and availability preferences" />
 
-        <main className="flex-1 overflow-auto p-6 max-w-2xl">
+        <main className="flex-1 overflow-auto p-6">
+          <div className="max-w-2xl">
           {/* Availability */}
           <div className="bg-white rounded-lg border border-border p-6 mb-6">
             <h2 className="text-base font-semibold text-foreground mb-1">
@@ -381,6 +382,7 @@ export default function HelperSettingsPage() {
                 "Save preferences"
               )}
             </Button>
+          </div>
           </div>
         </main>
       </div>
