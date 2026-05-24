@@ -137,10 +137,11 @@ export default function HelperSettingsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Settings" subtitle="Manage your notification and availability preferences" />
 
-        <main className="flex-1 overflow-auto p-6 max-w-2xl">
+        <main className="flex-1 overflow-auto p-6">
+          <div className="max-w-2xl">
           {/* Availability */}
           <div className="bg-white rounded-lg border border-border p-6 mb-6">
-            <h2 className="text-lg font-semibold text-foreground mb-1">
+            <h2 className="text-base font-semibold text-foreground mb-1">
               Availability
             </h2>
             <p className="text-sm text-muted-foreground mb-5">
@@ -245,7 +246,7 @@ export default function HelperSettingsPage() {
 
           {/* Notification preferences */}
           <div className="bg-white rounded-lg border border-border p-6 mb-6">
-            <h2 className="text-lg font-semibold text-foreground mb-1">
+            <h2 className="text-base font-semibold text-foreground mb-1">
               Notification preferences
             </h2>
             <p className="text-sm text-muted-foreground mb-5">
@@ -259,7 +260,7 @@ export default function HelperSettingsPage() {
               </h3>
               <div className="space-y-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="email-new-tickets" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="email-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     New tickets
                   </Label>
                   <Switch
@@ -269,7 +270,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="email-assignments" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="email-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Ticket assignments
                   </Label>
                   <Switch
@@ -279,7 +280,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="email-mentions" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="email-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Mentions
                   </Label>
                   <Switch
@@ -298,7 +299,7 @@ export default function HelperSettingsPage() {
               </h3>
               <div className="space-y-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="slack-new-tickets" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="slack-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     New tickets
                   </Label>
                   <Switch
@@ -308,7 +309,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="slack-assignments" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="slack-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Ticket assignments
                   </Label>
                   <Switch
@@ -318,7 +319,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="slack-mentions" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="slack-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Mentions
                   </Label>
                   <Switch
@@ -337,7 +338,7 @@ export default function HelperSettingsPage() {
               </h3>
               <div className="space-y-0 divide-y divide-gray-100">
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="discord-new-tickets" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="discord-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     New tickets
                   </Label>
                   <Switch
@@ -347,7 +348,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="discord-assignments" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="discord-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Ticket assignments
                   </Label>
                   <Switch
@@ -357,7 +358,7 @@ export default function HelperSettingsPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between py-3">
-                  <Label htmlFor="discord-mentions" className="text-sm text-foreground cursor-pointer pl-1.5">
+                  <Label htmlFor="discord-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                     Mentions
                   </Label>
                   <Switch
@@ -381,6 +382,7 @@ export default function HelperSettingsPage() {
                 "Save preferences"
               )}
             </Button>
+          </div>
           </div>
         </main>
       </div>
