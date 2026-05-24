@@ -16,7 +16,7 @@ import { useCreateTicket } from "@/hooks/useTickets"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
-import { useTicketWithDetails, useUserTickets } from "@/hooks/useTicketsWithDetails"
+import { useTicketWithDetails, useUserActiveTicketsSidebar, useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
@@ -33,6 +33,7 @@ interface Message {
   timestamp: string
   avatar?: string
   senderName?: string
+  senderId?: string
   codeBlock?: {
     language: string
     code: string
@@ -168,6 +169,11 @@ export default function UserSupportChatPage() {
     ticketId ? { ticketId } : undefined,
     { enabled: !!ticketId }
   )
+  const { data: activeTicketsSidebar = [] } = useUserActiveTicketsSidebar(
+    user?.id,
+    ticketId || undefined,
+    3
+  )
 
   // Check if user is authenticated (has an id)
   const isAuthenticated = !!user?.id
@@ -227,6 +233,7 @@ export default function UserSupportChatPage() {
         }),
         avatar: claimer.name?.[0]?.toUpperCase() || "H",
         senderName: claimer.name || "Helper",
+        senderId: claimer.id,
         isSystemMessage: true,
       })
     }
@@ -244,10 +251,11 @@ export default function UserSupportChatPage() {
         }),
         avatar: user?.avatar || "Y",
         senderName: user?.name || "You",
+        senderId: user?.id,
       })
     }
     if (messagesData?.length) {
-      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender: { name?: string; avatar_url?: string } | null }) => {
+      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; sender: { id?: string; name?: string; avatar_url?: string } | null }) => {
         list.push({
           id: msg.id,
           sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -261,11 +269,12 @@ export default function UserSupportChatPage() {
           }),
           avatar: msg.sender?.name?.[0]?.toUpperCase() || (msg.sender_type === "user" ? (user?.name?.[0] || "Y") : "H"),
           senderName: msg.sender?.name || (msg.sender_type === "user" ? (user?.name || "You") : "Helper"),
+          senderId: msg.sender_id ?? msg.sender?.id,
         })
       })
     }
     return list
-  }, [welcomeMessage, claimer, pendingFirstMessage, messagesData, user?.name, user?.avatar])
+  }, [welcomeMessage, claimer, pendingFirstMessage, messagesData, user?.id, user?.name, user?.avatar])
 
   // All participants: from tickets_participants, plus ticket creator if not already in (e.g. old tickets)
   const allParticipants: ParticipantWithUser[] = useMemo(() => {
@@ -490,13 +499,14 @@ export default function UserSupportChatPage() {
     senderName: m.senderName,
     senderAvatarInitial: m.avatar,
     senderAvatarUrl: m.id === "1" && m.sender === "system" ? projectLogo : undefined,
+    senderId: m.senderId,
     timestamp: m.timestamp,
     content: m.content,
     kind: m.isSystemMessage ? "claimed" : undefined,
   }))
 
   const chatParticipants: TicketChatParticipant[] = allParticipants.map((p) => ({
-    id: p.participant_id,
+    id: p.user.id,
     name: p.user.name,
     avatarInitial: p.user.name?.[0]?.toUpperCase() ?? "U",
     isCurrentUser: p.participant_id === user?.id,
@@ -625,38 +635,84 @@ export default function UserSupportChatPage() {
         }}
         rightSidebarFooter={
           ticketId ? (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-medium text-foreground">Logged time</h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
-              {timeEntriesDisplay.length > 0 ? (
-                <div className="space-y-2 mb-3">
-                  {timeEntriesDisplay.map((entry) => (
-                    <div key={entry.id} className="py-2 border-b border-border">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                            <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                          </div>
-                          <span className="text-sm text-muted-foreground capitalize">{entry.type}</span>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                        </span>
-                      </div>
-                      {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between py-2 font-medium">
-                    <span className="text-sm text-foreground">Total</span>
-                    <span className="text-sm text-foreground">{totalLoggedFormatted}</span>
-                  </div>
+            <>
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
+                  <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No time logged yet.</p>
-              )}
-            </div>
+                {timeEntriesDisplay.length > 0 ? (
+                  <div className="space-y-2 mb-3">
+                    {timeEntriesDisplay.map((entry) => (
+                      <div key={entry.id} className="py-2 border-b border-border">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
+                            </div>
+                            <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                          </div>
+                          <span className="text-[13px] text-muted-foreground">
+                            {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                          </span>
+                        </div>
+                        {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between py-2 font-medium">
+                      <span className="text-[13px] text-foreground">Total</span>
+                      <span className="text-[13px] text-foreground">{totalLoggedFormatted}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">No time logged yet.</p>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+
+              {/* Active Tickets — latest active tickets for this user */}
+              <div>
+                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets</h3>
+                <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+                  {activeTicketsSidebar.length === 0 ? (
+                    <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+                  ) : (
+                    activeTicketsSidebar.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/support/chat?ticket=${item.id}`}
+                        className={`block w-full border cursor-pointer transition-colors ${
+                          item.current
+                            ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
+                            : "bg-white border-border hover:bg-muted"
+                        }`}
+                      >
+                        <div className="p-3">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="w-8 h-8 shrink-0">
+                              {item.avatarUrl && <AvatarImage src={item.avatarUrl} alt="" />}
+                              <AvatarFallback className="bg-muted text-foreground">{item.avatarInitial}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                                {item.hasNotification && (
+                                  <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
+                              <p className="text-xs text-muted-foreground">{item.date}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
           ) : undefined
         }
       />

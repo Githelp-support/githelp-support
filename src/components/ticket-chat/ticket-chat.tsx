@@ -285,9 +285,9 @@ export function TicketChat(props: TicketChatProps) {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
-              <div className="bg-white rounded-t-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
-                <div className="p-4">
-                  <div className="max-w-4xl space-y-8">
+              <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+                <div className="px-6 py-5">
+                  <div className="max-w-4xl flex flex-col" style={{ rowGap: "31.2px" }}>
                     {intro}
 
                     {/* Chat Messages */}
