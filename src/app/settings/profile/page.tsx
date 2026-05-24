@@ -157,7 +157,7 @@ export default function ProfileSettingsPage() {
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="My profile" subtitle="View and edit your helper details" />
+        <Header title="My profile" subtitle="View and edit your profile details" />
 
         <main className="flex-1 overflow-auto p-6">
           {/* Profile header */}
