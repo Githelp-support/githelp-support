@@ -193,7 +193,7 @@ export function Sidebar({ className }: SidebarProps) {
   const userNavigationItems: NavigationItem[] = [
     { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
     { name: "Support", href: "/support/chat", icon: "fi-rr-comments" },
-    { name: "Reports", href: "#", icon: "fi-rr-document" },
+    { name: "Reports", href: "/user/reports", icon: "fi-rr-document" },
     {
       name: "Settings",
       href: "#",
