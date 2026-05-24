@@ -442,7 +442,13 @@ export default function TicketDetailPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="relative border-b border-border z-10">
-          <Header title={`Ticket with ${project?.name || 'Support'}`} subtitle={`ID: ${ticketId}`} showBackButton={true} />
+          <Header
+            title={`Ticket with ${project?.name || 'Support'}`}
+            showBackButton={true}
+            inlineRightContent={
+              <span className="text-[13px] font-normal text-muted-foreground/80">ID: {ticketId}</span>
+            }
+          />
         </div>
         <main className="flex-1 flex overflow-hidden">
           {/* Main Content */}
@@ -452,8 +458,8 @@ export default function TicketDetailPage() {
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
                 <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
-                  <div className="px-6 py-5">
-                    <div className="max-w-4xl flex flex-col" style={{ rowGap: '31.2px' }}>
+                  <div className="p-6">
+                    <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
                 <div className="flex gap-3">
                   <div
