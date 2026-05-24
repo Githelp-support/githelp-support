@@ -71,11 +71,11 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
         }
 
         // stacked: re-expand once the title row plus the cached inline width
-        // plus 30px buffer + 8px gap (gap-2) would fit.
+        // plus 30px buffer + 13px gap would fit.
         const titleRow = titleRowRef.current
         if (!titleRow) return currentMode
         const available = rightLeft - titleRow.getBoundingClientRect().right
-        return available >= inlineWidthRef.current + 30 + 8 ? "inline" : "stacked"
+        return available >= inlineWidthRef.current + 30 + 13 ? "inline" : "stacked"
       })
     }
 
@@ -186,7 +186,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               </button>
             )}
             <div>
-              <div ref={titleRowRef} className="flex items-center gap-2">
+              <div ref={titleRowRef} className="flex items-center gap-[13px]">
                 <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
                 {info && (
                   <div className="relative group">
