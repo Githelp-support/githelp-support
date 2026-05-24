@@ -16,7 +16,7 @@ import { useCreateTicket } from "@/hooks/useTickets"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
-import { useTicketWithDetails, useUserTickets } from "@/hooks/useTicketsWithDetails"
+import { useTicketWithDetails, useUserActiveTicketsSidebar, useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
@@ -168,6 +168,11 @@ export default function UserSupportChatPage() {
   const { data: timeEntriesFromDb = [] } = useTimeEntries(
     ticketId ? { ticketId } : undefined,
     { enabled: !!ticketId }
+  )
+  const { data: activeTicketsSidebar = [] } = useUserActiveTicketsSidebar(
+    user?.id,
+    ticketId || undefined,
+    3
   )
 
   // Check if user is authenticated (has an id)
@@ -623,38 +628,84 @@ export default function UserSupportChatPage() {
         }}
         rightSidebarFooter={
           ticketId ? (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
-              {timeEntriesDisplay.length > 0 ? (
-                <div className="space-y-2 mb-3">
-                  {timeEntriesDisplay.map((entry) => (
-                    <div key={entry.id} className="py-2 border-b border-border">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                            <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                          </div>
-                          <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
-                        </div>
-                        <span className="text-[13px] text-muted-foreground">
-                          {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                        </span>
-                      </div>
-                      {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between py-2 font-medium">
-                    <span className="text-[13px] text-foreground">Total</span>
-                    <span className="text-[13px] text-foreground">{totalLoggedFormatted}</span>
-                  </div>
+            <>
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
+                  <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
-              ) : (
-                <p className="text-[13px] text-muted-foreground">No time logged yet.</p>
-              )}
-            </div>
+                {timeEntriesDisplay.length > 0 ? (
+                  <div className="space-y-2 mb-3">
+                    {timeEntriesDisplay.map((entry) => (
+                      <div key={entry.id} className="py-2 border-b border-border">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
+                            </div>
+                            <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                          </div>
+                          <span className="text-[13px] text-muted-foreground">
+                            {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                          </span>
+                        </div>
+                        {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between py-2 font-medium">
+                      <span className="text-[13px] text-foreground">Total</span>
+                      <span className="text-[13px] text-foreground">{totalLoggedFormatted}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">No time logged yet.</p>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+
+              {/* Active Tickets — latest active tickets for this user */}
+              <div>
+                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets</h3>
+                <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+                  {activeTicketsSidebar.length === 0 ? (
+                    <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+                  ) : (
+                    activeTicketsSidebar.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/support/chat?ticket=${item.id}`}
+                        className={`block w-full border cursor-pointer transition-colors ${
+                          item.current
+                            ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
+                            : "bg-white border-border hover:bg-muted"
+                        }`}
+                      >
+                        <div className="p-3">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="w-8 h-8 shrink-0">
+                              {item.avatarUrl && <AvatarImage src={item.avatarUrl} alt="" />}
+                              <AvatarFallback className="bg-muted text-foreground">{item.avatarInitial}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                                {item.hasNotification && (
+                                  <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
+                              <p className="text-xs text-muted-foreground">{item.date}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
           ) : undefined
         }
       />
