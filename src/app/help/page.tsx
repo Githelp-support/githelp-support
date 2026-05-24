@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { MessageCircle, BookOpen, Mail, ArrowRight } from "lucide-react"
+import { MessageCircle, BookOpen, Mail, ArrowRight, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -12,6 +12,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { FormField } from "@/components/ui/form-field"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useUser } from "@/contexts/user-context"
 
 const FAQ_ITEMS = [
@@ -124,6 +134,94 @@ export default function HelpPage() {
                       </Link>
                     </Button>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Send feedback (visual mockup) */}
+            <Card className="border-[#E1E1E1] shadow-none rounded-lg">
+              <CardContent className="p-6">
+                <div className="mb-5">
+                  <h3 className="text-base font-semibold text-foreground mb-1">Send us feedback</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Spotted a bug, have a suggestion, or want to tell us what&apos;s working? Drop us a note.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="Your name" id="feedback-name">
+                    <Input
+                      id="feedback-name"
+                      type="text"
+                      placeholder="Jane Doe"
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </FormField>
+                  <FormField label="Email" id="feedback-email">
+                    <Input
+                      id="feedback-email"
+                      type="email"
+                      placeholder="jane@example.com"
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </FormField>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField label="Topic" id="feedback-topic">
+                    <Select disabled>
+                      <SelectTrigger id="feedback-topic" className="w-full">
+                        <SelectValue placeholder="Choose a topic" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bug">Report a bug</SelectItem>
+                        <SelectItem value="suggestion">Feature suggestion</SelectItem>
+                        <SelectItem value="praise">Something you love</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label="Subject" id="feedback-subject">
+                    <Input
+                      id="feedback-subject"
+                      type="text"
+                      placeholder="A short summary"
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </FormField>
+                </div>
+
+                <div className="mt-4">
+                  <FormField
+                    label="Message"
+                    id="feedback-message"
+                    hint="Share as much detail as you&apos;d like — screenshots can be attached after submitting."
+                  >
+                    <Textarea
+                      id="feedback-message"
+                      placeholder="Tell us what's on your mind..."
+                      rows={5}
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </FormField>
+                </div>
+
+                <div className="mt-6 flex items-center justify-end gap-3">
+                  <Button variant="ghost" type="button" disabled>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled
+                    className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send feedback
+                  </Button>
                 </div>
               </CardContent>
             </Card>
