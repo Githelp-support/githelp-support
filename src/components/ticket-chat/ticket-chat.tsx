@@ -100,7 +100,15 @@ export function TicketChat(props: TicketChatProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="relative border-b border-border z-10">
-        <Header title={headerTitle} subtitle={headerSubtitle} showBackButton={showBackButton} />
+        <Header
+          title={headerTitle}
+          showBackButton={showBackButton}
+          inlineRightContent={
+            headerSubtitle ? (
+              <span className="text-[13px] font-normal text-muted-foreground/80">{headerSubtitle}</span>
+            ) : undefined
+          }
+        />
       </div>
 
       <main className="flex-1 flex overflow-hidden">
@@ -112,7 +120,7 @@ export function TicketChat(props: TicketChatProps) {
               {/* Chat Messages Container */}
               <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
                 <div className="px-6 py-5">
-                  <div className="max-w-4xl flex flex-col" style={{ rowGap: '31.2px' }}>
+                  <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                     {intro}
 
                     {/* Chat Messages */}
@@ -226,7 +234,7 @@ export function TicketChat(props: TicketChatProps) {
 
         {/* Right Sidebar */}
         <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-          <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
+          <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
             {/* People in Chat */}
             <div>
               <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>People in this chat</h3>
