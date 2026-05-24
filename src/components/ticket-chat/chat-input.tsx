@@ -93,47 +93,105 @@ export function TicketChatInput({
   }, [value])
 
   return (
-    <div className="bg-white border border-border rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] mx-4 mb-4 overflow-hidden">
-      <div className="bg-muted flex items-center gap-2 px-4 py-2.5 border-b border-border">
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
-          <Bold className="w-3.5 h-3.5" />
+    <div className="bg-white border border-[#818185]/20 rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] mx-4 mb-4 overflow-hidden">
+      {/* Top toolbar strip — 36px tall, #f6f6f6 */}
+      <div className="h-9 bg-bg-subtle flex items-center gap-0.5 px-3">
+        {/* Group 1: text emphasis */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 hover:bg-black/5"
+          onClick={() => insertFormat("**")}
+          title="Bold"
+        >
+          <Bold className="w-[14px] h-[14px]" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("*")} title="Italic">
-          <Italic className="w-3.5 h-3.5" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 hover:bg-black/5"
+          onClick={() => insertFormat("*")}
+          title="Italic"
+        >
+          <Italic className="w-[14px] h-[14px]" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("~~")} title="Strikethrough">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 hover:bg-black/5"
+          onClick={() => insertFormat("~~")}
+          title="Strikethrough"
+        >
           <Strikethrough className="w-4 h-4" />
         </Button>
-        <div className="w-px h-5 bg-foreground mx-1" />
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("[", "](url)")} title="Link">
-          <Link className="w-4 h-4" />
+
+        <div className="w-px h-4 bg-[#818185]/30 mx-1.5" />
+
+        {/* Group 2: link + list */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 hover:bg-black/5"
+          onClick={() => insertFormat("[", "](url)")}
+          title="Link"
+        >
+          <Link className="w-[18px] h-[18px]" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertLinePrefix("- ")} title="Bullet list">
-          <List className="w-4 h-4" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 hover:bg-black/5"
+          onClick={() => insertLinePrefix("- ")}
+          title="Bullet list"
+        >
+          <List className="w-[18px] h-[18px]" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("`")} title="Code">
+
+        <div className="w-px h-4 bg-[#818185]/30 mx-1.5" />
+
+        {/* Group 3: code + attachment */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 hover:bg-black/5"
+          onClick={() => insertFormat("`")}
+          title="Inline code"
+        >
           <Code className="w-[18px] h-[18px]" />
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0"
+          className="h-7 w-7 p-0 hover:bg-black/5"
           title="Attach image"
           onClick={onImageClick}
           disabled={!onImageClick}
         >
           <ImageIcon className="w-[18px] h-[18px]" />
         </Button>
-        {toolbarEndContent != null && <div className="ml-auto">{toolbarEndContent}</div>}
+
+        {toolbarEndContent != null && (
+          <div className="ml-auto flex items-center text-text-heading font-semibold text-[15px] tracking-[-0.3px]">
+            {toolbarEndContent}
+          </div>
+        )}
       </div>
-      <div className="p-4">
+
+      {/* Body */}
+      <div className="pt-3 pb-2">
         <Textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[17px] text-muted-foreground placeholder:text-muted-foreground"
+          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 pl-[38px] pr-4 text-[17px] text-text-tertiary tracking-[-0.34px] placeholder:text-text-tertiary placeholder:tracking-[-0.34px] shadow-none"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault()
@@ -141,27 +199,61 @@ export function TicketChatInput({
             }
           }}
         />
-        <div className="flex items-center gap-2 mt-2">
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
-            <Plus className="w-3.5 h-3.5" />
+
+        {/* Bottom action row */}
+        <div className="flex items-center gap-2 px-3 pb-1 pt-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-[22px] w-[22px] p-0 rounded-full border border-[#818185]/40 hover:bg-black/5"
+            title="Add"
+          >
+            <Plus className="w-3 h-3" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-[22px] w-[22px] p-0 hover:bg-black/5"
+            title="Emoji"
+          >
             <Smile className="w-[18px] h-[18px]" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
-            <AtSign className="w-[17px] h-[17px]" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-[22px] w-[22px] p-0 hover:bg-black/5"
+            title="Mention"
+          >
+            <AtSign className="w-[18px] h-[18px]" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-[22px] w-[22px] p-0 hover:bg-black/5"
+            title="Video"
+          >
             <Video className="w-[22px] h-[22px]" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-[22px] w-[22px] p-0 hover:bg-black/5"
+            title="Microphone"
+          >
             <Mic className="w-[22px] h-[22px]" />
           </Button>
           <div className="ml-auto">
             <Button
+              type="button"
               onClick={onSend}
               disabled={!!sendDisabled}
               className="bg-transparent hover:bg-transparent p-0 h-auto w-auto disabled:opacity-50"
+              title="Send"
             >
               <Send className="w-[26px] h-[26px] text-foreground" />
             </Button>

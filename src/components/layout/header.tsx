@@ -22,9 +22,11 @@ interface HeaderProps {
   backButtonText?: string
   backButtonHref?: string
   info?: string
+  /** Optional element rendered to the right of the title (e.g. a status/ID pill). */
+  titlePill?: React.ReactNode
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, titlePill }: HeaderProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const pathname = usePathname()
   const { selectedProjectId } = useProjectSelection()
@@ -148,7 +150,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               </button>
             )}
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
                 {info && (
                   <div className="relative group">
@@ -159,6 +161,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                     </div>
                   </div>
                 )}
+                {titlePill}
               </div>
               {subtitle && <p className="mt-0.5 text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>}
             </div>

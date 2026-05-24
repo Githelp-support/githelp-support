@@ -309,7 +309,7 @@ export default function UserSupportChatPage() {
       (isAuthenticated && userTicketsLoadingForResolve) || !!latestUserTicket
     if (resolving) {
       return (
-        <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
+        <div className="flex h-screen items-center justify-center bg-page-muted">
           <div className="text-muted-foreground">Loading your support…</div>
         </div>
       )
@@ -322,7 +322,7 @@ export default function UserSupportChatPage() {
     )
 
     return (
-      <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+      <div className="flex h-screen overflow-hidden bg-page-muted">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -384,7 +384,7 @@ export default function UserSupportChatPage() {
 
   if (ticketIdParam && existingTicketLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
+      <div className="flex h-screen items-center justify-center bg-page-muted">
         <div className="text-muted-foreground">Loading ticket…</div>
       </div>
     )
@@ -503,12 +503,19 @@ export default function UserSupportChatPage() {
   }))
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+    <div className="flex h-screen overflow-hidden bg-page-muted">
       <Sidebar />
 
       <TicketChat
         headerTitle={`Ticket with ${projectName}`}
-        headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
+        headerTitlePill={
+          ticketCreated && ticketId ? (
+            <span className="inline-flex items-center rounded-full bg-[#eeeeff] px-2.5 py-1 text-xs font-medium text-brand-primary">
+              ID: {ticketId}
+            </span>
+          ) : undefined
+        }
+        rightSidebarClassName="w-[357px]"
         showBackButton={false}
         intro={
           <div className="space-y-4">
