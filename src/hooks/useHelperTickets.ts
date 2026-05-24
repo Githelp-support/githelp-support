@@ -31,9 +31,10 @@ const SUBTITLE_MAX_CHARS = 50;
  *
  * Always includes the current ticket even if it falls outside the `limit`
  * window or isn't claimed by the user — the open/displayed ticket must appear
- * in the list. Also returns `activeCount` — for the Admin/Helper view, a
- * ticket is "active" only when its status is `in-progress`. The count is used
- * by the UI to render "Active tickets (N)".
+ * in the list. Also returns `activeCount` — a ticket counts as "active" when
+ * its status is `claimed`, `in-progress`, or `available` (i.e. anything that
+ * is not `completed` or `cancelled`). The count is used by the UI to render
+ * "Active tickets (N)".
  */
 export function useHelperClaimedTicketsSidebar(
     userId: string | undefined,
@@ -89,12 +90,18 @@ export function useHelperClaimedTicketsSidebar(
                 activeTickets = (data ?? []) as SidebarTicketRow[];
             }
 
-            // For Admin/Helper view, a ticket counts as "Active" only when
-            // its status is `in-progress` (excludes `claimed`, `available`,
-            // etc.). The sidebar list still shows the broader set of active
-            // (non-completed/cancelled) tickets for navigation.
-            const activeCount = activeTickets.filter(
-                (t) => t.status === "in-progress"
+            // A ticket counts as "Active" when its status is `claimed`,
+            // `in-progress`, or `available` — i.e. anything that isn't
+            // `completed` or `cancelled`. The query above already filters
+            // out completed/cancelled, so every row in `activeTickets`
+            // counts toward the badge.
+            const ACTIVE_STATUSES = new Set([
+                "claimed",
+                "in-progress",
+                "available",
+            ]);
+            const activeCount = activeTickets.filter((t) =>
+                ACTIVE_STATUSES.has(t.status ?? "")
             ).length;
             let tickets: SidebarTicketRow[] = activeTickets;
 
