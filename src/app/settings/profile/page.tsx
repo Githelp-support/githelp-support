@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Landmark } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -14,6 +14,9 @@ import { useUser } from "@/contexts/user-context"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
+import { Logo } from "@/components/brand/logo"
+import { useProject } from "@/hooks/useProject"
+import { useStartPaymentConnect } from "@/hooks/usePaymentConnect"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -40,6 +43,21 @@ export default function ProfileSettingsPage() {
   const { data: helperData, isLoading: helperLoading } = useHelper(helperId ?? "")
 
   const updateUserProfile = useUpdateUserProfile()
+
+  const { data: project } = useProject(selectedProjectId || "")
+  const startConnect = useStartPaymentConnect()
+
+  const handleSetupPayment = async () => {
+    if (!project?.organization_id) return
+    try {
+      const { url } = await startConnect.mutateAsync({
+        organizationId: project.organization_id,
+      })
+      window.location.assign(url)
+    } catch (err) {
+      console.error("Failed to start Connect onboarding:", err)
+    }
+  }
 
   // Sync local form state when helper data loads
   useEffect(() => {
@@ -230,6 +248,42 @@ export default function ProfileSettingsPage() {
                 )}
               </Button>
             </div>
+          </section>
+
+          {/* Payment details */}
+          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+            <h2 className="text-base font-semibold text-foreground mb-4">Payment details</h2>
+
+            <div className="flex items-center gap-1">
+              <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[14px]">
+                <img
+                  src="/images/stripe-svg.svg"
+                  alt="Stripe"
+                  className="size-[22px] object-contain"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 px-0.5">
+                <span className="size-1 rounded-full bg-muted-foreground/40" />
+                <span className="size-1 rounded-full bg-muted-foreground/40" />
+                <span className="size-1 rounded-full bg-muted-foreground/40" />
+              </div>
+              <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[14px]">
+                <Logo className="size-6 text-[#24292f]" variant="dark" />
+              </div>
+            </div>
+
+            <p className="max-w-[502px] text-sm leading-normal tracking-tight text-text-muted mt-10">
+              Go to Stripe to set up payment details
+            </p>
+
+            <Button
+              className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5] mt-10"
+              onClick={handleSetupPayment}
+              disabled={!project?.organization_id || startConnect.isPending}
+            >
+              <Landmark className="w-4 h-4" />
+              {startConnect.isPending ? "Starting..." : "Set up payment with Stripe"}
+            </Button>
           </section>
         </main>
       </div>
