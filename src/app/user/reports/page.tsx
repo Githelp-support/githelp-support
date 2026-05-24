@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
-import { useProject } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -30,7 +29,6 @@ interface MonthlyData {
   id: string
   period: string
   periodRaw: number
-  project: string
   amount: string
   amountRaw: number
   status: "Paid"
@@ -54,7 +52,7 @@ const getMonthYear = (dateString: string) => {
 }
 
 type SortField = "ticketId" | "date" | "ticketType" | "amount" | "status"
-type MonthlySortField = "period" | "project" | "amount" | "status"
+type MonthlySortField = "period" | "amount" | "status"
 type SortDirection = "asc" | "desc"
 
 function TicketsSortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
@@ -80,8 +78,6 @@ export default function UserReportsPage() {
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
-  const { data: projectData } = useProject(projectId ?? "")
-  const projectName = projectData?.name ?? "—"
 
   const transfersQueryEnabled = !!projectId
 
@@ -146,7 +142,6 @@ export default function UserReportsPage() {
       id: key,
       period: data.month,
       periodRaw: new Date(data.month).getTime(),
-      project: projectName,
       amount: formatAmount(data.total, data.currency),
       amountRaw: data.total,
       status: "Paid" as const,
@@ -170,10 +165,6 @@ export default function UserReportsPage() {
           aValue = a.periodRaw
           bValue = b.periodRaw
           break
-        case "project":
-          aValue = a.project.toLowerCase()
-          bValue = b.project.toLowerCase()
-          break
         case "amount":
           aValue = a.amountRaw
           bValue = b.amountRaw
@@ -190,7 +181,7 @@ export default function UserReportsPage() {
       return 0
     })
     return sorted
-  }, [userPaidTransfers, projectName, selectedFilter, selectedMonth, monthlySortField, monthlySortDirection])
+  }, [userPaidTransfers, selectedFilter, selectedMonth, monthlySortField, monthlySortDirection])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -545,15 +536,6 @@ export default function UserReportsPage() {
               </div>
               <div className="col-span-3 flex items-center space-x-2">
                 <button type="button"
-                  onClick={() => handleMonthlySort("project")}
-                  className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                >
-                  <span className="text-sm font-medium text-foreground">Project</span>
-                  <TicketsSortIcon field="project" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                </button>
-              </div>
-              <div className="col-span-3 flex items-center space-x-2">
-                <button type="button"
                   onClick={() => handleMonthlySort("amount")}
                   className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
                 >
@@ -570,6 +552,9 @@ export default function UserReportsPage() {
                   <TicketsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
                 </button>
               </div>
+              <div className="col-span-3 flex items-center">
+                <span className="text-sm font-medium text-foreground">Actions</span>
+              </div>
             </div>
           </div>
           {showPaymentsBusy ? (
@@ -581,7 +566,6 @@ export default function UserReportsPage() {
               <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
                 <div className="grid grid-cols-12 gap-4 items-center">
                   <div className="col-span-3 text-sm text-gray-900">{row.period}</div>
-                  <div className="col-span-3 text-sm text-gray-900">{row.project}</div>
                   <div className="col-span-3 text-sm text-gray-900">{row.amount}</div>
                   <div className="col-span-3">
                     <Badge
@@ -590,6 +574,24 @@ export default function UserReportsPage() {
                     >
                       {row.status}
                     </Badge>
+                  </div>
+                  <div className="col-span-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                      >
+                        Open
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                      >
+                        Download PDF
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
