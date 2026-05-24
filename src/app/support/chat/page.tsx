@@ -555,8 +555,8 @@ export default function UserSupportChatPage() {
               )}
 
               <div>
-                {!ticketCreated && hasSLA && <h3 className="font-medium text-foreground mb-3">Help beyond free help</h3>}
-                {!ticketCreated && !hasSLA && <h3 className="font-medium text-foreground mb-3">{projectName}&apos;s rates</h3>}
+                {!ticketCreated && hasSLA && <h3 className="text-[13px] font-semibold text-foreground mb-3">Help beyond free help</h3>}
+                {!ticketCreated && !hasSLA && <h3 className="text-[13px] font-semibold text-foreground mb-3">{projectName}&apos;s rates</h3>}
                 <div className="bg-white border border-border rounded-lg overflow-hidden">
                   <table className="w-full">
                     <tbody>
