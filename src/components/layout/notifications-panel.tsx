@@ -33,7 +33,7 @@ const DEFAULT_POSITION = { top: 64, right: 16 }
 // the panel. Keeping this small ensures the panel hugs the bell icon
 // regardless of any content shifting the header vertically (e.g. a top
 // banner).
-const ANCHOR_GAP = 4
+const ANCHOR_GAP = 6
 
 export function NotificationsPanel({
   isOpen,
