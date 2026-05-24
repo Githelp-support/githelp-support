@@ -14,8 +14,7 @@ import { getAvatarColorHexForId } from "@/lib/constants"
 import {
   MessageCircle,
   Plus,
-  Clock,
-  CheckCircle2,
+  User,
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
@@ -212,7 +211,7 @@ export default function SupportTicketsPage() {
           {isAuthenticated && (
             <>
               {/* Filter Cards */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 min-[1200px]:grid-cols-4">
                 <button
                   type="button"
                   onClick={() => setStatusFilter("in-progress")}
@@ -226,7 +225,7 @@ export default function SupportTicketsPage() {
                     <CardContent className="px-5 py-4">
                       <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
                       <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3 text-muted-foreground" />
+                        <MessageCircle className="w-3 h-3 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">Active tickets</span>
                       </div>
                     </CardContent>
@@ -246,7 +245,7 @@ export default function SupportTicketsPage() {
                     <CardContent className="px-5 py-4">
                       <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3 h-3 text-muted-foreground" />
+                        <User className="w-3 h-3 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">Completed tickets</span>
                       </div>
                     </CardContent>
