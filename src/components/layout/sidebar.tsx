@@ -186,6 +186,7 @@ export function Sidebar({ className }: SidebarProps) {
       subItems: [
         { name: "Profile", href: "/helper/settings/profile", icon: "fi-rr-user" },
         { name: "Availability", href: "/helper/settings/availability", icon: "fi-rr-list-check" },
+        { name: "Payout", href: "/helper/settings/payout", icon: "fi-rr-credit-card" },
       ],
     },
   ]
