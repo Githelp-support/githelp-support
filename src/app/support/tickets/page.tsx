@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { NewTicketModal } from "@/components/modals/new-ticket-modal"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
 import { MessageCircle, Plus } from "lucide-react"
@@ -24,6 +26,7 @@ export default function SupportTicketsPage() {
   const { user } = useUser()
   const isAuthenticated = !!user?.id
   const { data: tickets = [], isLoading } = useUserTickets(user?.id)
+  const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
@@ -42,11 +45,12 @@ export default function SupportTicketsPage() {
                 ? `${tickets.length} ticket${tickets.length !== 1 ? "s" : ""}`
                 : "Sign in to see your tickets"}
             </p>
-            <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
-              <Link href="/support/chat">
-                <Plus className="h-4 w-4" />
-                New support request
-              </Link>
+            <Button
+              onClick={() => setIsNewTicketModalOpen(true)}
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+            >
+              <Plus className="h-4 w-4" />
+              New ticket
             </Button>
           </div>
 
@@ -76,7 +80,7 @@ export default function SupportTicketsPage() {
                 <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
                   <Link href="/support/chat">
                     <Plus className="h-4 w-4" />
-                    New support request
+                    New ticket
                   </Link>
                 </Button>
               </CardContent>
@@ -130,6 +134,11 @@ export default function SupportTicketsPage() {
           )}
         </main>
       </div>
+
+      <NewTicketModal
+        isOpen={isNewTicketModalOpen}
+        onClose={() => setIsNewTicketModalOpen(false)}
+      />
     </div>
   )
 }
