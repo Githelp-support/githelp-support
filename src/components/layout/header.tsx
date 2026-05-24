@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, ChevronDown, ArrowLeft, Info } from "lucide-react"
+import { Bell, ChevronDown, ArrowLeft, Info, Check } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
@@ -99,14 +99,10 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
 
   const getAvailableRoles = (): UserRole[] => {
     const projectRole = user.projectRole
-    
-    // If no project role, only allow "user" role (support users without projects)
+
+    // If no project role, only "user" role is available (support users without projects)
     if (!projectRole) {
-      // Only show "user" if current role is not already "user"
-      if (user.role !== "user") {
-        return ["user"]
-      }
-      return []
+      return ["user"]
     }
 
     // Define role hierarchy: admin > helper > user
@@ -117,18 +113,17 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     }
 
     const projectRoleLevel = roleHierarchy[projectRole] || 0
-    const currentRoleLevel = roleHierarchy[user.role] || 0
 
     // Get all roles at or below the project role level
     // Allow "user" role (level 0) for all project roles
     const allowedRoles: UserRole[] = []
     if (projectRoleLevel >= 2) allowedRoles.push("admin")
     if (projectRoleLevel >= 1) allowedRoles.push("helper")
-    // Always allow "user" role (level 0) regardless of project role
+    // Always include "user" role (level 0) regardless of project role
     allowedRoles.push("user")
 
-    // Filter out current role and return
-    return allowedRoles.filter((role) => role !== user.role)
+    // Return every role the user is entitled to (including the currently-active one)
+    return allowedRoles
   }
 
   return (
@@ -187,11 +182,19 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                 <DropdownMenuContent align="end" className="w-40">
                   {getAvailableRoles().length > 0 ? (
                     <>
-                      {getAvailableRoles().map((role) => (
-                        <DropdownMenuItem key={role} onClick={() => handleSwitchRole(role)} className="cursor-pointer">
-                          {getRoleDisplayName(role)}
-                        </DropdownMenuItem>
-                      ))}
+                      {getAvailableRoles().map((role) => {
+                        const isCurrent = role === user.role
+                        return (
+                          <DropdownMenuItem
+                            key={role}
+                            onClick={() => handleSwitchRole(role)}
+                            className="cursor-pointer flex items-center justify-between"
+                          >
+                            <span>{getRoleDisplayName(role)}</span>
+                            {isCurrent && <Check className="w-4 h-4 text-muted-foreground" />}
+                          </DropdownMenuItem>
+                        )
+                      })}
                       <DropdownMenuSeparator />
                     </>
                   ) : null}

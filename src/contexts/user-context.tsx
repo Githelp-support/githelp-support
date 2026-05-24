@@ -24,6 +24,26 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
+// Derive the safest default role from the user's actual highest project role.
+// admin → admin, helper → helper, otherwise → user. Prevents users without
+// admin access from getting stuck on an admin-only default.
+function computeDefaultRoleFromProject(projectRole?: UserRole | null): UserRole {
+  if (projectRole === "admin") return "admin"
+  if (projectRole === "helper") return "helper"
+  return "user"
+}
+
+// Resolve the initial role: prefer a saved `userRole` from localStorage, otherwise
+// fall back to a projectRole-aware default.
+function resolveInitialRole(projectRole?: UserRole | null): UserRole {
+  if (typeof window === "undefined") return computeDefaultRoleFromProject(projectRole)
+  const savedRole = localStorage.getItem("userRole") as UserRole | null
+  if (savedRole && ["helper", "user", "admin"].includes(savedRole)) {
+    return savedRole
+  }
+  return computeDefaultRoleFromProject(projectRole)
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(() => {
     // Initialize with default values, will be updated in useEffect
@@ -54,15 +74,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
             .select("*")
             .eq("id", session.user.id)
             .single()
-          const savedRole = localStorage.getItem("userRole") as UserRole
-          const defaultRole = (savedRole && ["helper", "user", "admin"].includes(savedRole)) ? savedRole : "admin"
           setUser(prev => ({
             ...prev,
             name: profile?.name || session.user.email?.split("@")[0] || "User",
             avatar: (profile?.name || session.user.email?.[0] || "U")[0].toUpperCase(),
             id: session.user.id,
             email: session.user.email || undefined,
-            role: prev.role || defaultRole,
+            role: prev.role || resolveInitialRole(prev.projectRole),
           }))
         } else {
           setUser({ name: "Incognito", role: "user", avatar: "I" })
@@ -97,26 +115,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
             .eq('id', session.user.id)
             .single()
 
-          // Check for saved role preference (e.g., "user" for support users)
-          const savedRole = localStorage.getItem("userRole") as UserRole
-          const defaultRole = (savedRole && ["helper", "user", "admin"].includes(savedRole)) ? savedRole : "admin"
-
           if (profile) {
-            setUser({
+            setUser(prev => ({
               name: profile.name || session.user.email?.split("@")[0] || "User",
-              role: defaultRole,
+              role: resolveInitialRole(prev.projectRole),
               avatar: (profile.name || session.user.email?.[0] || "U")[0].toUpperCase(),
               id: session.user.id,
               email: session.user.email || undefined,
-            })
+              projectRole: prev.projectRole,
+            }))
           } else {
-            setUser({
+            setUser(prev => ({
               name: session.user.email?.split("@")[0] || "User",
-              role: defaultRole,
+              role: resolveInitialRole(prev.projectRole),
               avatar: (session.user.email?.[0] || "U")[0].toUpperCase(),
               id: session.user.id,
               email: session.user.email || undefined,
-            })
+              projectRole: prev.projectRole,
+            }))
           }
         } else {
           // No session, set default guest user
@@ -156,24 +172,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
             .eq('id', session.user.id)
             .single()
 
-          const savedRole = localStorage.getItem("userRole") as UserRole
-          const defaultRole = (savedRole && ["helper", "user", "admin"].includes(savedRole)) ? savedRole : "admin"
-
           if (profile) {
             setUser(prev => ({
               name: profile.name || session.user.email?.split("@")[0] || "User",
-              role: prev.role || defaultRole,
+              role: prev.role || resolveInitialRole(prev.projectRole),
               avatar: (profile.name || session.user.email?.[0] || "U")[0].toUpperCase(),
               id: session.user.id,
               email: session.user.email || undefined,
+              projectRole: prev.projectRole,
             }))
           } else {
             setUser(prev => ({
               name: session.user.email?.split("@")[0] || "User",
-              role: prev.role || defaultRole,
+              role: prev.role || resolveInitialRole(prev.projectRole),
               avatar: (session.user.email?.[0] || "U")[0].toUpperCase(),
               id: session.user.id,
               email: session.user.email || undefined,
+              projectRole: prev.projectRole,
             }))
           }
         }, 0)

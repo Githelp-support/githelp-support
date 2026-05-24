@@ -1,7 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
+import { useProjectRole } from "@/hooks/useProjectRole"
+import { useUser } from "@/contexts/user-context"
 import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,6 +18,40 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
 
 export default function Dashboard() {
+  const router = useRouter()
+  const { isLoading: isUserLoading } = useUser()
+
+  const { selectedProjectId } = useProjectSelection()
+  const projectId = selectedProjectId ?? undefined
+
+  // Resolve the user's role in the active project so we can route non-admins
+  // to their respective home pages before rendering the admin dashboard.
+  const {
+    data: projectRole,
+    isLoading: isProjectRoleLoading,
+    isFetching: isProjectRoleFetching,
+  } = useProjectRole(projectId)
+
+  useEffect(() => {
+    if (isUserLoading) return
+    if (!projectId) return
+    if (isProjectRoleLoading || isProjectRoleFetching) return
+    if (!projectRole) return
+
+    if (projectRole === "helper") {
+      router.replace("/helper/overview")
+    } else if (projectRole === "user") {
+      router.replace("/support/tickets")
+    }
+  }, [
+    isUserLoading,
+    projectId,
+    projectRole,
+    isProjectRoleLoading,
+    isProjectRoleFetching,
+    router,
+  ])
+
   const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
   const [selectedMonth, setSelectedMonth] = useState<string>("")
   const [helperFilter, setHelperFilter] = useState<"all" | "core" | "extended" | "community">("all")
@@ -44,9 +81,6 @@ export default function Dashboard() {
   }
 
   const monthOptions = generateMonthOptions()
-
-  const { selectedProjectId } = useProjectSelection()
-  const projectId = selectedProjectId ?? undefined
 
   // Fetch dashboard stats
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats(projectId)
@@ -129,6 +163,30 @@ export default function Dashboard() {
 
   const sortedHelpers = sortHelpers(filteredHelpers)
   const sortedIssueTypes = sortIssueTypes(filteredIssueTypes)
+
+  // While we don't yet know the user's role (or while we're redirecting a
+  // non-admin), render a neutral loading state instead of the admin UI so
+  // helpers/users don't see a flash of admin-only content before the
+  // redirect kicks in.
+  const isResolvingRole =
+    isUserLoading ||
+    (!!projectId && (isProjectRoleLoading || isProjectRoleFetching))
+  const isRedirectingNonAdmin =
+    !!projectId && projectRole !== undefined && projectRole !== "admin"
+
+  if (isResolvingRole || isRedirectingNonAdmin) {
+    return (
+      <div className="h-screen flex overflow-hidden">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header title="Overview" subtitle="Stats and insight" />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="text-sm text-muted-foreground">Loading…</div>
+          </main>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-screen flex overflow-hidden">
