@@ -30,10 +30,10 @@ interface NotificationsPanelProps {
 // placement when no anchor element is provided).
 const DEFAULT_POSITION = { top: 64, right: 16 }
 // Vertical gap between the bottom of the anchor (bell icon) and the top of
-// the panel. Chosen to match the original visual gap so that adding/removing
-// content above the header (e.g. a top banner) keeps the panel in the same
-// relative position to the bell icon.
-const ANCHOR_GAP = 15
+// the panel. Keeping this small ensures the panel hugs the bell icon
+// regardless of any content shifting the header vertically (e.g. a top
+// banner).
+const ANCHOR_GAP = 4
 
 export function NotificationsPanel({
   isOpen,
