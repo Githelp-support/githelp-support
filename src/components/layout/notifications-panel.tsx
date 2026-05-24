@@ -2,6 +2,8 @@
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 
 export interface Notification {
   id: string
@@ -30,6 +32,11 @@ export function NotificationsPanel({
   onNotificationClick,
 }: NotificationsPanelProps) {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -58,11 +65,11 @@ export function NotificationsPanel({
     onClose()
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
+  const panel = (
     <>
-      <div className="fixed right-4 top-16 w-96 bg-card shadow-2xl z-[100] flex flex-col rounded-lg border border-border max-h-[80vh]">
+      <div className="fixed right-4 top-16 w-96 bg-card shadow-2xl z-[2147483647] flex flex-col rounded-lg border border-border max-h-[80vh]">
         <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
           <h2 className="text-base font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
@@ -120,4 +127,6 @@ export function NotificationsPanel({
       </div>
     </>
   )
+
+  return createPortal(panel, document.body)
 }
