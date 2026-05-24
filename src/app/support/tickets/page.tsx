@@ -5,12 +5,12 @@ import Link from "next/link"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId } from "@/lib/constants"
 import {
   MessageCircle,
   Plus,
@@ -28,11 +28,14 @@ interface UITicket {
   id: string
   title: string
   description: string
-  user: {
-    id: string | null
+  project: {
     name: string
-    avatar: string
+    logoUrl: string | null
   }
+  helper: {
+    name: string
+    avatarUrl: string | null
+  } | null
   type: string
   status: "available" | "claimed" | "in-progress" | "completed"
   createdAt: string
@@ -79,22 +82,30 @@ export default function SupportTicketsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
 
   const tickets = useMemo<UITicket[]>(() => {
-    const name = user?.name || "You"
-    const avatarLetter = (user?.avatar || name || "U")[0].toUpperCase()
     return (ticketsData as any[]).map((ticket) => {
       const firstCategory: string | undefined = ticket.help_categories?.[0]?.value
       const type = firstCategory
         ? firstCategory.charAt(0).toUpperCase() + firstCategory.slice(1)
         : "Support"
+      const projectName: string =
+        ticket.project_name || ticket.project?.name || "Project"
+      const projectLogoUrl: string | null =
+        ticket.project_logo_url ?? ticket.project?.logo_url ?? null
+      const helper = ticket.helper
+        ? {
+            name: ticket.helper.name || "Helper",
+            avatarUrl: ticket.helper.avatar_url ?? null,
+          }
+        : null
       return {
         id: ticket.id,
         title: ticket.title,
         description: ticket.description,
-        user: {
-          id: ticket.created_by ?? null,
-          name,
-          avatar: avatarLetter,
+        project: {
+          name: projectName,
+          logoUrl: projectLogoUrl,
         },
+        helper,
         type,
         status: ticket.status as "available" | "claimed" | "in-progress" | "completed",
         createdAt: formatDate(ticket.created_at),
@@ -102,7 +113,7 @@ export default function SupportTicketsPage() {
         projectId: ticket.project_id,
       }
     })
-  }, [ticketsData, user])
+  }, [ticketsData])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -350,19 +361,23 @@ export default function SupportTicketsPage() {
                           <div className="grid grid-cols-12 gap-4 items-center">
                             <div className="col-span-5">
                               <div className="flex items-start gap-[18px]">
-                                <div
-                                  className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                                  style={{
-                                    backgroundColor: getAvatarColorHexForId(
-                                      ticket.user.id ?? ticket.user.name
-                                    ),
-                                  }}
+                                <Avatar
+                                  key={`${ticket.project.logoUrl ?? ""}|${ticket.project.name}`}
+                                  className="w-8 h-8 rounded-[11px] shrink-0"
                                 >
-                                  {ticket.user.avatar}
-                                </div>
+                                  {ticket.project.logoUrl ? (
+                                    <AvatarImage
+                                      src={ticket.project.logoUrl}
+                                      alt={ticket.project.name}
+                                    />
+                                  ) : null}
+                                  <AvatarFallback className="bg-brand-primary text-white text-sm font-medium rounded-[11px]">
+                                    {(ticket.project.name?.[0] || "?").toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                                    {ticket.user.name}
+                                    {ticket.helper ? ticket.helper.name : "Unclaimed"}
                                   </h4>
                                   <p className="text-sm text-muted-foreground">{ticket.title}</p>
                                   <div className="flex items-center gap-1 mt-1">

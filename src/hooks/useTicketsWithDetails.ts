@@ -135,9 +135,18 @@ export function useUserTickets(userId?: string) {
             const projectIds = [...new Set(tickets.map((t: any) => t.project_id).filter(Boolean))];
             const { data: projects } = await supabase
                 .from("projects")
-                .select("project_id, name")
+                .select("project_id, name, logo_url")
                 .in("project_id", projectIds);
             const projectsMap = new Map(projects?.map((p: any) => [p.project_id, p]) || []);
+
+            // Fetch project branding (logo) for the dp icon shown in the tickets list.
+            const { data: brandings } = await supabase
+                .from("projects_branding")
+                .select("project_id, logo_url")
+                .in("project_id", projectIds);
+            const brandingMap = new Map(
+                brandings?.map((b: any) => [b.project_id, b]) || []
+            );
 
             const ticketIds = tickets.map((t: any) => t.id);
             const { data: messageCounts } = await supabase
@@ -150,20 +159,74 @@ export function useUserTickets(userId?: string) {
                 countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
             });
 
-            return tickets.map((ticket: any) => ({
-                ...ticket,
-                keywords:
-                    ticket.keywords?.map((k: any) => ({ value: k.keyword?.value })) || [],
-                help_categories:
-                    ticket.categories
-                        ?.filter((c: any) => c.help_category)
-                        ?.map((c: any) => ({
-                            value: c.help_category.value,
-                            type: c.help_category.type || "default",
+            // Fetch the helper (if any) who has claimed each ticket. A ticket is
+            // "claimed" when a participant row exists with claimed=true and the
+            // participant is NOT the ticket creator.
+            const { data: participants } = await supabase
+                .from("tickets_participants")
+                .select("ticket_id, participant_id")
+                .in("ticket_id", ticketIds)
+                .eq("claimed", true);
+            const claimerByTicket = new Map<string, string>();
+            participants?.forEach((p: any) => {
+                if (p.participant_id && p.participant_id !== userId) {
+                    if (!claimerByTicket.has(p.ticket_id)) {
+                        claimerByTicket.set(p.ticket_id, p.participant_id);
+                    }
+                }
+            });
+            const claimerIds = [...new Set(claimerByTicket.values())];
+            const { data: claimerUsers } = claimerIds.length
+                ? await supabase
+                      .from("users_public")
+                      .select("id, name, avatar_url")
+                      .in("id", claimerIds)
+                : { data: [] as any[] };
+            const claimerUserMap = new Map(
+                claimerUsers?.map((u: any) => [u.id, u]) || []
+            );
+
+            return tickets.map((ticket: any) => {
+                const project = projectsMap.get(ticket.project_id) || null;
+                const branding = brandingMap.get(ticket.project_id) || null;
+                const claimerId = claimerByTicket.get(ticket.id) || null;
+                const claimer = claimerId
+                    ? claimerUserMap.get(claimerId) || null
+                    : null;
+                return {
+                    ...ticket,
+                    keywords:
+                        ticket.keywords?.map((k: any) => ({
+                            value: k.keyword?.value,
                         })) || [],
-                project: projectsMap.get(ticket.project_id) || null,
-                message_count: countsMap.get(ticket.id) || 0,
-            })) as (TicketWithDetails & { project: { project_id: string; name: string } | null })[];
+                    help_categories:
+                        ticket.categories
+                            ?.filter((c: any) => c.help_category)
+                            ?.map((c: any) => ({
+                                value: c.help_category.value,
+                                type: c.help_category.type || "default",
+                            })) || [],
+                    project,
+                    project_logo_url:
+                        (branding as any)?.logo_url ??
+                        (project as any)?.logo_url ??
+                        null,
+                    project_name: (project as any)?.name ?? null,
+                    helper: claimer
+                        ? {
+                              id: (claimer as any).id,
+                              name: (claimer as any).name,
+                              avatar_url: (claimer as any).avatar_url ?? null,
+                          }
+                        : null,
+                    message_count: countsMap.get(ticket.id) || 0,
+                };
+            }) as (TicketWithDetails & {
+                project: { project_id: string; name: string } | null;
+                project_logo_url: string | null;
+                project_name: string | null;
+                helper: { id: string; name: string; avatar_url: string | null } | null;
+            })[];
         },
         enabled: !!userId,
         retry: false,
