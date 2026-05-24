@@ -4,7 +4,6 @@ import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
@@ -845,10 +844,12 @@ export default function TicketDetailPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            <Avatar className="w-8 h-8 shrink-0">
-                              {item.avatarUrl && <AvatarImage src={item.avatarUrl} alt="" />}
-                              <AvatarFallback className="bg-muted text-foreground">{item.avatarInitial}</AvatarFallback>
-                            </Avatar>
+                            <div
+                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              style={{ backgroundColor: getAvatarColorHexForId(item.creatorId) }}
+                            >
+                              {item.avatarInitial}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>

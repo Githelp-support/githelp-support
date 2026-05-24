@@ -11,6 +11,8 @@ export interface HelperClaimedTicketSidebarItem {
     date: string;
     avatarUrl: string | null;
     avatarInitial: string;
+    /** Ticket creator's user id — used for deterministic avatar background color. */
+    creatorId: string | null;
     current: boolean;
     hasNotification: boolean;
 }
@@ -29,9 +31,9 @@ const SUBTITLE_MAX_CHARS = 50;
  *
  * Always includes the current ticket even if it falls outside the `limit`
  * window or isn't claimed by the user — the open/displayed ticket must appear
- * in the list. Also returns `activeCount` — the total number of the user's
- * active (claimed, not completed/cancelled, not soft-deleted) tickets — so the
- * UI can render "Active tickets (N)".
+ * in the list. Also returns `activeCount` — for the Admin/Helper view, a
+ * ticket is "active" only when its status is `in-progress`. The count is used
+ * by the UI to render "Active tickets (N)".
  */
 export function useHelperClaimedTicketsSidebar(
     userId: string | undefined,
@@ -87,7 +89,13 @@ export function useHelperClaimedTicketsSidebar(
                 activeTickets = (data ?? []) as SidebarTicketRow[];
             }
 
-            const activeCount = activeTickets.length;
+            // For Admin/Helper view, a ticket counts as "Active" only when
+            // its status is `in-progress` (excludes `claimed`, `available`,
+            // etc.). The sidebar list still shows the broader set of active
+            // (non-completed/cancelled) tickets for navigation.
+            const activeCount = activeTickets.filter(
+                (t) => t.status === "in-progress"
+            ).length;
             let tickets: SidebarTicketRow[] = activeTickets;
 
             // Ensure the current ticket is included even if it's not "active"
@@ -183,6 +191,7 @@ export function useHelperClaimedTicketsSidebar(
                     date: formatDate(t.created_at),
                     avatarUrl: creator?.avatar_url ?? null,
                     avatarInitial: creator?.name?.[0]?.toUpperCase() ?? "?",
+                    creatorId: t.created_by ?? null,
                     current: t.id === currentTicketId,
                     hasNotification,
                 };
