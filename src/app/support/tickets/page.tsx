@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { NewTicketModal } from "@/components/modals/new-ticket-modal"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
 import {
@@ -79,7 +80,7 @@ export default function SupportTicketsPage() {
   const { user } = useUser()
   const isAuthenticated = !!user?.id
   const { data: ticketsData = [], isLoading } = useUserTickets(user?.id)
-
+  const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<TicketFilter>("in-progress")
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
@@ -213,11 +214,12 @@ export default function SupportTicketsPage() {
                 ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`
                 : "Sign in to see your tickets"}
             </p>
-            <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
-              <Link href="/support/chat">
-                <Plus className="h-4 w-4" />
-                New support request
-              </Link>
+            <Button
+              onClick={() => setIsNewTicketModalOpen(true)}
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+            >
+              <Plus className="h-4 w-4" />
+              New ticket
             </Button>
           </div>
 
@@ -294,11 +296,12 @@ export default function SupportTicketsPage() {
                     <p className="text-muted-foreground mb-4">
                       You have not created any support tickets yet.
                     </p>
-                    <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
-                      <Link href="/support/chat">
-                        <Plus className="h-4 w-4" />
-                        New support request
-                      </Link>
+                    <Button
+                      onClick={() => setIsNewTicketModalOpen(true)}
+                      className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                    >
+                      <Plus className="h-4 w-4" />
+                      New ticket
                     </Button>
                   </CardContent>
                 </Card>
@@ -440,6 +443,11 @@ export default function SupportTicketsPage() {
           )}
         </main>
       </div>
+
+      <NewTicketModal
+        isOpen={isNewTicketModalOpen}
+        onClose={() => setIsNewTicketModalOpen(false)}
+      />
     </div>
   )
 }
