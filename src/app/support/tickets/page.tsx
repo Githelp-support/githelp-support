@@ -24,6 +24,8 @@ type TicketFilter = "in-progress" | "completed"
 type SortField = "title" | "createdAt" | "status" | "type"
 type SortDirection = "asc" | "desc"
 
+type DisplayStatus = "Claimed" | "Unclaimed" | "Completed"
+
 interface UITicket {
   id: string
   title: string
@@ -38,6 +40,7 @@ interface UITicket {
   } | null
   type: string
   status: "available" | "claimed" | "in-progress" | "completed"
+  displayStatus: DisplayStatus
   createdAt: string
   messages: number
   projectId: string
@@ -97,6 +100,17 @@ export default function SupportTicketsPage() {
             avatarUrl: ticket.helper.avatar_url ?? null,
           }
         : null
+      const status = ticket.status as
+        | "available"
+        | "claimed"
+        | "in-progress"
+        | "completed"
+      const displayStatus: DisplayStatus =
+        status === "completed"
+          ? "Completed"
+          : helper
+            ? "Claimed"
+            : "Unclaimed"
       return {
         id: ticket.id,
         title: ticket.title,
@@ -107,7 +121,8 @@ export default function SupportTicketsPage() {
         },
         helper,
         type,
-        status: ticket.status as "available" | "claimed" | "in-progress" | "completed",
+        status,
+        displayStatus,
         createdAt: formatDate(ticket.created_at),
         messages: ticket.message_count || 0,
         projectId: ticket.project_id,
@@ -162,8 +177,8 @@ export default function SupportTicketsPage() {
             ).getTime()
             break
           case "status":
-            aValue = a.status
-            bValue = b.status
+            aValue = a.displayStatus
+            bValue = b.displayStatus
             break
           case "type":
             aValue = a.type
@@ -377,7 +392,7 @@ export default function SupportTicketsPage() {
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                                    {ticket.helper ? ticket.helper.name : "Unclaimed"}
+                                    {ticket.project.name}
                                   </h4>
                                   <p className="text-sm text-muted-foreground">{ticket.title}</p>
                                   <div className="flex items-center gap-1 mt-1">
@@ -398,10 +413,8 @@ export default function SupportTicketsPage() {
                               </Badge>
                             </div>
                             <div className="col-span-2">
-                              <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.status)}`}>
-                                {ticket.status === "in-progress"
-                                  ? "In Progress"
-                                  : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                              <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.displayStatus)}`}>
+                                {ticket.displayStatus}
                               </Badge>
                             </div>
                             <div className="col-span-3">
