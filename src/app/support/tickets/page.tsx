@@ -119,13 +119,19 @@ export default function SupportTicketsPage() {
   }
 
   const stats = useMemo(() => {
-    const inProgress = tickets.filter((t) => t.status === "in-progress").length
+    // "Active tickets" includes any ticket that has not been formally completed
+    // (e.g. available, claimed, in-progress). Only "completed" is excluded.
+    const inProgress = tickets.filter((t) => t.status !== "completed").length
     const completed = tickets.filter((t) => t.status === "completed").length
     return { inProgress, completed }
   }, [tickets])
 
   const filteredTickets = useMemo(() => {
-    const filtered = tickets.filter((ticket) => ticket.status === statusFilter)
+    const filtered = tickets.filter((ticket) =>
+      statusFilter === "in-progress"
+        ? ticket.status !== "completed"
+        : ticket.status === "completed"
+    )
 
     if (sortField) {
       filtered.sort((a, b) => {
