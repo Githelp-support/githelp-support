@@ -51,7 +51,38 @@ export default function HelperOverviewPage() {
   const { data: helperId } = useCurrentHelper(projectId)
   const { data: helperStats } = useHelperDashboardStats(projectId, helperId ?? undefined)
 
-  const allIssueTypes = helperStats?.issueTypeStats || []
+  // Canonical Type categories shown on the Tickets page Type filter. The
+  // backend hook returns rows keyed by project-defined help-category values,
+  // which may not match these labels exactly — normalize/map them here so the
+  // Issue types table displays the same five Type categories as the Tickets
+  // page (Bug, Best practice, Dependency, Code review, Mentoring).
+  const CANONICAL_ISSUE_TYPES = [
+    "Bug",
+    "Best practice",
+    "Dependency",
+    "Code review",
+    "Mentoring",
+  ] as const
+
+  const normalizeIssueTypeName = (name: string) =>
+    name.trim().toLowerCase().replace(/[\s_-]+/g, " ")
+
+  const rawIssueTypes = helperStats?.issueTypeStats || []
+  const allIssueTypes = CANONICAL_ISSUE_TYPES.map((canonicalName) => {
+    const target = normalizeIssueTypeName(canonicalName)
+    const match = rawIssueTypes.find(
+      (row) => normalizeIssueTypeName(row.name) === target
+    )
+    return match
+      ? { ...match, name: canonicalName }
+      : {
+          name: canonicalName,
+          tickets: "-" as number | string,
+          time: "-",
+          applied: false,
+        }
+  })
+
   const inProgressTickets = helperStats?.inProgressTickets || []
   const keyStats = helperStats?.keyStats || { totalTicketsSolved: 0, totalTimeSpent: "-", percentageSolved: 0 }
 
@@ -96,9 +127,13 @@ export default function HelperOverviewPage() {
 
   const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
     if (currentSort?.column !== column) {
-      return <ChevronsUpDown className="w-4 h-4 text-[#55555D]" />
+      return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
     }
-    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-[#55555D]" /> : <ChevronDown className="w-4 h-4 text-[#55555D]" />
+    return currentSort.direction === "asc" ? (
+      <ChevronUp className="w-4 h-4 text-brand-primary" />
+    ) : (
+      <ChevronDown className="w-4 h-4 text-brand-primary" />
+    )
   }
 
   const sortedIssueTypes = sortIssueTypes(filteredIssueTypes)
@@ -232,28 +267,37 @@ export default function HelperOverviewPage() {
               </div>
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
-                      <div
-                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("name")}
-                      >
-                        Name
-                        {getSortIcon("name", issueSort)}
+                  <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                      <div className="col-span-6 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleIssueSort("name")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Name</span>
+                          {getSortIcon("name", issueSort)}
+                        </button>
                       </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("tickets")}
-                      >
-                        No of tickets
-                        {getSortIcon("tickets", issueSort)}
+                      <div className="col-span-3 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleIssueSort("tickets")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">No of tickets</span>
+                          {getSortIcon("tickets", issueSort)}
+                        </button>
                       </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("time")}
-                      >
-                        Total time
-                        {getSortIcon("time", issueSort)}
+                      <div className="col-span-3 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleIssueSort("time")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Total time</span>
+                          {getSortIcon("time", issueSort)}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -285,8 +329,8 @@ export default function HelperOverviewPage() {
               </div>
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
+                  <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
                       <div className="col-span-6">Ticket</div>
                       <div className="col-span-3">Status</div>
                       <div className="col-span-3">Priority</div>
