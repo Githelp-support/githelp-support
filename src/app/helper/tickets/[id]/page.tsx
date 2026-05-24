@@ -93,7 +93,9 @@ export default function TicketDetailPage() {
   
   // Fetch payment settings
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
-  const { data: activeTicketsSidebar = [] } = useHelperClaimedTicketsSidebar(currentUser?.id, ticketId, 3)
+  const { data: activeTicketsSidebarData } = useHelperClaimedTicketsSidebar(currentUser?.id, ticketId, 3)
+  const activeTicketsSidebar = activeTicketsSidebarData?.items ?? []
+  const activeTicketsCount = activeTicketsSidebarData?.activeCount ?? 0
 
   // Time entries: load from DB, create via mutation
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
@@ -826,7 +828,7 @@ export default function TicketDetailPage() {
 
               {/* Active Tickets — 3 latest claimed by this helper */}
               <div>
-                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets</h3>
+                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets ({activeTicketsCount})</h3>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
