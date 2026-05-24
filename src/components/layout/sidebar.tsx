@@ -167,7 +167,6 @@ export function Sidebar({ className }: SidebarProps) {
       href: "#",
       icon: "fi-rr-settings",
       subItems: [
-        { name: "Payment", href: "/settings/payment", icon: "fi-rr-credit-card" },
         { name: "Profile", href: "/settings/profile", icon: "fi-rr-user" },
         { name: "Project", href: "/settings/project", icon: "fi-rr-folder" },
         { name: "Branding", href: "/settings/branding", icon: "fi-rr-paint-brush" },
@@ -200,7 +199,6 @@ export function Sidebar({ className }: SidebarProps) {
       icon: "fi-rr-settings",
       subItems: [
         { name: "Profile", href: "/settings/profile", icon: "fi-rr-user" },
-        { name: "Payment", href: "#", icon: "fi-rr-credit-card" },
         { name: "Notifications", href: "/user/settings/notifications", icon: "fi-rr-bell" },
       ],
     },
