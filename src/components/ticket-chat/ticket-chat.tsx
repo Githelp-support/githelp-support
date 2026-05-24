@@ -5,11 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Check, Info, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
+import { getAvatarColorHexForId } from "@/lib/constants"
 
 export type TicketChatMessage = {
   id: string
@@ -17,6 +17,7 @@ export type TicketChatMessage = {
   senderName?: string | null
   senderAvatarInitial?: string | null
   senderAvatarUrl?: string | null
+  senderId?: string | null
   timestamp: string
   content: string
   kind?: "claimed" | "ended"
@@ -109,68 +110,63 @@ export function TicketChat(props: TicketChatProps) {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
-              <div className="bg-white rounded-t-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
-                <div className="p-4">
-                  <div className="max-w-4xl space-y-8">
+              <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+                <div className="px-6 py-5">
+                  <div className="max-w-4xl flex flex-col" style={{ rowGap: '31.2px' }}>
                     {intro}
 
                     {/* Chat Messages */}
-                    <div className="space-y-6">
+                    <div className="flex flex-col" style={{ rowGap: '20.8px' }}>
                       {thread.map((msg) => (
                         <div key={msg.id} className="flex gap-3">
                           {msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended") ? (
                             <div className="flex items-center gap-3 w-full">
-                              <Avatar className="w-8 h-8">
-                                {msg.senderAvatarUrl && <AvatarImage src={msg.senderAvatarUrl} alt={msg.senderName || "System"} />}
-                                <AvatarFallback className="bg-brand-primary text-white">
-                                  {msg.senderAvatarInitial || "M"}
-                                </AvatarFallback>
-                              </Avatar>
+                              <div
+                                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
+                              >
+                                {msg.senderAvatarInitial || "M"}
+                              </div>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-sm font-medium text-foreground">
+                                  <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>
                                     {msg.senderName || "System"}
                                   </span>
-                                  <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                                  <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
                                   <Check className="w-4 h-4 text-brand-primary shrink-0" />
-                                  <MarkdownContent content={msg.content} className="text-sm text-muted-foreground" />
+                                  <MarkdownContent content={msg.content} className="text-sm" />
                                 </div>
                               </div>
                             </div>
                           ) : (
                             <>
                               {msg.senderType !== "system" && (
-                                <Avatar className="w-8 h-8">
-                                  {msg.senderAvatarUrl && <AvatarImage src={msg.senderAvatarUrl} alt={msg.senderName || "User"} />}
-                                  <AvatarFallback
-                                    className={`text-white text-sm ${
-                                      msg.senderType === "helper"
-                                        ? "bg-brand-primary"
-                                        : "bg-muted text-foreground"
-                                    }`}
-                                  >
-                                    {msg.senderAvatarInitial || "U"}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <div
+                                  className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                  style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
+                                >
+                                  {msg.senderAvatarInitial || "U"}
+                                </div>
                               )}
 
                               <div className={`flex-1 ${msg.senderType === "system" ? "text-center" : ""}`}>
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm font-medium text-foreground">
+                                    <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>
                                       {msg.senderName || "Unknown"}
                                     </span>
-                                    <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                                    <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
                                   </div>
                                 )}
                                 <div
                                   className={
                                     msg.senderType === "system"
                                       ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg inline-block text-sm"
-                                      : "text-sm text-muted-foreground"
+                                      : "text-sm"
                                   }
+                                  style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent content={msg.content} />
                                 </div>
@@ -230,32 +226,29 @@ export function TicketChat(props: TicketChatProps) {
 
         {/* Right Sidebar */}
         <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4 space-y-6 pt-6">
+          <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
             {/* People in Chat */}
             <div>
-              <h3 className="font-medium text-foreground mb-3">People in this chat</h3>
+              <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>People in this chat</h3>
 
               {participantsLoading ? (
-                <div className="text-center text-muted-foreground text-sm py-4">Loading...</div>
+                <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
                     <div key={p.id} className="flex items-center gap-2">
-                      <Avatar className="w-6 h-6">
-                        <AvatarFallback
-                          className={`${
-                            p.isCurrentUser ? "bg-brand-primary text-white" : "bg-muted text-foreground"
-                          } text-xs`}
-                        >
-                          {p.avatarInitial}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
+                      <div
+                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        style={{ backgroundColor: getAvatarColorHexForId(p.id) }}
+                      >
+                        {p.avatarInitial}
+                      </div>
+                      <span className="text-[13px] text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-sm py-4">-</div>
+                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
               )}
 
               {!isEnded && (
@@ -266,10 +259,13 @@ export function TicketChat(props: TicketChatProps) {
               )}
             </div>
 
+            {/* Divider */}
+            <div className="border-t border-border my-6 -ml-5 -mr-4" />
+
             {/* Other Topics */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-medium text-foreground">Other topics in this chat</h3>
+                <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Other topics in this chat</h3>
                 <Info className="w-4 h-4 text-muted-foreground" />
               </div>
 
@@ -282,14 +278,17 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-sm py-4">-</div>
+                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
               )}
             </div>
+
+            {/* Divider */}
+            <div className="border-t border-border my-6 -ml-5 -mr-4" />
 
             {/* Type of Help */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-medium text-foreground">Type of help</h3>
+                <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Type of help</h3>
                 <Info className="w-4 h-4 text-muted-foreground" />
               </div>
               {helpTypes.length > 0 ? (
@@ -301,7 +300,7 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-sm py-4">-</div>
+                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
               )}
             </div>
 

@@ -33,6 +33,7 @@ interface Message {
   timestamp: string
   avatar?: string
   senderName?: string
+  senderId?: string
   codeBlock?: {
     language: string
     code: string
@@ -227,6 +228,7 @@ export default function UserSupportChatPage() {
         }),
         avatar: claimer.name?.[0]?.toUpperCase() || "H",
         senderName: claimer.name || "Helper",
+        senderId: claimer.id,
         isSystemMessage: true,
       })
     }
@@ -244,10 +246,11 @@ export default function UserSupportChatPage() {
         }),
         avatar: user?.avatar || "Y",
         senderName: user?.name || "You",
+        senderId: user?.id,
       })
     }
     if (messagesData?.length) {
-      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender: { name?: string; avatar_url?: string } | null }) => {
+      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; sender: { id?: string; name?: string; avatar_url?: string } | null }) => {
         list.push({
           id: msg.id,
           sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -261,11 +264,12 @@ export default function UserSupportChatPage() {
           }),
           avatar: msg.sender?.name?.[0]?.toUpperCase() || (msg.sender_type === "user" ? (user?.name?.[0] || "Y") : "H"),
           senderName: msg.sender?.name || (msg.sender_type === "user" ? (user?.name || "You") : "Helper"),
+          senderId: msg.sender_id ?? msg.sender?.id,
         })
       })
     }
     return list
-  }, [welcomeMessage, claimer, pendingFirstMessage, messagesData, user?.name, user?.avatar])
+  }, [welcomeMessage, claimer, pendingFirstMessage, messagesData, user?.id, user?.name, user?.avatar])
 
   // All participants: from tickets_participants, plus ticket creator if not already in (e.g. old tickets)
   const allParticipants: ParticipantWithUser[] = useMemo(() => {
@@ -490,13 +494,14 @@ export default function UserSupportChatPage() {
     senderName: m.senderName,
     senderAvatarInitial: m.avatar,
     senderAvatarUrl: m.id === "1" && m.sender === "system" ? projectLogo : undefined,
+    senderId: m.senderId,
     timestamp: m.timestamp,
     content: m.content,
     kind: m.isSystemMessage ? "claimed" : undefined,
   }))
 
   const chatParticipants: TicketChatParticipant[] = allParticipants.map((p) => ({
-    id: p.participant_id,
+    id: p.user.id,
     name: p.user.name,
     avatarInitial: p.user.name?.[0]?.toUpperCase() ?? "U",
     isCurrentUser: p.participant_id === user?.id,
@@ -620,7 +625,7 @@ export default function UserSupportChatPage() {
           ticketId ? (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-medium text-foreground">Logged time</h3>
+                <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
                 <Info className="w-4 h-4 text-muted-foreground" />
               </div>
               {timeEntriesDisplay.length > 0 ? (
@@ -632,9 +637,9 @@ export default function UserSupportChatPage() {
                           <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
                             <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
                           </div>
-                          <span className="text-sm text-muted-foreground capitalize">{entry.type}</span>
+                          <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                         </div>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-[13px] text-muted-foreground">
                           {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
                         </span>
                       </div>
@@ -642,12 +647,12 @@ export default function UserSupportChatPage() {
                     </div>
                   ))}
                   <div className="flex items-center justify-between py-2 font-medium">
-                    <span className="text-sm text-foreground">Total</span>
-                    <span className="text-sm text-foreground">{totalLoggedFormatted}</span>
+                    <span className="text-[13px] text-foreground">Total</span>
+                    <span className="text-[13px] text-foreground">{totalLoggedFormatted}</span>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No time logged yet.</p>
+                <p className="text-[13px] text-muted-foreground">No time logged yet.</p>
               )}
             </div>
           ) : undefined
