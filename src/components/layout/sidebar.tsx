@@ -200,7 +200,6 @@ export function Sidebar({ className }: SidebarProps) {
       icon: "fi-rr-settings",
       subItems: [
         { name: "Profile", href: "/settings/profile", icon: "fi-rr-user" },
-        { name: "Payment", href: "#", icon: "fi-rr-credit-card" },
         { name: "Notifications", href: "/user/settings/notifications", icon: "fi-rr-bell" },
       ],
     },
