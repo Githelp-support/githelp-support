@@ -86,6 +86,17 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     return role.charAt(0).toUpperCase() + role.slice(1)
   }
 
+  const handleSwitchRole = (role: UserRole) => {
+    switchRole(role)
+    if (role === "admin") {
+      router.push("/")
+    } else if (role === "helper") {
+      router.push("/helper/overview")
+    } else if (role === "user") {
+      router.push("/support/tickets")
+    }
+  }
+
   const getAvailableRoles = (): UserRole[] => {
     const projectRole = user.projectRole
     
@@ -177,7 +188,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                   {getAvailableRoles().length > 0 ? (
                     <>
                       {getAvailableRoles().map((role) => (
-                        <DropdownMenuItem key={role} onClick={() => switchRole(role)} className="cursor-pointer">
+                        <DropdownMenuItem key={role} onClick={() => handleSwitchRole(role)} className="cursor-pointer">
                           {getRoleDisplayName(role)}
                         </DropdownMenuItem>
                       ))}
