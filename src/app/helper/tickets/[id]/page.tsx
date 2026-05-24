@@ -34,7 +34,7 @@ import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
-import { useHelperClaimedTicketsSidebar } from "@/hooks/useHelperTickets"
+import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
 import { supabase } from "@/lib/supabase/client"
@@ -92,9 +92,6 @@ export default function TicketDetailPage() {
   
   // Fetch payment settings
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
-  const { data: activeTicketsSidebarData } = useHelperClaimedTicketsSidebar(currentUser?.id, ticketId, 3)
-  const activeTicketsSidebar = activeTicketsSidebarData?.items ?? []
-  const activeTicketsCount = activeTicketsSidebarData?.activeCount ?? 0
 
   // Time entries: load from DB, create via mutation
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
@@ -105,7 +102,29 @@ export default function TicketDetailPage() {
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
   const { data: projectRole } = useProjectRole(projectId || undefined)
+  const isAdmin = projectRole === "admin"
   const addSelfAsHelper = useAddSelfAsHelper()
+
+  // Active tickets sidebar — Admins see every `claimed`/`in-progress` ticket
+  // in this project (across various helpers); Helpers only see the ones they
+  // have personally claimed. Both hooks are declared so React's hook order
+  // stays stable; the unused one is disabled via an `undefined` id arg.
+  const helperSidebarQuery = useHelperClaimedTicketsSidebar(
+    isAdmin ? undefined : currentUser?.id,
+    ticketId,
+    50,
+  )
+  const adminSidebarQuery = useAdminActiveTicketsSidebar(
+    isAdmin ? projectId : undefined,
+    currentUser?.id,
+    ticketId,
+    50,
+  )
+  const activeTicketsSidebarData = isAdmin
+    ? adminSidebarQuery.data
+    : helperSidebarQuery.data
+  const activeTicketsSidebar = activeTicketsSidebarData?.items ?? []
+  const activeTicketsCount = activeTicketsSidebarData?.activeCount ?? 0
   const isAdminButNotHelper =
     projectRole === "admin" &&
     !currentHelperId &&
