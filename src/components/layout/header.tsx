@@ -32,6 +32,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
   const rightClusterRef = useRef<HTMLDivElement>(null)
+  const bellButtonRef = useRef<HTMLButtonElement>(null)
   const inlineWidthRef = useRef<number>(0)
   const pathname = usePathname()
   const { selectedProjectId } = useProjectSelection()
@@ -217,6 +218,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           </div>
           <div ref={rightClusterRef} className="flex items-center gap-4">
             <button
+              ref={bellButtonRef}
               onClick={() => setIsNotificationsOpen((prev) => !prev)}
               className="relative p-1 hover:bg-muted rounded-md transition-colors cursor-pointer"
             >
@@ -281,6 +283,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
         notifications={notifications}
         onMarkAllAsRead={handleMarkAllAsRead}
         onNotificationClick={handleNotificationClick}
+        anchorRef={bellButtonRef}
       />
     </>
   )
