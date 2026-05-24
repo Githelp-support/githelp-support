@@ -1,14 +1,45 @@
 "use client"
 
+import { useState, useMemo } from "react"
+import Link from "next/link"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
-import { MessageCircle, Plus } from "lucide-react"
-import Link from "next/link"
+import { getAvatarColorHexForId } from "@/lib/constants"
+import {
+  MessageCircle,
+  Plus,
+  Clock,
+  CheckCircle2,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+} from "lucide-react"
+
+type TicketFilter = "in-progress" | "completed"
+type SortField = "title" | "createdAt" | "status" | "type"
+type SortDirection = "asc" | "desc"
+
+interface UITicket {
+  id: string
+  title: string
+  description: string
+  user: {
+    id: string | null
+    name: string
+    avatar: string
+  }
+  type: string
+  status: "available" | "claimed" | "in-progress" | "completed"
+  createdAt: string
+  messages: number
+  projectId: string
+}
 
 function formatDate(dateString: string) {
   const date = new Date(dateString)
@@ -20,10 +51,119 @@ function formatDate(dateString: string) {
   return `${day}.${month}.${year}, ${hours}:${minutes}`
 }
 
+function TicketsSortIcon({
+  field,
+  sortField,
+  sortDirection,
+}: {
+  field: SortField
+  sortField: SortField | null
+  sortDirection: SortDirection
+}) {
+  if (sortField !== field) {
+    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+  }
+  return sortDirection === "asc" ? (
+    <ChevronUp className="w-4 h-4 text-brand-primary" />
+  ) : (
+    <ChevronDown className="w-4 h-4 text-brand-primary" />
+  )
+}
+
 export default function SupportTicketsPage() {
   const { user } = useUser()
   const isAuthenticated = !!user?.id
-  const { data: tickets = [], isLoading } = useUserTickets(user?.id)
+  const { data: ticketsData = [], isLoading } = useUserTickets(user?.id)
+
+  const [statusFilter, setStatusFilter] = useState<TicketFilter>("in-progress")
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+
+  const tickets = useMemo<UITicket[]>(() => {
+    const name = user?.name || "You"
+    const avatarLetter = (user?.avatar || name || "U")[0].toUpperCase()
+    return (ticketsData as any[]).map((ticket) => {
+      const firstCategory: string | undefined = ticket.help_categories?.[0]?.value
+      const type = firstCategory
+        ? firstCategory.charAt(0).toUpperCase() + firstCategory.slice(1)
+        : "Support"
+      return {
+        id: ticket.id,
+        title: ticket.title,
+        description: ticket.description,
+        user: {
+          id: ticket.created_by ?? null,
+          name,
+          avatar: avatarLetter,
+        },
+        type,
+        status: ticket.status as "available" | "claimed" | "in-progress" | "completed",
+        createdAt: formatDate(ticket.created_at),
+        messages: ticket.message_count || 0,
+        projectId: ticket.project_id,
+      }
+    })
+  }, [ticketsData, user])
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      if (sortDirection === "asc") {
+        setSortDirection("desc")
+      } else {
+        setSortField(null)
+        setSortDirection("asc")
+      }
+    } else {
+      setSortField(field)
+      setSortDirection("asc")
+    }
+  }
+
+  const stats = useMemo(() => {
+    const inProgress = tickets.filter((t) => t.status === "in-progress").length
+    const completed = tickets.filter((t) => t.status === "completed").length
+    return { inProgress, completed }
+  }, [tickets])
+
+  const filteredTickets = useMemo(() => {
+    const filtered = tickets.filter((ticket) => ticket.status === statusFilter)
+
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue: string | number
+        let bValue: string | number
+        switch (sortField) {
+          case "title":
+            aValue = a.title.toLowerCase()
+            bValue = b.title.toLowerCase()
+            break
+          case "createdAt":
+            aValue = new Date(
+              a.createdAt.split(", ")[0].split(".").reverse().join("-")
+            ).getTime()
+            bValue = new Date(
+              b.createdAt.split(", ")[0].split(".").reverse().join("-")
+            ).getTime()
+            break
+          case "status":
+            aValue = a.status
+            bValue = b.status
+            break
+          case "type":
+            aValue = a.type
+            bValue = b.type
+            break
+          default:
+            return 0
+        }
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1
+        return 0
+      })
+    }
+
+    return filtered
+  }, [tickets, statusFilter, sortField, sortDirection])
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
@@ -35,11 +175,11 @@ export default function SupportTicketsPage() {
           subtitle="View and manage your support requests"
         />
 
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mb-6 flex items-center justify-between">
+        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {isAuthenticated
-                ? `${tickets.length} ticket${tickets.length !== 1 ? "s" : ""}`
+                ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`
                 : "Sign in to see your tickets"}
             </p>
             <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
@@ -51,12 +191,16 @@ export default function SupportTicketsPage() {
           </div>
 
           {!isAuthenticated && (
-            <Card className="border-border mb-6">
+            <Card className="border-border">
               <CardContent className="p-6">
                 <p className="text-muted-foreground">
                   Sign in to see all support tickets you have created and continue existing conversations.
                 </p>
-                <Button asChild variant="outline" className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-primary/10">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-primary/10"
+                >
                   <Link href={`/auth/signin?redirect=${encodeURIComponent("/support/tickets")}`}>
                     Sign in
                   </Link>
@@ -65,68 +209,201 @@ export default function SupportTicketsPage() {
             </Card>
           )}
 
-          {isAuthenticated && isLoading && (
-            <div className="py-8 text-center text-muted-foreground">Loading your tickets...</div>
-          )}
+          {isAuthenticated && (
+            <>
+              {/* Filter Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("in-progress")}
+                  aria-pressed={statusFilter === "in-progress"}
+                  className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                >
+                  <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                    {statusFilter === "in-progress" && (
+                      <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                    )}
+                    <CardContent className="px-5 py-4">
+                      <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Active tickets</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </button>
 
-          {isAuthenticated && !isLoading && tickets.length === 0 && (
-            <Card className="border-border">
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground mb-4">You have not created any support tickets yet.</p>
-                <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
-                  <Link href="/support/chat">
-                    <Plus className="h-4 w-4" />
-                    New support request
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("completed")}
+                  aria-pressed={statusFilter === "completed"}
+                  className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                >
+                  <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                    {statusFilter === "completed" && (
+                      <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                    )}
+                    <CardContent className="px-5 py-4">
+                      <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Completed tickets</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </button>
+              </div>
 
-          {isAuthenticated && !isLoading && tickets.length > 0 && (
-            <Card className="border-border py-0">
-              <CardContent className="p-0">
-                <div className="divide-y divide-border">
-                  {tickets.map((ticket: any) => {
-                    const chatHref = `/support/chat?ticket=${ticket.id}&project=${ticket.project_id}`
-                    const projectName = ticket.project?.name ?? "Project"
-                    const statusClass = getTicketStatusBadgeClass(ticket.status)
-                    const statusLabel =
-                      ticket.status === "in-progress"
-                        ? "In progress"
-                        : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)
-                    return (
-                      <Link
-                        key={ticket.id}
-                        href={chatHref}
-                        className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-medium text-foreground truncate">{ticket.title}</h3>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {projectName} · {formatDate(ticket.created_at)}
-                          </p>
-                          {ticket.description && (
-                            <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                              {ticket.description}
-                            </p>
-                          )}
-                          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                            <MessageCircle className="h-3.5 w-3.5" />
-                            <span>{ticket.message_count ?? 0} messages</span>
-                          </div>
-                        </div>
-                        <span
-                          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass}`}
-                        >
-                          {statusLabel}
-                        </span>
+              {/* Loading / Empty / Table */}
+              {isLoading ? (
+                <div className="py-8 text-center text-muted-foreground">Loading your tickets...</div>
+              ) : tickets.length === 0 ? (
+                <Card className="border-border">
+                  <CardContent className="p-8 text-center">
+                    <p className="text-muted-foreground mb-4">
+                      You have not created any support tickets yet.
+                    </p>
+                    <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
+                      <Link href="/support/chat">
+                        <Plus className="h-4 w-4" />
+                        New support request
                       </Link>
-                    )
-                  })}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+                  <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                      <div className="col-span-5 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSort("title")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Ticket</span>
+                          <TicketsSortIcon
+                            field="title"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </div>
+                      <div className="col-span-2 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSort("type")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Type</span>
+                          <TicketsSortIcon
+                            field="type"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </div>
+                      <div className="col-span-2 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSort("status")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Status</span>
+                          <TicketsSortIcon
+                            field="status"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </div>
+                      <div className="col-span-3 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSort("createdAt")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Created</span>
+                          <TicketsSortIcon
+                            field="createdAt"
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {filteredTickets.length > 0 ? (
+                    filteredTickets.map((ticket) => {
+                      const chatHref = `/support/chat?ticket=${ticket.id}&project=${ticket.projectId}`
+                      return (
+                        <Link
+                          key={ticket.id}
+                          href={chatHref}
+                          className="block px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]"
+                        >
+                          <div className="grid grid-cols-12 gap-4 items-center">
+                            <div className="col-span-5">
+                              <div className="flex items-start gap-[18px]">
+                                <div
+                                  className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                  style={{
+                                    backgroundColor: getAvatarColorHexForId(
+                                      ticket.user.id ?? ticket.user.name
+                                    ),
+                                  }}
+                                >
+                                  {ticket.user.avatar}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                                    {ticket.user.name}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">
+                                      {ticket.messages} messages
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-span-2">
+                              <Badge
+                                variant="secondary"
+                                className="bg-muted text-muted-foreground text-xs"
+                              >
+                                {ticket.type}
+                              </Badge>
+                            </div>
+                            <div className="col-span-2">
+                              <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.status)}`}>
+                                {ticket.status === "in-progress"
+                                  ? "In Progress"
+                                  : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                              </Badge>
+                            </div>
+                            <div className="col-span-3">
+                              <div className="text-sm text-muted-foreground">
+                                <div>{ticket.createdAt.split(", ")[0]}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {ticket.createdAt.split(", ")[1]}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                    })
+                  ) : (
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
+                      No tickets found
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </>
           )}
         </main>
       </div>
