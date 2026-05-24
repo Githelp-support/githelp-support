@@ -13,6 +13,8 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { useCreateTicket } from "@/hooks/useTickets"
+import { useAuthorizeTicket } from "@/hooks/useAuthorizeTicket"
+import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
@@ -66,6 +68,8 @@ export default function UserSupportChatPage() {
   const [projectSearch, setProjectSearch] = useState("")
   /** When user creates ticket without being signed in, first message is not persisted; we show it locally. */
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
+  /** Surfaces the ConfirmPaymentModal when an off-session hold lands in requires_action (SCA). */
+  const [pendingSca, setPendingSca] = useState<{ ticketId: string; clientSecret: string } | null>(null)
 
   // Get project_id and optional existing ticket from query params
   const projectIdParam = searchParams.get("project")
@@ -160,6 +164,7 @@ export default function UserSupportChatPage() {
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
+  const authorizeTicket = useAuthorizeTicket()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
@@ -425,6 +430,29 @@ export default function UserSupportChatPage() {
           status: "available",
           priority: "medium",
         })
+
+        try {
+          const authResult = await authorizeTicket.mutateAsync({
+            ticketId: ticket.id,
+            payerType: "user",
+          })
+          if (authResult.status === "requires_checkout") {
+            window.location.assign(authResult.checkoutUrl)
+            return
+          }
+          if (authResult.status === "requires_action") {
+            if (authResult.clientSecret) {
+              setPendingSca({ ticketId: ticket.id, clientSecret: authResult.clientSecret })
+              return
+            }
+            console.warn(`Ticket ${ticket.id} requires_action but no client_secret returned`)
+          }
+          if (authResult.status === "failed") {
+            console.warn(`Ticket ${ticket.id} authorize failed; manual resolution needed.`)
+          }
+        } catch (err) {
+          console.error("Failed to authorize ticket payment:", err)
+        }
 
         setTicketCreated(true)
         setTicketId(ticket.id)
@@ -709,6 +737,19 @@ export default function UserSupportChatPage() {
           ) : undefined
         }
       />
+      {pendingSca && (
+        <ConfirmPaymentModal
+          clientSecret={pendingSca.clientSecret}
+          onResolved={(status) => {
+            if (status === "authorized") {
+              setTicketCreated(true)
+              setTicketId(pendingSca.ticketId)
+            }
+            setPendingSca(null)
+          }}
+          onCancel={() => setPendingSca(null)}
+        />
+      )}
     </div>
   )
 }
