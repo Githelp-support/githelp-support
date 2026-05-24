@@ -4,6 +4,7 @@ import type React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/brand/logo"
+import { SupportSandboxBanner } from "@/components/layout/support-sandbox-banner"
 import { useParams, useSearchParams } from "next/navigation"
 
 export default function SupportLayout({
@@ -40,6 +41,7 @@ export default function SupportLayout({
           </div>
         </div>
       </header>
+      <SupportSandboxBanner slug={slugParam ?? null} projectId={projectIdParam ?? null} />
       <main className="flex-1 bg-bg-subtle">{children}</main>
     </div>
   )
