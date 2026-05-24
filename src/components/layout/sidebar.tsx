@@ -101,6 +101,7 @@ export function Sidebar({ className }: SidebarProps) {
     if (pathname?.startsWith("/reports/")) return ["Reports"]
     if (pathname?.startsWith("/settings/")) return ["Settings"]
     if (pathname?.startsWith("/helper/settings/")) return ["Settings"]
+    if (pathname?.startsWith("/user/settings/")) return ["Settings"]
     return []
   })
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -190,11 +191,18 @@ export function Sidebar({ className }: SidebarProps) {
   ]
 
   const userNavigationItems: NavigationItem[] = [
-    { name: "Profile", href: "#", icon: "fi-rr-user" },
-    { name: "Support", href: "/support/chat", icon: "fi-rr-comments" },
     { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
+    { name: "Support", href: "/support/chat", icon: "fi-rr-comments" },
     { name: "Reports", href: "#", icon: "fi-rr-document" },
-    { name: "Settings", href: "#", icon: "fi-rr-settings" },
+    {
+      name: "Settings",
+      href: "#",
+      icon: "fi-rr-settings",
+      subItems: [
+        { name: "Profile", href: "#", icon: "fi-rr-user" },
+        { name: "Payment", href: "#", icon: "fi-rr-credit-card" },
+      ],
+    },
   ]
 
   const getNavigationItems = () => {
