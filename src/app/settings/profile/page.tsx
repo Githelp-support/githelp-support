@@ -226,7 +226,7 @@ export default function ProfileSettingsPage() {
                 {updateUserProfile.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "Save contact details"
+                  "Save profile details"
                 )}
               </Button>
             </div>
