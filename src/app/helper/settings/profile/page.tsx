@@ -223,7 +223,7 @@ export default function HelperProfilePage() {
           </div>
 
           {/* Editable contact information */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+          <section className="mb-[34px] rounded-[10px] p-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">
@@ -282,7 +282,7 @@ export default function HelperProfilePage() {
           </section>
 
           {/* Editable category */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+          <section className="mb-[34px] rounded-[10px] p-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Helper category</h2>
             <div className="flex items-center gap-4 flex-wrap">
               <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
@@ -307,7 +307,7 @@ export default function HelperProfilePage() {
           </section>
 
           {/* Project keywords / topics */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+          <section className="mb-[34px] rounded-[10px] p-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Topics & keywords</h2>
             <p className="text-sm text-muted-foreground mb-4">
               Select the project topics you can help with. This helps route relevant tickets to you.
@@ -319,7 +319,7 @@ export default function HelperProfilePage() {
                 {projectKeywords.map((kw) => (
                   <label
                     key={kw.id}
-                    className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
+                    className="flex items-center gap-2 cursor-pointer rounded-md border border-[rgba(0,0,0,0.1)] px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
                   >
                     <Checkbox
                       checked={selectedKeywords.includes(kw.id)}
