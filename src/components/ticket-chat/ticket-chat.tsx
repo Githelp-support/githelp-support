@@ -159,7 +159,7 @@ export function TicketChat(props: TicketChatProps) {
                                 </div>
                               )}
 
-                              <div className={`flex-1 ${msg.senderType === "system" ? "text-center" : ""}`}>
+                              <div className="flex-1">
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>
@@ -171,7 +171,7 @@ export function TicketChat(props: TicketChatProps) {
                                 <div
                                   className={
                                     msg.senderType === "system"
-                                      ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg inline-block text-sm"
+                                      ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}

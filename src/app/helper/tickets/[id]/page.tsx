@@ -846,21 +846,21 @@ export default function TicketDetailPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            <div
-                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0 overflow-hidden"
-                              style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
-                            >
-                              {item.avatarUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={item.avatarUrl}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                item.avatarInitial
-                              )}
-                            </div>
+                            {item.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.avatarUrl}
+                                alt=""
+                                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
+                              >
+                                {item.avatarInitial}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>

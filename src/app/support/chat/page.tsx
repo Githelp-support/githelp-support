@@ -522,21 +522,21 @@ export default function UserSupportChatPage() {
         showBackButton={false}
         intro={
           <div className="flex gap-3">
-            <div
-              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0 overflow-hidden"
-              style={{ backgroundColor: getAvatarColorHexForId(effectiveProjectId) }}
-            >
-              {projectLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={projectLogo}
-                  alt={`${projectName} logo`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                projectName?.[0]?.toUpperCase() || "A"
-              )}
-            </div>
+            {projectLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={projectLogo}
+                alt={`${projectName} logo`}
+                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                style={{ backgroundColor: getAvatarColorHexForId(effectiveProjectId) }}
+              >
+                {projectName?.[0]?.toUpperCase() || "A"}
+              </div>
+            )}
             <div className="flex-1 space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -563,27 +563,20 @@ export default function UserSupportChatPage() {
               )}
 
               <div>
-                {!ticketCreated && hasSLA && <h3 className="text-[13px] font-semibold text-foreground mb-3">Help beyond free help</h3>}
-                {!ticketCreated && !hasSLA && <h3 className="text-[13px] font-semibold text-foreground mb-3">{projectName}&apos;s rates</h3>}
-                <div className="bg-white border border-border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <tbody>
-                      {!ticketCreated && (
-                        <tr className="border-b border-border">
-                          <td className="px-4 py-3 text-sm text-muted-foreground">Ticket start price</td>
-                          <td className="px-4 py-3 text-sm text-foreground text-right">USD {startPrice}</td>
-                        </tr>
-                      )}
-                      <tr className="border-b border-border">
-                        <td className="px-4 py-3 text-sm text-muted-foreground">First 60 min</td>
-                        <td className="px-4 py-3 text-sm text-foreground text-right">USD {first60Price}/min</td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">After 60 min</td>
-                        <td className="px-4 py-3 text-sm text-foreground text-right">USD {after60Price}/min</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">Start price</p>
+                    <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
+                    <p className="text-sm font-medium text-foreground">USD {first60Price}/min</p>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
+                    <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                  </div>
                 </div>
               </div>
 
@@ -692,21 +685,21 @@ export default function UserSupportChatPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            <div
-                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0 overflow-hidden"
-                              style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
-                            >
-                              {item.avatarUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={item.avatarUrl}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                item.avatarInitial
-                              )}
-                            </div>
+                            {item.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.avatarUrl}
+                                alt=""
+                                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
+                              >
+                                {item.avatarInitial}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
