@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -21,6 +20,7 @@ import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeE
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import csharp from "react-syntax-highlighter/dist/esm/languages/prism/csharp"
 import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript"
 import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript"
@@ -521,30 +521,38 @@ export default function UserSupportChatPage() {
         headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
         showBackButton={false}
         intro={
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10">
-                {projectLogo && <AvatarImage src={projectLogo} alt={`${projectName} logo`} />}
-                <AvatarFallback className="bg-brand-primary text-white font-semibold">
-                  {projectName?.[0]?.toUpperCase() || "A"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="font-medium text-foreground">{projectName} Team</h2>
-                <p className="text-sm text-muted-foreground">
-                  {new Date().toLocaleString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
+          <div className="flex gap-3">
+            <div
+              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0 overflow-hidden"
+              style={{ backgroundColor: getAvatarColorHexForId(effectiveProjectId) }}
+            >
+              {projectLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={projectLogo}
+                  alt={`${projectName} logo`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                projectName?.[0]?.toUpperCase() || "A"
+              )}
             </div>
-
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{messages[0]?.content}</p>
+            <div className="flex-1 space-y-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{projectName} Team</span>
+                  <span className="text-xs" style={{ color: '#818185' }}>
+                    {new Date().toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{messages[0]?.content}</p>
+              </div>
 
               {hasSLA && freeHelpRemaining && (
                 <div className="space-y-1">
@@ -684,10 +692,21 @@ export default function UserSupportChatPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            <Avatar className="w-8 h-8 shrink-0">
-                              {item.avatarUrl && <AvatarImage src={item.avatarUrl} alt="" />}
-                              <AvatarFallback className="bg-muted text-foreground">{item.avatarInitial}</AvatarFallback>
-                            </Avatar>
+                            <div
+                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0 overflow-hidden"
+                              style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
+                            >
+                              {item.avatarUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={item.avatarUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                item.avatarInitial
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
