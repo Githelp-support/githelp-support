@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft, HelpCircle } from "lucide-react"
+import { MessageCircle, Mail, Info, ArrowLeft, HelpCircle } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -344,25 +345,25 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                         <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Date
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                            <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
                         <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Ticket type
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                            <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
                         <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Amount
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                            <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
                         <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             Status
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+                            <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
                           </div>
                         </th>
                         <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground"></th>

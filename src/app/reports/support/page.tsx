@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ChevronUp, ChevronDown } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
@@ -28,7 +29,7 @@ function ReportsSortIcon<T extends string>({
   sortDirection: SortDirection
 }) {
   if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+    return <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
   }
   return sortDirection === "asc" ? (
     <ChevronUp className="w-4 h-4 text-brand-primary" />

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ChevronUp, ChevronDown } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -49,7 +50,7 @@ type SortDirection = "asc" | "desc"
 
 function TicketsSortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
   if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+    return <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
   }
   return sortDirection === "asc" ? (
     <ChevronUp className="w-4 h-4 text-brand-primary" />

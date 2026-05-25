@@ -4,7 +4,8 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MoreHorizontal, Plus, Search, ChevronDown, Info, ChevronsUpDown, ChevronUp } from "lucide-react"
+import { MoreHorizontal, Plus, Search, ChevronDown, Info, ChevronUp } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { CreateSLADrawer } from "@/components/drawers/create-sla-drawer"
@@ -17,7 +18,7 @@ type SortConfig = { key: string | null; direction: "asc" | "desc" | null }
 
 function SLASortIcon({ column, sortConfig }: { column: string; sortConfig: SortConfig }) {
   if (sortConfig.key !== column) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+    return <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
   }
   if (sortConfig.direction === "asc") {
     return <ChevronUp className="w-4 h-4 text-brand-primary" />

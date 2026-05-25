@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, Copy, X, UserPlus } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 import { toast } from "sonner"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -56,7 +57,7 @@ type SortDirection = "asc" | "desc" | null
 
 function HelpersSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
   if (sortField !== field || sortDirection === null) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+    return <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
   }
   return sortDirection === "desc" ? (
     <ChevronDown className="w-4 h-4 text-brand-primary" />

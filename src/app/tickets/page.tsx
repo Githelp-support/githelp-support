@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
+import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, Sparkles } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
@@ -56,7 +57,7 @@ type SortDirection = "asc" | "desc"
 
 function TicketsSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
   if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+    return <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
   }
   return sortDirection === "asc" ? (
     <ChevronUp className="w-4 h-4 text-brand-primary" />

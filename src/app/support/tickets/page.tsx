@@ -18,8 +18,8 @@ import {
   User,
   ChevronUp,
   ChevronDown,
-  ChevronsUpDown,
 } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 
 type TicketFilter = "in-progress" | "completed"
 type SortField = "title" | "createdAt" | "status" | "type"
@@ -67,7 +67,7 @@ function TicketsSortIcon({
   sortDirection: SortDirection
 }) {
   if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+    return <FilterSortIcon className="w-4 h-4 text-muted-foreground" />
   }
   return sortDirection === "asc" ? (
     <ChevronUp className="w-4 h-4 text-brand-primary" />

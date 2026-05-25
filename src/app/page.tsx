@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useUser } from "@/contexts/user-context"
-import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown } from "lucide-react"
+import { FilterSortIcon } from "@/components/icons/filter-sort-icon"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -156,7 +157,7 @@ export default function Dashboard() {
 
   const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
     if (currentSort?.column !== column) {
-      return <ChevronsUpDown className="w-4 h-4 text-[#55555D]" />
+      return <FilterSortIcon className="w-4 h-4 text-[#55555D]" />
     }
     return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-[#55555D]" /> : <ChevronDown className="w-4 h-4 text-[#55555D]" />
   }
