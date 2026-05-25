@@ -232,13 +232,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           {/* Time period filters */}
           <div className="flex flex-wrap gap-2 pt-2">
             <Button
-              variant={timeFilter === "current" ? "lavender" : "outline"}
+              variant={timeFilter === "current" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-[13px] font-medium",
-                timeFilter === "current"
-                  ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                timeFilter !== "current" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("current")
@@ -257,7 +255,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               >
                 <SelectTrigger
                   size="sm"
-                  variant={timeFilter === "choose" ? "lavender" : "outline"}
+                  variant={timeFilter === "choose" ? "neutral" : "outline"}
                   className="w-[160px] rounded-lg text-[13px] font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
@@ -272,13 +270,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <Button
-              variant={timeFilter === "all" ? "lavender" : "outline"}
+              variant={timeFilter === "all" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-[13px] font-medium",
-                timeFilter !== "all"
-                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
-                  : undefined
+                timeFilter !== "all" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("all")
