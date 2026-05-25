@@ -213,9 +213,17 @@ export default function TicketsPage() {
   const getPriorityColor = (priority: string) =>
     getPriorityBadgeClass(priority)
 
+  /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
+  const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
+
   const getTicketStats = () => {
     const total = tickets.length
-    const available = tickets.filter((t) => t.status === "available").length
+    // When showing preview cards (no real tickets yet), the "Available" stat should reflect
+    // the preview cards rendered in the table — otherwise the container reads 0 while 3 preview
+    // tickets are visible.
+    const available = showTicketsPreview
+      ? SUPPORT_TICKET_PREVIEW_CARDS.length
+      : tickets.filter((t) => t.status === "available").length
     const inProgress = tickets.filter((t) => t.status === "in-progress").length
     const completed = tickets.filter((t) => t.status === "completed").length
 
@@ -223,9 +231,6 @@ export default function TicketsPage() {
   }
 
   const stats = getTicketStats()
-
-  /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
-  const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
 
   const togglePreviewCard = (id: string) => {
     setExpandedPreviewCards((prev) =>
