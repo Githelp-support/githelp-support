@@ -556,7 +556,7 @@ export default function ReportsSupportPage() {
                           {ticket.ticketId ? (
                             <Link
                               href={`/helper/tickets/${ticket.ticketId}`}
-                              className="text-sm font-medium text-brand-primary hover:underline"
+                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
                             >
                               {getShortTicketId(ticket.ticketId)}
                             </Link>

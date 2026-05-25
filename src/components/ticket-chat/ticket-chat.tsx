@@ -105,7 +105,7 @@ export function TicketChat(props: TicketChatProps) {
           showBackButton={showBackButton}
           inlineRightContent={
             headerSubtitle ? (
-              <span className="text-[13px] font-normal text-muted-foreground/80">{headerSubtitle}</span>
+              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
             ) : undefined
           }
         />
@@ -140,7 +140,7 @@ export function TicketChat(props: TicketChatProps) {
                                   <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>
                                     {msg.senderName || "System"}
                                   </span>
-                                  <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                                  <span className="text-xs font-mono tabular-nums" style={{ color: '#818185' }}>{msg.timestamp}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
                                   <Check className="w-4 h-4 text-brand-primary shrink-0" />
@@ -165,7 +165,7 @@ export function TicketChat(props: TicketChatProps) {
                                     <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>
                                       {msg.senderName || "Unknown"}
                                     </span>
-                                    <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                                    <span className="text-xs font-mono tabular-nums" style={{ color: '#818185' }}>{msg.timestamp}</span>
                                   </div>
                                 )}
                                 <div
