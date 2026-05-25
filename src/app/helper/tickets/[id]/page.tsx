@@ -461,9 +461,9 @@ export default function TicketDetailPage() {
                   <div className="p-6">
                     <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-start">
                   <div
-                    className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                    className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                     style={{ backgroundColor: getAvatarColorHexForId(firstIssueMessage.senderId) }}
                   >
                     {firstIssueMessage.senderName?.[0]?.toUpperCase() ?? "C"}
@@ -471,8 +471,15 @@ export default function TicketDetailPage() {
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
-                        <span className="text-xs" style={{ color: '#818185' }}>
+                        <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{firstIssueMessage.senderName}</span>
+                        <span
+                          className="text-xs"
+                          style={{
+                            color: 'rgba(0,0,0,0.5)',
+                            fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
                           {firstIssueMessage.timestamp
                             ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
                                 day: "2-digit",
@@ -578,21 +585,30 @@ export default function TicketDetailPage() {
                 </div>
 
                 {/* Chat Messages */}
-                <div className="flex flex-col" style={{ rowGap: '20.8px' }}>
+                <div className="flex flex-col" style={{ rowGap: '16px' }}>
                   {messages.map((msg) => (
-                    <div key={msg.id} className="flex gap-3">
+                    <div key={msg.id} className="flex gap-3 items-start">
                       {msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended") ? (
-                        <div className="flex items-center gap-3 w-full">
+                        <div className="flex items-start gap-3 w-full">
                           <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                             style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
                           >
                             {msg.avatar || "H"}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
-                              <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                              <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                              <span
+                                className="text-xs"
+                                style={{
+                                  color: 'rgba(0,0,0,0.5)',
+                                  fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                                  fontVariantNumeric: 'tabular-nums',
+                                }}
+                              >
+                                {msg.timestamp}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
                               <Check className="w-4 h-4 text-brand-primary shrink-0" />
@@ -604,7 +620,7 @@ export default function TicketDetailPage() {
                         <>
                           {msg.sender !== "system" && (
                             <div
-                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                               style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
                             >
                               {msg.avatar}
@@ -613,8 +629,17 @@ export default function TicketDetailPage() {
                           <div className={`flex-1 ${msg.sender === "system" ? "text-center" : ""}`}>
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
-                                <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                                <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                                <span
+                                  className="text-xs"
+                                  style={{
+                                    color: 'rgba(0,0,0,0.5)',
+                                    fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                                    fontVariantNumeric: 'tabular-nums',
+                                  }}
+                                >
+                                  {msg.timestamp}
+                                </span>
                               </div>
                             )}
                             <div
@@ -633,9 +658,9 @@ export default function TicketDetailPage() {
                     </div>
                   ))}
                   {isTicketEnded && (
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3 pt-2 items-start">
                       <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                         style={{ backgroundColor: getAvatarColorHexForId(claimer?.id) }}
                       >
                         {claimer?.name?.[0]?.toUpperCase() || "H"}
@@ -718,7 +743,7 @@ export default function TicketDetailPage() {
             <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
               {/* People in Chat */}
               <div>
-                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>People in this chat</h3>
+                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>People in this chat</h3>
                 {participantsLoading ? (
                   <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
                 ) : allParticipants.length > 0 ? (
@@ -758,7 +783,7 @@ export default function TicketDetailPage() {
               {/* Other Topics — from ticket keywords */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Other topics in this chat</h3>
+                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Other topics in this chat</h3>
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
