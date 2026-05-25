@@ -392,7 +392,7 @@ export function Sidebar({ className }: SidebarProps) {
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
-            const activeClasses = "bg-brand-primary/10 text-brand-primary"
+            const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
             const inactiveClasses = "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
 
             return (

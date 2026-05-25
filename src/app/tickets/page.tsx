@@ -336,7 +336,7 @@ export default function TicketsPage() {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger
                 size="sm"
-                variant={statusFilter !== "all" ? "lavender" : "outline"}
+                variant={statusFilter !== "all" ? "neutral" : "outline"}
                 className="w-[140px] rounded-lg text-sm font-medium"
               >
                 <SelectValue placeholder="All Status" />
@@ -353,7 +353,7 @@ export default function TicketsPage() {
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger
                 size="sm"
-                variant={typeFilter !== "all" ? "lavender" : "outline"}
+                variant={typeFilter !== "all" ? "neutral" : "outline"}
                 className="w-[140px] rounded-lg text-sm font-medium"
               >
                 <SelectValue placeholder="All Types" />
@@ -371,7 +371,7 @@ export default function TicketsPage() {
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
               <SelectTrigger
                 size="sm"
-                variant={priorityFilter !== "all" ? "lavender" : "outline"}
+                variant={priorityFilter !== "all" ? "neutral" : "outline"}
                 className="w-[140px] rounded-lg text-sm font-medium"
               >
                 <SelectValue placeholder="All Priority" />

@@ -21,6 +21,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         lavender:
           "bg-purple-50 border border-[#3C2EC5] text-[#3C2EC5] hover:bg-[#3c2ec5]/90 hover:text-white dark:bg-purple-950/30 dark:border-[#3C2EC5] dark:text-[#3C2EC5] dark:hover:bg-[#3c2ec5]/90 dark:hover:text-white",
+        neutral:
+          "bg-[rgba(0,0,0,0.05)] border border-[rgba(0,0,0,0.1)] text-foreground hover:bg-[rgba(0,0,0,0.08)] dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10",
       },
       size: {
         default: "h-9 px-[14px] py-2 has-[>svg]:px-[14px]",

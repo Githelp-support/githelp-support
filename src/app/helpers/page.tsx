@@ -398,48 +398,48 @@ export default function HelpersPage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex space-x-1">
               <Button
-                variant={selectedCategory === "All helpers" ? "lavender" : "ghost"}
+                variant={selectedCategory === "All helpers" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "All helpers"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("All helpers")}
               >
                 All helpers
               </Button>
               <Button
-                variant={selectedCategory === "core" ? "lavender" : "ghost"}
+                variant={selectedCategory === "core" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "core"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("core")}
               >
                 Core team
               </Button>
               <Button
-                variant={selectedCategory === "extended" ? "lavender" : "ghost"}
+                variant={selectedCategory === "extended" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "extended"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("extended")}
               >
                 Extended team
               </Button>
               <Button
-                variant={selectedCategory === "community" ? "lavender" : "ghost"}
+                variant={selectedCategory === "community" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "community"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("community")}
               >
