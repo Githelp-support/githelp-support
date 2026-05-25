@@ -175,7 +175,7 @@ export default function ProfileSettingsPage() {
           </div>
 
           {/* Editable contact information */}
-          <section className="mb-[34px] rounded-[10px] border border-[#E1E1E1] p-6">
+          <section className="mb-[34px] rounded-lg p-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">
@@ -221,7 +221,7 @@ export default function ProfileSettingsPage() {
                 onClick={handleSaveProfile}
                 disabled={updateUserProfile.isPending}
                 variant="outline"
-                className="border-border"
+                className="border-[rgba(0,0,0,0.1)]"
                 style={{ marginTop: "22px" }}
               >
                 {updateUserProfile.isPending ? (
@@ -235,7 +235,7 @@ export default function ProfileSettingsPage() {
 
           {/* Payment details (user role only) */}
           {user?.role === "user" && (
-            <div className="bg-card rounded-lg border border-border p-6">
+            <div className="bg-card rounded-lg p-6">
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-semibold text-foreground">Payment details</h2>
                 <Info className="w-4 h-4 text-muted-foreground" />

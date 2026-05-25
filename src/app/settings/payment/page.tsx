@@ -342,7 +342,7 @@ export default function PaymentSettingsPage() {
             {activeTab === "helper" && (
               <div className="space-y-6">
                 {/* Team Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-lg p-6">
                   <div className="flex flex-col sm:flex-row gap-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-4">
@@ -353,7 +353,7 @@ export default function PaymentSettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-muted-foreground border-border bg-transparent"
+                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveTeamSettings}
                           disabled={!hasTeamChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -407,7 +407,7 @@ export default function PaymentSettingsPage() {
                 </div>
 
                 {/* Community Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-lg p-6">
                   <div className="flex flex-col sm:flex-row gap-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-4">
@@ -418,7 +418,7 @@ export default function PaymentSettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-muted-foreground border-border bg-transparent"
+                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveCommunitySettings}
                           disabled={!hasCommunityChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -478,7 +478,7 @@ export default function PaymentSettingsPage() {
                 </div>
 
                 {/* External Consultants Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-lg p-6">
                   <div className="flex flex-col sm:flex-row gap-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-4">
@@ -489,7 +489,7 @@ export default function PaymentSettingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-muted-foreground border-border bg-transparent"
+                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveConsultantSettings}
                           disabled={!hasConsultantChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -508,7 +508,7 @@ export default function PaymentSettingsPage() {
                                 value="ticket"
                                 checked={contractType === "ticket"}
                                 onChange={(e) => setContractType(e.target.value as "ticket")}
-                                className="w-4 h-4 text-[#554abf] border-border focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                                className="w-4 h-4 text-[#554abf] border-[rgba(0,0,0,0.1)] focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                               />
                               <span className="text-sm text-muted-foreground">By the ticket</span>
                             </label>
@@ -519,7 +519,7 @@ export default function PaymentSettingsPage() {
                                 value="outside"
                                 checked={contractType === "outside"}
                                 onChange={(e) => setContractType(e.target.value as "outside")}
-                                className="w-4 h-4 text-[#554abf] border-border focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                                className="w-4 h-4 text-[#554abf] border-[rgba(0,0,0,0.1)] focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                               />
                               <span className="text-sm text-muted-foreground">Payment outside Githelp</span>
                             </label>
@@ -576,7 +576,7 @@ export default function PaymentSettingsPage() {
             {activeTab === "user" && (
               <div className="space-y-6">
                 {/* Users of support Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
                       <h2 className="text-base font-semibold text-foreground">Payment options</h2>
@@ -585,7 +585,7 @@ export default function PaymentSettingsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-muted-foreground border-border bg-transparent"
+                      className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                       onClick={handleSaveUserOptions}
                       disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
                     >
@@ -598,7 +598,7 @@ export default function PaymentSettingsPage() {
                       <label
                         htmlFor="by-ticket"
                         className={cn(
-                          "flex items-start gap-3 rounded-md border border-border p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                          "flex items-start gap-3 rounded-md border border-[rgba(0,0,0,0.1)] p-4 cursor-pointer transition-colors hover:bg-muted/40",
                           paymentByTicket && "border-brand-primary bg-brand-primary/5"
                         )}
                       >
@@ -622,7 +622,7 @@ export default function PaymentSettingsPage() {
                       <label
                         htmlFor="sla"
                         className={cn(
-                          "flex items-start gap-3 rounded-md border border-border p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                          "flex items-start gap-3 rounded-md border border-[rgba(0,0,0,0.1)] p-4 cursor-pointer transition-colors hover:bg-muted/40",
                           paymentBySLA && "border-brand-primary bg-brand-primary/5"
                         )}
                       >
@@ -647,13 +647,13 @@ export default function PaymentSettingsPage() {
                 </div>
 
                 {/* Ticket cost Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-muted-foreground border-border bg-transparent"
+                      className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                       onClick={handleSaveUserSettings}
                       disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
                     >
@@ -673,7 +673,7 @@ export default function PaymentSettingsPage() {
                           value={startPrice}
                           onChange={(e) => setStartPrice(e.target.value)}
                           className={cn(
-                            "w-[230px] text-right pr-[3px] border-border [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
+                            "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
                           )}
                           placeholder="10.00"
                         />
@@ -693,7 +693,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteFirst60}
                             onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-border [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
+                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
                             )}
                             placeholder="1.50"
                           />
@@ -712,7 +712,7 @@ export default function PaymentSettingsPage() {
                             value={costPerMinuteAfter60}
                             onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-border [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
+                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
                             )}
                             placeholder="1.00"
                           />
@@ -724,7 +724,7 @@ export default function PaymentSettingsPage() {
                 </div>
 
                 {/* Set up payouts Section */}
-                <div className="bg-card rounded-lg border border-border p-6">
+                <div className="bg-card rounded-lg p-6">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-foreground">Set up payouts</h2>
                     <Info className="w-4 h-4 text-muted-foreground" />

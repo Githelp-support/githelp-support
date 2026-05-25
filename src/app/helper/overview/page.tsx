@@ -123,7 +123,7 @@ export default function HelperOverviewPage() {
                 "rounded-lg px-4 text-sm font-medium",
                 timeFilter === "current"
                   ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                  : "border-[rgba(0,0,0,0.1)] text-muted-foreground hover:bg-brand-primary hover:text-white"
               )}
               onClick={() => {
                 setTimeFilter("current")
@@ -143,7 +143,10 @@ export default function HelperOverviewPage() {
                 <SelectTrigger
                   size="sm"
                   variant={timeFilter === "choose" ? "lavender" : "outline"}
-                  className="w-[160px] rounded-lg text-sm font-medium"
+                  className={cn(
+                    "w-[160px] rounded-lg text-sm font-medium",
+                    timeFilter !== "choose" && "border-[rgba(0,0,0,0.1)]"
+                  )}
                 >
                   <SelectValue placeholder="Choose month" />
                 </SelectTrigger>
@@ -166,7 +169,7 @@ export default function HelperOverviewPage() {
               className={cn(
                 "rounded-lg px-4 text-sm font-medium",
                 timeFilter !== "all"
-                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                  ? "border-[rgba(0,0,0,0.1)] text-muted-foreground hover:bg-brand-primary hover:text-white"
                   : undefined
               )}
               onClick={() => {
@@ -185,7 +188,7 @@ export default function HelperOverviewPage() {
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-[rgba(0,0,0,0.06)] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -194,7 +197,7 @@ export default function HelperOverviewPage() {
                   <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-[rgba(0,0,0,0.06)] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -203,7 +206,7 @@ export default function HelperOverviewPage() {
                   <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-[rgba(0,0,0,0.06)] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
@@ -230,9 +233,9 @@ export default function HelperOverviewPage() {
                   onChange={(value) => setIssueFilter(value as typeof issueFilter)}
                 />
               </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+              <Card className="border-[rgba(0,0,0,0.06)] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-[rgba(0,0,0,0.06)]">
                     <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
                       <div
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
@@ -258,7 +261,7 @@ export default function HelperOverviewPage() {
                     </div>
                   </div>
                   {sortedIssueTypes.map((issue, index) => (
-                    <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                    <div key={index} className="px-6 py-2.5 border-b border-[rgba(0,0,0,0.06)] last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
                         <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
@@ -283,9 +286,9 @@ export default function HelperOverviewPage() {
                   onChange={(value) => setTicketFilter(value as typeof ticketFilter)}
                 />
               </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+              <Card className="border-[rgba(0,0,0,0.06)] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
+                  <div className="bg-muted/60 px-6 py-3 border-b border-[rgba(0,0,0,0.06)]">
                     <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
                       <div className="col-span-6">Ticket</div>
                       <div className="col-span-3">Status</div>
@@ -298,7 +301,7 @@ export default function HelperOverviewPage() {
                     </div>
                   ) : (
                     filteredInProgressTickets.map((ticket) => (
-                      <div key={ticket.id} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                      <div key={ticket.id} className="px-6 py-2.5 border-b border-[rgba(0,0,0,0.06)] last:border-b-0">
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-6 text-sm text-foreground">{ticket.title}</div>
                           <div className="col-span-3 text-sm text-foreground">{formatStatus(ticket.status)}</div>

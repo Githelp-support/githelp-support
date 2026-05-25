@@ -69,7 +69,7 @@ export default function BrandingSettingsPage() {
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-4xl space-y-6">
             {/* Logo Upload Section */}
-            <div className="bg-white rounded-lg border border-border p-6">
+            <div className="bg-white rounded-lg p-6">
               <div className="flex items-center justify-between mb-[8px]">
                 <h2 className="text-base font-semibold text-foreground">Logo</h2>
               </div>
@@ -80,7 +80,7 @@ export default function BrandingSettingsPage() {
                 </Label>
                 <div className="flex items-center gap-4">
                   {brandingData?.logo_url ? (
-                    <div className="relative w-32 h-32 border-2 border-border rounded-lg overflow-hidden">
+                    <div className="relative w-32 h-32 border-2 border-[rgba(0,0,0,0.06)] rounded-lg overflow-hidden">
                       <Image
                         src={brandingData.logo_url}
                         alt="Logo preview"
@@ -89,7 +89,7 @@ export default function BrandingSettingsPage() {
                       />
                     </div>
                   ) : (
-                    <div className="w-32 h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted/50">
+                    <div className="w-32 h-32 border-2 border-dashed border-[rgba(0,0,0,0.1)] rounded-lg flex items-center justify-center bg-muted/50">
                       <span className="text-4xl text-muted-foreground">
                         {project?.name?.[0]?.toUpperCase() || "?"}
                       </span>
@@ -100,7 +100,7 @@ export default function BrandingSettingsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setIsUploadModalOpen(true)}
-                      className="text-muted-foreground border-border bg-transparent"
+                      className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                     >
                       {brandingData?.logo_url ? "Change logo" : "Upload logo"}
                     </Button>
@@ -113,7 +113,7 @@ export default function BrandingSettingsPage() {
             </div>
 
             {/* Primary Color Section */}
-            <div className="bg-white rounded-lg border border-border p-6">
+            <div className="bg-white rounded-lg p-6">
               {/* mb-[4px] (not 8px) so the visual gap to the label below is 8px:
                   the sm Button (h-8) is taller than the h2 and, centered, overhangs ~4px */}
               <div className="flex items-center justify-between mb-[4px]">
@@ -123,7 +123,7 @@ export default function BrandingSettingsPage() {
                   size="sm"
                   onClick={handleSaveColor}
                   disabled={updateBranding.isPending}
-                  className="text-muted-foreground border-border bg-transparent"
+                  className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                 >
                   {updateBranding.isPending ? "Saving..." : "Save"}
                 </Button>
@@ -135,7 +135,7 @@ export default function BrandingSettingsPage() {
                 </Label>
                 <div className="flex items-center gap-4">
                   <div
-                    className="w-16 h-16 rounded-lg border-2 border-border cursor-pointer"
+                    className="w-16 h-16 rounded-lg border-2 border-[rgba(0,0,0,0.1)] cursor-pointer"
                     style={{ backgroundColor: primaryColor }}
                     onClick={() => document.getElementById("primary-color")?.click()}
                   />
@@ -151,7 +151,7 @@ export default function BrandingSettingsPage() {
                       type="text"
                       value={primaryColor}
                       onChange={(e) => setEditedColor(e.target.value)}
-                      className="max-w-xs border-border"
+                      className="max-w-xs border-[rgba(0,0,0,0.1)]"
                       placeholder="#554abf"
                     />
                     <p className="text-xs text-muted-foreground mt-2">

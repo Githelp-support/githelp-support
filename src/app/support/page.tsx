@@ -107,7 +107,7 @@ export default function SupportPage() {
   if (!projectIdParam && !slugParam) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg p-8 shadow-sm">
           <h1 className="text-2xl font-semibold text-[#444444] mb-2">Missing project identifier</h1>
           <p className="text-[#868c98] mb-6">
             This support page is project-specific. Please open it using a link that includes either a project <span className="font-semibold">slug</span> or <span className="font-semibold">id</span>.
@@ -116,7 +116,7 @@ export default function SupportPage() {
             <Button asChild className="bg-[#554abf] hover:bg-[#4a3fa3] text-white cursor-pointer">
               <Link href="/signin">Sign in</Link>
             </Button>
-            <Button asChild variant="outline" className="border-gray-200 text-[#444444] bg-transparent cursor-pointer">
+            <Button asChild variant="outline" className="border-[rgba(0,0,0,0.1)] text-[#444444] bg-transparent cursor-pointer">
               <Link href="/">Go to home</Link>
             </Button>
           </div>
@@ -228,14 +228,14 @@ export default function SupportPage() {
                 placeholder="Search FAQs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-gray-200"
+                className="pl-10 border-[rgba(0,0,0,0.1)]"
               />
             </div>
 
             {/* FAQ Accordion */}
             <Accordion type="single" collapsible className="space-y-2">
               {filteredFaqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-200">
+                <AccordionItem key={index} value={`item-${index}`} className="border-b border-[rgba(0,0,0,0.06)]">
                   <AccordionTrigger className="text-[#444444] hover:text-[#554abf] text-left py-4 cursor-pointer">
                     {faq.question}
                   </AccordionTrigger>
@@ -302,7 +302,7 @@ export default function SupportPage() {
             {/* Info cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Average response time */}
-              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.06)]">
                 <div className="flex items-start gap-3 mb-4">
                   <Clock className="h-5 w-5 text-[#444444] mt-1" />
                   <div className="flex-1">
@@ -316,7 +316,7 @@ export default function SupportPage() {
               </div>
 
               {/* Core team support */}
-              <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg p-6 shadow-sm border border-[rgba(0,0,0,0.06)]">
                 <div className="flex items-start gap-3 mb-4">
                   <Target className="h-5 w-5 text-[#444444] mt-1" />
                   <div className="flex-1">

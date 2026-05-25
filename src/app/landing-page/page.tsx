@@ -89,7 +89,7 @@ export default function LandingPageSettings() {
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-4xl">
 
-            <div className="bg-white rounded-lg border border-border p-6 mb-6">
+            <div className="bg-white rounded-lg p-6 mb-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm mb-2" style={{ color: '#2E2D31', fontWeight: 550 }}>Your support page</h3>
@@ -106,7 +106,7 @@ export default function LandingPageSettings() {
                     }
                     target="_blank"
                   >
-                    <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent cursor-pointer">
+                    <Button variant="outline" size="sm" className="text-[#55555d] border-[rgba(0,0,0,0.1)] bg-transparent cursor-pointer">
                       <ExternalLink className="w-4 h-4" />
                       Open
                     </Button>
@@ -115,7 +115,7 @@ export default function LandingPageSettings() {
                     variant="outline"
                     size="sm"
                     onClick={handleCopyLink}
-                    className="text-[#55555d] border-border bg-transparent cursor-pointer"
+                    className="text-[#55555d] border-[rgba(0,0,0,0.1)] bg-transparent cursor-pointer"
                   >
                     {copied ? (
                       <>
@@ -136,7 +136,7 @@ export default function LandingPageSettings() {
             {/* Resources Section */}
             <div className="space-y-6">
               {/* Add Resource Section */}
-                <div className="bg-white rounded-lg border border-border p-6">
+                <div className="bg-white rounded-lg p-6">
                   <h2 className="text-base font-semibold text-foreground mb-6">Add resource</h2>
 
                   <div className="space-y-4">
@@ -174,10 +174,10 @@ export default function LandingPageSettings() {
                 </div>
 
                 {/* Resources List Section */}
-                <div className="bg-white rounded-lg border border-border p-6">
+                <div className="bg-white rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-base font-semibold text-foreground">Resources</h2>
-                    <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent">
+                    <Button variant="outline" size="sm" className="text-[#55555d] border-[rgba(0,0,0,0.1)] bg-transparent">
                       Save
                     </Button>
                   </div>
@@ -195,7 +195,7 @@ export default function LandingPageSettings() {
                       {resources.map((resource) => (
                         <div
                           key={resource.id}
-                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-[#f7f9ff] transition-colors"
+                          className="flex items-center justify-between p-4 border border-[rgba(0,0,0,0.06)] rounded-lg hover:bg-[#f7f9ff] transition-colors"
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
