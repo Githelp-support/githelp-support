@@ -136,7 +136,13 @@ export function Sidebar({ className }: SidebarProps) {
     const isDifferentProject = project.project_id !== selectedProjectId
     setSelectedProjectId(project.project_id)
     if (isDifferentProject) {
-      router.push("/")
+      if (user.role === "admin") {
+        router.push("/")
+      } else if (user.role === "helper") {
+        router.push("/helper/overview")
+      } else if (user.role === "user") {
+        router.push("/support/tickets")
+      }
     }
   }
 
