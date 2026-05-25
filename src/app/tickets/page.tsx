@@ -224,6 +224,9 @@ export default function TicketsPage() {
 
   const stats = getTicketStats()
 
+  /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
+  const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
+
   const togglePreviewCard = (id: string) => {
     setExpandedPreviewCards((prev) =>
       prev.includes(id) ? prev.filter((cardId) => cardId !== id) : [...prev, id]
@@ -322,7 +325,9 @@ export default function TicketsPage() {
           </div>
 
           {/* Preview disclaimer banner */}
-          <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">{SUPPORT_TICKETS_PREVIEW_DISCLAIMER}</div>
+          {showTicketsPreview && (
+            <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">{SUPPORT_TICKETS_PREVIEW_DISCLAIMER}</div>
+          )}
 
           {/* Filters */}
           <div className="flex items-center gap-4 flex-wrap">
