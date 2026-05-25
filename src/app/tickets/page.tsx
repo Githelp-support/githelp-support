@@ -322,9 +322,7 @@ export default function TicketsPage() {
           </div>
 
           {/* Preview disclaimer banner */}
-          <div className="rounded-lg border border-dashed border-gray-300 bg-muted/40 px-6 py-3">
-            <p className="text-sm text-gray-600">{SUPPORT_TICKETS_PREVIEW_DISCLAIMER}</p>
-          </div>
+          <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">{SUPPORT_TICKETS_PREVIEW_DISCLAIMER}</div>
 
           {/* Filters */}
           <div className="flex items-center gap-4 flex-wrap">
