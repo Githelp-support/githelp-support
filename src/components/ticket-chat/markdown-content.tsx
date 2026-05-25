@@ -57,7 +57,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
               )
             }
             return (
-              <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+              <code className="px-1.5 py-0.5 rounded text-sm font-mono" style={{ backgroundColor: 'rgba(0,0,0,0.04)' }} {...props}>
                 {children}
               </code>
             )

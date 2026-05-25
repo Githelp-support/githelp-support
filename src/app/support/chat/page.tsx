@@ -631,7 +631,7 @@ export default function UserSupportChatPage() {
             <>
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
+                  <h3 className="text-[11px] uppercase tracking-[0.05em]" style={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Logged time</h3>
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {timeEntriesDisplay.length > 0 ? (
@@ -667,7 +667,7 @@ export default function UserSupportChatPage() {
 
               {/* Active Tickets — latest active tickets for this user */}
               <div>
-                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets</h3>
+                <h3 className="text-[11px] uppercase tracking-[0.05em] mb-3" style={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets</h3>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
