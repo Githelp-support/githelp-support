@@ -378,7 +378,7 @@ export default function ReportsSLAsPage() {
               <Button
                 variant={selectedFilter === "all" ? "default" : "outline"}
                 size="sm"
-                className="h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+                className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                 onClick={() => {
                   setSelectedFilter("all")
                   setSelectedMonth("")

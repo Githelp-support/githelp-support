@@ -95,30 +95,30 @@ export function TicketChatInput({
   return (
     <div className="bg-white border border-border rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] mx-4 mb-4 overflow-hidden">
       <div className="bg-muted flex items-center gap-2 px-4 py-2.5 border-b border-border">
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
           <Bold className="w-3.5 h-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("*")} title="Italic">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("*")} title="Italic">
           <Italic className="w-3.5 h-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("~~")} title="Strikethrough">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("~~")} title="Strikethrough">
           <Strikethrough className="w-4 h-4" />
         </Button>
         <div className="w-px h-5 bg-foreground mx-1" />
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("[", "](url)")} title="Link">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("[", "](url)")} title="Link">
           <Link className="w-4 h-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertLinePrefix("- ")} title="Bullet list">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertLinePrefix("- ")} title="Bullet list">
           <List className="w-4 h-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertFormat("`")} title="Code">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("`")} title="Code">
           <Code className="w-[18px] h-[18px]" />
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0"
+          className="w-8 p-0"
           title="Attach image"
           onClick={onImageClick}
           disabled={!onImageClick}
