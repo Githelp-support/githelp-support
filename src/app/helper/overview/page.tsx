@@ -205,7 +205,7 @@ export default function HelperOverviewPage() {
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -214,7 +214,7 @@ export default function HelperOverviewPage() {
                     <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -223,7 +223,7 @@ export default function HelperOverviewPage() {
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -233,7 +233,7 @@ export default function HelperOverviewPage() {
           <div className="grid grid-cols-2 gap-8">
             {/* Issue Types Table */}
             <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3 tabular-nums">Issue types ({filteredIssueTypes.length})</h2>
               <div className="mb-4">
                 <TabSelector
                   options={[
@@ -289,8 +289,8 @@ export default function HelperOverviewPage() {
                       <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
-                          <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
-                          <div className="col-span-3 text-sm text-foreground">{issue.time}</div>
+                          <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.tickets}</div>
+                          <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.time}</div>
                         </div>
                       </div>
                     ))
@@ -301,7 +301,7 @@ export default function HelperOverviewPage() {
 
             {/* Tickets In Progress Table */}
             <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Tickets in progress ({filteredInProgressTickets.length})</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3 tabular-nums">Tickets in progress ({filteredInProgressTickets.length})</h2>
               <div className="mb-4">
                 <TabSelector
                   options={[

@@ -446,7 +446,7 @@ export default function TicketDetailPage() {
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             inlineRightContent={
-              <span className="text-[13px] font-normal text-muted-foreground/80">ID: {ticketId}</span>
+              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
             }
           />
         </div>
@@ -472,7 +472,7 @@ export default function TicketDetailPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
-                        <span className="text-xs" style={{ color: '#818185' }}>
+                        <span className="text-xs tabular-nums" style={{ color: '#818185' }}>
                           {firstIssueMessage.timestamp
                             ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
                                 day: "2-digit",
@@ -529,15 +529,15 @@ export default function TicketDetailPage() {
                       <div className="grid grid-cols-3 gap-4">
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                          <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {startPrice}</p>
                         </div>
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                          <p className="text-sm font-medium text-foreground">USD {first60Price}/min</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {first60Price}/min</p>
                         </div>
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                          <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {after60Price}/min</p>
                         </div>
                       </div>
                     </div>
@@ -592,7 +592,7 @@ export default function TicketDetailPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
-                              <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                              <span className="text-xs tabular-nums" style={{ color: '#818185' }}>{msg.timestamp}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
                               <Check className="w-4 h-4 text-brand-primary shrink-0" />
@@ -614,7 +614,7 @@ export default function TicketDetailPage() {
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
-                                <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                                <span className="text-xs tabular-nums" style={{ color: '#818185' }}>{msg.timestamp}</span>
                               </div>
                             )}
                             <div
@@ -794,7 +794,7 @@ export default function TicketDetailPage() {
                             </div>
                             <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                           </div>
-                          <span className="text-[13px] text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground tabular-nums">
                             {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
                           </span>
                         </div>
@@ -803,7 +803,7 @@ export default function TicketDetailPage() {
                     ))}
                     <div className="flex items-center justify-between py-2 font-medium">
                       <span className="text-[13px] text-foreground">Total</span>
-                      <span className="text-[13px] text-foreground">{getTotalLoggedTime().formatted}</span>
+                      <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                     </div>
                   </div>
                 )}
@@ -859,7 +859,7 @@ export default function TicketDetailPage() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                              <p className="text-xs text-muted-foreground">{item.date}</p>
+                              <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
                             </div>
                           </div>
                         </div>

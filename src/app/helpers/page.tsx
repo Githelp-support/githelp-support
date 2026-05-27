@@ -595,7 +595,7 @@ export default function HelpersPage() {
                             </span>
                           </div>
                           <div className="col-span-2 flex items-center space-x-2">
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-muted-foreground tabular-nums">
                               {new Date(invite.created_at).toLocaleDateString()}
                             </span>
                           </div>
