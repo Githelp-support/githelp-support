@@ -174,7 +174,7 @@ export function TopBar() {
           {/* Role dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
-              <span className="font-sans text-[14px] text-muted-foreground">Role: {getRoleDisplayName(user.role)}</span>
+              <span className="font-sans text-[14px] text-muted-foreground">{getRoleDisplayName(user.role)}</span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
@@ -201,7 +201,7 @@ export function TopBar() {
           {/* Project dropdown */}
           {projectsLoading ? (
             <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
-              <div className="text-[14px] text-muted-foreground">Loading projects...</div>
+              <div className="font-sans text-[14px] text-muted-foreground">Loading projects...</div>
             </div>
           ) : userProjects.length > 0 ? (
             <DropdownMenu>
@@ -216,7 +216,7 @@ export function TopBar() {
                       projectName={selectedProject?.name || ""}
                       size="w-[22px] h-[22px]"
                     />
-                    <span className="text-[14px] font-[550] text-sidebar-foreground truncate">
+                    <span className="font-sans text-[14px] font-[550] text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -225,7 +225,7 @@ export function TopBar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="start"
-                className="w-56"
+                className="w-56 font-sans"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
                 {userProjects.map((project) => {
@@ -241,7 +241,7 @@ export function TopBar() {
                 })}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-brand-primary"
+                  className="font-sans text-[14px] text-brand-primary"
                   onClick={() => {
                     if (typeof window !== "undefined") window.location.href = "/onboarding"
                   }}
@@ -268,8 +268,8 @@ export function TopBar() {
               </span>
             )}
           </button>
-          <Avatar className="w-8 h-8 rounded-[11px]">
-            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[11px] font-medium">{user.avatar}</AvatarFallback>
+          <Avatar className="w-7 h-7 rounded-[10px]">
+            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[10px] font-medium">{user.avatar}</AvatarFallback>
           </Avatar>
         </div>
       </div>
@@ -306,7 +306,7 @@ function ProjectLogoWithBranding({
     >
       <ProjectLogo logoUrl={logoUrl} projectName={project.name} size="w-5 h-5" />
       <span
-        className={`truncate text-sm ${
+        className={`font-sans truncate text-[14px] ${
           isSelected
             ? "font-[500]"
             : "font-medium text-[#55555E] group-focus:text-sidebar-foreground"

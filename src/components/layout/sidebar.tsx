@@ -345,14 +345,16 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border">
-        <div className={`flex items-center gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
-          <Avatar className="w-8 h-8 rounded-[11px] shrink-0">
-            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[11px] font-medium">{user.avatar}</AvatarFallback>
+        <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
+          <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
+            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[10px] font-medium">{user.avatar}</AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
-              <div className="text-xs font-medium text-muted-foreground mt-1 truncate">
+              <div className="h-7 flex items-center">
+                <span className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</span>
+              </div>
+              <div className="text-xs font-medium text-muted-foreground truncate">
                 Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </div>
             </div>
