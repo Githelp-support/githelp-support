@@ -4,6 +4,7 @@ import { Bell, ChevronDown, Check, Plus } from "lucide-react"
 import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { logoutUser } from "@/lib/supabase/auth"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,6 +140,20 @@ export function TopBar() {
     }
   }
 
+  const isSignedIn = Boolean(user.id)
+
+  const handleAuthClick = async () => {
+    if (isSignedIn) {
+      try {
+        await logoutUser()
+      } catch (error) {
+        console.error("Sign out failed:", error)
+      }
+    } else {
+      router.push("/auth/signin")
+    }
+  }
+
   const getAvailableRoles = (): UserRole[] => {
     const projectRole = user.projectRole
 
@@ -254,8 +269,15 @@ export function TopBar() {
           ) : null}
         </div>
 
-        {/* Right cluster: Bell, Avatar */}
+        {/* Right cluster: Sign in/out, Bell, Avatar */}
         <div className="flex items-center gap-5">
+          <button
+            type="button"
+            onClick={handleAuthClick}
+            className="font-sans text-[14px] text-[#55555E] hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
+          >
+            {isSignedIn ? "Sign out" : "Sign in"}
+          </button>
           <button
             ref={bellButtonRef}
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
