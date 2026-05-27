@@ -35,6 +35,10 @@ export interface TicketChatProps {
   headerSubtitle?: string
   /** Subtitle text rendered below the title in the header (separate from inline headerSubtitle). */
   subtitle?: string
+  /** Optional icon rendered to the left of the title/subtitle block in the header. */
+  headerLeadingIcon?: React.ReactNode
+  /** Optional CSS background color applied to the header container. */
+  headerBackgroundColor?: string
   showBackButton?: boolean
 
   // Intro section shown above the message thread (rates, ticket meta, CTA buttons, etc.)
@@ -72,6 +76,8 @@ export function TicketChat(props: TicketChatProps) {
     headerTitle,
     headerSubtitle,
     subtitle,
+    headerLeadingIcon,
+    headerBackgroundColor,
     showBackButton,
     intro,
     messages,
@@ -107,6 +113,8 @@ export function TicketChat(props: TicketChatProps) {
           title={headerTitle}
           subtitle={subtitle}
           showBackButton={showBackButton}
+          leadingIcon={headerLeadingIcon}
+          backgroundColor={headerBackgroundColor}
           inlineRightContent={
             headerSubtitle ? (
               <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>

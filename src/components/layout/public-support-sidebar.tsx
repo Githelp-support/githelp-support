@@ -51,7 +51,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
   return (
     <div
       suppressHydrationWarning
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 h-full overflow-hidden ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen max-h-screen overflow-hidden shrink-0 ${className}`}
     >
       <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px]">
         {!isCollapsed ? (

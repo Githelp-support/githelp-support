@@ -16,9 +16,12 @@ interface HeaderProps {
   backButtonHref?: string
   info?: string
   inlineRightContent?: ReactNode
+  leadingIcon?: ReactNode
+  /** Optional CSS background color to apply to the header container. Overrides the default `bg-background`. */
+  backgroundColor?: string
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, backgroundColor }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -48,7 +51,11 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
   }
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-30 bg-background px-8 pt-5 pb-5">
+    <header
+      ref={headerRef}
+      className={`sticky top-0 z-30 px-8 pt-5 pb-5 ${backgroundColor ? "" : "bg-background"}`}
+      style={backgroundColor ? { backgroundColor } : undefined}
+    >
       <div className="flex items-center justify-between gap-8">
         <div className="flex items-start gap-4">
           {showBackButton && (
@@ -62,6 +69,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               )}
             </button>
           )}
+          {leadingIcon && <div className="shrink-0 self-center">{leadingIcon}</div>}
           <div>
             <div ref={titleRowRef} className="flex items-center gap-[13px]">
               <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>

@@ -408,13 +408,28 @@ export default function SupportPage() {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Branded banner */}
-        <div className="h-[61px] w-full shrink-0" style={{ backgroundColor: primaryColor }} />
-
         {activeTab === "get-support" ? (
           <TicketChat
             headerTitle={projectName}
             subtitle={`Welcome to the support page for ${projectName}`}
+            headerBackgroundColor={primaryColor}
+            headerLeadingIcon={
+              projectLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={projectLogo}
+                  alt={`${projectName} logo`}
+                  className="w-11 h-11 rounded-[12px] object-cover"
+                />
+              ) : (
+                <div
+                  className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground"
+                  style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                >
+                  {projectName?.[0]?.toUpperCase() || "A"}
+                </div>
+              )
+            }
             showBackButton={false}
             intro={chatIntro}
             messages={chatMessages}
