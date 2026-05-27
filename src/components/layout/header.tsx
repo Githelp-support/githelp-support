@@ -1,17 +1,10 @@
 "use client"
 
-import { Bell, ChevronDown, ArrowLeft, Info, Check } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useState, useEffect, useRef, type ReactNode } from "react"
+import { ArrowLeft, Info } from "lucide-react"
+import { useEffect, useRef, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
-import { NotificationsPanel, type Notification } from "./notifications-panel"
 import { useUser } from "@/contexts/user-context"
 import { useRouter } from "next/navigation"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { logoutUser } from "@/lib/supabase/auth"
-import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/hooks/useNotifications"
-import { formatRelativeTime } from "@/lib/format"
-import type { UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 
@@ -26,18 +19,13 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent }: HeaderProps) {
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [inlineMode, setInlineMode] = useState<"inline" | "stacked">("inline")
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
-  const rightClusterRef = useRef<HTMLDivElement>(null)
-  const bellButtonRef = useRef<HTMLButtonElement>(null)
-  const inlineWidthRef = useRef<number>(0)
   const pathname = usePathname()
   const { selectedProjectId } = useProjectSelection()
   const { data: projectRoleFromProject } = useProjectRole(selectedProjectId ?? undefined)
-  const { user, switchRole, setProjectRole } = useUser()
+  const { setProjectRole } = useUser()
   const router = useRouter()
 
   // Sync project role from selected project when on project-scoped pages (not support).
@@ -51,73 +39,6 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     }
   }, [pathname, selectedProjectId, projectRoleFromProject, setProjectRole])
 
-  // Responsively collapse inlineRightContent under the title when it would
-  // come within 30px of the right-side cluster (notifications/avatar/role).
-  useEffect(() => {
-    if (!inlineRightContent) return
-
-    const checkLayout = () => {
-      setInlineMode((currentMode) => {
-        const rightCluster = rightClusterRef.current
-        if (!rightCluster) return currentMode
-        const rightLeft = rightCluster.getBoundingClientRect().left
-
-        if (currentMode === "inline") {
-          const inline = inlineRef.current
-          if (!inline) return currentMode
-          const rect = inline.getBoundingClientRect()
-          inlineWidthRef.current = rect.width
-          const gap = rightLeft - rect.right
-          return gap < 30 ? "stacked" : "inline"
-        }
-
-        // stacked: re-expand once the title row plus the cached inline width
-        // plus 30px buffer + 13px gap would fit.
-        const titleRow = titleRowRef.current
-        if (!titleRow) return currentMode
-        const available = rightLeft - titleRow.getBoundingClientRect().right
-        return available >= inlineWidthRef.current + 30 + 13 ? "inline" : "stacked"
-      })
-    }
-
-    const observer = new ResizeObserver(checkLayout)
-    if (headerRef.current) observer.observe(headerRef.current)
-    checkLayout()
-
-    return () => observer.disconnect()
-  }, [inlineRightContent])
-
-  // Fetch notifications
-  const { data: notificationsData } = useNotifications()
-  const markNotificationRead = useMarkNotificationRead()
-  const markAllRead = useMarkAllNotificationsRead()
-
-  // Transform notifications to UI format
-  const notifications: Notification[] = (notificationsData || []).map((notif) => ({
-    id: notif.id,
-    title: notif.title,
-    type: (notif.metadata?.type || "INFO") as "SUPPORT_TICKET" | "HELPER_REQUEST" | "NEW_PAYOUT" | "INFO",
-    content: notif.content,
-    route: notif.route || "#",
-    timestamp: formatRelativeTime(notif.created_at),
-    isRead: notif.is_read,
-  }))
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length
-
-  const handleMarkAllAsRead = async () => {
-    await markAllRead.mutateAsync()
-  }
-
-  const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.isRead) {
-      await markNotificationRead.mutateAsync(notification.id)
-    }
-    if (notification.route && notification.route !== "#") {
-      router.push(notification.route)
-    }
-  }
-
   const handleBackClick = () => {
     if (backButtonHref) {
       router.push(backButtonHref)
@@ -126,165 +47,47 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     }
   }
 
-  const getRoleDisplayName = (role: UserRole) => {
-    return role.charAt(0).toUpperCase() + role.slice(1)
-  }
-
-  const handleSwitchRole = (role: UserRole) => {
-    switchRole(role)
-    if (role === "admin") {
-      router.push("/")
-    } else if (role === "helper") {
-      router.push("/helper/overview")
-    } else if (role === "user") {
-      router.push("/support/tickets")
-    }
-  }
-
-  const getAvailableRoles = (): UserRole[] => {
-    const projectRole = user.projectRole
-
-    // If no project role, only "user" role is available (support users without projects)
-    if (!projectRole) {
-      return ["user"]
-    }
-
-    // Define role hierarchy: admin > helper > user
-    const roleHierarchy: Record<UserRole, number> = {
-      admin: 2,
-      helper: 1,
-      user: 0,
-    }
-
-    const projectRoleLevel = roleHierarchy[projectRole] || 0
-
-    // Get all roles at or below the project role level
-    // Allow "user" role (level 0) for all project roles
-    const allowedRoles: UserRole[] = []
-    if (projectRoleLevel >= 2) allowedRoles.push("admin")
-    if (projectRoleLevel >= 1) allowedRoles.push("helper")
-    // Always include "user" role (level 0) regardless of project role
-    allowedRoles.push("user")
-
-    // Return every role the user is entitled to (including the currently-active one)
-    return allowedRoles
-  }
-
   return (
-    <>
-      <header ref={headerRef} className="sticky top-0 z-30 bg-background px-8 pt-5 pb-5">
-        <div className="flex items-center justify-between gap-8">
-          <div className="flex items-start gap-4">
-            {showBackButton && (
-              <button
-                onClick={handleBackClick}
-                className="mt-1 p-1 hover:bg-muted rounded-md transition-colors cursor-pointer flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-                {backButtonText && (
-                  <span className="text-sm text-muted-foreground hover:text-foreground font-medium">{backButtonText}</span>
-                )}
-              </button>
-            )}
-            <div>
-              <div ref={titleRowRef} className="flex items-center gap-[13px]">
-                <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
-                {info && (
-                  <div className="relative group">
-                    <Info className="w-5 h-5 text-muted-foreground cursor-help" />
-                    <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50 w-64 p-2 bg-foreground text-background text-sm rounded-md shadow-lg pointer-events-none">
-                      {info}
-                      <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-foreground" />
-                    </div>
+    <header ref={headerRef} className="sticky top-0 z-30 bg-background px-8 pt-5 pb-5">
+      <div className="flex items-center justify-between gap-8">
+        <div className="flex items-start gap-4">
+          {showBackButton && (
+            <button
+              onClick={handleBackClick}
+              className="mt-1 p-1 hover:bg-muted rounded-md transition-colors cursor-pointer flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              {backButtonText && (
+                <span className="text-sm text-muted-foreground hover:text-foreground font-medium">{backButtonText}</span>
+              )}
+            </button>
+          )}
+          <div>
+            <div ref={titleRowRef} className="flex items-center gap-[13px]">
+              <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
+              {info && (
+                <div className="relative group">
+                  <Info className="w-5 h-5 text-muted-foreground cursor-help" />
+                  <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50 w-64 p-2 bg-foreground text-background text-sm rounded-md shadow-lg pointer-events-none">
+                    {info}
+                    <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-foreground" />
                   </div>
-                )}
-                {inlineRightContent && inlineMode === "inline" && (
-                  <div ref={inlineRef} className="flex items-center">
-                    {inlineRightContent}
-                  </div>
-                )}
-              </div>
-              {(subtitle || (inlineRightContent && inlineMode === "stacked")) && (
-                <div className="mt-0.5 flex items-center gap-2">
-                  {subtitle && (
-                    <p className="text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>
-                  )}
-                  {inlineRightContent && inlineMode === "stacked" && (
-                    <div className="flex items-center">{inlineRightContent}</div>
-                  )}
+                </div>
+              )}
+              {inlineRightContent && (
+                <div ref={inlineRef} className="flex items-center">
+                  {inlineRightContent}
                 </div>
               )}
             </div>
-          </div>
-          <div ref={rightClusterRef} className="flex items-center gap-4">
-            <button
-              ref={bellButtonRef}
-              onClick={() => setIsNotificationsOpen((prev) => !prev)}
-              className="relative p-1 hover:bg-muted rounded-md transition-colors cursor-pointer"
-            >
-              <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <div className="flex items-center gap-2">
-              <Avatar className="w-8 h-8 rounded-[11px]">
-                <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[11px] font-medium">{user.avatar}</AvatarFallback>
-              </Avatar>
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer">
-                  <span className="text-sm text-muted-foreground">Role: {getRoleDisplayName(user.role)}</span>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
-                  {getAvailableRoles().length > 0 ? (
-                    <>
-                      {getAvailableRoles().map((role) => {
-                        const isCurrent = role === user.role
-                        return (
-                          <DropdownMenuItem
-                            key={role}
-                            onClick={() => handleSwitchRole(role)}
-                            className="cursor-pointer flex items-center justify-between"
-                          >
-                            <span>{getRoleDisplayName(role)}</span>
-                            {isCurrent && <Check className="w-4 h-4 text-muted-foreground" />}
-                          </DropdownMenuItem>
-                        )
-                      })}
-                      <DropdownMenuSeparator />
-                    </>
-                  ) : null}
-                  <DropdownMenuItem
-                    onClick={async () => {
-                      try {
-                        await logoutUser()
-                        router.push("/auth/signin")
-                      } catch (error) {
-                        console.error("Logout error:", error)
-                      }
-                    }}
-                    className="cursor-pointer text-red-600 focus:text-red-600"
-                  >
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {subtitle && (
+              <div className="mt-0.5 flex items-center gap-2">
+                <p className="text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>
+              </div>
+            )}
           </div>
         </div>
-      </header>
-
-      <NotificationsPanel
-        isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
-        notifications={notifications}
-        onMarkAllAsRead={handleMarkAllAsRead}
-        onNotificationClick={handleNotificationClick}
-        anchorRef={bellButtonRef}
-      />
-    </>
+      </div>
+    </header>
   )
 }

@@ -29,6 +29,7 @@ type Project = Database["public"]["Tables"]["projects"]["Row"]
 // Corner radius map: 11/32 of the element pixel size (matches sidebar avatar sizing)
 const sizeRadiusMap: Record<string, string> = {
   "w-5 h-5": "rounded-[7px]",
+  "w-[22px] h-[22px]": "rounded-[8px]",
   "w-6 h-6": "rounded-[8px]",
   "w-8 h-8": "rounded-[11px]",
 }
@@ -172,8 +173,8 @@ export function TopBar() {
 
           {/* Role dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer">
-              <span className="text-sm text-muted-foreground">Role: {getRoleDisplayName(user.role)}</span>
+            <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
+              <span className="font-sans text-[14px] text-muted-foreground">Role: {getRoleDisplayName(user.role)}</span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
@@ -199,23 +200,23 @@ export function TopBar() {
 
           {/* Project dropdown */}
           {projectsLoading ? (
-            <div className="flex items-center justify-center px-3 py-2 min-h-[36px] bg-bg-subtle border border-sidebar-border rounded-lg">
-              <div className="text-sm text-muted-foreground">Loading projects...</div>
+            <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
+              <div className="text-[14px] text-muted-foreground">Loading projects...</div>
             </div>
           ) : userProjects.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center justify-between gap-2 px-3 py-2 min-h-[36px] bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
+                  className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <ProjectLogo
                       logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
                       projectName={selectedProject?.name || ""}
-                      size="w-6 h-6"
+                      size="w-[22px] h-[22px]"
                     />
-                    <span className="text-sm font-[550] text-sidebar-foreground truncate">
+                    <span className="text-[14px] font-[550] text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -254,11 +255,11 @@ export function TopBar() {
         </div>
 
         {/* Right cluster: Bell, Avatar */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           <button
             ref={bellButtonRef}
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
-            className="relative p-1 hover:bg-muted rounded-md transition-colors cursor-pointer"
+            className="relative p-1 mt-[2px] hover:bg-muted rounded-md transition-colors cursor-pointer"
           >
             <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
             {unreadCount > 0 && (
