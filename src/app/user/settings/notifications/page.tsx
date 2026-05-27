@@ -60,7 +60,7 @@ export default function UserNotificationsSettingsPage() {
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-2xl">
             {/* Notification preferences */}
-            <div className="bg-white rounded-lg border border-border p-6 mb-6">
+            <div className="bg-white rounded-lg p-6 mb-6">
               <h2 className="text-base font-semibold text-foreground mb-1">
                 Channels
               </h2>
@@ -73,7 +73,7 @@ export default function UserNotificationsSettingsPage() {
                 <h3 className="text-[13px] font-semibold text-foreground mb-3">
                   Email
                 </h3>
-                <div className="space-y-0 divide-y divide-gray-100">
+                <div className="space-y-0 divide-y divide-[rgba(0,0,0,0.06)]">
                   <div className="flex items-center justify-between py-3">
                     <Label htmlFor="email-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                       New tickets
@@ -112,7 +112,7 @@ export default function UserNotificationsSettingsPage() {
                 <h3 className="text-[13px] font-semibold text-foreground mb-3">
                   Slack
                 </h3>
-                <div className="space-y-0 divide-y divide-gray-100">
+                <div className="space-y-0 divide-y divide-[rgba(0,0,0,0.06)]">
                   <div className="flex items-center justify-between py-3">
                     <Label htmlFor="slack-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                       New tickets
@@ -151,7 +151,7 @@ export default function UserNotificationsSettingsPage() {
                 <h3 className="text-[13px] font-semibold text-foreground mb-3">
                   Discord
                 </h3>
-                <div className="space-y-0 divide-y divide-gray-100">
+                <div className="space-y-0 divide-y divide-[rgba(0,0,0,0.06)]">
                   <div className="flex items-center justify-between py-3">
                     <Label htmlFor="discord-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
                       New tickets
@@ -189,7 +189,7 @@ export default function UserNotificationsSettingsPage() {
                 onClick={handleSaveNotifications}
                 disabled={isSavingNotifications}
                 variant="outline"
-                className="border-border mt-[22px]"
+                className="border-[rgba(0,0,0,0.1)] mt-[22px]"
               >
                 {isSavingNotifications ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

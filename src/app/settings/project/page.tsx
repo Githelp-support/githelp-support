@@ -172,7 +172,7 @@ export default function ProjectSettingsPage() {
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="max-w-4xl space-y-8">
             {/* Admins */}
-            <Card className="border-[#E1E1E1] shadow-none rounded-lg py-0">
+            <Card className="border-0 shadow-none rounded-lg py-0">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Admins</h2>
@@ -299,7 +299,7 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Keywords / Topics */}
-            <Card className="border-[#E1E1E1] shadow-none rounded-lg py-0">
+            <Card className="border-0 shadow-none rounded-lg py-0">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Keywords & topics</h2>
@@ -339,7 +339,7 @@ export default function ProjectSettingsPage() {
                     {keywords.map((kw) => (
                       <div
                         key={kw.id}
-                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-[rgba(0,0,0,0.06)] px-5 py-2 bg-muted/50"
                       >
                         <span className="text-[13px] font-medium">{kw.value}</span>
                         <button
@@ -359,7 +359,7 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Help categories */}
-            <Card className="border-[#E1E1E1] shadow-none rounded-lg py-0">
+            <Card className="border-0 shadow-none rounded-lg py-0">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Help categories</h2>
@@ -399,7 +399,7 @@ export default function ProjectSettingsPage() {
                     {helpCategories.map((cat) => (
                       <div
                         key={cat.id}
-                        className="flex items-center gap-[10px] rounded-md border border-border px-5 py-2 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-[rgba(0,0,0,0.06)] px-5 py-2 bg-muted/50"
                       >
                         <span className="text-[13px] font-medium">{cat.value}</span>
                         <button

@@ -199,13 +199,11 @@ export default function Dashboard() {
           {/* Time Filters */}
           <div className="flex gap-2">
             <Button
-              variant={timeFilter === "current" ? "lavender" : "outline"}
+              variant={timeFilter === "current" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-sm font-medium",
-                timeFilter === "current"
-                  ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                timeFilter !== "current" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("current")
@@ -224,7 +222,7 @@ export default function Dashboard() {
               >
                 <SelectTrigger
                   size="sm"
-                  variant={timeFilter === "choose" ? "lavender" : "outline"}
+                  variant={timeFilter === "choose" ? "neutral" : "outline"}
                   className="w-[160px] rounded-lg text-sm font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
@@ -243,13 +241,11 @@ export default function Dashboard() {
               </Select>
             </div>
             <Button
-              variant={timeFilter === "all" ? "lavender" : "outline"}
+              variant={timeFilter === "all" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-sm font-medium",
-                timeFilter !== "all"
-                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
-                  : undefined
+                timeFilter !== "all" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("all")
@@ -273,7 +269,7 @@ export default function Dashboard() {
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -282,7 +278,7 @@ export default function Dashboard() {
                     <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -291,7 +287,7 @@ export default function Dashboard() {
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -353,8 +349,8 @@ export default function Dashboard() {
                           </div>
                           <span className="text-sm text-foreground">{helper.name}</span>
                         </div>
-                        <div className="col-span-3 text-sm text-foreground">{helper.tickets}</div>
-                        <div className="col-span-2 text-sm text-foreground">{helper.time}</div>
+                        <div className="col-span-3 text-sm text-foreground tabular-nums">{helper.tickets}</div>
+                        <div className="col-span-2 text-sm text-foreground tabular-nums">{helper.time}</div>
                         <div className="col-span-1 flex justify-end">
                           <Link href={`/helpers/${helper.id}`}>
                             <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
@@ -411,8 +407,8 @@ export default function Dashboard() {
                     <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
-                        <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
-                        <div className="col-span-3 text-sm text-foreground">{issue.time}</div>
+                        <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.tickets}</div>
+                        <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.time}</div>
                       </div>
                     </div>
                   ))}

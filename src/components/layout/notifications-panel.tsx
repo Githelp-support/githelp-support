@@ -2,6 +2,9 @@
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import type { RefObject } from "react"
+import { createPortal } from "react-dom"
 
 export interface Notification {
   id: string
@@ -20,7 +23,17 @@ interface NotificationsPanelProps {
   notifications: Notification[]
   onMarkAllAsRead: () => void
   onNotificationClick: (notification: Notification) => void
+  anchorRef?: RefObject<HTMLElement | null>
 }
+
+// Default fallback position (matches the previous static `top-16 right-4`
+// placement when no anchor element is provided).
+const DEFAULT_POSITION = { top: 64, right: 16 }
+// Vertical gap between the bottom of the anchor (bell icon) and the top of
+// the panel. Keeping this small ensures the panel hugs the bell icon
+// regardless of any content shifting the header vertically (e.g. a top
+// banner).
+const ANCHOR_GAP = 6
 
 export function NotificationsPanel({
   isOpen,
@@ -28,8 +41,46 @@ export function NotificationsPanel({
   notifications,
   onMarkAllAsRead,
   onNotificationClick,
+  anchorRef,
 }: NotificationsPanelProps) {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  const [position, setPosition] = useState<{ top: number; right: number }>(DEFAULT_POSITION)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Keep the panel positioned relative to the bell icon so that anything
+  // shifting the bell vertically (e.g. a top banner across the page) also
+  // shifts the panel by the same amount.
+  useEffect(() => {
+    if (!isOpen) return
+
+    const updatePosition = () => {
+      const anchor = anchorRef?.current
+      if (!anchor) {
+        setPosition(DEFAULT_POSITION)
+        return
+      }
+      const rect = anchor.getBoundingClientRect()
+      // Only the vertical position needs to follow the bell icon — a horizontal
+      // top banner shifts everything vertically but not horizontally, so the
+      // right offset (matching the original `right-4`) is kept constant.
+      setPosition({
+        top: rect.bottom + ANCHOR_GAP,
+        right: DEFAULT_POSITION.right,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener("resize", updatePosition)
+    window.addEventListener("scroll", updatePosition, true)
+    return () => {
+      window.removeEventListener("resize", updatePosition)
+      window.removeEventListener("scroll", updatePosition, true)
+    }
+  }, [isOpen, anchorRef])
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -58,11 +109,14 @@ export function NotificationsPanel({
     onClose()
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
+  const panel = (
     <>
-      <div className="fixed right-4 top-16 w-96 bg-card shadow-2xl z-50 flex flex-col rounded-lg border border-border max-h-[80vh]">
+      <div
+        className="fixed w-96 bg-card shadow-2xl z-[2147483647] flex flex-col rounded-lg border border-border max-h-[80vh]"
+        style={{ top: `${position.top}px`, right: `${position.right}px` }}
+      >
         <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
           <h2 className="text-base font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
@@ -120,4 +174,6 @@ export function NotificationsPanel({
       </div>
     </>
   )
+
+  return createPortal(panel, document.body)
 }

@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -21,6 +20,7 @@ import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeE
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import csharp from "react-syntax-highlighter/dist/esm/languages/prism/csharp"
 import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript"
 import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript"
@@ -523,30 +523,38 @@ export default function UserSupportChatPage() {
         headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
         showBackButton={false}
         intro={
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10">
-                {projectLogo && <AvatarImage src={projectLogo} alt={`${projectName} logo`} />}
-                <AvatarFallback className="bg-brand-primary text-white font-semibold">
-                  {projectName?.[0]?.toUpperCase() || "A"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="font-medium text-foreground">{projectName} Team</h2>
-                <p className="text-sm text-muted-foreground">
-                  {new Date().toLocaleString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+          <div className="flex gap-3">
+            {projectLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={projectLogo}
+                alt={`${projectName} logo`}
+                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                style={{ backgroundColor: getAvatarColorHexForId(effectiveProjectId) }}
+              >
+                {projectName?.[0]?.toUpperCase() || "A"}
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{messages[0]?.content}</p>
+            )}
+            <div className="flex-1 space-y-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{projectName} Team</span>
+                  <span className="text-xs" style={{ color: '#818185' }}>
+                    {new Date().toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{messages[0]?.content}</p>
+              </div>
 
               {hasSLA && freeHelpRemaining && (
                 <div className="space-y-1">
@@ -557,27 +565,20 @@ export default function UserSupportChatPage() {
               )}
 
               <div>
-                {!ticketCreated && hasSLA && <h3 className="font-medium text-foreground mb-3">Help beyond free help</h3>}
-                {!ticketCreated && !hasSLA && <h3 className="font-medium text-foreground mb-3">{projectName}&apos;s rates</h3>}
-                <div className="bg-white border border-border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <tbody>
-                      {!ticketCreated && (
-                        <tr className="border-b border-border">
-                          <td className="px-4 py-3 text-sm text-muted-foreground">Ticket start price</td>
-                          <td className="px-4 py-3 text-sm text-foreground text-right">USD {startPrice}</td>
-                        </tr>
-                      )}
-                      <tr className="border-b border-border">
-                        <td className="px-4 py-3 text-sm text-muted-foreground">First 60 min</td>
-                        <td className="px-4 py-3 text-sm text-foreground text-right">USD {first60Price}/min</td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">After 60 min</td>
-                        <td className="px-4 py-3 text-sm text-foreground text-right">USD {after60Price}/min</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">Start price</p>
+                    <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
+                    <p className="text-sm font-medium text-foreground">USD {first60Price}/min</p>
+                  </div>
+                  <div className="bg-card border border-border rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
+                    <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                  </div>
                 </div>
               </div>
 
@@ -633,7 +634,7 @@ export default function UserSupportChatPage() {
             <>
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
+                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Logged time</h3>
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {timeEntriesDisplay.length > 0 ? (
@@ -669,7 +670,7 @@ export default function UserSupportChatPage() {
 
               {/* Active Tickets — latest active tickets for this user */}
               <div>
-                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets ({activeTicketsCount})</h3>
+                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets ({activeTicketsCount})</h3>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
@@ -686,10 +687,21 @@ export default function UserSupportChatPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            <Avatar className="w-8 h-8 shrink-0">
-                              {item.avatarUrl && <AvatarImage src={item.avatarUrl} alt="" />}
-                              <AvatarFallback className="bg-muted text-foreground">{item.avatarInitial}</AvatarFallback>
-                            </Avatar>
+                            {item.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.avatarUrl}
+                                alt=""
+                                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
+                              >
+                                {item.avatarInitial}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>

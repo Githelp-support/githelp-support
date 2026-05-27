@@ -2,7 +2,7 @@
 
 import { Bell, ChevronDown, ArrowLeft, Info, Check } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { NotificationsPanel, type Notification } from "./notifications-panel"
 import { useUser } from "@/contexts/user-context"
@@ -22,10 +22,18 @@ interface HeaderProps {
   backButtonText?: string
   backButtonHref?: string
   info?: string
+  inlineRightContent?: ReactNode
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent }: HeaderProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [inlineMode, setInlineMode] = useState<"inline" | "stacked">("inline")
+  const headerRef = useRef<HTMLElement>(null)
+  const titleRowRef = useRef<HTMLDivElement>(null)
+  const inlineRef = useRef<HTMLDivElement>(null)
+  const rightClusterRef = useRef<HTMLDivElement>(null)
+  const bellButtonRef = useRef<HTMLButtonElement>(null)
+  const inlineWidthRef = useRef<number>(0)
   const pathname = usePathname()
   const { selectedProjectId } = useProjectSelection()
   const { data: projectRoleFromProject } = useProjectRole(selectedProjectId ?? undefined)
@@ -42,6 +50,42 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
       setProjectRole(null)
     }
   }, [pathname, selectedProjectId, projectRoleFromProject, setProjectRole])
+
+  // Responsively collapse inlineRightContent under the title when it would
+  // come within 30px of the right-side cluster (notifications/avatar/role).
+  useEffect(() => {
+    if (!inlineRightContent) return
+
+    const checkLayout = () => {
+      setInlineMode((currentMode) => {
+        const rightCluster = rightClusterRef.current
+        if (!rightCluster) return currentMode
+        const rightLeft = rightCluster.getBoundingClientRect().left
+
+        if (currentMode === "inline") {
+          const inline = inlineRef.current
+          if (!inline) return currentMode
+          const rect = inline.getBoundingClientRect()
+          inlineWidthRef.current = rect.width
+          const gap = rightLeft - rect.right
+          return gap < 30 ? "stacked" : "inline"
+        }
+
+        // stacked: re-expand once the title row plus the cached inline width
+        // plus 30px buffer + 13px gap would fit.
+        const titleRow = titleRowRef.current
+        if (!titleRow) return currentMode
+        const available = rightLeft - titleRow.getBoundingClientRect().right
+        return available >= inlineWidthRef.current + 30 + 13 ? "inline" : "stacked"
+      })
+    }
+
+    const observer = new ResizeObserver(checkLayout)
+    if (headerRef.current) observer.observe(headerRef.current)
+    checkLayout()
+
+    return () => observer.disconnect()
+  }, [inlineRightContent])
 
   // Fetch notifications
   const { data: notificationsData } = useNotifications()
@@ -128,7 +172,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-background px-8 pt-5 pb-6">
+      <header ref={headerRef} className="sticky top-0 z-30 bg-background px-8 pt-5 pb-5">
         <div className="flex items-center justify-between gap-8">
           <div className="flex items-start gap-4">
             {showBackButton && (
@@ -143,7 +187,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               </button>
             )}
             <div>
-              <div className="flex items-center gap-2">
+              <div ref={titleRowRef} className="flex items-center gap-[13px]">
                 <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
                 {info && (
                   <div className="relative group">
@@ -154,12 +198,27 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                     </div>
                   </div>
                 )}
+                {inlineRightContent && inlineMode === "inline" && (
+                  <div ref={inlineRef} className="flex items-center">
+                    {inlineRightContent}
+                  </div>
+                )}
               </div>
-              {subtitle && <p className="mt-0.5 text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>}
+              {(subtitle || (inlineRightContent && inlineMode === "stacked")) && (
+                <div className="mt-0.5 flex items-center gap-2">
+                  {subtitle && (
+                    <p className="text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>
+                  )}
+                  {inlineRightContent && inlineMode === "stacked" && (
+                    <div className="flex items-center">{inlineRightContent}</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div ref={rightClusterRef} className="flex items-center gap-4">
             <button
+              ref={bellButtonRef}
               onClick={() => setIsNotificationsOpen((prev) => !prev)}
               className="relative p-1 hover:bg-muted rounded-md transition-colors cursor-pointer"
             >
@@ -224,6 +283,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
         notifications={notifications}
         onMarkAllAsRead={handleMarkAllAsRead}
         onNotificationClick={handleNotificationClick}
+        anchorRef={bellButtonRef}
       />
     </>
   )

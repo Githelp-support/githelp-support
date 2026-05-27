@@ -197,34 +197,53 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                 categoryToTicketsMap.set(thc.help_category_id, existing);
             });
 
-            const issueTypeStats: IssueTypeStats[] = categories.map(
-                (category) => {
-                    const categoryTicketIds =
-                        categoryToTicketsMap.get(category.id) || [];
-                    // Restrict to tickets the helper logged time on.
-                    const validTicketIds = categoryTicketIds.filter(
-                        (ticketId) => helperTicketIds.includes(ticketId)
-                    );
-                    return buildIssueTypeStatsRow(
+            // Restrict the issue-types table to categories the helper has
+            // *completed* at least one ticket in. The helper Overview page
+            // surfaces this — uncompleted/in-progress categories should not
+            // appear, and an empty result means "No data to show".
+            const completedTicketIdSet = new Set(
+                completedTickets.map((ticket) => ticket.id)
+            );
+
+            const issueTypeStats: IssueTypeStats[] = [];
+
+            for (const category of categories) {
+                const categoryTicketIds =
+                    categoryToTicketsMap.get(category.id) || [];
+                // Restrict to tickets the helper logged time on.
+                const validTicketIds = categoryTicketIds.filter(
+                    (ticketId) => helperTicketIds.includes(ticketId)
+                );
+                const hasCompleted = validTicketIds.some((ticketId) =>
+                    completedTicketIdSet.has(ticketId)
+                );
+                if (!hasCompleted) continue;
+                issueTypeStats.push(
+                    buildIssueTypeStatsRow(
                         category.value,
                         validTicketIds,
                         tickets ?? [],
                         helperTimeEntries
-                    );
-                }
-            );
+                    )
+                );
+            }
 
             const uncategorizedTicketIds = helperTicketIds.filter(
                 (ticketId) => !categorizedTicketIds.has(ticketId)
             );
-            issueTypeStats.push(
-                buildIssueTypeStatsRow(
-                    UNCATEGORIZED_ISSUE_TYPE,
-                    uncategorizedTicketIds,
-                    tickets ?? [],
-                    helperTimeEntries
-                )
+            const hasCompletedUncategorized = uncategorizedTicketIds.some(
+                (ticketId) => completedTicketIdSet.has(ticketId)
             );
+            if (hasCompletedUncategorized) {
+                issueTypeStats.push(
+                    buildIssueTypeStatsRow(
+                        UNCATEGORIZED_ISSUE_TYPE,
+                        uncategorizedTicketIds,
+                        tickets ?? [],
+                        helperTimeEntries
+                    )
+                );
+            }
 
             return {
                 keyStats,

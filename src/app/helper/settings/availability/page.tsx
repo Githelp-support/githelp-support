@@ -140,7 +140,7 @@ export default function HelperSettingsPage() {
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-2xl">
           {/* Availability */}
-          <div className="bg-white rounded-lg border border-border p-6 mb-6">
+          <div className="bg-white rounded-lg p-6 mb-6">
             <h2 className="text-base font-semibold text-foreground mb-1">
               Availability
             </h2>
@@ -148,7 +148,7 @@ export default function HelperSettingsPage() {
               Control whether you can be assigned new tickets.
             </p>
 
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between py-3 border-b border-[rgba(0,0,0,0.06)]">
               <div>
                 <Label htmlFor="available" className="text-sm font-medium text-foreground">
                   Available for new tickets
@@ -166,7 +166,7 @@ export default function HelperSettingsPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between py-3 border-b border-[rgba(0,0,0,0.06)]">
               <div>
                 <Label htmlFor="working-hours-enabled" className="text-sm font-medium text-foreground">
                   Set working hours
@@ -234,7 +234,7 @@ export default function HelperSettingsPage() {
               onClick={handleSaveAvailability}
               disabled={isSavingAvailability}
               variant="outline"
-              className="border-border mt-[22px]"
+              className="border-[rgba(0,0,0,0.1)] mt-[22px]"
             >
               {isSavingAvailability ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

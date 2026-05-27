@@ -39,7 +39,7 @@ describe("Button", () => {
   it("applies the ghost variant class", () => {
     render(<Button variant="ghost">Ghost</Button>)
     const btn = screen.getByRole("button")
-    expect(btn.className).toMatch(/hover:bg-accent/)
+    expect(btn.className).toMatch("hover:bg-[rgba(0,0,0,0.04)]")
   })
 
   it("applies additional className prop", () => {

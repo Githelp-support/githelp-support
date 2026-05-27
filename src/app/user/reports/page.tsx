@@ -294,7 +294,7 @@ export default function UserReportsPage() {
         <Button
           variant={selectedFilter === "all" ? "default" : "outline"}
           size="sm"
-          className="h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
           onClick={() => {
             setSelectedFilter("all")
             setSelectedMonth("")
@@ -386,7 +386,7 @@ export default function UserReportsPage() {
                     </div>
                     <div className="col-span-2 text-sm text-gray-900">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span>{payment.ticketId}</span>
+                        <span className="font-mono tabular-nums">{payment.ticketId}</span>
                         <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                           Preview
                         </Badge>
@@ -449,7 +449,7 @@ export default function UserReportsPage() {
                   </div>
                   <div className="col-span-2 text-sm text-gray-900">
                     <div className="flex items-center gap-2">
-                      {payment.ticketId}
+                      <span className="font-mono tabular-nums">{payment.ticketId}</span>
                       {payment.hasPendingIndicator && <div className="w-2 h-2 bg-red-500 rounded-full"></div>}
                     </div>
                   </div>

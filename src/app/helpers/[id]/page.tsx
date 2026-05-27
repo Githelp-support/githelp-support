@@ -232,13 +232,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           {/* Time period filters */}
           <div className="flex flex-wrap gap-2 pt-2">
             <Button
-              variant={timeFilter === "current" ? "lavender" : "outline"}
+              variant={timeFilter === "current" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-[13px] font-medium",
-                timeFilter === "current"
-                  ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                timeFilter !== "current" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("current")
@@ -257,7 +255,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               >
                 <SelectTrigger
                   size="sm"
-                  variant={timeFilter === "choose" ? "lavender" : "outline"}
+                  variant={timeFilter === "choose" ? "neutral" : "outline"}
                   className="w-[160px] rounded-lg text-[13px] font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
@@ -272,13 +270,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <Button
-              variant={timeFilter === "all" ? "lavender" : "outline"}
+              variant={timeFilter === "all" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-[13px] font-medium",
-                timeFilter !== "all"
-                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
-                  : undefined
+                timeFilter !== "all" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("all")
@@ -302,7 +298,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{helper.stats.ticketsSolved}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -311,7 +307,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                     <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{helper.stats.totalTime}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.totalTime}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -320,7 +316,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{helper.stats.percentageSolved}%</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -377,18 +373,18 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                               {ticket.id ? (
                                 <Link
                                   href={`/helper/tickets/${ticket.id}`}
-                                  className="text-sm text-foreground font-semibold hover:text-brand-primary"
+                                  className="text-sm text-foreground font-semibold hover:text-brand-primary font-mono tabular-nums"
                                 >
                                   {ticket.displayId}
                                 </Link>
                               ) : (
-                                <span className="text-sm text-foreground font-semibold">{ticket.displayId}</span>
+                                <span className="text-sm text-foreground font-semibold font-mono tabular-nums">{ticket.displayId}</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.date}</td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground tabular-nums">{ticket.date}</td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.type}</td>
-                          <td className="px-4 py-3 text-sm text-foreground font-medium">{ticket.amount}</td>
+                          <td className="px-4 py-3 text-sm text-foreground font-medium tabular-nums">{ticket.amount}</td>
                           <td className="px-4 py-3">
                             <Badge
                               variant="secondary"

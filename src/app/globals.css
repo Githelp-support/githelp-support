@@ -61,9 +61,9 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-xl: calc(var(--radius) + 4px);
 }
 
@@ -214,5 +214,41 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Open Sans stylistic set: single-story 'a' (cv11) */
+    font-feature-settings: "cv11";
   }
+  code,
+  pre {
+    font-family: var(--font-mono);
+  }
+  /*
+   * Tighten tracking on headings that render at 18px+.
+   * Scoped via selector to h1–h4 (which match our typography scale
+   * for sizes >= 1.125rem). h5/h6 typically render <18px and keep
+   * default tracking. :where() keeps specificity at 0 so utility
+   * classes (e.g. tracking-normal) can override without !important.
+   */
+  :where(h1, h2, h3, h4) {
+    letter-spacing: -0.01em;
+  }
+}
+
+/*
+ * Tailwind v4 already provides `tabular-nums` (font-variant-numeric)
+ * and `font-mono` (font-family) utilities — prefer those directly in
+ * components. The class below is kept as an explicit, dependency-free
+ * fallback with the same value.
+ */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Composite utility for IDs, codes, and numeric tokens that should
+ * render in the mono family with tabular figures (e.g. ticket IDs,
+ * SHA prefixes). Equivalent to combining `font-mono tabular-nums`.
+ */
+.font-mono-id {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }

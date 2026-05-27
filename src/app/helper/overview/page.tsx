@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -13,6 +14,7 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useHelperDashboardStats } from "@/hooks/useHelperDashboardStats"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
+import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
 
 export default function HelperOverviewPage() {
   const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
@@ -51,7 +53,13 @@ export default function HelperOverviewPage() {
   const { data: helperId } = useCurrentHelper(projectId)
   const { data: helperStats } = useHelperDashboardStats(projectId, helperId ?? undefined)
 
+  // The hook restricts issue-types to categories the helper has completed
+  // at least one ticket in (Uncategorized is included when the completed
+  // tickets have no associated category). If the helper has no completed
+  // tickets at all the list is empty and the table renders a single
+  // "No data to show" row below.
   const allIssueTypes = helperStats?.issueTypeStats || []
+
   const inProgressTickets = helperStats?.inProgressTickets || []
   const keyStats = helperStats?.keyStats || { totalTicketsSolved: 0, totalTimeSpent: "-", percentageSolved: 0 }
 
@@ -96,15 +104,25 @@ export default function HelperOverviewPage() {
 
   const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
     if (currentSort?.column !== column) {
-      return <ChevronsUpDown className="w-4 h-4 text-[#55555D]" />
+      return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
     }
-    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-[#55555D]" /> : <ChevronDown className="w-4 h-4 text-[#55555D]" />
+    return currentSort.direction === "asc" ? (
+      <ChevronUp className="w-4 h-4 text-brand-primary" />
+    ) : (
+      <ChevronDown className="w-4 h-4 text-brand-primary" />
+    )
   }
 
   const sortedIssueTypes = sortIssueTypes(filteredIssueTypes)
 
-  const formatStatus = (status: string) => status.charAt(0).toUpperCase() + status.slice(1).replace("-", " ")
-  const formatPriority = (priority: string) => priority.charAt(0).toUpperCase() + priority.slice(1)
+  // Match the Tickets page formatting: "in-progress" → "In Progress",
+  // otherwise capitalize the first letter.
+  const formatStatusLabel = (status: string) =>
+    status === "in-progress"
+      ? "In Progress"
+      : status.charAt(0).toUpperCase() + status.slice(1)
+  const formatPriorityLabel = (priority: string) =>
+    priority.charAt(0).toUpperCase() + priority.slice(1)
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -117,13 +135,11 @@ export default function HelperOverviewPage() {
           {/* Time Filters */}
           <div className="flex gap-2">
             <Button
-              variant={timeFilter === "current" ? "lavender" : "outline"}
+              variant={timeFilter === "current" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-sm font-medium",
-                timeFilter === "current"
-                  ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                  : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                timeFilter !== "current" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("current")
@@ -142,7 +158,7 @@ export default function HelperOverviewPage() {
               >
                 <SelectTrigger
                   size="sm"
-                  variant={timeFilter === "choose" ? "lavender" : "outline"}
+                  variant={timeFilter === "choose" ? "neutral" : "outline"}
                   className="w-[160px] rounded-lg text-sm font-medium"
                 >
                   <SelectValue placeholder="Choose month" />
@@ -161,13 +177,11 @@ export default function HelperOverviewPage() {
               </Select>
             </div>
             <Button
-              variant={timeFilter === "all" ? "lavender" : "outline"}
+              variant={timeFilter === "all" ? "neutral" : "outline"}
               size="sm"
               className={cn(
                 "rounded-lg px-4 text-sm font-medium",
-                timeFilter !== "all"
-                  ? "text-muted-foreground hover:bg-brand-primary hover:text-white"
-                  : undefined
+                timeFilter !== "all" && "text-muted-foreground"
               )}
               onClick={() => {
                 setTimeFilter("all")
@@ -191,7 +205,7 @@ export default function HelperOverviewPage() {
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -200,7 +214,7 @@ export default function HelperOverviewPage() {
                     <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.totalTimeSpent}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -209,7 +223,7 @@ export default function HelperOverviewPage() {
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground">{keyStats.percentageSolved}%</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -219,7 +233,7 @@ export default function HelperOverviewPage() {
           <div className="grid grid-cols-2 gap-8">
             {/* Issue Types Table */}
             <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3 tabular-nums">Issue types ({filteredIssueTypes.length})</h2>
               <div className="mb-4">
                 <TabSelector
                   options={[
@@ -232,47 +246,62 @@ export default function HelperOverviewPage() {
               </div>
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
-                      <div
-                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("name")}
-                      >
-                        Name
-                        {getSortIcon("name", issueSort)}
+                  <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                      <div className="col-span-6 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleIssueSort("name")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Name</span>
+                          {getSortIcon("name", issueSort)}
+                        </button>
                       </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("tickets")}
-                      >
-                        No of tickets
-                        {getSortIcon("tickets", issueSort)}
+                      <div className="col-span-3 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleIssueSort("tickets")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">No of tickets</span>
+                          {getSortIcon("tickets", issueSort)}
+                        </button>
                       </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("time")}
-                      >
-                        Total time
-                        {getSortIcon("time", issueSort)}
+                      <div className="col-span-3 flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => handleIssueSort("time")}
+                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-foreground">Total time</span>
+                          {getSortIcon("time", issueSort)}
+                        </button>
                       </div>
                     </div>
                   </div>
-                  {sortedIssueTypes.map((issue, index) => (
-                    <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
-                        <div className="col-span-3 text-sm text-foreground">{issue.tickets}</div>
-                        <div className="col-span-3 text-sm text-foreground">{issue.time}</div>
-                      </div>
+                  {sortedIssueTypes.length === 0 ? (
+                    <div className="px-6 py-2.5">
+                      <div className="text-sm text-muted-foreground">No data to show</div>
                     </div>
-                  ))}
+                  ) : (
+                    sortedIssueTypes.map((issue, index) => (
+                      <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
+                          <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.tickets}</div>
+                          <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.time}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>
 
             {/* Tickets In Progress Table */}
             <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Tickets in progress ({filteredInProgressTickets.length})</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3 tabular-nums">Tickets in progress ({filteredInProgressTickets.length})</h2>
               <div className="mb-4">
                 <TabSelector
                   options={[
@@ -285,11 +314,11 @@ export default function HelperOverviewPage() {
               </div>
               <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#0A0A0A]">
+                  <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
                       <div className="col-span-6">Ticket</div>
-                      <div className="col-span-3">Status</div>
                       <div className="col-span-3">Priority</div>
+                      <div className="col-span-3">Status</div>
                     </div>
                   </div>
                   {filteredInProgressTickets.length === 0 ? (
@@ -301,8 +330,16 @@ export default function HelperOverviewPage() {
                       <div key={ticket.id} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-6 text-sm text-foreground">{ticket.title}</div>
-                          <div className="col-span-3 text-sm text-foreground">{formatStatus(ticket.status)}</div>
-                          <div className="col-span-3 text-sm text-foreground">{formatPriority(ticket.priority)}</div>
+                          <div className="col-span-3">
+                            <Badge className={`text-xs ${getPriorityBadgeClass(ticket.priority)}`}>
+                              {formatPriorityLabel(ticket.priority)}
+                            </Badge>
+                          </div>
+                          <div className="col-span-3">
+                            <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.status)}`}>
+                              {formatStatusLabel(ticket.status)}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     ))

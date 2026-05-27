@@ -398,48 +398,48 @@ export default function HelpersPage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex space-x-1">
               <Button
-                variant={selectedCategory === "All helpers" ? "lavender" : "ghost"}
+                variant={selectedCategory === "All helpers" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "All helpers"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("All helpers")}
               >
                 All helpers
               </Button>
               <Button
-                variant={selectedCategory === "core" ? "lavender" : "ghost"}
+                variant={selectedCategory === "core" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "core"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("core")}
               >
                 Core team
               </Button>
               <Button
-                variant={selectedCategory === "extended" ? "lavender" : "ghost"}
+                variant={selectedCategory === "extended" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "extended"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("extended")}
               >
                 Extended team
               </Button>
               <Button
-                variant={selectedCategory === "community" ? "lavender" : "ghost"}
+                variant={selectedCategory === "community" ? "neutral" : "ghost"}
                 size="sm"
                 className={
                   selectedCategory === "community"
-                    ? "hover:bg-brand-primary/90 hover:text-white text-brand-primary"
-                    : "text-muted-foreground hover:bg-brand-primary hover:text-white"
+                    ? ""
+                    : "text-muted-foreground"
                 }
                 onClick={() => setSelectedCategory("community")}
               >
@@ -595,7 +595,7 @@ export default function HelpersPage() {
                             </span>
                           </div>
                           <div className="col-span-2 flex items-center space-x-2">
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-muted-foreground tabular-nums">
                               {new Date(invite.created_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -706,7 +706,7 @@ export default function HelpersPage() {
                       <div className="px-6 py-12 text-center">
                         <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
                         <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                        <Button className="h-10 rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
+                        <Button className="rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
                           <Plus className="w-4 h-4" />
                           Add new helper
                         </Button>
