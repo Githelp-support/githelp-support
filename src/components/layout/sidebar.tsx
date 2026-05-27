@@ -104,7 +104,21 @@ export function Sidebar({ className }: SidebarProps) {
     if (pathname?.startsWith("/user/settings/")) return ["Settings"]
     return []
   })
+  // Persist collapsed state across navigations (the Sidebar is mounted
+  // per-page, so component state alone is wiped on every nav). We initialize
+  // to `false` so the first client render matches SSR and avoids a hydration
+  // mismatch, then sync from localStorage in an effect after mount.
   const [isCollapsed, setIsCollapsed] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      if (window.localStorage.getItem("sidebar:collapsed") === "true") {
+        setIsCollapsed(true)
+      }
+    } catch {
+      // Ignore localStorage access errors (e.g., disabled storage).
+    }
+  }, [])
   const { user } = useUser()
   const isAuthenticated = !!user?.id
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
@@ -290,7 +304,16 @@ export function Sidebar({ className }: SidebarProps) {
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
-            onClick={() => setIsCollapsed(true)}
+            onClick={() => {
+              setIsCollapsed(true)
+              if (typeof window !== "undefined") {
+                try {
+                  window.localStorage.setItem("sidebar:collapsed", "true")
+                } catch {
+                  // Ignore localStorage write errors.
+                }
+              }
+            }}
           >
             <ChevronsLeft className="w-5 h-5" />
           </Button>
@@ -303,7 +326,16 @@ export function Sidebar({ className }: SidebarProps) {
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
-            onClick={() => setIsCollapsed(false)}
+            onClick={() => {
+              setIsCollapsed(false)
+              if (typeof window !== "undefined") {
+                try {
+                  window.localStorage.setItem("sidebar:collapsed", "false")
+                } catch {
+                  // Ignore localStorage write errors.
+                }
+              }
+            }}
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
@@ -451,7 +483,7 @@ export function Sidebar({ className }: SidebarProps) {
                         {item.subItems.map((subItem) => {
                           const isSubActive = isSubItemActive(subItem.href)
                           return (
-                            <Link key={subItem.name} href={subItem.href}>
+                            <Link key={subItem.name} href={subItem.href} className="block">
                               <div
                                 className={`relative flex items-center pl-11 pr-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
                                   isSubActive ? activeClasses : "text-[#818185] hover:bg-bg-subtle hover:text-sidebar-foreground"
