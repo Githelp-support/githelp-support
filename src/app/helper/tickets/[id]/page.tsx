@@ -4,7 +4,6 @@ import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
@@ -446,7 +445,7 @@ export default function TicketDetailPage() {
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             inlineRightContent={
-              <span className="text-[13px] font-normal text-muted-foreground/80">ID: {ticketId}</span>
+              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
             }
           />
         </div>
@@ -536,15 +535,15 @@ export default function TicketDetailPage() {
                       <div className="grid grid-cols-3 gap-4">
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                          <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {startPrice}</p>
                         </div>
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                          <p className="text-sm font-medium text-foreground">USD {first60Price}/min</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {first60Price}/min</p>
                         </div>
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                          <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {after60Price}/min</p>
                         </div>
                       </div>
                     </div>
@@ -819,7 +818,7 @@ export default function TicketDetailPage() {
                             </div>
                             <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                           </div>
-                          <span className="text-[13px] text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground tabular-nums">
                             {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
                           </span>
                         </div>
@@ -828,7 +827,7 @@ export default function TicketDetailPage() {
                     ))}
                     <div className="flex items-center justify-between py-2 font-medium">
                       <span className="text-[13px] text-foreground">Total</span>
-                      <span className="text-[13px] text-foreground">{getTotalLoggedTime().formatted}</span>
+                      <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                     </div>
                   </div>
                 )}
@@ -872,10 +871,21 @@ export default function TicketDetailPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            <Avatar className="w-8 h-8 shrink-0">
-                              {item.avatarUrl && <AvatarImage src={item.avatarUrl} alt="" />}
-                              <AvatarFallback className="bg-muted text-foreground">{item.avatarInitial}</AvatarFallback>
-                            </Avatar>
+                            {item.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.avatarUrl}
+                                alt=""
+                                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
+                              >
+                                {item.avatarInitial}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
@@ -884,7 +894,7 @@ export default function TicketDetailPage() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                              <p className="text-xs text-muted-foreground">{item.date}</p>
+                              <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
                             </div>
                           </div>
                         </div>

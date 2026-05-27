@@ -89,7 +89,7 @@ export default function LandingPageSettings() {
         <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-4xl">
 
-            <div className="bg-white rounded-lg border border-border p-6 mb-6">
+            <div className="bg-white rounded-lg p-6 mb-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm mb-2" style={{ color: '#2E2D31', fontWeight: 550 }}>Your support page</h3>
@@ -136,7 +136,7 @@ export default function LandingPageSettings() {
             {/* Resources Section */}
             <div className="space-y-6">
               {/* Add Resource Section */}
-                <div className="bg-white rounded-lg border border-border p-6">
+                <div className="bg-white rounded-lg p-6">
                   <h2 className="text-base font-semibold text-foreground mb-6">Add resource</h2>
 
                   <div className="space-y-4">
@@ -174,7 +174,7 @@ export default function LandingPageSettings() {
                 </div>
 
                 {/* Resources List Section */}
-                <div className="bg-white rounded-lg border border-border p-6">
+                <div className="bg-white rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-base font-semibold text-foreground">Resources</h2>
                     <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent">

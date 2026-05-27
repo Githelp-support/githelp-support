@@ -105,7 +105,7 @@ export function TicketChat(props: TicketChatProps) {
           showBackButton={showBackButton}
           inlineRightContent={
             headerSubtitle ? (
-              <span className="text-[13px] font-normal text-muted-foreground/80">{headerSubtitle}</span>
+              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
             ) : undefined
           }
         />
@@ -168,7 +168,7 @@ export function TicketChat(props: TicketChatProps) {
                                 </div>
                               )}
 
-                              <div className={`flex-1 ${msg.senderType === "system" ? "text-center" : ""}`}>
+                              <div className="flex-1">
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
@@ -189,7 +189,7 @@ export function TicketChat(props: TicketChatProps) {
                                 <div
                                   className={
                                     msg.senderType === "system"
-                                      ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg inline-block text-sm"
+                                      ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
@@ -236,7 +236,7 @@ export function TicketChat(props: TicketChatProps) {
             <ImageUploadModal
               open={imageUploadOpen}
               onOpenChange={setImageUploadOpen}
-              storagePath={`ticket-attachments/${attachmentStoragePrefix}/${Date.now()}`}
+              storagePath={`ticket-attachments/${attachmentStoragePrefix}/${new Date().getTime()}`}
               onUploadComplete={(url) => {
                 // Insert the image as a markdown reference into the message
                 const imageMarkdown = `\n![attachment](${url})\n`
