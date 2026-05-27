@@ -105,20 +105,21 @@ export function Sidebar({ className }: SidebarProps) {
     return []
   })
   // Persist collapsed state across navigations (the Sidebar is mounted
-  // per-page, so component state alone is wiped on every nav). We initialize
-  // to `false` so the first client render matches SSR and avoids a hydration
-  // mismatch, then sync from localStorage in an effect after mount.
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  useEffect(() => {
-    if (typeof window === "undefined") return
+  // per-page, so component state alone is wiped on every nav). Read
+  // localStorage synchronously in the initializer so client-side navigations
+  // render with the correct collapsed state immediately — without this, every
+  // nav would flash the expanded sidebar for one frame before an effect
+  // collapsed it again. On the server `window` is undefined so we fall back
+  // to `false`; the root element uses `suppressHydrationWarning` so the
+  // server/client class difference on first paint doesn't warn.
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
     try {
-      if (window.localStorage.getItem("sidebar:collapsed") === "true") {
-        setIsCollapsed(true)
-      }
+      return window.localStorage.getItem("sidebar:collapsed") === "true"
     } catch {
-      // Ignore localStorage access errors (e.g., disabled storage).
+      return false
     }
-  }, [])
+  })
   const { user } = useUser()
   const isAuthenticated = !!user?.id
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
@@ -283,6 +284,7 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div
+      suppressHydrationWarning
       className={`${isCollapsed ? "w-16" : "w-64"} border-r border-sidebar-border flex flex-col transition-all duration-300 h-full overflow-hidden ${className}`}
     >
       <div className="px-4 pt-4 pb-3 flex items-center justify-between min-h-[40px]">
@@ -426,37 +428,82 @@ export function Sidebar({ className }: SidebarProps) {
             const isExpanded = expandedItems.includes(item.name)
             const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
             const inactiveClasses = "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            // Whether any sub-item under this parent matches the current path —
+            // used in collapsed mode to highlight the parent icon since the
+            // sub-items themselves are hidden behind a dropdown.
+            const hasActiveSubItem = item.subItems?.some((sub) => isSubItemActive(sub.href)) ?? false
 
             return (
               <div key={item.name}>
                 {item.subItems ? (
-                  <div>
-                    <div
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
-                        isActive ? activeClasses : inactiveClasses
-                      }`}
-                      title={isCollapsed ? item.name : undefined}
-                    >
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                          if (!isExpanded) setExpandedItems([item.name])
-                        }}
-                        onKeyDown={(e) => {
-                          if ((e.key === "Enter" || e.key === " ") && !isExpanded) {
-                            e.preventDefault()
-                            setExpandedItems([item.name])
-                          }
-                        }}
-                        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
+                  isCollapsed ? (
+                    // Collapsed: open sub-items as a hovering dropdown menu to
+                    // the right of the sidebar (matches the role dropdown UX).
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          title={item.name}
+                          aria-label={item.name}
+                          className={`w-full flex items-center justify-center px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                            hasActiveSubItem ? activeClasses : inactiveClasses
+                          }`}
+                        >
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                            <FlaticonIcon iconClass={item.icon} />
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        side="right"
+                        align="start"
+                        sideOffset={8}
+                        className="w-48"
                       >
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                          <FlaticonIcon iconClass={item.icon} />
-                        </span>
-                        {!isCollapsed && <span>{item.name}</span>}
-                      </div>
-                      {!isCollapsed && (
+                        {item.subItems.map((subItem) => {
+                          const isSubActive = isSubItemActive(subItem.href)
+                          return (
+                            <DropdownMenuItem
+                              key={subItem.name}
+                              asChild
+                              className={`cursor-pointer ${
+                                isSubActive
+                                  ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary"
+                                  : ""
+                              }`}
+                            >
+                              <Link href={subItem.href}>{subItem.name}</Link>
+                            </DropdownMenuItem>
+                          )
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <div>
+                      <div
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                          isActive ? activeClasses : inactiveClasses
+                        }`}
+                      >
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => {
+                            if (!isExpanded) setExpandedItems([item.name])
+                          }}
+                          onKeyDown={(e) => {
+                            if ((e.key === "Enter" || e.key === " ") && !isExpanded) {
+                              e.preventDefault()
+                              setExpandedItems([item.name])
+                            }
+                          }}
+                          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
+                        >
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                            <FlaticonIcon iconClass={item.icon} />
+                          </span>
+                          <span>{item.name}</span>
+                        </div>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -470,40 +517,40 @@ export function Sidebar({ className }: SidebarProps) {
                             className={`h-4 w-4 opacity-70 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                           />
                         </button>
+                      </div>
+                      {isExpanded && (
+                        <div className="relative mt-0.5 space-y-0.5">
+                          {/* Vertical guide line, centered under the parent icon column.
+                              Clamped to start/end at the center of the first/last dot. */}
+                          <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute left-[22px] top-[20px] bottom-[20px] w-px -translate-x-1/2 bg-border-subtle"
+                          />
+                          {item.subItems.map((subItem) => {
+                            const isSubActive = isSubItemActive(subItem.href)
+                            return (
+                              <Link key={subItem.name} href={subItem.href} className="block">
+                                <div
+                                  className={`relative flex items-center pl-11 pr-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
+                                    isSubActive ? activeClasses : "text-[#818185] hover:bg-bg-subtle hover:text-sidebar-foreground"
+                                  }`}
+                                >
+                                  {/* Sub-category marker, centered on the vertical line */}
+                                  <span
+                                    aria-hidden="true"
+                                    className={`absolute left-[22px] top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
+                                      isSubActive ? "bg-brand-primary" : "bg-border-subtle"
+                                    }`}
+                                  />
+                                  {subItem.name}
+                                </div>
+                              </Link>
+                            )
+                          })}
+                        </div>
                       )}
                     </div>
-                    {!isCollapsed && isExpanded && (
-                      <div className="relative mt-0.5 space-y-0.5">
-                        {/* Vertical guide line, centered under the parent icon column.
-                            Clamped to start/end at the center of the first/last dot. */}
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute left-[22px] top-[20px] bottom-[20px] w-px -translate-x-1/2 bg-border-subtle"
-                        />
-                        {item.subItems.map((subItem) => {
-                          const isSubActive = isSubItemActive(subItem.href)
-                          return (
-                            <Link key={subItem.name} href={subItem.href} className="block">
-                              <div
-                                className={`relative flex items-center pl-11 pr-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
-                                  isSubActive ? activeClasses : "text-[#818185] hover:bg-bg-subtle hover:text-sidebar-foreground"
-                                }`}
-                              >
-                                {/* Sub-category marker, centered on the vertical line */}
-                                <span
-                                  aria-hidden="true"
-                                  className={`absolute left-[22px] top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
-                                    isSubActive ? "bg-brand-primary" : "bg-border-subtle"
-                                  }`}
-                                />
-                                {subItem.name}
-                              </div>
-                            </Link>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  )
                 ) : (
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
