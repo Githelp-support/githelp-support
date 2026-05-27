@@ -33,6 +33,8 @@ export type TicketChatParticipant = {
 export interface TicketChatProps {
   headerTitle: string
   headerSubtitle?: string
+  /** Subtitle text rendered below the title in the header (separate from inline headerSubtitle). */
+  subtitle?: string
   showBackButton?: boolean
 
   // Intro section shown above the message thread (rates, ticket meta, CTA buttons, etc.)
@@ -69,6 +71,7 @@ export function TicketChat(props: TicketChatProps) {
   const {
     headerTitle,
     headerSubtitle,
+    subtitle,
     showBackButton,
     intro,
     messages,
@@ -102,6 +105,7 @@ export function TicketChat(props: TicketChatProps) {
       <div className="relative border-b border-border z-10">
         <Header
           title={headerTitle}
+          subtitle={subtitle}
           showBackButton={showBackButton}
           inlineRightContent={
             headerSubtitle ? (
