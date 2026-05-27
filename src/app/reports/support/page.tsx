@@ -359,7 +359,7 @@ export default function ReportsSupportPage() {
               <Button
                 variant={selectedFilter === "all" ? "default" : "outline"}
                 size="sm"
-                className="h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+                className="text-muted-foreground border-border hover:bg-muted bg-transparent"
                 onClick={() => {
                   setSelectedFilter("all")
                   setSelectedMonth("")
@@ -556,7 +556,7 @@ export default function ReportsSupportPage() {
                           {ticket.ticketId ? (
                             <Link
                               href={`/helper/tickets/${ticket.ticketId}`}
-                              className="text-sm font-medium text-brand-primary hover:underline"
+                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
                             >
                               {getShortTicketId(ticket.ticketId)}
                             </Link>

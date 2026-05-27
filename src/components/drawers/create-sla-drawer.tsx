@@ -331,11 +331,11 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1 h-9 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
+              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
             >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 h-9 bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
               Create SLA
             </Button>
           </div>

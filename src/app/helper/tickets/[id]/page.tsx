@@ -4,7 +4,6 @@ import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
@@ -35,7 +34,7 @@ import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
-import { useHelperClaimedTicketsSidebar } from "@/hooks/useHelperTickets"
+import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
 import { supabase } from "@/lib/supabase/client"
@@ -93,7 +92,6 @@ export default function TicketDetailPage() {
   
   // Fetch payment settings
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
-  const { data: activeTicketsSidebar = [] } = useHelperClaimedTicketsSidebar(currentUser?.id, ticketId, 3)
 
   // Time entries: load from DB, create via mutation
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
@@ -104,7 +102,29 @@ export default function TicketDetailPage() {
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
   const { data: projectRole } = useProjectRole(projectId || undefined)
+  const isAdmin = projectRole === "admin"
   const addSelfAsHelper = useAddSelfAsHelper()
+
+  // Active tickets sidebar — Admins see every `claimed`/`in-progress` ticket
+  // in this project (across various helpers); Helpers only see the ones they
+  // have personally claimed. Both hooks are declared so React's hook order
+  // stays stable; the unused one is disabled via an `undefined` id arg.
+  const helperSidebarQuery = useHelperClaimedTicketsSidebar(
+    isAdmin ? undefined : currentUser?.id,
+    ticketId,
+    50,
+  )
+  const adminSidebarQuery = useAdminActiveTicketsSidebar(
+    isAdmin ? projectId : undefined,
+    currentUser?.id,
+    ticketId,
+    50,
+  )
+  const activeTicketsSidebarData = isAdmin
+    ? adminSidebarQuery.data
+    : helperSidebarQuery.data
+  const activeTicketsSidebar = activeTicketsSidebarData?.items ?? []
+  const activeTicketsCount = activeTicketsSidebarData?.activeCount ?? 0
   const isAdminButNotHelper =
     projectRole === "admin" &&
     !currentHelperId &&
@@ -446,7 +466,7 @@ export default function TicketDetailPage() {
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             inlineRightContent={
-              <span className="text-[13px] font-normal text-muted-foreground/80">ID: {ticketId}</span>
+              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
             }
           />
         </div>
@@ -461,9 +481,9 @@ export default function TicketDetailPage() {
                   <div className="p-6">
                     <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-start">
                   <div
-                    className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                    className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                     style={{ backgroundColor: getAvatarColorHexForId(firstIssueMessage.senderId) }}
                   >
                     {firstIssueMessage.senderName?.[0]?.toUpperCase() ?? "C"}
@@ -471,8 +491,15 @@ export default function TicketDetailPage() {
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{firstIssueMessage.senderName}</span>
-                        <span className="text-xs" style={{ color: '#818185' }}>
+                        <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{firstIssueMessage.senderName}</span>
+                        <span
+                          className="text-xs"
+                          style={{
+                            color: 'rgba(0,0,0,0.5)',
+                            fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
                           {firstIssueMessage.timestamp
                             ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
                                 day: "2-digit",
@@ -529,15 +556,15 @@ export default function TicketDetailPage() {
                       <div className="grid grid-cols-3 gap-4">
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                          <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {startPrice}</p>
                         </div>
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                          <p className="text-sm font-medium text-foreground">USD {first60Price}/min</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {first60Price}/min</p>
                         </div>
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                          <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                          <p className="text-sm font-medium text-foreground tabular-nums">USD {after60Price}/min</p>
                         </div>
                       </div>
                     </div>
@@ -578,21 +605,30 @@ export default function TicketDetailPage() {
                 </div>
 
                 {/* Chat Messages */}
-                <div className="flex flex-col" style={{ rowGap: '20.8px' }}>
+                <div className="flex flex-col" style={{ rowGap: '16px' }}>
                   {messages.map((msg) => (
-                    <div key={msg.id} className="flex gap-3">
+                    <div key={msg.id} className="flex gap-3 items-start">
                       {msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended") ? (
-                        <div className="flex items-center gap-3 w-full">
+                        <div className="flex items-start gap-3 w-full">
                           <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                             style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
                           >
                             {msg.avatar || "H"}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
-                              <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                              <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                              <span
+                                className="text-xs"
+                                style={{
+                                  color: 'rgba(0,0,0,0.5)',
+                                  fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                                  fontVariantNumeric: 'tabular-nums',
+                                }}
+                              >
+                                {msg.timestamp}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
                               <Check className="w-4 h-4 text-brand-primary shrink-0" />
@@ -604,7 +640,7 @@ export default function TicketDetailPage() {
                         <>
                           {msg.sender !== "system" && (
                             <div
-                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                               style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
                             >
                               {msg.avatar}
@@ -613,8 +649,17 @@ export default function TicketDetailPage() {
                           <div className={`flex-1 ${msg.sender === "system" ? "text-center" : ""}`}>
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{msg.senderName}</span>
-                                <span className="text-xs" style={{ color: '#818185' }}>{msg.timestamp}</span>
+                                <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                                <span
+                                  className="text-xs"
+                                  style={{
+                                    color: 'rgba(0,0,0,0.5)',
+                                    fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                                    fontVariantNumeric: 'tabular-nums',
+                                  }}
+                                >
+                                  {msg.timestamp}
+                                </span>
                               </div>
                             )}
                             <div
@@ -633,9 +678,9 @@ export default function TicketDetailPage() {
                     </div>
                   ))}
                   {isTicketEnded && (
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3 pt-2 items-start">
                       <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
                         style={{ backgroundColor: getAvatarColorHexForId(claimer?.id) }}
                       >
                         {claimer?.name?.[0]?.toUpperCase() || "H"}
@@ -718,7 +763,7 @@ export default function TicketDetailPage() {
             <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
               {/* People in Chat */}
               <div>
-                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>People in this chat</h3>
+                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>People in this chat</h3>
                 {participantsLoading ? (
                   <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
                 ) : allParticipants.length > 0 ? (
@@ -758,7 +803,7 @@ export default function TicketDetailPage() {
               {/* Other Topics — from ticket keywords */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Other topics in this chat</h3>
+                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Other topics in this chat</h3>
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
@@ -780,7 +825,7 @@ export default function TicketDetailPage() {
               {/* Logged Time */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Logged time</h3>
+                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Logged time</h3>
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </div>
                 {timeEntries.length > 0 && (
@@ -794,7 +839,7 @@ export default function TicketDetailPage() {
                             </div>
                             <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                           </div>
-                          <span className="text-[13px] text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground tabular-nums">
                             {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
                           </span>
                         </div>
@@ -803,7 +848,7 @@ export default function TicketDetailPage() {
                     ))}
                     <div className="flex items-center justify-between py-2 font-medium">
                       <span className="text-[13px] text-foreground">Total</span>
-                      <span className="text-[13px] text-foreground">{getTotalLoggedTime().formatted}</span>
+                      <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                     </div>
                   </div>
                 )}
@@ -830,7 +875,7 @@ export default function TicketDetailPage() {
 
               {/* Active Tickets — 3 latest claimed by this helper */}
               <div>
-                <h3 className="text-[13px] text-foreground mb-3" style={{ fontWeight: 550 }}>Active tickets</h3>
+                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets ({activeTicketsCount})</h3>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
@@ -847,10 +892,21 @@ export default function TicketDetailPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            <Avatar className="w-8 h-8 shrink-0">
-                              {item.avatarUrl && <AvatarImage src={item.avatarUrl} alt="" />}
-                              <AvatarFallback className="bg-muted text-foreground">{item.avatarInitial}</AvatarFallback>
-                            </Avatar>
+                            {item.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.avatarUrl}
+                                alt=""
+                                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                                style={{ backgroundColor: getAvatarColorHexForId(item.creatorId) }}
+                              >
+                                {item.avatarInitial}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
@@ -859,7 +915,7 @@ export default function TicketDetailPage() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                              <p className="text-xs text-muted-foreground">{item.date}</p>
+                              <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
                             </div>
                           </div>
                         </div>

@@ -253,7 +253,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               <h1 className="text-2xl font-semibold text-foreground mb-2">{slaName}</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Space ID:</span>
-                <span className="font-mono">{spaceId}</span>
+                <span className="font-mono tabular-nums">{spaceId}</span>
                 <Button variant="ghost" size="sm" onClick={copySpaceId} className="h-auto p-1 hover:bg-brand-primary/10">
                   <Copy className="w-3 h-3" />
                 </Button>
@@ -501,11 +501,11 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                   >
                                     {getInitial(helper.name)}
                                   </div>
-                                  <span className="text-foreground font-medium">{helper.name}</span>
+                                  <span className="text-sm text-foreground font-medium">{helper.name}</span>
                                 </div>
                               </td>
-                              <td className="p-4 text-muted-foreground">{helper.tickets}</td>
-                              <td className="p-4 text-muted-foreground">{formatMs(helper.totalMs)}</td>
+                              <td className="p-4 text-sm text-muted-foreground">{helper.tickets}</td>
+                              <td className="p-4 text-sm text-muted-foreground">{formatMs(helper.totalMs)}</td>
                               <td className="p-4">
                                 <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10">
                                   <ExternalLink className="w-4 h-4" />
@@ -590,10 +590,10 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               <td className="p-4">
                                 <div className="flex items-center gap-3">
                                   <input type="checkbox" />
-                                  <span className="text-foreground font-medium">{ticket.id.slice(0, 8)}</span>
+                                  <span className="text-sm text-foreground font-medium font-mono tabular-nums">{ticket.id.slice(0, 8)}</span>
                                 </div>
                               </td>
-                              <td className="p-4 text-muted-foreground">
+                              <td className="p-4 text-sm text-muted-foreground">
                                 {new Date(ticket.created_at).toLocaleDateString("en-GB")}
                               </td>
                               <td className="p-4">
@@ -604,10 +604,10 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                   >
                                     {getInitial(primaryHelperName)}
                                   </div>
-                                  <span className="text-muted-foreground">{primaryHelperName}</span>
+                                  <span className="text-sm text-muted-foreground">{primaryHelperName}</span>
                                 </div>
                               </td>
-                              <td className="p-4 text-muted-foreground">
+                              <td className="p-4 text-sm text-muted-foreground">
                                 {ticketMs > 0 ? formatMs(ticketMs) : `${currency} 0.00`}
                               </td>
                               <td className="p-4">
