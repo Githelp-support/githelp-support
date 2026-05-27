@@ -351,9 +351,7 @@ export function Sidebar({ className }: SidebarProps) {
           </Avatar>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <div className="h-7 flex items-center">
-                <span className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</span>
-              </div>
+              <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
               <div className="text-xs font-medium text-muted-foreground truncate">
                 Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </div>

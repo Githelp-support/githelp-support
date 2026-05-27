@@ -274,7 +274,7 @@ export function TopBar() {
           <button
             type="button"
             onClick={handleAuthClick}
-            className="font-sans text-[14px] text-[#55555E] hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
+            className="font-sans text-[14px] text-muted-foreground hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
           >
             {isSignedIn ? "Sign out" : "Sign in"}
           </button>
@@ -285,7 +285,7 @@ export function TopBar() {
           >
             <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
