@@ -17,6 +17,7 @@ import { NotificationsPanel, type Notification } from "./notifications-panel"
 import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
+import { useUserMaxRole } from "@/hooks/useProjectRole"
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -65,6 +66,7 @@ export function TopBar() {
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
+  const { data: maxUserRole } = useUserMaxRole()
 
   const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
   const { data: selectedProjectBranding } = useProjectBranding(selectedProject?.project_id || "")
@@ -155,10 +157,17 @@ export function TopBar() {
   }
 
   const getAvailableRoles = (): UserRole[] => {
-    const projectRole = user.projectRole
+    // Available roles must reflect what the profile is permitted to assume
+    // across ALL of their projects — not the role for the currently selected
+    // project (which can be cleared/lowered when navigating, e.g. to /support
+    // pages where the user is acting as "user"). Using a per-page projectRole
+    // here previously caused other roles to disappear after switching to user,
+    // making it impossible to switch back.
+    const profileMaxRole: UserRole | null = maxUserRole ?? user.projectRole ?? null
 
-    // If no project role, only "user" role is available (support users without projects)
-    if (!projectRole) {
+    // If the profile has no project membership at all, only "user" is offered
+    // (support users without projects).
+    if (!profileMaxRole) {
       return ["user"]
     }
 
@@ -169,11 +178,11 @@ export function TopBar() {
       user: 0,
     }
 
-    const projectRoleLevel = roleHierarchy[projectRole] || 0
+    const profileRoleLevel = roleHierarchy[profileMaxRole] || 0
 
     const allowedRoles: UserRole[] = []
-    if (projectRoleLevel >= 2) allowedRoles.push("admin")
-    if (projectRoleLevel >= 1) allowedRoles.push("helper")
+    if (profileRoleLevel >= 2) allowedRoles.push("admin")
+    if (profileRoleLevel >= 1) allowedRoles.push("helper")
     allowedRoles.push("user")
 
     return allowedRoles
@@ -213,8 +222,9 @@ export function TopBar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Project dropdown */}
-          {projectsLoading ? (
+          {/* Project dropdown — only available to Admin and Helper roles.
+              Users don't have a project context, so we hide it for the User role. */}
+          {user.role === "user" ? null : projectsLoading ? (
             <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
               <div className="font-sans text-[14px] text-muted-foreground">Loading projects...</div>
             </div>
