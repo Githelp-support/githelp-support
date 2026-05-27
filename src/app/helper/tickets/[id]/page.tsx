@@ -34,7 +34,7 @@ import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
-import { useHelperClaimedTicketsSidebar } from "@/hooks/useHelperTickets"
+import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
 import { supabase } from "@/lib/supabase/client"
@@ -92,7 +92,6 @@ export default function TicketDetailPage() {
   
   // Fetch payment settings
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
-  const { data: activeTicketsSidebar = [] } = useHelperClaimedTicketsSidebar(currentUser?.id, ticketId, 3)
 
   // Time entries: load from DB, create via mutation
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
@@ -103,7 +102,29 @@ export default function TicketDetailPage() {
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
   const { data: projectRole } = useProjectRole(projectId || undefined)
+  const isAdmin = projectRole === "admin"
   const addSelfAsHelper = useAddSelfAsHelper()
+
+  // Active tickets sidebar — Admins see every `claimed`/`in-progress` ticket
+  // in this project (across various helpers); Helpers only see the ones they
+  // have personally claimed. Both hooks are declared so React's hook order
+  // stays stable; the unused one is disabled via an `undefined` id arg.
+  const helperSidebarQuery = useHelperClaimedTicketsSidebar(
+    isAdmin ? undefined : currentUser?.id,
+    ticketId,
+    50,
+  )
+  const adminSidebarQuery = useAdminActiveTicketsSidebar(
+    isAdmin ? projectId : undefined,
+    currentUser?.id,
+    ticketId,
+    50,
+  )
+  const activeTicketsSidebarData = isAdmin
+    ? adminSidebarQuery.data
+    : helperSidebarQuery.data
+  const activeTicketsSidebar = activeTicketsSidebarData?.items ?? []
+  const activeTicketsCount = activeTicketsSidebarData?.activeCount ?? 0
   const isAdminButNotHelper =
     projectRole === "admin" &&
     !currentHelperId &&
@@ -854,7 +875,7 @@ export default function TicketDetailPage() {
 
               {/* Active Tickets — 3 latest claimed by this helper */}
               <div>
-                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets</h3>
+                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets ({activeTicketsCount})</h3>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
@@ -881,7 +902,7 @@ export default function TicketDetailPage() {
                             ) : (
                               <div
                                 className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                                style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
+                                style={{ backgroundColor: getAvatarColorHexForId(item.creatorId) }}
                               >
                                 {item.avatarInitial}
                               </div>

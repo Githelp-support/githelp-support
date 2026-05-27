@@ -169,11 +169,13 @@ export default function UserSupportChatPage() {
     ticketId ? { ticketId } : undefined,
     { enabled: !!ticketId }
   )
-  const { data: activeTicketsSidebar = [] } = useUserActiveTicketsSidebar(
+  const { data: activeTicketsSidebarData } = useUserActiveTicketsSidebar(
     user?.id,
     ticketId || undefined,
     3
   )
+  const activeTicketsSidebar = activeTicketsSidebarData?.items ?? []
+  const activeTicketsCount = activeTicketsSidebarData?.activeCount ?? 0
 
   // Check if user is authenticated (has an id)
   const isAuthenticated = !!user?.id
@@ -668,7 +670,7 @@ export default function UserSupportChatPage() {
 
               {/* Active Tickets — latest active tickets for this user */}
               <div>
-                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets</h3>
+                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets ({activeTicketsCount})</h3>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>

@@ -116,6 +116,11 @@ export interface UserActiveTicketSidebarItem {
     hasNotification: boolean;
 }
 
+export interface UserActiveTicketsSidebarResult {
+    items: UserActiveTicketSidebarItem[];
+    activeCount: number;
+}
+
 const USER_SIDEBAR_SUBTITLE_MAX_CHARS = 50;
 
 /**
@@ -123,7 +128,9 @@ const USER_SIDEBAR_SUBTITLE_MAX_CHARS = 50;
  * "Active" = status not in (completed, cancelled). Avatar uses the project's
  * branding logo / initial, mirroring the helper sidebar visual structure.
  * Always includes the current ticket if provided, even if it would be outside
- * the `limit` window.
+ * the `limit` window. Also returns `activeCount` — total number of active
+ * tickets (independent of the `limit` applied to the displayed items). Used by
+ * the UI to render "Active tickets (N)".
  */
 export function useUserActiveTicketsSidebar(
     userId: string | undefined,
@@ -132,8 +139,8 @@ export function useUserActiveTicketsSidebar(
 ) {
     return useQuery({
         queryKey: ["user-active-tickets-sidebar", userId, currentTicketId, limit],
-        queryFn: async (): Promise<UserActiveTicketSidebarItem[]> => {
-            if (!userId) return [];
+        queryFn: async (): Promise<UserActiveTicketsSidebarResult> => {
+            if (!userId) return { items: [], activeCount: 0 };
 
             const { data: activeTickets, error: ticketsError } = await supabase
                 .from("tickets")
@@ -146,6 +153,7 @@ export function useUserActiveTicketsSidebar(
                 .order("updated_at", { ascending: false });
 
             if (ticketsError) throw ticketsError;
+            const activeCount = (activeTickets ?? []).length;
             let tickets = activeTickets ?? [];
 
             // Ensure the current ticket is included even if it's not "active"
@@ -181,7 +189,7 @@ export function useUserActiveTicketsSidebar(
                 }
             }
 
-            if (!tickets.length) return [];
+            if (!tickets.length) return { items: [], activeCount };
 
             const projectIds = [
                 ...new Set(tickets.map((t) => t.project_id)),
@@ -243,7 +251,7 @@ export function useUserActiveTicketsSidebar(
                 ).padStart(2, "0")}.${d.getFullYear()}`;
             };
 
-            return tickets.map((t) => {
+            const items = tickets.map((t) => {
                 const projectName = projectMap.get(t.project_id) ?? "Project";
                 const projectLogo = brandingMap.get(t.project_id) ?? null;
                 const firstMsg =
@@ -273,6 +281,8 @@ export function useUserActiveTicketsSidebar(
                     hasNotification,
                 };
             });
+
+            return { items, activeCount };
         },
         enabled: !!userId,
         retry: false,
