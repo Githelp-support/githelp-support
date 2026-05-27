@@ -201,33 +201,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const switchRole = (role: UserRole) => {
+    // The role switcher in the top bar is responsible for offering only
+    // the roles the profile is permitted to assume (computed from the user's
+    // maximum role across ALL their projects). The previous per-current-project
+    // validation here used `prev.projectRole`, which gets cleared/lowered when
+    // navigating between pages (e.g. /support/* sets it to null for support
+    // users) — that incorrectly blocked legitimate role switches back from
+    // "user" to "helper"/"admin".
     setUser(prev => {
-      // Only allow switching to roles that are valid based on project role
-      const projectRole = prev.projectRole
-
-      // If no project role, allow any switch (for non-project pages, including support users)
-      if (!projectRole) {
-        localStorage.setItem("userRole", role)
-        return { ...prev, role }
-      }
-
-      // Define role hierarchy: admin > helper > user
-      const roleHierarchy: Record<UserRole, number> = {
-        admin: 2,
-        helper: 1,
-        user: 0
-      }
-
-      const projectRoleLevel = roleHierarchy[projectRole] || 0
-      const targetRoleLevel = roleHierarchy[role] || 0
-
-      // Only allow switching to roles at or below the project role level
-      if (targetRoleLevel <= projectRoleLevel) {
-        localStorage.setItem("userRole", role)
-        return { ...prev, role }
-      }
-
-      return prev
+      localStorage.setItem("userRole", role)
+      return { ...prev, role }
     })
   }
 

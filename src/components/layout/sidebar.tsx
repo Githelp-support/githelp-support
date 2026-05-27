@@ -1,34 +1,19 @@
 "use client"
 
 import {
-  ChevronDown,
   ChevronsLeft,
   ChevronRight,
-  Plus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useUser } from "@/contexts/user-context"
-import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
-import { useProjectSelection } from "@/contexts/project-context"
-import { Logo } from "@/components/brand/logo"
-import type { Database } from "@/types/database"
 
 interface SidebarProps {
   className?: string
 }
-
-type Project = Database["public"]["Tables"]["projects"]["Row"]
 
 interface NavigationItem {
   name: string
@@ -46,53 +31,8 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
-// Corner radius map: 11/32 of the element pixel size (matches Helpers table avatar on Overview page)
-// w-5=20px→7px, w-6=24px→8px, w-8=32px→11px
-const sizeRadiusMap: Record<string, string> = {
-  "w-5 h-5": "rounded-[7px]",
-  "w-6 h-6": "rounded-[8px]",
-  "w-8 h-8": "rounded-[11px]",
-}
-
-// Project Logo Component with Avatar Placeholder.
-// The AvatarFallback (colored shape with first letter) is ALWAYS rendered,
-// so the default "DP" icon shows whenever the project has no logo or while
-// branding is still loading. AvatarImage is only mounted when we actually
-// have a non-empty logo URL, ensuring the fallback never gets gated behind
-// the branding fetch.
-//
-// We key the Radix Avatar Root on `logoUrl|projectName` so it fully remounts
-// whenever the project changes. Radix's Avatar keeps an internal
-// `imageLoadingStatus` state on the Root; without remounting, transitioning
-// from a project with a logo to one without (or between logos that resolve
-// at different speeds) can leave the state stuck at "loaded" — at which
-// point AvatarFallback won't render and the icon visually disappears.
-const ProjectLogo = ({
-  logoUrl,
-  projectName,
-  size = "w-6 h-6",
-}: {
-  logoUrl: string | null | undefined
-  projectName: string
-  size?: string
-}) => {
-  const firstLetter = projectName?.[0]?.toUpperCase() || "?"
-  const radius = sizeRadiusMap[size] || "rounded-[9px]"
-  const hasLogo = typeof logoUrl === "string" && logoUrl.length > 0
-
-  return (
-    <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${radius}`}>
-      {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
-      <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
-        {firstLetter}
-      </AvatarFallback>
-    </Avatar>
-  )
-}
-
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   // The Sidebar is mounted per-page (not in a shared layout), so its state
   // is wiped on every navigation. Derive the initially-expanded parent from
   // the current path so the active sub-item's parent stays expanded across
@@ -122,44 +62,6 @@ export function Sidebar({ className }: SidebarProps) {
   })
   const { user } = useUser()
   const isAuthenticated = !!user?.id
-  const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
-  const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
-  
-  const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
-
-  // Fetch branding for selected project
-  const { data: selectedProjectBranding } = useProjectBranding(selectedProject?.project_id || "")
-
-  // If we have projects but no selection yet, pick the first project.
-  // (ProjectProvider also does this, but this keeps Sidebar resilient if mounted alone somewhere.)
-  // Only run when projects finish loading and we have no selection
-  useEffect(() => {
-    if (projectsLoading) return
-    if (userProjects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(userProjects[0].project_id)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when length/selection changes, not array reference
-  }, [projectsLoading, userProjects.length, selectedProjectId, setSelectedProjectId])
-
-  // Get project logo from branding
-  const getProjectLogo = (project: Project | undefined, branding: { logo_url?: string | null } | null | undefined) => {
-    if (!project) return null
-    return branding?.logo_url ?? null
-  }
-
-  const handleProjectSelect = (project: Project) => {
-    const isDifferentProject = project.project_id !== selectedProjectId
-    setSelectedProjectId(project.project_id)
-    if (isDifferentProject) {
-      if (user.role === "admin") {
-        router.push("/")
-      } else if (user.role === "helper") {
-        router.push("/helper/overview")
-      } else if (user.role === "user") {
-        router.push("/support/tickets")
-      }
-    }
-  }
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
@@ -287,21 +189,8 @@ export function Sidebar({ className }: SidebarProps) {
       suppressHydrationWarning
       className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 h-full overflow-hidden ${className}`}
     >
-      <div className="px-4 pt-4 pb-3 flex items-center justify-between min-h-[40px]">
-        {isCollapsed ? (
-          selectedProject ? (
-            <ProjectLogo
-              logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
-              projectName={selectedProject.name}
-              size="w-8 h-8"
-            />
-          ) : (
-            <Logo className="text-sidebar-foreground" />
-          )
-        ) : (
-          <Logo className="text-sidebar-foreground" />
-        )}
-        {!isCollapsed && (
+      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px]">
+        {!isCollapsed ? (
           <Button
             variant="ghost"
             size="sm"
@@ -319,11 +208,7 @@ export function Sidebar({ className }: SidebarProps) {
           >
             <ChevronsLeft className="w-5 h-5" />
           </Button>
-        )}
-      </div>
-
-      {isCollapsed && (
-        <div className="px-3 pb-3 flex justify-center">
+        ) : (
           <Button
             variant="ghost"
             size="sm"
@@ -341,83 +226,18 @@ export function Sidebar({ className }: SidebarProps) {
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {!isCollapsed && (
+      {!isCollapsed && !isAuthenticated && (
         <div className="px-3 pb-3">
-          {!isAuthenticated ? (
-            <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
-              <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
-                <Link href={`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`}>
-                  Sign in
-                </Link>
-              </Button>
-            </div>
-          ) : projectsLoading ? (
-            <div className="w-full flex items-center justify-center px-3 py-2.5 min-h-[44px] bg-bg-subtle border border-sidebar-border rounded-lg">
-              <div className="text-sm text-muted-foreground">Loading projects...</div>
-            </div>
-          ) : userProjects.length > 0 ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2 min-h-[44px] bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <ProjectLogo
-                      logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
-                      projectName={selectedProject?.name || ""}
-                      size="w-6 h-6"
-                    />
-                    <span className="text-sm font-[550] text-sidebar-foreground truncate">
-                      {selectedProject?.name || "Select Project"}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                className="w-56"
-                onCloseAutoFocus={(e) => e.preventDefault()}
-              >
-                {userProjects.map((project) => {
-                  const isSelected = selectedProject?.project_id === project.project_id
-                  return (
-                    <ProjectLogoWithBranding
-                      key={project.project_id}
-                      project={project}
-                      isSelected={isSelected}
-                      onSelect={handleProjectSelect}
-                    />
-                  )
-                })}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-brand-primary"
-                  onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
-                >
-                  <Plus className="w-4 h-4" />
-                  Add new
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
-              <div className="text-sm text-muted-foreground mb-2">No projects yet</div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-brand-primary"
-                onClick={() => { if (typeof window !== "undefined") window.location.href = "/onboarding" }}
-              >
-                <Plus className="w-4 h-4" />
-                Create Project
-              </Button>
-            </div>
-          )}
+          <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
+            <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
+              <Link href={`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`}>
+                Sign in
+              </Link>
+            </Button>
+          </div>
         </div>
       )}
 
@@ -604,14 +424,14 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border">
-        <div className={`flex items-center gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
-          <Avatar className="w-8 h-8 rounded-[11px] shrink-0">
-            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[11px] font-medium">{user.avatar}</AvatarFallback>
+        <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
+          <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
+            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[10px] font-medium">{user.avatar}</AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
-              <div className="text-xs font-medium text-muted-foreground mt-1 truncate">
+              <div className="text-xs font-medium text-muted-foreground truncate">
                 Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </div>
             </div>
@@ -619,41 +439,5 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </div>
     </div>
-  )
-}
-
-// Component to render project logo with branding in dropdown
-function ProjectLogoWithBranding({ 
-  project, 
-  isSelected, 
-  onSelect 
-}: { 
-  project: Project
-  isSelected: boolean
-  onSelect: (project: Project) => void
-}) {
-  const { data: branding } = useProjectBranding(project.project_id)
-  const logoUrl = branding?.logo_url ?? null
-
-  return (
-    <DropdownMenuItem
-      onClick={() => onSelect(project)}
-      className={`group gap-2 ${isSelected ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
-    >
-      <ProjectLogo
-        logoUrl={logoUrl}
-        projectName={project.name}
-        size="w-5 h-5"
-      />
-      <span
-        className={`truncate text-sm ${
-          isSelected
-            ? "font-[500]"
-            : "font-medium text-[#55555E] group-focus:text-sidebar-foreground"
-        }`}
-      >
-        {project.name}
-      </span>
-    </DropdownMenuItem>
   )
 }

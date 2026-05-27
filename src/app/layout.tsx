@@ -7,6 +7,7 @@ import { UserProvider } from "@/contexts/user-context"
 import { ProjectProvider } from "@/contexts/project-context"
 import { ReactQueryProvider } from "@/lib/react-query/provider"
 import { ProtectedLayout } from "@/components/layout/protected-layout"
+import { TopBar } from "@/components/layout/top-bar"
 import { LoadingFallback } from "@/components/ui/loading-fallback"
 import { Suspense } from "react"
 
@@ -40,7 +41,12 @@ export default function RootLayout({
           <ReactQueryProvider>
             <UserProvider>
               <ProjectProvider>
-                <ProtectedLayout>{children}</ProtectedLayout>
+                <ProtectedLayout>
+                  <div className="flex flex-col min-h-full">
+                    <TopBar />
+                    {children}
+                  </div>
+                </ProtectedLayout>
               </ProjectProvider>
             </UserProvider>
           </ReactQueryProvider>
