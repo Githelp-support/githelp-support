@@ -51,9 +51,9 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
   return (
     <div
       suppressHydrationWarning
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 h-screen max-h-screen overflow-hidden shrink-0 ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 h-full overflow-hidden shrink-0 ${className}`}
     >
-      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px]">
+      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px] shrink-0">
         {!isCollapsed ? (
           <Button
             variant="ghost"
@@ -93,7 +93,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
         )}
       </div>
 
-      <nav className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
+      <nav className="px-3 pb-3 overflow-hidden shrink-0">
         <div className="space-y-0.5">
           {navigationItems.map((item) => {
             const isActive = activeTab === item.name
@@ -120,7 +120,13 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
         </div>
       </nav>
 
-      <div className="px-3 py-2.5 border-t border-sidebar-border">
+      {/* Flexible spacer pushes the user/Incognito section to the bottom of the
+          sidebar. Combined with the parent's `overflow-hidden` and the nav's
+          `shrink-0`, this guarantees the bottom block is always visible within
+          the viewport — mirroring how the authenticated sidebars behave. */}
+      <div className="flex-1 min-h-0" aria-hidden="true" />
+
+      <div className="px-3 py-2.5 border-t border-sidebar-border shrink-0">
         <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
           <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
             <AvatarFallback className="bg-[#868c98] text-white text-sm rounded-[10px] font-medium">I</AvatarFallback>

@@ -71,7 +71,6 @@ export default function SupportPage() {
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
-  const primaryColor = brandingData?.primary_color || "#554abf"
 
   // Format payment values (convert cents to dollars)
   const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
@@ -412,7 +411,6 @@ export default function SupportPage() {
           <TicketChat
             headerTitle={projectName}
             subtitle={`Welcome to the support page for ${projectName}`}
-            headerBackgroundColor={primaryColor}
             headerLeadingIcon={
               projectLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
