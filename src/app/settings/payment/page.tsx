@@ -308,10 +308,10 @@ export default function PaymentSettingsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="This is a test info" />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 px-8 py-6 overflow-y-auto">
           {/* Tab Navigation */}
           <div className="mb-8">
-            <div className="flex gap-1">
+            <div className="flex gap-1 -ml-6">
 
               <button
                 onClick={() => setActiveTab("user")}
@@ -335,7 +335,7 @@ export default function PaymentSettingsPage() {
               </button>
             </div>
             {/* Full-width line below tabs */}
-            <div className="h-px bg-border -mx-6"></div>
+            <div className="h-px bg-border -mx-8"></div>
           </div>
 
           <div className="max-w-5xl">
@@ -577,20 +577,9 @@ export default function PaymentSettingsPage() {
               <div className="space-y-6">
                 {/* Users of support Section */}
                 <div className="bg-card rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-semibold text-foreground">Payment options</h2>
-                      <Info className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
-                      onClick={handleSaveUserOptions}
-                      disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
-                    >
-                      {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                    </Button>
+                  <div className="flex items-center gap-2 mb-6">
+                    <h2 className="text-base font-semibold text-foreground">Payment options</h2>
+                    <Info className="w-4 h-4 text-muted-foreground" />
                   </div>
 
                   <div className="space-y-4">
@@ -644,21 +633,24 @@ export default function PaymentSettingsPage() {
                       </label>
                     </div>
                   </div>
-                </div>
 
-                {/* Ticket cost Section */}
-                <div className="bg-card rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
+                  <div className="flex justify-end mt-6">
                     <Button
                       variant="outline"
                       size="sm"
                       className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
-                      onClick={handleSaveUserSettings}
-                      disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
+                      onClick={handleSaveUserOptions}
+                      disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
                     >
                       {updatePaymentSettings.isPending ? "Saving..." : "Save"}
                     </Button>
+                  </div>
+                </div>
+
+                {/* Ticket cost Section */}
+                <div className="bg-card rounded-lg p-6">
+                  <div className="flex items-center mb-6">
+                    <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
                   </div>
 
                   <div className="space-y-6">
@@ -719,6 +711,18 @@ export default function PaymentSettingsPage() {
                           <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="flex justify-end mt-6">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
+                        onClick={handleSaveUserSettings}
+                        disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
+                      >
+                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                      </Button>
                     </div>
                   </div>
                 </div>
