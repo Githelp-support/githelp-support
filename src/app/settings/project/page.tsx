@@ -156,7 +156,7 @@ export default function ProjectSettingsPage() {
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Project Settings" subtitle="Manage keywords and help categories" />
-          <main className="flex-1 p-6 overflow-y-auto">
+          <main className="flex-1 py-6 px-8 overflow-y-auto">
             <p className="text-muted-foreground">Select a project to manage its keywords and help categories.</p>
           </main>
         </div>
@@ -169,11 +169,11 @@ export default function ProjectSettingsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 py-6 px-8 overflow-y-auto">
           <div className="max-w-4xl space-y-8">
             {/* Admins */}
             <Card className="border-0 shadow-none rounded-lg py-0">
-              <CardContent className="p-6">
+              <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Admins</h2>
                 </div>
@@ -300,7 +300,7 @@ export default function ProjectSettingsPage() {
 
             {/* Keywords / Topics */}
             <Card className="border-0 shadow-none rounded-lg py-0">
-              <CardContent className="p-6">
+              <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Keywords & topics</h2>
                 </div>
@@ -360,7 +360,7 @@ export default function ProjectSettingsPage() {
 
             {/* Help categories */}
             <Card className="border-0 shadow-none rounded-lg py-0">
-              <CardContent className="p-6">
+              <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Help categories</h2>
                 </div>
