@@ -71,6 +71,10 @@ export default function SupportPage() {
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
+  // Branded top banner color — sourced from the project's Branding settings (Admin role).
+  // Falls back to the brand primary so the banner is never invisible if branding hasn't been
+  // configured yet.
+  const primaryColor = brandingData?.primary_color || "#554abf"
 
   // Format payment values (convert cents to dollars)
   const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
@@ -407,6 +411,16 @@ export default function SupportPage() {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Branded top banner — 61px tall horizontal strip across the main content area
+            (excluding the sidebar). Background color is taken from the project's
+            Branding settings (`primary_color`) so each project's support page is
+            visually branded. */}
+        <div
+          className="h-[61px] w-full shrink-0"
+          style={{ backgroundColor: primaryColor }}
+          aria-hidden="true"
+        />
+
         {activeTab === "get-support" ? (
           <TicketChat
             headerTitle={projectName}
