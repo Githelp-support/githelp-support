@@ -118,7 +118,7 @@ export function NotificationsPanel({
         style={{ top: `${position.top}px`, right: `${position.right}px` }}
       >
         <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground">Notifications</h2>
+          <h2 className="text-[15px] font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
