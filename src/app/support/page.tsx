@@ -98,13 +98,19 @@ export default function SupportPage() {
 
   const isAuthenticated = !!user?.id
 
-  // Welcome message used both as the first system message in the thread and
-  // as the prose copy in the intro block.
+  // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
     () =>
       `Welcome to ${projectName}'s support chat.\nAsk your question and someone from our team will try to help you, as soon as we can.`,
     [projectName],
   )
+
+  // Disclaimer text rendered inside the grey (muted) container at the top of
+  // the chat thread — the first system message a visitor sees in the chat
+  // window. Keeps the visitor informed that they're not charged before the
+  // ticket is confirmed by both parties.
+  const ticketDisclaimerContent =
+    "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm."
 
   const nowFormatted = useMemo(
     () =>
@@ -123,7 +129,7 @@ export default function SupportPage() {
       {
         id: "welcome",
         senderType: "system",
-        content: welcomeMessageContent,
+        content: ticketDisclaimerContent,
         senderName: `${projectName} Team`,
         senderAvatarUrl: projectLogo,
         timestamp: nowFormatted,
@@ -179,7 +185,7 @@ export default function SupportPage() {
 
     return list
   }, [
-    welcomeMessageContent,
+    ticketDisclaimerContent,
     projectName,
     projectLogo,
     nowFormatted,
@@ -411,31 +417,32 @@ export default function SupportPage() {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Branded top banner — 61px tall horizontal strip across the main content area
-            (excluding the sidebar). Background color is taken from the project's
-            Branding settings (`primary_color`) so each project's support page is
-            visually branded. */}
-        <div
-          className="h-[61px] w-full shrink-0"
-          style={{ backgroundColor: primaryColor }}
-          aria-hidden="true"
-        />
-
         {activeTab === "get-support" ? (
           <TicketChat
             headerTitle={projectName}
             subtitle={`Welcome to the support page for ${projectName}`}
+            // Color the header container (the area holding the project name and
+            // the supportive welcome text) with the project's Branding color
+            // from Settings → Branding (Admin role). Replaces the previously
+            // separate 61px top banner.
+            headerBackgroundColor={primaryColor}
             headerLeadingIcon={
               projectLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={projectLogo}
                   alt={`${projectName} logo`}
-                  className="w-11 h-11 rounded-[12px] object-cover"
+                  // 1px grey stroke around the project (dp) icon next to the
+                  // header — only on this icon, not on any other avatar icon in
+                  // the chat.
+                  className="w-11 h-11 rounded-[12px] object-cover border border-[#E1E4EA]"
                 />
               ) : (
                 <div
-                  className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground"
+                  // 1px grey stroke around the project (dp) icon next to the
+                  // header — only on this icon, not on any other avatar icon in
+                  // the chat.
+                  className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground border border-[#E1E4EA]"
                   style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
                 >
                   {projectName?.[0]?.toUpperCase() || "A"}
