@@ -66,10 +66,10 @@ export default function BrandingSettingsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Branding" subtitle="Customize your project logo and primary color" />
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 px-8 py-6 overflow-auto">
           <div className="max-w-4xl space-y-6">
             {/* Logo Upload Section */}
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-white rounded-lg py-6">
               <div className="flex items-center justify-between mb-[8px]">
                 <h2 className="text-base font-semibold text-foreground">Logo</h2>
               </div>
@@ -113,21 +113,8 @@ export default function BrandingSettingsPage() {
             </div>
 
             {/* Primary Color Section */}
-            <div className="bg-white rounded-lg p-6">
-              {/* mb-[4px] (not 8px) so the visual gap to the label below is 8px:
-                  the sm Button (h-8) is taller than the h2 and, centered, overhangs ~4px */}
-              <div className="flex items-center justify-between mb-[4px]">
-                <h2 className="text-base font-semibold text-foreground">Primary color</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSaveColor}
-                  disabled={updateBranding.isPending}
-                  className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
-                >
-                  {updateBranding.isPending ? "Saving..." : "Save"}
-                </Button>
-              </div>
+            <div className="bg-white rounded-lg py-6">
+              <h2 className="text-base font-semibold text-foreground mb-[8px]">Primary color</h2>
 
               <div className="space-y-6">
                 <Label htmlFor="primary-color" className="text-[14px] leading-normal tracking-tight text-text-muted">
@@ -159,6 +146,15 @@ export default function BrandingSettingsPage() {
                     </p>
                   </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveColor}
+                  disabled={updateBranding.isPending}
+                  className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
+                >
+                  {updateBranding.isPending ? "Saving..." : "Save"}
+                </Button>
               </div>
             </div>
           </div>
