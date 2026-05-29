@@ -71,10 +71,6 @@ export default function SupportPage() {
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
-  // Branded top banner color — sourced from the project's Branding settings (Admin role).
-  // Falls back to the brand primary so the banner is never invisible if branding hasn't been
-  // configured yet.
-  const primaryColor = brandingData?.primary_color || "#554abf"
 
   // Format payment values (convert cents to dollars)
   const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
@@ -407,7 +403,18 @@ export default function SupportPage() {
   )
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-subtle">
+    // Bound the page to the viewport area BELOW the sticky `TopBar` (61px tall,
+    // rendered from the root layout). Using plain `h-screen` (100vh) here makes
+    // the total page taller than the viewport, which pushes the bottom of the
+    // left sidebar (the Incognito profile) below the fold and forces a
+    // body-level scroll to reveal it. Subtracting the TopBar height keeps the
+    // entire layout inside the visible viewport, so:
+    //   • the left sidebar never scrolls and its full content (nav + Incognito
+    //     profile) is always visible,
+    //   • only the message thread inside `TicketChat` scrolls, and
+    //   • the right sidebar gets its own internal scroll when needed.
+    // Mirrors the behaviour of the User/Helper ticket pages.
+    <div className="flex h-[calc(100dvh-61px)] overflow-hidden bg-bg-subtle">
       <PublicSupportSidebar
         activeTab={TAB_KEY_TO_LABEL[activeTab]}
         onTabChange={(label) => {
@@ -421,11 +428,10 @@ export default function SupportPage() {
           <TicketChat
             headerTitle={projectName}
             subtitle={`Welcome to the support page for ${projectName}`}
-            // Color the header container (the area holding the project name and
-            // the supportive welcome text) with the project's Branding color
-            // from Settings → Branding (Admin role). Replaces the previously
-            // separate 61px top banner.
-            headerBackgroundColor={primaryColor}
+            // Header container background stays white (the Header's default
+            // `bg-background`). The project Branding color is no longer applied
+            // here per the latest design — the header sits on a plain white
+            // background.
             headerLeadingIcon={
               projectLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
