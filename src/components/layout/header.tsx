@@ -7,6 +7,7 @@ import { useUser } from "@/contexts/user-context"
 import { useRouter } from "next/navigation"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
+import { cn } from "@/lib/utils"
 
 interface HeaderProps {
   title: string
@@ -16,9 +17,10 @@ interface HeaderProps {
   backButtonHref?: string
   info?: string
   inlineRightContent?: ReactNode
+  className?: string
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, className }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -48,7 +50,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
   }
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-30 bg-background px-8 pt-5 pb-5">
+    <header ref={headerRef} className={cn("sticky top-0 z-30 bg-background px-8 pt-5 pb-5", className)}>
       <div className="flex items-center justify-between gap-8">
         <div className="flex items-start gap-4">
           {showBackButton && (
