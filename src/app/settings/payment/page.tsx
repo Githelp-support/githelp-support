@@ -311,7 +311,7 @@ export default function PaymentSettingsPage() {
         <main className="flex-1 px-8 py-6 overflow-y-auto">
           {/* Tab Navigation */}
           <div className="mb-8">
-            <div className="flex gap-1 -ml-6">
+            <div className="flex gap-1">
 
               <button
                 onClick={() => setActiveTab("user")}
@@ -634,7 +634,7 @@ export default function PaymentSettingsPage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end mt-6">
+                  <div className="flex mt-6">
                     <Button
                       variant="outline"
                       size="sm"
@@ -713,7 +713,7 @@ export default function PaymentSettingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-end mt-6">
+                    <div className="flex mt-6">
                       <Button
                         variant="outline"
                         size="sm"
