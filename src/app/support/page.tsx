@@ -403,18 +403,25 @@ export default function SupportPage() {
   )
 
   return (
-    // Bound the page to the viewport area BELOW the sticky `TopBar` (61px tall,
-    // rendered from the root layout). Using plain `h-screen` (100vh) here makes
-    // the total page taller than the viewport, which pushes the bottom of the
-    // left sidebar (the Incognito profile) below the fold and forces a
-    // body-level scroll to reveal it. Subtracting the TopBar height keeps the
-    // entire layout inside the visible viewport, so:
-    //   • the left sidebar never scrolls and its full content (nav + Incognito
-    //     profile) is always visible,
-    //   • only the message thread inside `TicketChat` scrolls, and
-    //   • the right sidebar gets its own internal scroll when needed.
-    // Mirrors the behaviour of the User/Helper ticket pages.
-    <div className="flex h-[calc(100dvh-61px)] overflow-hidden bg-bg-subtle">
+    // Fill exactly the viewport area BELOW the sticky `TopBar` (rendered from
+    // the root layout). Previously this used `h-[calc(100dvh-61px)]`, which
+    // assumed the `TopBar` was always exactly 61px tall. For an unauthenticated/
+    // Incognito visitor the `TopBar` is actually shorter (the project dropdown
+    // is hidden for the "user" role), so subtracting a fixed 61px left an
+    // unsightly blank strip at the bottom of the screen.
+    //
+    // `SupportLayout` now chains its `<main>` as a `flex flex-col` shell that
+    // fills the area below the `TopBar`, so the page can simply use
+    // `flex-1 min-h-0` to consume whatever vertical space remains — regardless
+    // of the `TopBar`'s actual rendered height. `min-h-0` is required so the
+    // nested `overflow-hidden` / `overflow-auto` scrollers (the message thread
+    // and the right sidebar) calculate correctly. This keeps:
+    //   • the left sidebar non-scrollable with its bottom Incognito profile
+    //     always visible,
+    //   • only the message thread inside `TicketChat` scrolling, and
+    //   • the right sidebar with its own internal scroll when needed,
+    // while eliminating the blank space at the bottom.
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
       <PublicSupportSidebar
         activeTab={TAB_KEY_TO_LABEL[activeTab]}
         onTabChange={(label) => {
