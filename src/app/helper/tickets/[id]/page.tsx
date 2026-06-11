@@ -30,6 +30,7 @@ import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
+import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
@@ -80,6 +81,9 @@ export default function TicketDetailPage() {
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId)
   const { data: ticketDetails } = useTicketWithDetails(ticketId)
+  const paymentGate = useTicketPaymentStatus(ticketId, {
+    slaId: (ticketDetails as { sla_id?: string | null } | undefined)?.sla_id ?? null,
+  })
   const { data: messagesData, isLoading: messagesLoading } = useTicketMessages(ticketId)
   const sendMessage = useSendMessage()
   const updateTicket = useUpdateTicket()
@@ -855,7 +859,9 @@ export default function TicketDetailPage() {
                 {!isTicketEnded && (
                   <Button
                     variant="outline"
-                    className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                    disabled={!paymentGate.isReady}
+                    title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
+                    className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => {
                       if (isAdminButNotHelper) {
                         setPendingAction("logTime")
@@ -865,7 +871,7 @@ export default function TicketDetailPage() {
                       }
                     }}
                   >
-                    Log time
+                    {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
                   </Button>
                 )}
               </div>
