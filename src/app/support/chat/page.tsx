@@ -12,7 +12,6 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { useCreateTicket } from "@/hooks/useTickets"
-import { useAuthorizeTicket } from "@/hooks/useAuthorizeTicket"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
@@ -164,7 +163,6 @@ export default function UserSupportChatPage() {
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
-  const authorizeTicket = useAuthorizeTicket()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
@@ -432,29 +430,6 @@ export default function UserSupportChatPage() {
           status: "available",
           priority: "medium",
         })
-
-        try {
-          const authResult = await authorizeTicket.mutateAsync({
-            ticketId: ticket.id,
-            payerType: "user",
-          })
-          if (authResult.status === "requires_checkout") {
-            window.location.assign(authResult.checkoutUrl)
-            return
-          }
-          if (authResult.status === "requires_action") {
-            if (authResult.clientSecret) {
-              setPendingSca({ ticketId: ticket.id, clientSecret: authResult.clientSecret })
-              return
-            }
-            console.warn(`Ticket ${ticket.id} requires_action but no client_secret returned`)
-          }
-          if (authResult.status === "failed") {
-            console.warn(`Ticket ${ticket.id} authorize failed; manual resolution needed.`)
-          }
-        } catch (err) {
-          console.error("Failed to authorize ticket payment:", err)
-        }
 
         setTicketCreated(true)
         setTicketId(ticket.id)
