@@ -11,6 +11,12 @@ import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { getAvatarColorHexForId } from "@/lib/constants"
 
+export type PaymentSystemMessageKind =
+  | "payment_required"
+  | "payment_authorized"
+  | "payment_requires_action"
+  | "sla_covered"
+
 export type TicketChatMessage = {
   id: string
   senderType: "user" | "helper" | "system"
@@ -21,6 +27,10 @@ export type TicketChatMessage = {
   timestamp: string
   content: string
   kind?: "claimed" | "ended"
+  paymentMetadata?: {
+    kind: PaymentSystemMessageKind
+    [key: string]: unknown
+  } | null
 }
 
 export type TicketChatParticipant = {
@@ -63,6 +73,10 @@ export interface TicketChatProps {
 
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
+
+  /** Called when the user clicks the "Add payment method" CTA on a payment_required system message. */
+  onPaymentCtaClick?: (msg: TicketChatMessage) => void
+  paymentCtaLoading?: boolean
 }
 
 export function TicketChat(props: TicketChatProps) {
@@ -84,6 +98,8 @@ export function TicketChat(props: TicketChatProps) {
     attachmentStoragePrefix,
     onImageUploaded,
     rightSidebarFooter,
+    onPaymentCtaClick,
+    paymentCtaLoading,
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
@@ -195,6 +211,18 @@ export function TicketChat(props: TicketChatProps) {
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent content={msg.content} />
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && (
+                                    <div className="mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        disabled={paymentCtaLoading}
+                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                      >
+                                        {paymentCtaLoading ? "Opening Stripe…" : "Add payment method"}
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </>
