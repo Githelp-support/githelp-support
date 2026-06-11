@@ -477,7 +477,7 @@ export default function SupportPage() {
           />
         ) : (
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto px-6 py-12">
+            <div className={`max-w-7xl mx-auto py-12 ${activeTab === "rates" ? "px-[72px]" : "px-6"}`}>
               {activeTab === "rates" && (
                 <div className="space-y-12">
                   {/* Rates section */}
