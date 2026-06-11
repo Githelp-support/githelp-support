@@ -317,7 +317,7 @@ export function TicketChat(props: TicketChatProps) {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <h3
-                  className="mb-3 uppercase"
+                  className="uppercase leading-none"
                   style={{
                     fontSize: '11px',
                     letterSpacing: '0.05em',
@@ -327,7 +327,7 @@ export function TicketChat(props: TicketChatProps) {
                 >
                   Other topics in this chat
                 </h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
+                <Info className="w-4 h-4 text-muted-foreground shrink-0" />
               </div>
 
               {topics.length > 0 ? (
