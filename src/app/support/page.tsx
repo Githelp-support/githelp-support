@@ -550,7 +550,7 @@ export default function SupportPage() {
                     </div>
 
                     {/* Get an SLA button */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-start gap-2">
                       <Button
                         variant="outline"
                         className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
