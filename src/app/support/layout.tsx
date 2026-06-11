@@ -12,6 +12,16 @@ export default function SupportLayout({
 }: {
   children: React.ReactNode
 }) {
+  const params = useParams<{ slug?: string }>()
+  const searchParams = useSearchParams()
+  const projectIdParam = searchParams.get("project")
+  const slugParam = params?.slug || searchParams.get("slug")
+  const supportQuery = slugParam
+    ? `?slug=${encodeURIComponent(slugParam)}`
+    : projectIdParam
+      ? `?project=${encodeURIComponent(projectIdParam)}`
+      : ""
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-support-header text-white px-6 py-4">
