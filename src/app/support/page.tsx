@@ -482,10 +482,10 @@ export default function SupportPage() {
                 <div className="space-y-12">
                   {/* Rates section */}
                   <div>
-                    <h2 className="text-base font-semibold text-foreground mb-8">{projectName}&apos;s rates</h2>
+                    <h2 className="text-[22px] font-normal text-foreground mb-8">{projectName}&apos;s rates</h2>
 
                     {/* Pricing cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-[18px] mb-12">
                       {/* Ticket start price */}
                       <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none flex flex-col">
                         <div className="bg-gradient-to-br from-[#c5b0ef] to-[#b8a0e8] px-6 py-4 text-center">
@@ -527,7 +527,7 @@ export default function SupportPage() {
                     </div>
 
                     {/* Info cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-[18px] mb-8">
                       {/* Average response time */}
                       <div className="bg-white rounded-lg p-6 shadow-none border border-[#E1E1E1]">
                         <Clock className="h-5 w-5 text-[#444444] mb-2" />
