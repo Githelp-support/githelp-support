@@ -482,14 +482,14 @@ export default function SupportPage() {
                 <div className="space-y-12">
                   {/* Rates section */}
                   <div>
-                    <h2 className="text-2xl font-normal text-[#444444] mb-8">{projectName}&apos;s rates</h2>
+                    <h2 className="text-base font-semibold text-foreground mb-8">{projectName}&apos;s rates</h2>
 
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                       {/* Ticket start price */}
-                      <div className="rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-gradient-to-br from-[#c5b0ef] to-[#b8a0e8] p-6 text-center">
-                          <div className="text-2xl font-semibold text-[#2d2a49]">{startPrice} USD</div>
+                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none">
+                        <div className="bg-gradient-to-br from-[#c5b0ef] to-[#b8a0e8] px-6 py-4 text-center">
+                          <div className="text-xl font-semibold text-[#2d2a49]">{startPrice} USD</div>
                         </div>
                         <div className="bg-white p-6">
                           <h3 className="font-semibold text-[#444444] mb-2">Ticket start price</h3>
@@ -500,9 +500,9 @@ export default function SupportPage() {
                       </div>
 
                       {/* First 60 minutes */}
-                      <div className="rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-gradient-to-br from-[#e7e5fd] to-[#d8d4f7] p-6 text-center">
-                          <div className="text-2xl font-semibold text-[#2d2a49]">{first60Price} USD/min</div>
+                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none">
+                        <div className="bg-gradient-to-br from-[#e7e5fd] to-[#d8d4f7] px-6 py-4 text-center">
+                          <div className="text-xl font-semibold text-[#2d2a49]">{first60Price} USD/min</div>
                         </div>
                         <div className="bg-white p-6">
                           <h3 className="font-semibold text-[#444444] mb-2">First 60 minutes</h3>
@@ -513,9 +513,9 @@ export default function SupportPage() {
                       </div>
 
                       {/* After 60 minutes */}
-                      <div className="rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-gradient-to-br from-[#f9f7ff] to-[#f0ecff] p-6 text-center">
-                          <div className="text-2xl font-semibold text-[#2d2a49]">{after60Price} USD/min</div>
+                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none">
+                        <div className="bg-gradient-to-br from-[#f9f7ff] to-[#f0ecff] px-6 py-4 text-center">
+                          <div className="text-xl font-semibold text-[#2d2a49]">{after60Price} USD/min</div>
                         </div>
                         <div className="bg-white p-6">
                           <h3 className="font-semibold text-[#444444] mb-2">After 60 minutes</h3>
@@ -529,31 +529,31 @@ export default function SupportPage() {
                     {/* Info cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                       {/* Average response time */}
-                      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                      <div className="bg-white rounded-lg p-6 shadow-none border border-[#E1E1E1]">
                         <div className="flex items-start gap-3 mb-4">
                           <Clock className="h-5 w-5 text-[#444444] mt-1" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="text-lg font-normal text-[#444444]">Average response time</h3>
+                              <h3 className="font-semibold text-[#444444]">Average response time</h3>
                               <HelpCircle className="h-4 w-4 text-[#868c98]" />
                             </div>
                           </div>
                         </div>
-                        <p className="text-2xl font-normal text-[#444444]">6 minutes</p>
+                        <p className="text-xl font-semibold text-[#2d2a49]">6 minutes</p>
                       </div>
 
                       {/* Core team support */}
-                      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                      <div className="bg-white rounded-lg p-6 shadow-none border border-[#E1E1E1]">
                         <div className="flex items-start gap-3 mb-4">
                           <Target className="h-5 w-5 text-[#444444] mt-1" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="text-lg font-normal text-[#444444]">Core team support</h3>
+                              <h3 className="font-semibold text-[#444444]">Core team support</h3>
                               <HelpCircle className="h-4 w-4 text-[#868c98]" />
                             </div>
                           </div>
                         </div>
-                        <p className="text-2xl font-normal text-[#444444]">Yes</p>
+                        <p className="text-xl font-semibold text-[#2d2a49]">Yes</p>
                       </div>
                     </div>
 
