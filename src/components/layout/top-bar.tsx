@@ -190,7 +190,7 @@ export function TopBar() {
 
   return (
     <>
-      <div className="sticky top-0 z-40 w-full bg-[#FAFAFA] border-b border-border px-8 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-40 w-full min-h-[60px] bg-[#FAFAFA] border-b border-border px-8 py-3 flex items-center justify-between">
         {/* Left cluster: Logo, Role dropdown, Project dropdown */}
         <div className="flex items-center gap-4">
           <Logo />
