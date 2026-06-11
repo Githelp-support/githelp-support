@@ -49,3 +49,31 @@ export function useStartPaymentConnect() {
     },
   })
 }
+
+/**
+ * Helper-side Connect onboarding: invokes payments-create-account (scope=user)
+ * then payments-link-account, returning the Stripe-hosted onboarding URL the
+ * caller should redirect to. No organizationId — the authenticated user is
+ * the scope.
+ */
+export function useStartHelperPaymentConnect() {
+  return useMutation({
+    mutationFn: async () => {
+      const created = await supabase.functions.invoke("payments-create-account", {
+        body: { scope: "user" },
+      })
+      if (created.error) {
+        throw new Error(created.error.message || "Failed to create Connect account")
+      }
+      const linked = await supabase.functions.invoke("payments-link-account", {
+        body: { scope: "user" },
+      })
+      if (linked.error) {
+        throw new Error(linked.error.message || "Failed to create onboarding link")
+      }
+      const url = (linked.data as { url?: string } | null)?.url
+      if (!url) throw new Error("No onboarding URL returned")
+      return { url }
+    },
+  })
+}

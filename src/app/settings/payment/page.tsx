@@ -11,6 +11,11 @@ import { Info, Landmark } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
 import { useProject, useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { useStartPaymentConnect } from "@/hooks/usePaymentConnect"
+import { useSetupPaymentMethod } from "@/hooks/useSetupPaymentMethod"
+import { usePaymentStatus } from "@/hooks/usePaymentStatus"
+import { useOrgSpendingCaps, useUpdateOrgSpendingCaps } from "@/hooks/useOrgSpendingCaps"
+import { connectStatusLabel } from "@/lib/payment-status"
+import { formatCapDollars, parseCapDollars } from "@/lib/cap-format"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
 import { cn } from "@/lib/utils"
@@ -27,6 +32,63 @@ export default function PaymentSettingsPage() {
   // Project (used for organization_id when starting Connect onboarding)
   const { data: project } = useProject(projectId || "")
   const startConnect = useStartPaymentConnect()
+  const orgId = project?.organization_id ?? ""
+  const orgStatus = usePaymentStatus({ scope: "organization", scopeId: orgId })
+  const orgStatusLabel = orgStatus.data
+    ? connectStatusLabel(orgStatus.data).label
+    : "Not set up"
+
+  // Spending caps state — bound to inputs as dollar strings; "" = no cap.
+  const orgCaps = useOrgSpendingCaps(orgId)
+  const updateCaps = useUpdateOrgSpendingCaps()
+  const [orgMonthlyCap, setOrgMonthlyCap] = useState("")
+  const [defaultUserCap, setDefaultUserCap] = useState("")
+  const [capsOriginal, setCapsOriginal] = useState<{ org: string; user: string } | null>(null)
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (orgCaps.data) {
+      const org = formatCapDollars(orgCaps.data.monthly_spend_cap_smallest_unit)
+      const user = formatCapDollars(orgCaps.data.default_user_monthly_cap_smallest_unit)
+      setOrgMonthlyCap(org)
+      setDefaultUserCap(user)
+      setCapsOriginal({ org, user })
+    }
+  }, [orgCaps.data])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const hasCapsChanges = capsOriginal !== null &&
+    (orgMonthlyCap !== capsOriginal.org || defaultUserCap !== capsOriginal.user)
+
+  const handleSaveCaps = async () => {
+    if (!orgId) return
+    try {
+      await updateCaps.mutateAsync({
+        organizationId: orgId,
+        monthlySpendCapSmallestUnit: parseCapDollars(orgMonthlyCap),
+        defaultUserMonthlyCapSmallestUnit: parseCapDollars(defaultUserCap),
+      })
+      setCapsOriginal({ org: orgMonthlyCap, user: defaultUserCap })
+    } catch (err) {
+      console.error("Failed to save spending caps:", err)
+    }
+  }
+
+  const setupCard = useSetupPaymentMethod()
+  const hasCardOnFile = !!orgStatus.data?.default_payment_method_id
+
+  const handleAddOrReplaceCard = async () => {
+    if (!orgId) return
+    try {
+      const { checkoutUrl } = await setupCard.mutateAsync({
+        scope: "organization",
+        organizationId: orgId,
+      })
+      window.location.assign(checkoutUrl)
+    } catch (err) {
+      console.error("Failed to start card setup:", err)
+    }
+  }
 
   const handleSetupPayouts = async () => {
     if (!project?.organization_id || !projectId) return
@@ -728,6 +790,102 @@ export default function PaymentSettingsPage() {
                   </div>
                 </div>
 
+                {/* Card on file section */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-foreground">Card on file</h2>
+                      <Info className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Used to place authorization holds on employer-billed tickets.
+                    Stored securely with Stripe.
+                  </p>
+                  <div className="mt-6 flex items-center gap-3">
+                    <Button
+                      className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                      onClick={handleAddOrReplaceCard}
+                      disabled={!orgId || setupCard.isPending}
+                    >
+                      {setupCard.isPending
+                        ? "Starting..."
+                        : hasCardOnFile ? "Replace card" : "Add card"}
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {hasCardOnFile
+                        ? <span className="font-medium text-foreground">Card on file</span>
+                        : "No card yet"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Spending caps Section */}
+                <div className="bg-card rounded-lg border border-border p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-foreground">Spending caps</h2>
+                      <Info className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-muted-foreground border-border bg-transparent"
+                      onClick={handleSaveCaps}
+                      disabled={!orgId || !hasCapsChanges || updateCaps.isPending}
+                    >
+                      {updateCaps.isPending ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Monthly limits enforced when employer-billed tickets are
+                    authorized. Leave blank for no cap.
+                  </p>
+
+                  <div className="flex flex-wrap gap-10">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-foreground">Org-wide monthly cap</span>
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={orgMonthlyCap}
+                          onChange={(e) => setOrgMonthlyCap(e.target.value)}
+                          className={cn(
+                            "w-[230px] text-right pr-[3px] border-border"
+                          )}
+                          placeholder="No cap"
+                          disabled={!orgId}
+                        />
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/month</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-foreground">Default per-user monthly cap</span>
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={defaultUserCap}
+                          onChange={(e) => setDefaultUserCap(e.target.value)}
+                          className={cn(
+                            "w-[230px] text-right pr-[3px] border-border"
+                          )}
+                          placeholder="No cap"
+                          disabled={!orgId}
+                        />
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/user/month</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Set up payouts Section */}
                 <div className="bg-card rounded-lg p-6">
                   <div className="flex items-center gap-2">
@@ -760,14 +918,19 @@ export default function PaymentSettingsPage() {
                       payouts from support.
                     </p>
 
-                    <Button
-                      className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
-                      onClick={handleSetupPayouts}
-                      disabled={!project?.organization_id || startConnect.isPending}
-                    >
-                      <Landmark className="w-4 h-4" />
-                      {startConnect.isPending ? "Starting..." : "Set up payouts"}
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                        onClick={handleSetupPayouts}
+                        disabled={!project?.organization_id || startConnect.isPending}
+                      >
+                        <Landmark className="w-4 h-4" />
+                        {startConnect.isPending ? "Starting..." : "Set up payouts"}
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Status: <span className="font-medium text-foreground">{orgStatusLabel}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
