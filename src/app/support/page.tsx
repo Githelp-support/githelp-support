@@ -633,7 +633,7 @@ export default function SupportPage() {
                 <div className="space-y-16">
                   {/* How support works section */}
                   <div className="max-w-[37rem]">
-                    <h2 className="text-xl font-normal text-[#444444] mb-6">How support works</h2>
+                    <h2 className="text-[22px] font-normal text-[#444444] mb-6">How support works</h2>
                     <p className="text-sm text-[#444444] mb-4">
                       The <span className="font-semibold">{projectName}</span> team can help out with issues related to areas such
                       as:
@@ -659,7 +659,7 @@ export default function SupportPage() {
                         {/* Step 1 */}
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center">
-                            <div className="w-6 h-6 rounded-full bg-[#554abf] flex-shrink-0"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#554abf] flex-shrink-0"></div>
                             <div className="w-0.5 flex-1 bg-[#554abf] min-h-[2rem]"></div>
                           </div>
                           <div className="flex-1 pb-8">
@@ -674,7 +674,7 @@ export default function SupportPage() {
                         {/* Step 2 */}
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center">
-                            <div className="w-6 h-6 rounded-full bg-[#554abf] flex-shrink-0"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#554abf] flex-shrink-0"></div>
                           </div>
                           <div className="flex-1">
                             <h3 className="text-base font-semibold text-[#444444] mb-2">Register or share details</h3>
@@ -696,7 +696,7 @@ export default function SupportPage() {
                         {/* Step 1 */}
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center">
-                            <div className="w-6 h-6 rounded-full bg-[#554abf] flex-shrink-0"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#554abf] flex-shrink-0"></div>
                             <div className="w-0.5 flex-1 bg-[#554abf] min-h-[2rem]"></div>
                           </div>
                           <div className="flex-1 pb-8">
@@ -711,7 +711,7 @@ export default function SupportPage() {
                         {/* Step 2 */}
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center">
-                            <div className="w-6 h-6 rounded-full bg-[#554abf] flex-shrink-0"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#554abf] flex-shrink-0"></div>
                             <div className="w-0.5 flex-1 bg-[#554abf] min-h-[2rem]"></div>
                           </div>
                           <div className="flex-1 pb-8">
@@ -726,7 +726,7 @@ export default function SupportPage() {
                         {/* Step 3 */}
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center">
-                            <div className="w-6 h-6 rounded-full bg-[#554abf] flex-shrink-0"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#554abf] flex-shrink-0"></div>
                           </div>
                           <div className="flex-1">
                             <h3 className="text-base font-semibold text-[#444444] mb-2">Issue is solved</h3>
@@ -748,7 +748,7 @@ export default function SupportPage() {
                         {/* Step 1 */}
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center">
-                            <div className="w-6 h-6 rounded-full bg-[#554abf] flex-shrink-0"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#554abf] flex-shrink-0"></div>
                             <div className="w-0.5 flex-1 bg-[#554abf] min-h-[2rem]"></div>
                           </div>
                           <div className="flex-1 pb-8">
@@ -767,7 +767,7 @@ export default function SupportPage() {
                         {/* Step 2 */}
                         <div className="flex gap-4">
                           <div className="flex flex-col items-center">
-                            <div className="w-6 h-6 rounded-full bg-[#554abf] flex-shrink-0"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#554abf] flex-shrink-0"></div>
                           </div>
                           <div className="flex-1">
                             <h3 className="text-base font-semibold text-[#444444] mb-2">Receive documentation</h3>
