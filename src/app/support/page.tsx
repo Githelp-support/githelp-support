@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Search, Clock, Target, HelpCircle, Check } from "lucide-react"
 import Link from "next/link"
@@ -573,7 +574,7 @@ export default function SupportPage() {
 
               {activeTab === "resources" && (
                 <div className="space-y-8">
-                  <h2 className="text-2xl font-normal text-[#444444]">{projectName}&apos;s resources</h2>
+                  <h2 className="text-2xl font-normal text-[#444444] mb-8">{projectName}&apos;s resources</h2>
 
                   {resourcesLoading ? (
                     <p className="text-[#868c98]">Loading resources...</p>
@@ -587,7 +588,7 @@ export default function SupportPage() {
                           href={resource.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-6 py-3 bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-[#2d2a49] rounded-full font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-all cursor-pointer shadow-sm hover:shadow-md"
+                          className="inline-flex items-center h-8 px-6 text-sm bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-[#2d2a49] rounded-full font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-all cursor-pointer shadow-sm hover:shadow-md"
                         >
                           {resource.name}
                         </a>
@@ -595,37 +596,43 @@ export default function SupportPage() {
                     </div>
                   )}
 
-                  <div className="bg-white rounded-lg p-8 shadow-sm">
-                    <h3 className="text-lg font-normal text-[#444444] mb-6">Do you have any questions on how support works?</h3>
+                  <Card className="max-w-3xl border-[#E1E1E1] shadow-none rounded-lg">
+                    <CardContent className="p-0">
+                      <div className="px-6 py-6">
+                        <h3 className="text-sm font-semibold text-[#444444] mb-6">Do you have any questions on how support works?</h3>
 
-                    {/* Search input */}
-                    <div className="relative mb-6">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#868c98]" />
-                      <Input
-                        type="text"
-                        placeholder="Search FAQs"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 border-gray-200"
-                      />
-                    </div>
+                        {/* Search input */}
+                        <div className="relative mb-6">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#868c98]" />
+                          <Input
+                            type="text"
+                            placeholder="Search FAQs"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 border-gray-200"
+                          />
+                        </div>
+                      </div>
 
-                    {/* FAQ Accordion */}
-                    <Accordion type="single" collapsible className="space-y-2">
-                      {filteredFaqs.map((faq, index) => (
-                        <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-200">
-                          <AccordionTrigger className="text-[#444444] hover:text-[#554abf] text-left py-4 cursor-pointer">
-                            {faq.question}
-                          </AccordionTrigger>
-                          <AccordionContent className="text-[#868c98] pb-4">{faq.answer}</AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
+                      {/* FAQ Accordion */}
+                      <Accordion type="single" collapsible className="w-full">
+                        {filteredFaqs.map((faq, index) => (
+                          <AccordionItem key={index} value={`item-${index}`} className="px-6">
+                            <AccordionTrigger className="text-foreground hover:no-underline hover:text-brand-primary">
+                              {faq.question}
+                            </AccordionTrigger>
+                            <AccordionContent className="text-muted-foreground">
+                              {faq.answer}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
 
-                    {filteredFaqs.length === 0 && (
-                      <p className="text-center text-[#868c98] py-8">No FAQs found matching your search.</p>
-                    )}
-                  </div>
+                      {filteredFaqs.length === 0 && (
+                        <p className="text-center text-sm text-[#868c98] py-8">No FAQs found matching your search.</p>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               )}
 
