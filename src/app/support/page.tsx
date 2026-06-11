@@ -487,11 +487,11 @@ export default function SupportPage() {
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                       {/* Ticket start price */}
-                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none">
+                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none flex flex-col">
                         <div className="bg-gradient-to-br from-[#c5b0ef] to-[#b8a0e8] px-6 py-4 text-center">
-                          <div className="text-xl font-semibold text-[#2d2a49]">{startPrice} USD</div>
+                          <div className="text-lg font-semibold text-[#2d2a49]">{startPrice} USD</div>
                         </div>
-                        <div className="bg-white p-6">
+                        <div className="bg-white p-6 flex-1">
                           <h3 className="font-semibold text-[#444444] mb-2">Ticket start price</h3>
                           <p className="text-sm text-[#868c98]">
                             Price for starting the support. You will of course not pay anything if your ticket isn&apos;t picked up.
@@ -500,11 +500,11 @@ export default function SupportPage() {
                       </div>
 
                       {/* First 60 minutes */}
-                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none">
+                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none flex flex-col">
                         <div className="bg-gradient-to-br from-[#e7e5fd] to-[#d8d4f7] px-6 py-4 text-center">
-                          <div className="text-xl font-semibold text-[#2d2a49]">{first60Price} USD/min</div>
+                          <div className="text-lg font-semibold text-[#2d2a49]">{first60Price} USD/min</div>
                         </div>
-                        <div className="bg-white p-6">
+                        <div className="bg-white p-6 flex-1">
                           <h3 className="font-semibold text-[#444444] mb-2">First 60 minutes</h3>
                           <p className="text-sm text-[#868c98]">
                             This is the price per minute for the first 60 minutes. Most issues are solved within that time.
@@ -513,11 +513,11 @@ export default function SupportPage() {
                       </div>
 
                       {/* After 60 minutes */}
-                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none">
+                      <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none flex flex-col">
                         <div className="bg-gradient-to-br from-[#f9f7ff] to-[#f0ecff] px-6 py-4 text-center">
-                          <div className="text-xl font-semibold text-[#2d2a49]">{after60Price} USD/min</div>
+                          <div className="text-lg font-semibold text-[#2d2a49]">{after60Price} USD/min</div>
                         </div>
-                        <div className="bg-white p-6">
+                        <div className="bg-white p-6 flex-1">
                           <h3 className="font-semibold text-[#444444] mb-2">After 60 minutes</h3>
                           <p className="text-sm text-[#868c98]">
                             If the support is lengthy, the price drops to {after60Price} USD per minute after the first hour.
@@ -530,30 +530,22 @@ export default function SupportPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                       {/* Average response time */}
                       <div className="bg-white rounded-lg p-6 shadow-none border border-[#E1E1E1]">
-                        <div className="flex items-start gap-3 mb-4">
-                          <Clock className="h-5 w-5 text-[#444444] mt-1" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-[#444444]">Average response time</h3>
-                              <HelpCircle className="h-4 w-4 text-[#868c98]" />
-                            </div>
-                          </div>
+                        <Clock className="h-5 w-5 text-[#444444] mb-2" />
+                        <div className="flex items-center gap-2 mb-4">
+                          <h3 className="font-semibold text-[#444444]">Average response time</h3>
+                          <HelpCircle className="h-4 w-4 text-[#868c98]" />
                         </div>
-                        <p className="text-xl font-semibold text-[#2d2a49]">6 minutes</p>
+                        <p className="text-lg font-semibold text-[#2d2a49]">6 minutes</p>
                       </div>
 
                       {/* Core team support */}
                       <div className="bg-white rounded-lg p-6 shadow-none border border-[#E1E1E1]">
-                        <div className="flex items-start gap-3 mb-4">
-                          <Target className="h-5 w-5 text-[#444444] mt-1" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-[#444444]">Core team support</h3>
-                              <HelpCircle className="h-4 w-4 text-[#868c98]" />
-                            </div>
-                          </div>
+                        <Target className="h-5 w-5 text-[#444444] mb-2" />
+                        <div className="flex items-center gap-2 mb-4">
+                          <h3 className="font-semibold text-[#444444]">Core team support</h3>
+                          <HelpCircle className="h-4 w-4 text-[#868c98]" />
                         </div>
-                        <p className="text-xl font-semibold text-[#2d2a49]">Yes</p>
+                        <p className="text-lg font-semibold text-[#2d2a49]">Yes</p>
                       </div>
                     </div>
 
