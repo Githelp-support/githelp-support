@@ -515,7 +515,7 @@ export default function UserSupportChatPage() {
   }))
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+    <div className="flex h-screen overflow-hidden bg-bg-subtle">
       <Sidebar />
 
       <TicketChat
