@@ -68,9 +68,12 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       // its height through a `flex-1 min-h-0` chain from the root layout's
       // `min-h-full` container, and percentage heights don't resolve through
       // that chain (`h-full` computes to `auto`, collapsing the sidebar to its
-      // content height). Stretching as a flex item uses the row's actual
-      // laid-out height instead, so the sidebar always fills the area below
-      // the TopBar and the profile block stays pinned to the bottom.
+      // content height — which made the sidebar shorter than the Admin/Helper
+      // sidebar and pushed the profile block off the visible area). Stretching
+      // as a flex item uses the row's actual laid-out height instead, so the
+      // sidebar always fills the area below the TopBar with the profile block
+      // pinned to the bottom and no internal scrollbar — matching the
+      // Admin/Helper `Sidebar` height + static (non-scrollable) view exactly.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
       <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px] shrink-0">
