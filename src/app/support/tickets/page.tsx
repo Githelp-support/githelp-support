@@ -198,7 +198,7 @@ export default function SupportTicketsPage() {
   }, [tickets, statusFilter, sortField, sortDirection])
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white">
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
