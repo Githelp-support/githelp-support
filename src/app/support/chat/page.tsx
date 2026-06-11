@@ -12,6 +12,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { useCreateTicket } from "@/hooks/useTickets"
+import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
@@ -40,6 +41,7 @@ interface Message {
     code: string
   }
   isSystemMessage?: boolean
+  paymentMetadata?: TicketChatMessage["paymentMetadata"]
 }
 
 interface Person {
@@ -163,6 +165,7 @@ export default function UserSupportChatPage() {
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
+  const createCheckout = useCreateCheckoutForTicket()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
@@ -260,7 +263,7 @@ export default function UserSupportChatPage() {
       })
     }
     if (messagesData?.length) {
-      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; sender: { id?: string; name?: string; avatar_url?: string } | null }) => {
+      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; metadata?: Record<string, unknown> | null; sender: { id?: string; name?: string; avatar_url?: string } | null }) => {
         list.push({
           id: msg.id,
           sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -275,11 +278,27 @@ export default function UserSupportChatPage() {
           avatar: msg.sender?.name?.[0]?.toUpperCase() || (msg.sender_type === "user" ? (user?.name?.[0] || "Y") : "H"),
           senderName: msg.sender?.name || (msg.sender_type === "user" ? (user?.name || "You") : "Helper"),
           senderId: msg.sender_id ?? msg.sender?.id,
+          isSystemMessage: msg.sender_type === "system",
+          paymentMetadata: (msg.metadata as TicketChatMessage["paymentMetadata"]) ?? null,
         })
       })
     }
     return list
   }, [welcomeMessage, claimer, pendingFirstMessage, messagesData, user?.id, user?.name, user?.avatar])
+
+  // When a payment_requires_action system message arrives, open the existing
+  // ConfirmPaymentModal with its client_secret. The webhook will eventually
+  // mark payments.status='authorized' and a follow-up system message will
+  // confirm; until then the customer can resolve SCA in-page.
+  useEffect(() => {
+    if (pendingSca) return
+    const scaMsg = messages.find((m) => m.paymentMetadata?.kind === "payment_requires_action")
+    if (!scaMsg) return
+    const clientSecret = scaMsg.paymentMetadata?.client_secret as string | undefined
+    const metaTicketId = scaMsg.paymentMetadata?.ticket_id as string | undefined
+    if (!clientSecret) return
+    setPendingSca({ ticketId: metaTicketId || ticketId, clientSecret })
+  }, [messages, pendingSca, ticketId])
 
   // All participants: from tickets_participants, plus ticket creator if not already in (e.g. old tickets)
   const allParticipants: ParticipantWithUser[] = useMemo(() => {
@@ -508,6 +527,7 @@ export default function UserSupportChatPage() {
     timestamp: m.timestamp,
     content: m.content,
     kind: m.isSystemMessage ? "claimed" : undefined,
+    paymentMetadata: m.paymentMetadata ?? null,
   }))
 
   const chatParticipants: TicketChatParticipant[] = allParticipants.map((p) => ({
@@ -632,6 +652,18 @@ export default function UserSupportChatPage() {
         onImageUploaded={(url) => {
           setMessage((prev) => prev + `\n![attachment](${url})\n`)
         }}
+        onPaymentCtaClick={async (msg) => {
+          const metaTicketId = msg.paymentMetadata?.ticket_id as string | undefined
+          const target = metaTicketId || ticketId
+          if (!target) return
+          try {
+            const out = await createCheckout.mutateAsync({ ticketId: target })
+            window.location.assign(out.checkoutUrl)
+          } catch (err) {
+            console.error("Failed to start Stripe Checkout:", err)
+          }
+        }}
+        paymentCtaLoading={createCheckout.isPending}
         rightSidebarFooter={
           ticketId ? (
             <>
