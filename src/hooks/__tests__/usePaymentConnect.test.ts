@@ -38,18 +38,18 @@ describe("useStartPaymentConnect", () => {
             wrapper: makeWrapper(),
         });
 
-        const out = await result.current.mutateAsync({ organizationId: "org-1" });
+        const out = await result.current.mutateAsync({ organizationId: "org-1", projectId: "proj-1" });
 
         expect(out).toEqual({ url: "https://connect.stripe.com/onboarding/x" });
         expect(supabase.functions.invoke).toHaveBeenNthCalledWith(
             1,
             "payments-create-account",
-            { body: { scope: "organization", organization_id: "org-1" } },
+            { body: { scope: "organization", organization_id: "org-1", project_id: "proj-1" } },
         );
         expect(supabase.functions.invoke).toHaveBeenNthCalledWith(
             2,
             "payments-link-account",
-            { body: { scope: "organization", organization_id: "org-1" } },
+            { body: { scope: "organization", organization_id: "org-1", project_id: "proj-1" } },
         );
     });
 
@@ -63,7 +63,7 @@ describe("useStartPaymentConnect", () => {
         });
         await waitFor(async () => {
             await expect(
-                result.current.mutateAsync({ organizationId: "org-1" }),
+                result.current.mutateAsync({ organizationId: "org-1", projectId: "proj-1" }),
             ).rejects.toThrow("nope");
         });
     });

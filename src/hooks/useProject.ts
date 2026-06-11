@@ -658,6 +658,74 @@ export function useCreateProjectFromGitHub() {
     });
 }
 
+/**
+ * Whether the current user already owns an active sandbox project. Used to
+ * gate the "Try a sandbox" onboarding option (one sandbox per user).
+ */
+export function useHasSandbox() {
+    return useQuery({
+        queryKey: ["has-sandbox"],
+        queryFn: async (): Promise<boolean> => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            if (!user) return false;
+
+            const { data, error } = await supabase
+                .from("projects")
+                .select("project_id")
+                .eq("created_by", user.id)
+                .eq("sandbox", true)
+                .is("deleted_at", null)
+                .limit(1);
+
+            if (error) throw error;
+            return (data?.length ?? 0) > 0;
+        },
+        retry: false,
+        staleTime: 1800000,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Provision a fully-populated sandbox project for the current user via the
+ * `create-sandbox-project` edge function (one per user, enforced server-side).
+ */
+export function useCreateSandboxProject() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            const { data, error } = await supabase.functions.invoke(
+                "create-sandbox-project",
+                { body: {} }
+            );
+            if (error) {
+                // Edge function non-2xx responses surface here; prefer the
+                // server-provided message when available.
+                const ctx = (error as { context?: Response }).context;
+                if (ctx) {
+                    const body = await ctx.json().catch(() => null);
+                    if (body?.error) throw new Error(body.error);
+                }
+                throw error;
+            }
+            if (!data?.success) {
+                throw new Error(data?.error || "Failed to create sandbox project");
+            }
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
+            queryClient.invalidateQueries({ queryKey: ["has-sandbox"] });
+        },
+    });
+}
+
 export function useAcceptProjectInvite() {
     const queryClient = useQueryClient();
 

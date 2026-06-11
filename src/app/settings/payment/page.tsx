@@ -29,10 +29,11 @@ export default function PaymentSettingsPage() {
   const startConnect = useStartPaymentConnect()
 
   const handleSetupPayouts = async () => {
-    if (!project?.organization_id) return
+    if (!project?.organization_id || !projectId) return
     try {
       const { url } = await startConnect.mutateAsync({
         organizationId: project.organization_id,
+        projectId,
       })
       window.location.assign(url)
     } catch (err) {
