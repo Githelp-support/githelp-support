@@ -85,51 +85,47 @@ export default function LandingPageSettings() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Landing page" subtitle="Customize your landing page branding and resources" />
-        <main className="flex-1 p-6 overflow-auto">
+        <Header title="Landing page" subtitle="Customize your landing page branding and resources" className="pl-14" />
+        <main className="flex-1 px-8 py-6 overflow-auto">
           <div className="max-w-4xl">
 
             <div className="bg-white rounded-lg p-6 mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm mb-2" style={{ color: '#2E2D31', fontWeight: 550 }}>Your support page</h3>
-                  <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={
-                      project?.slug
-                        ? `/support/${encodeURIComponent(project.slug)}`
-                        : projectId
-                          ? `/support?project=${encodeURIComponent(projectId)}`
-                          : "/support"
-                    }
-                    target="_blank"
-                  >
-                    <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent cursor-pointer">
-                      <ExternalLink className="w-4 h-4" />
-                      Open
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopyLink}
-                    className="text-[#55555d] border-border bg-transparent cursor-pointer"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copy link
-                      </>
-                    )}
+              <h2 className="text-base font-semibold text-foreground mb-5">Your support page</h2>
+              <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
+              <div className="flex items-center gap-2 mt-3">
+                <Link
+                  href={
+                    project?.slug
+                      ? `/support/${encodeURIComponent(project.slug)}`
+                      : projectId
+                        ? `/support?project=${encodeURIComponent(projectId)}`
+                        : "/support"
+                  }
+                  target="_blank"
+                >
+                  <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent cursor-pointer">
+                    <ExternalLink className="w-4 h-4" />
+                    Open
                   </Button>
-                </div>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className="text-[#55555d] border-border bg-transparent cursor-pointer"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      Copy link
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
 
@@ -137,7 +133,7 @@ export default function LandingPageSettings() {
             <div className="space-y-6">
               {/* Add Resource Section */}
                 <div className="bg-white rounded-lg p-6">
-                  <h2 className="text-base font-semibold text-foreground mb-6">Add resource</h2>
+                  <h2 className="text-base font-semibold text-foreground mb-5">Add resource</h2>
 
                   <div className="space-y-4">
                     <FormField label="Name" id="resource-name">
@@ -175,12 +171,7 @@ export default function LandingPageSettings() {
 
                 {/* Resources List Section */}
                 <div className="bg-white rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-base font-semibold text-foreground">Resources</h2>
-                    <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent">
-                      Save
-                    </Button>
-                  </div>
+                  <h2 className="text-base font-semibold text-foreground mb-5">Resources</h2>
 
                   {resourcesLoading ? (
                     <div className="text-center py-8">
@@ -217,6 +208,10 @@ export default function LandingPageSettings() {
                       ))}
                     </div>
                   )}
+
+                  <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent mt-3">
+                    Save
+                  </Button>
                 </div>
             </div>
           </div>

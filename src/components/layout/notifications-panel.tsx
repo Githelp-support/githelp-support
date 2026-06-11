@@ -118,7 +118,7 @@ export function NotificationsPanel({
         style={{ top: `${position.top}px`, right: `${position.right}px` }}
       >
         <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
-          <h2 className="text-base font-semibold text-foreground">Notifications</h2>
+          <h2 className="text-[15px] font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -129,7 +129,7 @@ export function NotificationsPanel({
             <div className="p-6 text-center text-muted-foreground">No notifications</div>
           ) : (
             <div className="p-4 space-y-4">
-              {notifications.slice(0, 4).map((notification) => (
+              {notifications.slice(0, 3).map((notification) => (
                 <div
                   key={notification.id}
                   className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
@@ -151,7 +151,7 @@ export function NotificationsPanel({
                     </div>
                   </div>
                   <p
-                    className={`text-sm leading-relaxed ${
+                    className={`text-[13px] leading-relaxed ${
                       !notification.isRead ? "text-[#2E2D31]" : "text-[#868686]"
                     }`}
                   >
@@ -159,6 +159,7 @@ export function NotificationsPanel({
                   </p>
                 </div>
               ))}
+              <Button variant="ghost" className="w-full">See all notifications</Button>
             </div>
           )}
         </div>

@@ -7,6 +7,7 @@ import { useUser } from "@/contexts/user-context"
 import { useRouter } from "next/navigation"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
+import { cn } from "@/lib/utils"
 
 interface HeaderProps {
   title: string
@@ -17,11 +18,12 @@ interface HeaderProps {
   info?: string
   inlineRightContent?: ReactNode
   leadingIcon?: ReactNode
+  className?: string
   /** Optional CSS background color to apply to the header container. Overrides the default `bg-background`. */
   backgroundColor?: string
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, backgroundColor }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -53,7 +55,11 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
   return (
     <header
       ref={headerRef}
-      className={`sticky top-0 z-30 px-8 pt-5 pb-5 ${backgroundColor ? "" : "bg-background"}`}
+      className={cn(
+        "sticky top-0 z-30 px-8 pt-5 pb-5",
+        !backgroundColor && "bg-background",
+        className,
+      )}
       style={backgroundColor ? { backgroundColor } : undefined}
     >
       <div className="flex items-center justify-between gap-8">
