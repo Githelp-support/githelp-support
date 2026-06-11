@@ -297,6 +297,7 @@ export type Database = {
                     content: string;
                     deleted_at: string | null;
                     updated_at: string;
+                    metadata: Record<string, unknown> | null;
                 };
                 Insert: Partial<{
                     id: string;
@@ -307,6 +308,7 @@ export type Database = {
                     content: string;
                     deleted_at: string | null;
                     updated_at: string;
+                    metadata: Record<string, unknown> | null;
                 }>;
                 Update: Partial<{
                     id: string;
@@ -317,6 +319,7 @@ export type Database = {
                     content: string;
                     deleted_at: string | null;
                     updated_at: string;
+                    metadata: Record<string, unknown> | null;
                 }>;
             };
             users: {
