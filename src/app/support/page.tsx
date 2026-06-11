@@ -483,7 +483,7 @@ export default function SupportPage() {
                 <div className="space-y-12">
                   {/* Rates section */}
                   <div>
-                    <h2 className="text-2xl font-normal text-[#444444] mb-8">{projectName}&apos;s rates</h2>
+                    <h2 className="text-[22px] font-normal text-[#444444] mb-8">{projectName}&apos;s rates</h2>
 
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -574,7 +574,7 @@ export default function SupportPage() {
 
               {activeTab === "resources" && (
                 <div className="space-y-8">
-                  <h2 className="text-2xl font-normal text-[#444444] mb-8">{projectName}&apos;s resources</h2>
+                  <h2 className="text-[22px] font-normal text-[#444444] mb-8">{projectName}&apos;s resources</h2>
 
                   {resourcesLoading ? (
                     <p className="text-[#868c98]">Loading resources...</p>
@@ -588,7 +588,7 @@ export default function SupportPage() {
                           href={resource.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center h-8 px-6 text-sm bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-[#2d2a49] rounded-full font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-all cursor-pointer shadow-sm hover:shadow-md"
+                          className="inline-flex items-center h-8 px-6 text-sm bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-[#2d2a49] rounded-md font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-all cursor-pointer shadow-sm hover:shadow-md"
                         >
                           {resource.name}
                         </a>
