@@ -84,7 +84,6 @@ export function TicketChat(props: TicketChatProps) {
     participants,
     participantsLoading,
     topics = [],
-    helpTypes = [],
     message,
     onMessageChange,
     onSend,
@@ -107,25 +106,27 @@ export function TicketChat(props: TicketChatProps) {
   const thread = useMemo(() => messages ?? [], [messages])
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="relative border-b border-border z-10">
-        <Header
-          title={headerTitle}
-          subtitle={subtitle}
-          showBackButton={showBackButton}
-          leadingIcon={headerLeadingIcon}
-          backgroundColor={headerBackgroundColor}
-          inlineRightContent={
-            headerSubtitle ? (
-              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
-            ) : undefined
-          }
-        />
-      </div>
+    <div className="flex-1 flex overflow-hidden">
+      {/* Left column: Header + main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="relative border-b border-border z-10">
+          <Header
+            title={headerTitle}
+            subtitle={subtitle}
+            showBackButton={showBackButton}
+            leadingIcon={headerLeadingIcon}
+            backgroundColor={headerBackgroundColor}
+            inlineRightContent={
+              headerSubtitle ? (
+                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
+              ) : undefined
+            }
+          />
+        </div>
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col">
           {/* Messages Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
@@ -236,7 +237,7 @@ export function TicketChat(props: TicketChatProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="cursor-pointer text-foreground font-semibold text-[15px] hover:bg-transparent"
+                  className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
                 >
                   End session
                 </Button>
@@ -261,9 +262,11 @@ export function TicketChat(props: TicketChatProps) {
             />
           )}
         </div>
+        </main>
+      </div>
 
-        {/* Right Sidebar */}
-        <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
+      {/* Right Sidebar */}
+      <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
           <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
             {/* People in Chat */}
             <div>
@@ -314,7 +317,7 @@ export function TicketChat(props: TicketChatProps) {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <h3
-                  className="mb-3 uppercase"
+                  className="uppercase leading-none"
                   style={{
                     fontSize: '11px',
                     letterSpacing: '0.05em',
@@ -324,7 +327,7 @@ export function TicketChat(props: TicketChatProps) {
                 >
                   Other topics in this chat
                 </h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
+                <Info className="w-4 h-4 text-muted-foreground shrink-0" />
               </div>
 
               {topics.length > 0 ? (
@@ -340,32 +343,9 @@ export function TicketChat(props: TicketChatProps) {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="border-t border-border my-6 -ml-5 -mr-4" />
-
-            {/* Type of Help */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Type of help</h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
-              {helpTypes.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {helpTypes.map((h) => (
-                    <Badge key={h} variant="secondary" className="bg-muted text-muted-foreground">
-                      {h}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
-              )}
-            </div>
-
             {rightSidebarFooter}
           </div>
         </div>
-      </main>
     </div>
   )
 }

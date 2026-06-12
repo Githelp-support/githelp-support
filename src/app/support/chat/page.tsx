@@ -543,7 +543,7 @@ export default function UserSupportChatPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{projectName} Team</span>
-                  <span className="text-xs" style={{ color: '#818185' }}>
+                  <span className="text-xs" style={{ color: 'rgba(0,0,0,0.5)', fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontVariantNumeric: 'tabular-nums' }}>
                     {new Date().toLocaleString("en-GB", {
                       day: "2-digit",
                       month: "2-digit",
@@ -630,7 +630,7 @@ export default function UserSupportChatPage() {
           setMessage((prev) => prev + `\n![attachment](${url})\n`)
         }}
         rightSidebarFooter={
-          ticketId ? (
+          ticketId && claimer && isAuthenticated ? (
             <>
               <div>
                 <div className="flex items-center gap-2 mb-3">
