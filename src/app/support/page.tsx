@@ -352,7 +352,14 @@ export default function SupportPage() {
             <span className="text-sm" style={{ color: "#2E2D31", fontWeight: 550 }}>
               {projectName} Team
             </span>
-            <span className="text-xs" style={{ color: "#818185" }}>
+            <span
+              className="text-xs"
+              style={{
+                color: 'rgba(0,0,0,0.5)',
+                fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
               {nowFormatted}
             </span>
           </div>
