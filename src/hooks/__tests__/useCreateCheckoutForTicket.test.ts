@@ -35,7 +35,7 @@ describe("useCreateCheckoutForTicket", () => {
         expect(out.checkoutUrl).toBe("https://checkout.stripe.com/c/pay/x");
         expect(supabase.functions.invoke).toHaveBeenCalledWith(
             "payments-create-checkout-for-ticket",
-            { body: { ticket_id: "ticket-1" } },
+            { body: expect.objectContaining({ ticket_id: "ticket-1" }) },
         );
     });
 

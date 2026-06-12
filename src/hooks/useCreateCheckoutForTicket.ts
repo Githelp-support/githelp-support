@@ -15,8 +15,13 @@ export interface CreateCheckoutResult {
 export function useCreateCheckoutForTicket() {
   return useMutation({
     mutationFn: async (args: { ticketId: string }): Promise<CreateCheckoutResult> => {
+      // Pass the current browser origin so the backend can route Stripe's
+      // success_url back to wherever the user is right now (localhost dev vs
+      // staging vs prod), instead of hardcoding SITE_URL.
+      const returnOrigin =
+        typeof window !== "undefined" ? window.location.origin : undefined
       const resp = await supabase.functions.invoke("payments-create-checkout-for-ticket", {
-        body: { ticket_id: args.ticketId },
+        body: { ticket_id: args.ticketId, return_origin: returnOrigin },
       })
       if (resp.error) {
         throw new Error(resp.error.message || "Failed to start checkout")
