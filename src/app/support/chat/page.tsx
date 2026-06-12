@@ -526,7 +526,11 @@ export default function UserSupportChatPage() {
     senderId: m.senderId,
     timestamp: m.timestamp,
     content: m.content,
-    kind: m.isSystemMessage ? "claimed" : undefined,
+    // Reserve kind="claimed" for the synthetic "Ticket is claimed by X" message —
+    // it triggers a render branch in TicketChat that swaps the layout for a
+    // helper-avatar variant and DOESN'T render the payment CTA. Payment
+    // system messages need the standard render path so their CTA shows.
+    kind: m.isSystemMessage && !m.paymentMetadata ? "claimed" : undefined,
     paymentMetadata: m.paymentMetadata ?? null,
   }))
 
