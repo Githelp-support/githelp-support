@@ -442,8 +442,8 @@ export default function SupportPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === "get-support" ? (
           !hasEnteredChat ? (
-            <div className="flex-1 flex flex-col items-center justify-center px-6">
-              <div className="flex flex-col items-center space-y-6">
+            <div className="flex-1 flex flex-col px-6 pt-[220px]">
+              <div className="flex flex-col items-start space-y-6">
                 {projectLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -459,10 +459,10 @@ export default function SupportPage() {
                     {projectName?.[0]?.toUpperCase() || "A"}
                   </div>
                 )}
-                <h1 className="text-3xl font-normal text-[#444444] text-center">
+                <h1 className="text-3xl font-normal text-[#444444] text-left">
                   Welcome to the support page for <span className="font-semibold">{projectName}</span>
                 </h1>
-                <p className="text-base font-medium text-[#444444] text-center">
+                <p className="text-base font-medium text-[#444444] text-left">
                   Get help with an issue by an expert validated by {projectName}
                 </p>
                 <div className="flex items-center gap-3">
