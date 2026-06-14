@@ -67,7 +67,7 @@ export default function BrandingSettingsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Branding" subtitle="Customize your project logo and primary color" />
         <main className="flex-1 px-8 py-6 overflow-auto">
-          <div className="max-w-4xl space-y-6">
+          <div className="max-w-4xl space-y-3">
             {/* Logo Upload Section */}
             <div className="bg-white rounded-lg py-6">
               <div className="flex items-center justify-between mb-[8px]">
