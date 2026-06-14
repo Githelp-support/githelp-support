@@ -212,7 +212,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   </Badge>
                 </div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3 pl-16">
                 <div className="flex items-center gap-2.5">
                   <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                   <span className="text-sm text-foreground/80 truncate">{helper.discord}</span>
