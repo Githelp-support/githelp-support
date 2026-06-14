@@ -188,6 +188,8 @@ export function TopBar() {
     return allowedRoles
   }
 
+  if (!isSignedIn) return null
+
   return (
     <>
       <div className="sticky top-0 z-40 w-full min-h-[60px] bg-[#FAFAFA] border-b border-border px-8 py-3 flex items-center justify-between">

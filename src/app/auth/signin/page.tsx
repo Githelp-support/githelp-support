@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Logo } from "@/components/brand/logo"
 import { loginUserGoogle, signInWithEmail, signInWithGitHub } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
 import { Loader2, Mail } from "lucide-react"
@@ -86,7 +87,9 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
-      <Card className="w-full max-w-md">
+      <div className="flex flex-col items-center gap-6 w-full max-w-md">
+        <Logo className="w-[50px] h-[50px]" />
+        <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Sign in</CardTitle>
           <CardDescription className="text-center">
@@ -215,6 +218,7 @@ export default function SignInPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
