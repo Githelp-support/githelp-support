@@ -282,7 +282,7 @@ export default function HelperProfilePage() {
           </section>
 
           {/* Editable category */}
-          <section className="mb-[12px]">
+          <section className="mb-[34px]">
             <h2 className="text-base font-semibold text-foreground mb-4">Helper category</h2>
             <div className="flex items-center gap-4 flex-wrap">
               <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
