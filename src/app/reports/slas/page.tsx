@@ -4,7 +4,6 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -12,6 +11,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
+import { getAvatarColorHexForId } from "@/lib/constants"
 
 interface ReportData {
   id: string
@@ -78,12 +78,11 @@ const getMonthYear = (dateString: string) => {
 }
 
 // Helper function to get initial and color for SLA
-const getSlaInitialAndColor = (slaName: string, index: number) => {
+const getSlaInitialAndColor = (slaName: string, slaId: string | null | undefined) => {
   const initials = (slaName || '?').trim().charAt(0).toUpperCase() || '?'
-  const colors = ["#82c95f", "#f09191", "#4aa19e", "#cbbcf6", "#f4bccc"]
   return {
     initial: initials,
-    color: colors[index % colors.length],
+    color: getAvatarColorHexForId(slaId),
   }
 }
 
@@ -150,8 +149,8 @@ export default function ReportsSLAsPage() {
     })
 
     // Convert to report format
-    return Array.from(grouped.entries()).map(([key, data], index) => {
-      const { initial, color } = getSlaInitialAndColor((data.sla as any)?.name || "Unknown", index)
+    return Array.from(grouped.entries()).map(([key, data]) => {
+      const { initial, color } = getSlaInitialAndColor((data.sla as any)?.name || "Unknown", (data.sla as any)?.id)
       return {
         id: key,
         period: data.month,
@@ -172,8 +171,11 @@ export default function ReportsSLAsPage() {
 
     return transfersData
       .filter((transfer) => transfer.ticket_id && transfer.completed_at)
-      .map((transfer, index) => {
-        const { initial, color } = getSlaInitialAndColor((transfer.sla as any)?.name || "Unknown", index)
+      .map((transfer) => {
+        const { initial, color } = getSlaInitialAndColor(
+          (transfer.sla as any)?.name || "Unknown",
+          (transfer as any)?.sla_id ?? transfer.id,
+        )
         return {
           id: transfer.id,
           date: formatDate(transfer.completed_at!),
@@ -397,7 +399,7 @@ export default function ReportsSLAsPage() {
                     <div className="col-span-1">
                       <input
                         type="checkbox"
-                        className="rounded border-border"
+                        className="rounded border-border accent-brand-primary"
                         checked={selectedRows.length === sortedReports.length && sortedReports.length > 0}
                         onChange={handleSelectAll}
                       />
@@ -460,20 +462,19 @@ export default function ReportsSLAsPage() {
                           <Checkbox
                             checked={selectedRows.includes(report.id)}
                             onCheckedChange={() => handleRowSelect(report.id)}
+                            className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
                           />
                         </div>
                         <div className="col-span-2">
                           <span className="text-sm text-foreground">{report.period}</span>
                         </div>
                         <div className="col-span-3 flex items-center space-x-3">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback
-                              className="text-sm font-medium text-foreground"
-                              style={{ backgroundColor: report.entityColor }}
-                            >
-                              {report.entityInitial}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: report.entityColor }}
+                          >
+                            {report.entityInitial}
+                          </div>
                           <span className="text-sm text-foreground">{report.entity}</span>
                         </div>
                         <div className="col-span-2">
@@ -515,7 +516,7 @@ export default function ReportsSLAsPage() {
                     <div className="col-span-1">
                       <input
                         type="checkbox"
-                        className="rounded border-border"
+                        className="rounded border-border accent-brand-primary"
                         checked={selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0}
                         onChange={handleTicketSelectAll}
                       />
@@ -578,20 +579,19 @@ export default function ReportsSLAsPage() {
                           <Checkbox
                             checked={selectedTicketRows.includes(ticket.id)}
                             onCheckedChange={() => handleTicketRowSelect(ticket.id)}
+                            className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
                           />
                         </div>
                         <div className="col-span-2">
                           <span className="text-sm text-foreground">{ticket.date}</span>
                         </div>
                         <div className="col-span-3 flex items-center space-x-3">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback
-                              className="text-sm font-medium text-foreground"
-                              style={{ backgroundColor: ticket.entityColor }}
-                            >
-                              {ticket.entityInitial}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div
+                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            style={{ backgroundColor: ticket.entityColor }}
+                          >
+                            {ticket.entityInitial}
+                          </div>
                           <span className="text-sm text-foreground">{ticket.entity}</span>
                         </div>
                         <div className="col-span-2">
