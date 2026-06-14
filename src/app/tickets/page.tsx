@@ -227,16 +227,17 @@ export default function TicketsPage() {
 
   const filteredTickets = getSortedTickets()
   const sortedPreviewCards = getSortedPreviewCards()
+  /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
+  const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
+  /** Only render the preview cards when there are no real tickets yet. When real tickets exist, the "Available" filter must show actual available tickets so the table and the "Available" stat container agree. */
+  const showAvailablePreviewCards = statusFilter === "available" && showTicketsPreview
   const visibleTicketCount =
-    statusFilter === "available" ? sortedPreviewCards.length : filteredTickets.length
+    showAvailablePreviewCards ? sortedPreviewCards.length : filteredTickets.length
 
   const getStatusColor = (status: string) =>
     getTicketStatusBadgeClass(status)
   const getPriorityColor = (priority: string) =>
     getPriorityBadgeClass(priority)
-
-  /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
-  const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
 
   const getTicketStats = () => {
     const total = visibleTickets.length
@@ -422,7 +423,7 @@ export default function TicketsPage() {
 
           {/* Tickets Table */}
           <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
-            {statusFilter === "available" ? (
+            {showAvailablePreviewCards ? (
             <>
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
