@@ -75,8 +75,8 @@ export default function HelperPayoutPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payout" subtitle="Set up payout details for support" />
 
-        <main className="flex-1 overflow-auto p-6">
-          <div className="bg-card rounded-lg p-6">
+        <main className="flex-1 overflow-auto py-6 px-8">
+          <div className="bg-card rounded-lg py-6 pr-6">
             <div className="flex items-center gap-2">
               <h2 className="text-base font-semibold text-foreground">Payout details</h2>
               <Info className="w-4 h-4 text-muted-foreground" />
