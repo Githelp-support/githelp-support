@@ -170,7 +170,7 @@ export default function ProjectSettingsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
         <main className="flex-1 py-6 px-8 overflow-y-auto">
-          <div className="max-w-4xl space-y-3">
+          <div className="max-w-4xl space-y-[18px]">
             {/* Admins */}
             <Card className="border-0 shadow-none rounded-lg py-0">
               <CardContent className="py-6 px-0">
