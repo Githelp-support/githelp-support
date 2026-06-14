@@ -232,8 +232,11 @@ export default function TicketsPage() {
   /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
   const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
 
-  /** Preview cards only render when the user is viewing the unclaimed filter AND there are no real tickets yet. */
-  const isRenderingPreviewCards = statusFilter === "available" && showTicketsPreview
+  /** The "Unclaimed" filter (statusFilter === "available") uses the preview-card visual style — both for real Unclaimed tickets and for the placeholder cards shown when the project has no tickets yet. */
+  const isUnclaimedView = statusFilter === "available"
+
+  /** Preview placeholder cards only render when the user is viewing the unclaimed filter AND there are no real tickets yet. */
+  const isRenderingPreviewCards = isUnclaimedView && showTicketsPreview
 
   const visibleTicketCount = isRenderingPreviewCards
     ? sortedPreviewCards.length
@@ -446,7 +449,7 @@ export default function TicketsPage() {
 
           {/* Tickets Table */}
           <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
-            {isRenderingPreviewCards ? (
+            {isUnclaimedView ? (
             <>
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
@@ -471,7 +474,10 @@ export default function TicketsPage() {
                   <div className="col-span-1" aria-hidden="true" />
                 </div>
               </div>
-              {sortedPreviewCards.map((card) => {
+              {isLoading ? (
+                <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
+              ) : isRenderingPreviewCards ? (
+                sortedPreviewCards.map((card) => {
                 const isExpanded = expandedPreviewCards.includes(card.id)
                 return (
                   <div
@@ -585,7 +591,131 @@ export default function TicketsPage() {
                     </div>
                   </div>
                 )
-              })}
+              })
+              ) : filteredTickets.length > 0 ? (
+                filteredTickets.map((ticket) => {
+                  const isExpanded = expandedPreviewCards.includes(ticket.id)
+                  return (
+                    <div
+                      key={ticket.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => togglePreviewCard(ticket.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          togglePreviewCard(ticket.id)
+                        }
+                      }}
+                      aria-expanded={isExpanded}
+                      className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50 cursor-pointer hover:bg-gray-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
+                    >
+                      <div className="grid grid-cols-12 gap-4 items-start">
+                        <div className="col-span-9">
+                          <div className="flex items-start gap-[18px]">
+                            <div
+                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                            >
+                              {ticket.user.avatar}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <Link
+                                href={`/helper/tickets/${ticket.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-sm font-medium text-foreground hover:text-brand-primary"
+                              >
+                                {ticket.user.name}
+                              </Link>
+                              <p className="text-sm font-medium text-foreground mt-0.5">{ticket.title}</p>
+                              <p className="text-sm text-muted-foreground mt-1 truncate">{ticket.description}</p>
+
+                              {isExpanded && (
+                                <div className="mt-4 space-y-4">
+                                  {/* Other topics */}
+                                  {ticket.topics.length > 0 && (
+                                    <div>
+                                      <h4 className="text-[13px] font-semibold text-foreground mb-2">Other topics</h4>
+                                      <div className="flex gap-2 flex-wrap">
+                                        {ticket.topics.map((topic) => (
+                                          <Badge key={topic} variant="secondary" className="bg-muted text-muted-foreground">
+                                            {topic}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Type of help */}
+                                  <div>
+                                    <h4 className="text-[13px] font-semibold text-foreground mb-2">Type of help</h4>
+                                    <div className="flex gap-2 flex-wrap">
+                                      <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
+                                        {ticket.type}
+                                      </Badge>
+                                    </div>
+                                  </div>
+
+                                  {/* Rates */}
+                                  <div>
+                                    <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                                    <div className="grid grid-cols-3 gap-4">
+                                      <div className="bg-card border border-border rounded-lg p-3">
+                                        <p className="text-sm text-muted-foreground mb-1">Start price</p>
+                                        <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                                      </div>
+                                      <div className="bg-card border border-border rounded-lg p-3">
+                                        <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
+                                        <p className="text-sm font-medium text-foreground">USD {ratePerMinute}/min</p>
+                                      </div>
+                                      <div className="bg-card border border-border rounded-lg p-3">
+                                        <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
+                                        <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex gap-3">
+                                    <Link href={`/helper/tickets/${ticket.id}`} onClick={(e) => e.stopPropagation()}>
+                                      <Button variant="lavender">
+                                        Claim ticket
+                                      </Button>
+                                    </Link>
+                                    <Button
+                                      variant="outline"
+                                      disabled
+                                      className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                    >
+                                      <Sparkles className="w-4 h-4" />
+                                      Rephrase with AI
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-span-2">
+                          <div className="text-sm text-muted-foreground">
+                            <div>{ticket.createdAt.split(", ")[0]}</div>
+                            <div className="text-xs text-muted-foreground">{ticket.createdAt.split(", ")[1]}</div>
+                          </div>
+                        </div>
+                        <div className="col-span-1 flex justify-end">
+                          {isExpanded ? (
+                            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
+              )}
             </>
             ) : (
             <>
