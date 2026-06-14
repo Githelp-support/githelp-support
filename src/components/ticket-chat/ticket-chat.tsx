@@ -114,6 +114,14 @@ export function TicketChat(props: TicketChatProps) {
 
   const thread = useMemo(() => messages ?? [], [messages])
 
+  // Once the ticket's payment is authorized, any earlier payment_required /
+  // payment_cap_exceeded system messages are stale — suppress their CTAs so the
+  // "Add payment method" button disappears after the hold is placed.
+  const paymentResolved = useMemo(
+    () => thread.some((m) => m.paymentMetadata?.kind === "payment_authorized"),
+    [thread],
+  )
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="relative border-b border-border z-10">
@@ -214,7 +222,7 @@ export function TicketChat(props: TicketChatProps) {
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent content={msg.content} />
-                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && (
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button
                                         type="button"
@@ -226,7 +234,7 @@ export function TicketChat(props: TicketChatProps) {
                                       </button>
                                     </div>
                                   )}
-                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_cap_exceeded" && (
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_cap_exceeded" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button
                                         type="button"

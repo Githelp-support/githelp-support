@@ -19,6 +19,7 @@ import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useTicketWithDetails, useUserActiveTicketsSidebar, useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
+import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -113,6 +114,13 @@ export default function UserSupportChatPage() {
   const organizationName = hasSLA ? projectName : null
   const freeHelpRemaining: string | null = null
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
+
+  // Ticket-ended summary for the customer: reflect that the helper closed the
+  // session and what was charged. Payment status is realtime so the amount
+  // settles from "Processing…" to the captured value without a reload.
+  const ticketEnded =
+    existingTicket?.status === "completed" || existingTicket?.status === "cancelled"
+  const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, { slaId })
 
   // When opening an existing ticket from URL, set ticket state
   useEffect(() => {
@@ -534,6 +542,43 @@ export default function UserSupportChatPage() {
     paymentMetadata: m.paymentMetadata ?? null,
   }))
 
+  // Append an end-of-session summary for the customer once the helper closes
+  // the ticket. kind:undefined keeps it on the standard system-bubble render
+  // path (the "claimed" layout branch is keyed on the top-level kind).
+  if (ticketEnded) {
+    const cancelled = existingTicket?.status === "cancelled"
+    const chargedLine = cancelled
+      ? "No charge"
+      : slaId
+        ? "Covered by your SLA"
+        : paymentStatus.status === "distributing" || paymentStatus.status === "completed"
+          ? paymentStatus.capturedAmountSmallestUnit != null
+            ? `$${(paymentStatus.capturedAmountSmallestUnit / 100).toFixed(2)}`
+            : "Charged"
+          : paymentStatus.status === "failed"
+            ? "Payment could not be processed"
+            : "Processing…"
+    chatMessages.push({
+      id: "session-summary",
+      senderType: "system",
+      senderName: null,
+      senderAvatarInitial: null,
+      senderId: null,
+      timestamp: "",
+      content: [
+        "**Session ended**",
+        "",
+        `The helper has ended this session — ${cancelled ? "they were not able to help" : "marked as resolved"}.`,
+        "",
+        `- **Outcome:** ${cancelled ? "Not able to help" : "Resolved"}`,
+        `- **Time logged:** ${totalLoggedFormatted}`,
+        `- **Amount charged:** ${chargedLine}`,
+      ].join("\n"),
+      kind: undefined,
+      paymentMetadata: null,
+    })
+  }
+
   const chatParticipants: TicketChatParticipant[] = allParticipants.map((p) => ({
     id: p.user.id,
     name: p.user.name,
@@ -651,7 +696,7 @@ export default function UserSupportChatPage() {
         onMessageChange={setMessage}
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
-        isEnded={false}
+        isEnded={ticketEnded}
         attachmentStoragePrefix={ticketId && effectiveProjectId ? `${effectiveProjectId}/${ticketId}` : undefined}
         onImageUploaded={(url) => {
           setMessage((prev) => prev + `\n![attachment](${url})\n`)

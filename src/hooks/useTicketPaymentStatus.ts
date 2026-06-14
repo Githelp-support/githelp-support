@@ -15,6 +15,13 @@ export type TicketPaymentStatus =
 export interface TicketPaymentResult {
   status: TicketPaymentStatus
   isReady: boolean
+  /** Amount actually captured from the payer, in the smallest currency unit. Null until capture. */
+  capturedAmountSmallestUnit: number | null
+}
+
+interface PaymentRow {
+  status: TicketPaymentStatus
+  captured_amount_smallest_unit: number | null
 }
 
 interface Opts {
@@ -42,13 +49,13 @@ export function useTicketPaymentStatus(
     queryFn: async () => {
       const resp = await supabase
         .from("payments")
-        .select("status")
+        .select("status, captured_amount_smallest_unit")
         .eq("ticket_id", ticketId as string)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle()
       if (resp.error) throw resp.error
-      return (resp.data as { status: TicketPaymentStatus } | null) ?? null
+      return (resp.data as PaymentRow | null) ?? null
     },
     staleTime: 30_000,
   })
@@ -70,7 +77,11 @@ export function useTicketPaymentStatus(
     }
   }, [ticketId, opts.slaId, queryClient])
 
-  if (opts.slaId) return { status: "sla_covered", isReady: true }
-  if (!data) return { status: "none", isReady: false }
-  return { status: data.status, isReady: data.status === "authorized" }
+  if (opts.slaId) return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null }
+  if (!data) return { status: "none", isReady: false, capturedAmountSmallestUnit: null }
+  return {
+    status: data.status,
+    isReady: data.status === "authorized",
+    capturedAmountSmallestUnit: data.captured_amount_smallest_unit ?? null,
+  }
 }

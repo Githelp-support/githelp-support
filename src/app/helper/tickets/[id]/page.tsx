@@ -31,6 +31,7 @@ import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
@@ -70,6 +71,7 @@ export default function TicketDetailPage() {
   const [message, setMessage] = useState("")
   const [justClaimedLocal, setJustClaimedLocal] = useState(false)
   const [justEndedLocal, setJustEndedLocal] = useState(false)
+  const [endOutcome, setEndOutcome] = useState<string | null>(null)
   const [userHasSLA, setUserHasSLA] = useState(false)
   const [isRephraseModalOpen, setIsRephraseModalOpen] = useState(false)
   const [isEndTicketDrawerOpen, setIsEndTicketDrawerOpen] = useState(false)
@@ -87,6 +89,7 @@ export default function TicketDetailPage() {
   const { data: messagesData, isLoading: messagesLoading } = useTicketMessages(ticketId)
   const sendMessage = useSendMessage()
   const updateTicket = useUpdateTicket()
+  const captureTicket = useCaptureTicket()
   const { user: currentUser } = useUser()
 
   // Fetch participants
@@ -387,6 +390,7 @@ export default function TicketDetailPage() {
 
   const handleEndTicket = (outcome: string) => {
     setJustEndedLocal(true)
+    setEndOutcome(outcome)
     setIsEndTicketDrawerOpen(false)
 
     if (!ticketId) return
@@ -406,26 +410,26 @@ export default function TicketDetailPage() {
       payload: {},
     })
 
-    // Also log that payment is being processed
-    void supabase.from("tickets_events").insert({
-      ticket_id: ticketId,
-      type: "payment_processing",
-      payload: {},
-    })
+    // Capture the authorized hold and kick off payout distribution. Only when
+    // the helper actually helped (status=completed), the ticket isn't
+    // SLA-covered (those bill via metered usage), and a hold is in place
+    // (status=authorized). "Not able to help" leaves the hold to auto-expire.
+    const isSlaCovered = !!(ticketDetails as { sla_id?: string | null } | undefined)?.sla_id
+    if (status === "completed" && !isSlaCovered && paymentGate.status === "authorized") {
+      void supabase.from("tickets_events").insert({
+        ticket_id: ticketId,
+        type: "payment_processing",
+        payload: {},
+      })
+      captureTicket.mutate(
+        { ticketId },
+        { onError: () => toast.error("Failed to process payment. You can retry below.") },
+      )
+    }
   }
 
   const handleSeeDetails = () => {
     // Here you would typically show a modal or navigate to a details page
-  }
-
-  const handleAwaitingPayment = () => {
-    // Log payment processing event in tickets_events
-    if (!ticketId) return
-    void supabase.from("tickets_events").insert({
-      ticket_id: ticketId,
-      type: "payment_processing",
-      payload: {},
-    })
   }
 
   const originalTicketText =
@@ -460,6 +464,34 @@ export default function TicketDetailPage() {
     const minutes = totalMinutes % 60
     return { hours, minutes, formatted: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} h` }
   }
+
+  // End-of-session summary (non-SLA). "Not able to help" cancels with no charge;
+  // otherwise we reflect the live capture/distribution status of the hold.
+  const isCancelledEnd = endOutcome === "not-able-to-help" || ticket?.status === "cancelled"
+  // Prefer the amount Stripe actually captured (DB, realtime) over the mutation
+  // result so we never show the reserved hold or a stale value.
+  const chargedSmallestUnit =
+    paymentGate.capturedAmountSmallestUnit ?? captureTicket.data?.finalAmountSmallestUnit ?? null
+  const paymentSettled =
+    paymentGate.status === "distributing" ||
+    paymentGate.status === "completed" ||
+    captureTicket.isSuccess
+  const paymentFailed = captureTicket.isError || paymentGate.status === "failed"
+  const paymentProcessing =
+    !paymentSettled &&
+    !paymentFailed &&
+    (captureTicket.isPending ||
+      paymentGate.status === "authorized" ||
+      paymentGate.status === "pending")
+  const chargedLabel = isCancelledEnd
+    ? "No charge"
+    : paymentSettled && chargedSmallestUnit != null
+      ? `$${(chargedSmallestUnit / 100).toFixed(2)}`
+      : paymentProcessing
+        ? "Processing…"
+        : paymentFailed
+          ? "Failed"
+          : "—"
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -705,14 +737,51 @@ export default function TicketDetailPage() {
                               See details
                             </Button>
                           ) : (
-                            <Button
-                              onClick={handleAwaitingPayment}
-                              variant="outline"
-                              size="sm"
-                              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-                            >
-                              Payment is being processed
-                            </Button>
+                            <div className="rounded-lg border border-border bg-muted/40 p-4 max-w-xs">
+                              <div className="space-y-1.5 text-[13px]">
+                                <div className="flex items-center justify-between gap-6">
+                                  <span className="text-muted-foreground">Outcome</span>
+                                  <span className="font-medium text-foreground">
+                                    {isCancelledEnd ? "Not able to help" : "Resolved"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-6">
+                                  <span className="text-muted-foreground">Time logged</span>
+                                  <span className="font-medium text-foreground tabular-nums">
+                                    {getTotalLoggedTime().formatted}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-6">
+                                  <span className="text-muted-foreground">Charged</span>
+                                  <span className="font-medium text-foreground tabular-nums">{chargedLabel}</span>
+                                </div>
+                              </div>
+
+                              {paymentFailed && (
+                                <Button
+                                  onClick={() =>
+                                    captureTicket.mutate(
+                                      { ticketId },
+                                      { onError: () => toast.error("Failed to process payment. Please try again.") },
+                                    )
+                                  }
+                                  disabled={captureTicket.isPending}
+                                  variant="outline"
+                                  size="sm"
+                                  className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                >
+                                  {captureTicket.isPending ? "Retrying…" : "Retry payment"}
+                                </Button>
+                              )}
+
+                              <div className="mt-3">
+                                <NextLink href="/tickets">
+                                  <Button variant="default" size="sm">
+                                    Back to tickets
+                                  </Button>
+                                </NextLink>
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
