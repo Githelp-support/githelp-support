@@ -154,7 +154,7 @@ export default function SupportPage() {
           created_at: string
           sender_type: string
           sender_id?: string
-          sender: { id?: string; name?: string; avatar_url?: string } | null
+          sender: { id?: string; name?: string; avatar_url?: string | null } | null
         }) => {
           const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system"
@@ -168,6 +168,7 @@ export default function SupportPage() {
             senderAvatarInitial:
               msg.sender?.name?.[0]?.toUpperCase() ||
               (senderType === "user" ? user?.name?.[0]?.toUpperCase() || "Y" : "H"),
+            senderAvatarUrl: msg.sender?.avatar_url ?? null,
             senderId: msg.sender_id ?? msg.sender?.id,
             timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
               day: "2-digit",

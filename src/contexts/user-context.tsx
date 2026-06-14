@@ -9,6 +9,7 @@ interface User {
   name: string
   role: UserRole
   avatar: string
+  avatarUrl: string | null
   id?: string
   email?: string
   projectRole?: UserRole | null // Highest role from project membership
@@ -51,6 +52,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       name: "Incognito",
       role: "user",
       avatar: "I",
+      avatarUrl: null,
     }
   })
   const [isLoading, setIsLoading] = useState(true)
@@ -78,12 +80,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
             ...prev,
             name: profile?.name || session.user.email?.split("@")[0] || "User",
             avatar: (profile?.name || session.user.email?.[0] || "U")[0].toUpperCase(),
+            avatarUrl: profile?.avatar_url ?? null,
             id: session.user.id,
             email: session.user.email || undefined,
             role: prev.role || resolveInitialRole(prev.projectRole),
           }))
         } else {
-          setUser({ name: "Incognito", role: "user", avatar: "I" })
+          setUser({ name: "Incognito", role: "user", avatar: "I", avatarUrl: null })
         }
       } catch {
         // Client likely corrupted (getSession hung). Reload to recover.
@@ -120,6 +123,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               name: profile.name || session.user.email?.split("@")[0] || "User",
               role: resolveInitialRole(prev.projectRole),
               avatar: (profile.name || session.user.email?.[0] || "U")[0].toUpperCase(),
+              avatarUrl: profile?.avatar_url ?? null,
               id: session.user.id,
               email: session.user.email || undefined,
               projectRole: prev.projectRole,
@@ -129,6 +133,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               name: session.user.email?.split("@")[0] || "User",
               role: resolveInitialRole(prev.projectRole),
               avatar: (session.user.email?.[0] || "U")[0].toUpperCase(),
+              avatarUrl: null,
               id: session.user.id,
               email: session.user.email || undefined,
               projectRole: prev.projectRole,
@@ -140,6 +145,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             name: "Incognito",
             role: "user",
             avatar: "I",
+            avatarUrl: null,
           })
         }
       } catch (error) {
@@ -161,6 +167,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           name: "Incognito",
           role: "user",
           avatar: "I",
+          avatarUrl: null,
           projectRole: null,
         })
       } else if (event === 'SIGNED_IN' && session?.user) {
@@ -177,6 +184,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               name: profile.name || session.user.email?.split("@")[0] || "User",
               role: prev.role || resolveInitialRole(prev.projectRole),
               avatar: (profile.name || session.user.email?.[0] || "U")[0].toUpperCase(),
+              avatarUrl: profile?.avatar_url ?? null,
               id: session.user.id,
               email: session.user.email || undefined,
               projectRole: prev.projectRole,
@@ -186,6 +194,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
               name: session.user.email?.split("@")[0] || "User",
               role: prev.role || resolveInitialRole(prev.projectRole),
               avatar: (session.user.email?.[0] || "U")[0].toUpperCase(),
+              avatarUrl: null,
               id: session.user.id,
               email: session.user.email || undefined,
               projectRole: prev.projectRole,

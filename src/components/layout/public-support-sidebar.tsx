@@ -3,6 +3,7 @@
 import { ChevronsLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
@@ -164,13 +165,22 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
           Incognito guest identity for anonymous visitors. */}
       <div className="px-3 py-2.5 border-t border-sidebar-border shrink-0">
         <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
-          <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
-            <AvatarFallback
-              className={`${isAuthenticated ? "bg-brand-primary" : "bg-[#868c98]"} text-white text-sm rounded-[10px] font-medium`}
-            >
-              {user.avatar}
-            </AvatarFallback>
-          </Avatar>
+          {isAuthenticated ? (
+            <ProfileAvatar
+              id={user.id}
+              name={user.name}
+              avatarUrl={user.avatarUrl}
+              size="sm"
+            />
+          ) : (
+            <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
+              <AvatarFallback
+                className="bg-[#868c98] text-white text-sm rounded-[10px] font-medium"
+              >
+                {user.avatar}
+              </AvatarFallback>
+            </Avatar>
+          )}
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>

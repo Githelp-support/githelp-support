@@ -39,7 +39,7 @@ import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
 import { supabase } from "@/lib/supabase/client"
 import { useUser } from "@/contexts/user-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -59,6 +59,7 @@ interface Message {
   avatar?: string
   senderName?: string
   senderId?: string
+  senderAvatarUrl?: string | null
   type?: "claimed" | "ended"
 }
 
@@ -227,6 +228,7 @@ export default function TicketDetailPage() {
         avatar: claimer.name?.[0]?.toUpperCase() || "H",
         senderName: claimer.name || "Helper",
         senderId: claimer.id,
+        senderAvatarUrl: claimer.avatar_url ?? null,
         type: "claimed",
       })
     }
@@ -246,6 +248,7 @@ export default function TicketDetailPage() {
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
         senderName: msg.sender?.name || "Unknown",
         senderId: msg.sender_id ?? msg.sender?.id,
+        senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
       }))
     )
@@ -255,12 +258,16 @@ export default function TicketDetailPage() {
   const firstIssueMessage = useMemo(() => {
     const ticketCreatorId =
       (ticketDetails?.user as { id?: string } | undefined)?.id ?? ticket?.created_by ?? undefined
+    const ticketCreatorAvatarUrl =
+      (ticketDetails?.user as { avatar_url?: string | null } | undefined)?.avatar_url ?? null
     const firstUser = messagesData?.find((m: { sender_type: string }) => m.sender_type === "user")
     if (firstUser) {
       return {
         content: firstUser.content,
         senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "Customer",
         senderId: (firstUser as { sender_id?: string }).sender_id ?? ticketCreatorId,
+        senderAvatarUrl:
+          (firstUser as { sender?: { avatar_url?: string | null } }).sender?.avatar_url ?? ticketCreatorAvatarUrl,
         timestamp: firstUser.created_at,
       }
     }
@@ -269,6 +276,7 @@ export default function TicketDetailPage() {
         content: ticket?.description ?? ticketDetails?.description ?? "",
         senderName: ticketDetails?.user?.name ?? "Customer",
         senderId: ticketCreatorId,
+        senderAvatarUrl: ticketCreatorAvatarUrl,
         timestamp: ticket?.created_at ?? "",
       }
     }
@@ -276,6 +284,7 @@ export default function TicketDetailPage() {
       content: "",
       senderName: ticketDetails?.user?.name ?? "Customer",
       senderId: ticketCreatorId,
+      senderAvatarUrl: ticketCreatorAvatarUrl,
       timestamp: ticket?.created_at ?? "",
     }
   }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description])
@@ -482,12 +491,13 @@ export default function TicketDetailPage() {
                     <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
                 <div className="flex gap-3 items-start">
-                  <div
-                    className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                    style={{ backgroundColor: getAvatarColorHexForId(firstIssueMessage.senderId) }}
-                  >
-                    {firstIssueMessage.senderName?.[0]?.toUpperCase() ?? "C"}
-                  </div>
+                  <ProfileAvatar
+                    id={firstIssueMessage.senderId}
+                    name={firstIssueMessage.senderName ?? "C"}
+                    avatarUrl={firstIssueMessage.senderAvatarUrl ?? null}
+                    size="sm"
+                    radius="9.625px"
+                  />
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -610,12 +620,13 @@ export default function TicketDetailPage() {
                     <div key={msg.id} className="flex gap-3 items-start">
                       {msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended") ? (
                         <div className="flex items-start gap-3 w-full">
-                          <div
-                            className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
-                          >
-                            {msg.avatar || "H"}
-                          </div>
+                          <ProfileAvatar
+                            id={msg.senderId}
+                            name={msg.senderName ?? msg.avatar ?? "H"}
+                            avatarUrl={msg.senderAvatarUrl ?? null}
+                            size="sm"
+                            radius="9.625px"
+                          />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
@@ -639,12 +650,13 @@ export default function TicketDetailPage() {
                       ) : (
                         <>
                           {msg.sender !== "system" && (
-                            <div
-                              className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                              style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
-                            >
-                              {msg.avatar}
-                            </div>
+                            <ProfileAvatar
+                              id={msg.senderId}
+                              name={msg.senderName ?? msg.avatar ?? "U"}
+                              avatarUrl={msg.senderAvatarUrl ?? null}
+                              size="sm"
+                              radius="9.625px"
+                            />
                           )}
                           <div className={`flex-1 ${msg.sender === "system" ? "text-center" : ""}`}>
                             {msg.sender !== "system" && (
@@ -679,12 +691,13 @@ export default function TicketDetailPage() {
                   ))}
                   {isTicketEnded && (
                     <div className="flex gap-3 pt-2 items-start">
-                      <div
-                        className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                        style={{ backgroundColor: getAvatarColorHexForId(claimer?.id) }}
-                      >
-                        {claimer?.name?.[0]?.toUpperCase() || "H"}
-                      </div>
+                      <ProfileAvatar
+                        id={claimer?.id}
+                        name={claimer?.name ?? "H"}
+                        avatarUrl={claimer?.avatar_url ?? null}
+                        size="sm"
+                        radius="9.625px"
+                      />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Check className="w-4 h-4 text-brand-primary shrink-0" />
@@ -770,15 +783,14 @@ export default function TicketDetailPage() {
                   <div className="space-y-2 mb-3">
                     {allParticipants.map((participant) => {
                       const isCurrentUser = participant.participant_id === currentUser?.id
-                      const avatarInitial = participant.user.name?.[0]?.toUpperCase() || "U"
                       return (
                         <div key={participant.id} className="flex items-center gap-2">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: getAvatarColorHexForId(participant.user.id) }}
-                          >
-                            {avatarInitial}
-                          </div>
+                          <ProfileAvatar
+                            id={participant.user.id}
+                            name={participant.user.name}
+                            avatarUrl={participant.user.avatar_url ?? null}
+                            size="md"
+                          />
                           <span className="text-[13px] text-muted-foreground">
                             {isCurrentUser ? "You" : participant.user.name}
                           </span>
@@ -892,21 +904,12 @@ export default function TicketDetailPage() {
                       >
                         <div className="p-3">
                           <div className="flex items-start gap-3">
-                            {item.avatarUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={item.avatarUrl}
-                                alt=""
-                                className="w-8 h-8 rounded-[11px] object-cover shrink-0"
-                              />
-                            ) : (
-                              <div
-                                className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                                style={{ backgroundColor: getAvatarColorHexForId(item.creatorId) }}
-                              >
-                                {item.avatarInitial}
-                              </div>
-                            )}
+                            <ProfileAvatar
+                              id={item.creatorId}
+                              name={item.avatarInitial}
+                              avatarUrl={item.avatarUrl}
+                              size="md"
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1 mb-1">
                                 <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>

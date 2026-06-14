@@ -6,6 +6,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -431,9 +432,12 @@ export function Sidebar({ className }: SidebarProps) {
 
       <div className="px-3 py-2.5 border-t border-sidebar-border">
         <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
-          <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
-            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[10px] font-medium">{user.avatar}</AvatarFallback>
-          </Avatar>
+          <ProfileAvatar
+            id={user.id}
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+            size="sm"
+          />
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
