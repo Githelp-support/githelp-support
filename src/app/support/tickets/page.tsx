@@ -198,30 +198,21 @@ export default function SupportTicketsPage() {
   }, [tickets, statusFilter, sortField, sortDirection])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden bg-background">
         <Header
           title="My tickets"
           subtitle="View and manage your support requests"
         />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {isAuthenticated
-                ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`
-                : "Sign in to see your tickets"}
-            </p>
-            <Button
-              onClick={() => setIsNewTicketModalOpen(true)}
-              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
-            >
-              <Plus className="h-4 w-4" />
-              New ticket
-            </Button>
-          </div>
+        <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-background">
+          <p className="text-sm text-muted-foreground">
+            {isAuthenticated
+              ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`
+              : "Sign in to see your tickets"}
+          </p>
 
           {!isAuthenticated && (
             <Card className="border-border">
@@ -245,46 +236,55 @@ export default function SupportTicketsPage() {
           {isAuthenticated && (
             <>
               {/* Filter Cards */}
-              <div className="grid grid-cols-2 gap-4 min-[1200px]:grid-cols-4">
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("in-progress")}
-                  aria-pressed={statusFilter === "in-progress"}
-                  className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-                >
-                  <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
-                    {statusFilter === "in-progress" && (
-                      <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
-                    )}
-                    <CardContent className="px-5 py-4">
-                      <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Active tickets</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </button>
+              <div className="flex items-end gap-4">
+                <div className="grid grid-cols-2 gap-4 flex-1 min-[1200px]:grid-cols-4">
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("in-progress")}
+                    aria-pressed={statusFilter === "in-progress"}
+                    className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  >
+                    <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                      {statusFilter === "in-progress" && (
+                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                      )}
+                      <CardContent className="px-5 py-4">
+                        <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">Active tickets</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("completed")}
-                  aria-pressed={statusFilter === "completed"}
-                  className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("completed")}
+                    aria-pressed={statusFilter === "completed"}
+                    className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  >
+                    <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                      {statusFilter === "completed" && (
+                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                      )}
+                      <CardContent className="px-5 py-4">
+                        <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
+                        <div className="flex items-center gap-2">
+                          <User className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">Completed tickets</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </button>
+                </div>
+                <Button
+                  onClick={() => setIsNewTicketModalOpen(true)}
+                  className="bg-brand-primary hover:bg-brand-primary/90 text-white"
                 >
-                  <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
-                    {statusFilter === "completed" && (
-                      <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
-                    )}
-                    <CardContent className="px-5 py-4">
-                      <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
-                      <div className="flex items-center gap-2">
-                        <User className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Completed tickets</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </button>
+                  <Plus className="h-4 w-4" />
+                  New ticket
+                </Button>
               </div>
 
               {/* Loading / Empty / Table */}
