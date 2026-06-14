@@ -18,6 +18,13 @@ export interface TicketWithDetails {
         email: string | null;
     };
     message_count?: number;
+    /**
+     * True when a non-creator participant exists in `tickets_participants`
+     * for this ticket — i.e. another helper has either claimed the ticket
+     * or joined the chat. Used by the Admin Tickets page to scope the
+     * "Unclaimed" status to tickets with no helper involvement.
+     */
+    has_helper?: boolean;
 }
 
 export function useTicketsWithDetails(projectId?: string) {
@@ -77,6 +84,28 @@ export function useTicketsWithDetails(projectId?: string) {
                 );
             });
 
+            // Determine which tickets have a non-creator participant — i.e.
+            // a helper has either claimed the ticket or joined the chat. The
+            // Admin Tickets page uses this to scope the "Unclaimed" status to
+            // tickets with no helper involvement at all.
+            const createdByByTicket = new Map<string, string | null>();
+            (data || []).forEach((t: any) => {
+                createdByByTicket.set(t.id, t.created_by ?? null);
+            });
+            const { data: participantRows } = ticketIds.length
+                ? await supabase
+                      .from("tickets_participants")
+                      .select("ticket_id, participant_id")
+                      .in("ticket_id", ticketIds)
+                : { data: [] as any[] };
+            const hasHelperByTicket = new Map<string, boolean>();
+            participantRows?.forEach((p: any) => {
+                const creatorId = createdByByTicket.get(p.ticket_id);
+                if (p.participant_id && p.participant_id !== creatorId) {
+                    hasHelperByTicket.set(p.ticket_id, true);
+                }
+            });
+
             // Transform the data to a flatter structure
             return (data || []).map((ticket: any) => ({
                 ...ticket,
@@ -95,6 +124,7 @@ export function useTicketsWithDetails(projectId?: string) {
                     ? usersMap.get(ticket.created_by)
                     : null,
                 message_count: countsMap.get(ticket.id) || 0,
+                has_helper: hasHelperByTicket.get(ticket.id) === true,
             })) as TicketWithDetails[];
         },
         enabled: !!projectId,

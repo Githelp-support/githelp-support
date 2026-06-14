@@ -34,6 +34,7 @@ interface Ticket {
   estimatedTime?: string
   rate?: string
   messages?: number
+  hasHelper: boolean
   helper?: {
     name: string
     avatar: string
@@ -116,6 +117,7 @@ export default function TicketsPage() {
       estimatedTime: "30-45 min", // TODO: Calculate from time entries
       rate: `USD ${ratePerMinute}/min`,
       messages: ticket.message_count || 0,
+      hasHelper: ticket.has_helper === true,
       helper: undefined as { name: string; avatar: string } | undefined, // TODO: Fetch helper data if ticket is claimed/in-progress
     })) as Ticket[]
   }, [ticketsData, ratePerMinute])
@@ -134,11 +136,26 @@ export default function TicketsPage() {
     }
   }
 
+  // A ticket counts as "Unclaimed" only when its status is "available" AND no
+  // helper has either claimed it or joined the chat (no non-creator participant).
+  const isUnclaimedTicket = (ticket: Ticket) =>
+    ticket.status === "available" && !ticket.hasHelper
+
   const getSortedTickets = () => {
     const filtered = tickets.filter((ticket) => {
       if (statusFilter !== "all") {
-        if (statusFilter === "in-progress") {
-          if (ticket.status !== "in-progress" && ticket.status !== "claimed") return false
+        if (statusFilter === "available") {
+          if (!isUnclaimedTicket(ticket)) return false
+        } else if (statusFilter === "in-progress") {
+          // "In Progress" merges the legacy "claimed" status with "in-progress".
+          // We also count "available" tickets that have a helper involved
+          // (claimed by another, or another helper in the chat) since those
+          // are no longer surfaced under "Unclaimed".
+          const isInProgressLike =
+            ticket.status === "in-progress" ||
+            ticket.status === "claimed" ||
+            (ticket.status === "available" && ticket.hasHelper)
+          if (!isInProgressLike) return false
         } else if (ticket.status !== statusFilter) {
           return false
         }
@@ -243,11 +260,19 @@ export default function TicketsPage() {
     const total = tickets.length
     // When the table is actually rendering preview cards, the "Unclaimed" stat should match
     // the number of preview rows so the container count matches the visible rows. Otherwise
-    // it reflects the real count of tickets with status === "available".
+    // it reflects the real count of tickets that are unclaimed AND have no helper involved
+    // (matches the filtered table below the container).
     const unclaimed = isRenderingPreviewCards
       ? SUPPORT_TICKET_PREVIEW_CARDS.length
-      : tickets.filter((t) => t.status === "available").length
-    const inProgress = tickets.filter((t) => t.status === "in-progress" || t.status === "claimed").length
+      : tickets.filter(isUnclaimedTicket).length
+    // Tickets with a helper involved but status still "available" are surfaced as
+    // "In Progress" since they're no longer considered "Unclaimed".
+    const inProgress = tickets.filter(
+      (t) =>
+        t.status === "in-progress" ||
+        t.status === "claimed" ||
+        (t.status === "available" && t.hasHelper)
+    ).length
     const completed = tickets.filter((t) => t.status === "completed").length
 
     return { total, unclaimed, inProgress, completed }
@@ -653,13 +678,27 @@ export default function TicketsPage() {
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center gap-2">
-                      <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
-                        {ticket.status === "in-progress" || ticket.status === "claimed"
-                          ? "In Progress"
+                      {(() => {
+                        // A ticket with status "available" but a helper already
+                        // claimed/joined is rendered as "In Progress" so it
+                        // matches the table grouping and color coding.
+                        const isUnclaimed = isUnclaimedTicket(ticket)
+                        const displayStatus = isUnclaimed
+                          ? "available"
                           : ticket.status === "available"
+                          ? "in-progress"
+                          : ticket.status
+                        const label = isUnclaimed
                           ? "Unclaimed"
-                          : "Completed"}
-                      </Badge>
+                          : displayStatus === "in-progress" || displayStatus === "claimed"
+                          ? "In Progress"
+                          : "Completed"
+                        return (
+                          <Badge className={`text-xs ${getStatusColor(displayStatus)}`}>
+                            {label}
+                          </Badge>
+                        )
+                      })()}
                       {ticket.helper && (
                         <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-white text-xs font-medium shrink-0">
                           {ticket.helper.avatar}
