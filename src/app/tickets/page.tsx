@@ -13,7 +13,7 @@ import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
+import { getPriorityBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 
@@ -34,6 +34,7 @@ interface Ticket {
   estimatedTime?: string
   rate?: string
   messages?: number
+  hasHelper: boolean
   helper?: {
     name: string
     avatar: string
@@ -116,6 +117,7 @@ export default function TicketsPage() {
       estimatedTime: "30-45 min", // TODO: Calculate from time entries
       rate: `USD ${ratePerMinute}/min`,
       messages: ticket.message_count || 0,
+      hasHelper: ticket.has_helper === true,
       helper: undefined as { name: string; avatar: string } | undefined, // TODO: Fetch helper data if ticket is claimed/in-progress
     })) as Ticket[]
   }, [ticketsData, ratePerMinute])
@@ -134,9 +136,30 @@ export default function TicketsPage() {
     }
   }
 
+  // A ticket counts as "Unclaimed" only when its status is "available" AND no
+  // helper has either claimed it or joined the chat (no non-creator participant).
+  const isUnclaimedTicket = (ticket: Ticket) =>
+    ticket.status === "available" && !ticket.hasHelper
+
   const getSortedTickets = () => {
     const filtered = tickets.filter((ticket) => {
-      if (statusFilter !== "all" && ticket.status !== statusFilter) return false
+      if (statusFilter !== "all") {
+        if (statusFilter === "available") {
+          if (!isUnclaimedTicket(ticket)) return false
+        } else if (statusFilter === "in-progress") {
+          // "In Progress" merges the legacy "claimed" status with "in-progress".
+          // We also count "available" tickets that have a helper involved
+          // (claimed by another, or another helper in the chat) since those
+          // are no longer surfaced under "Unclaimed".
+          const isInProgressLike =
+            ticket.status === "in-progress" ||
+            ticket.status === "claimed" ||
+            (ticket.status === "available" && ticket.hasHelper)
+          if (!isInProgressLike) return false
+        } else if (ticket.status !== statusFilter) {
+          return false
+        }
+      }
       if (typeFilter !== "all" && ticket.type !== typeFilter) return false
       if (priorityFilter !== "all" && ticket.priority !== priorityFilter) return false
       return true
@@ -205,29 +228,54 @@ export default function TicketsPage() {
 
   const filteredTickets = getSortedTickets()
   const sortedPreviewCards = getSortedPreviewCards()
-  const visibleTicketCount =
-    statusFilter === "available" ? sortedPreviewCards.length : filteredTickets.length
-
-  const getStatusColor = (status: string) =>
-    getTicketStatusBadgeClass(status)
-  const getPriorityColor = (priority: string) =>
-    getPriorityBadgeClass(priority)
 
   /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
   const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
 
+  /** Preview cards only render when the user is viewing the unclaimed filter AND there are no real tickets yet. */
+  const isRenderingPreviewCards = statusFilter === "available" && showTicketsPreview
+
+  const visibleTicketCount = isRenderingPreviewCards
+    ? sortedPreviewCards.length
+    : filteredTickets.length
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "available":
+      case "unclaimed":
+        return "bg-muted text-muted-foreground"
+      case "claimed":
+      case "in-progress":
+        return "bg-status-warning-bg text-status-warning-text"
+      case "completed":
+        return "bg-status-success-bg text-status-success-text"
+      default:
+        return "bg-muted text-muted-foreground"
+    }
+  }
+  const getPriorityColor = (priority: string) =>
+    getPriorityBadgeClass(priority)
+
   const getTicketStats = () => {
     const total = tickets.length
-    // When showing preview cards (no real tickets yet), the "Available" stat should reflect
-    // the preview cards rendered in the table — otherwise the container reads 0 while 3 preview
-    // tickets are visible.
-    const available = showTicketsPreview
+    // When the table is actually rendering preview cards, the "Unclaimed" stat should match
+    // the number of preview rows so the container count matches the visible rows. Otherwise
+    // it reflects the real count of tickets that are unclaimed AND have no helper involved
+    // (matches the filtered table below the container).
+    const unclaimed = isRenderingPreviewCards
       ? SUPPORT_TICKET_PREVIEW_CARDS.length
-      : tickets.filter((t) => t.status === "available").length
-    const inProgress = tickets.filter((t) => t.status === "in-progress").length
+      : tickets.filter(isUnclaimedTicket).length
+    // Tickets with a helper involved but status still "available" are surfaced as
+    // "In Progress" since they're no longer considered "Unclaimed".
+    const inProgress = tickets.filter(
+      (t) =>
+        t.status === "in-progress" ||
+        t.status === "claimed" ||
+        (t.status === "available" && t.hasHelper)
+    ).length
     const completed = tickets.filter((t) => t.status === "completed").length
 
-    return { total, available, inProgress, completed }
+    return { total, unclaimed, inProgress, completed }
   }
 
   const stats = getTicketStats()
@@ -279,10 +327,10 @@ export default function TicketsPage() {
                   <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
                 )}
                 <CardContent className="px-5 py-4">
-                  <div className="text-xl font-bold text-foreground mb-1">{stats.available}</div>
+                  <div className="text-xl font-bold text-foreground mb-1">{stats.unclaimed}</div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Available</span>
+                    <span className="text-xs text-muted-foreground">Unclaimed</span>
                   </div>
                 </CardContent>
               </Card>
@@ -351,8 +399,7 @@ export default function TicketsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Status</SelectItem>
-                <SelectItem value="available" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Available</SelectItem>
-                <SelectItem value="claimed" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Claimed</SelectItem>
+                <SelectItem value="available" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Unclaimed</SelectItem>
                 <SelectItem value="in-progress" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">In Progress</SelectItem>
                 <SelectItem value="completed" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Completed</SelectItem>
               </SelectContent>
@@ -399,7 +446,7 @@ export default function TicketsPage() {
 
           {/* Tickets Table */}
           <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
-            {statusFilter === "available" ? (
+            {isRenderingPreviewCards ? (
             <>
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
@@ -631,11 +678,27 @@ export default function TicketsPage() {
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center gap-2">
-                      <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
-                        {ticket.status === "in-progress"
+                      {(() => {
+                        // A ticket with status "available" but a helper already
+                        // claimed/joined is rendered as "In Progress" so it
+                        // matches the table grouping and color coding.
+                        const isUnclaimed = isUnclaimedTicket(ticket)
+                        const displayStatus = isUnclaimed
+                          ? "available"
+                          : ticket.status === "available"
+                          ? "in-progress"
+                          : ticket.status
+                        const label = isUnclaimed
+                          ? "Unclaimed"
+                          : displayStatus === "in-progress" || displayStatus === "claimed"
                           ? "In Progress"
-                          : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-                      </Badge>
+                          : "Completed"
+                        return (
+                          <Badge className={`text-xs ${getStatusColor(displayStatus)}`}>
+                            {label}
+                          </Badge>
+                        )
+                      })()}
                       {ticket.helper && (
                         <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-white text-xs font-medium shrink-0">
                           {ticket.helper.avatar}
