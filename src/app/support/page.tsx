@@ -442,7 +442,7 @@ export default function SupportPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === "get-support" ? (
           !hasEnteredChat ? (
-            <div className="flex-1 flex flex-col px-[72px] pt-[180px]">
+            <div className="flex-1 flex flex-col px-[72px] pt-[160px]">
               <div className="flex flex-col items-start space-y-6">
                 {projectLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
