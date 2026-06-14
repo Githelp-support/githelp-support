@@ -223,7 +223,7 @@ export default function HelperProfilePage() {
           </div>
 
           {/* Editable contact information */}
-          <section className="mb-[34px] rounded-[10px] p-6">
+          <section className="mb-[34px]">
             <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">
