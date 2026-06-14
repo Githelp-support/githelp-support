@@ -39,6 +39,7 @@ const TAB_KEY_TO_LABEL: Record<TabKey, string> = {
 
 export default function SupportPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("get-support")
+  const [hasEnteredChat, setHasEnteredChat] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const { user, setProjectRole } = useUser()
   const searchParams = useSearchParams()
@@ -440,6 +441,47 @@ export default function SupportPage() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === "get-support" ? (
+          !hasEnteredChat ? (
+            <div className="flex-1 flex flex-col items-center justify-center px-6">
+              <div className="flex flex-col items-center space-y-6">
+                {projectLogo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={projectLogo}
+                    alt={`${projectName} logo`}
+                    className="w-20 h-20 rounded-[12px] object-cover border border-[#E1E4EA]"
+                  />
+                ) : (
+                  <div
+                    className="w-20 h-20 rounded-[12px] flex items-center justify-center text-2xl font-medium text-foreground border border-[#E1E4EA]"
+                    style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                  >
+                    {projectName?.[0]?.toUpperCase() || "A"}
+                  </div>
+                )}
+                <h1 className="text-3xl font-normal text-[#444444] text-center">
+                  Welcome to the support page for <span className="font-semibold">{projectName}</span>
+                </h1>
+                <p className="text-base font-medium text-[#444444] text-center">
+                  Get help with an issue by an expert validated by {projectName}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={() => setHasEnteredChat(true)}
+                    className="bg-[#554abf] hover:bg-[#4a3fa3] text-white cursor-pointer"
+                  >
+                    Get support
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
+                  >
+                    I have an SLA ID
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
           <TicketChat
             headerTitle={projectName}
             subtitle={`Welcome to the support page for ${projectName}`}
@@ -483,6 +525,7 @@ export default function SupportPage() {
               setMessage((prev) => prev + `\n![attachment](${url})\n`)
             }}
           />
+          )
         ) : (
           <div className="flex-1 overflow-y-auto">
             <div className={`max-w-7xl mx-auto py-12 ${activeTab === "rates" ? "px-[72px]" : "px-6"}`}>
