@@ -9,7 +9,7 @@ import { Check, Info, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 
 export type TicketChatMessage = {
   id: string
@@ -27,6 +27,7 @@ export type TicketChatParticipant = {
   id: string
   name: string
   avatarInitial: string
+  avatarUrl?: string | null
   isCurrentUser?: boolean
 }
 
@@ -142,12 +143,13 @@ export function TicketChat(props: TicketChatProps) {
                         <div key={msg.id} className="flex gap-3 items-start">
                           {msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended") ? (
                             <div className="flex items-start gap-3 w-full">
-                              <div
-                                className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                                style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
-                              >
-                                {msg.senderAvatarInitial || "M"}
-                              </div>
+                              <ProfileAvatar
+                                id={msg.senderId}
+                                name={msg.senderName}
+                                avatarUrl={msg.senderAvatarUrl ?? null}
+                                size="sm"
+                                radius="9.625px"
+                              />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
@@ -173,12 +175,13 @@ export function TicketChat(props: TicketChatProps) {
                           ) : (
                             <>
                               {msg.senderType !== "system" && (
-                                <div
-                                  className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                                  style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
-                                >
-                                  {msg.senderAvatarInitial || "U"}
-                                </div>
+                                <ProfileAvatar
+                                  id={msg.senderId}
+                                  name={msg.senderName}
+                                  avatarUrl={msg.senderAvatarUrl ?? null}
+                                  size="sm"
+                                  radius="9.625px"
+                                />
                               )}
 
                               <div className="flex-1">
@@ -288,12 +291,12 @@ export function TicketChat(props: TicketChatProps) {
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
                     <div key={p.id} className="flex items-center gap-2">
-                      <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                        style={{ backgroundColor: getAvatarColorHexForId(p.id) }}
-                      >
-                        {p.avatarInitial}
-                      </div>
+                      <ProfileAvatar
+                        id={p.id}
+                        name={p.name}
+                        avatarUrl={p.avatarUrl ?? null}
+                        size="md"
+                      />
                       <span className="text-[13px] text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
                     </div>
                   ))}

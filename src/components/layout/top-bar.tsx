@@ -4,6 +4,7 @@ import { Bell, ChevronDown, Check, Plus } from "lucide-react"
 import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
 import {
   DropdownMenu,
@@ -302,9 +303,12 @@ export function TopBar() {
               </span>
             )}
           </button>
-          <Avatar className="w-7 h-7 rounded-[10px]">
-            <AvatarFallback className="bg-brand-primary text-white text-sm rounded-[10px] font-medium">{user.avatar}</AvatarFallback>
-          </Avatar>
+          <ProfileAvatar
+            id={user.id}
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+            size="sm"
+          />
         </div>
       </div>
 

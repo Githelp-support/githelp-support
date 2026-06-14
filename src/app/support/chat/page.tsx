@@ -32,6 +32,7 @@ interface Message {
   content: string
   timestamp: string
   avatar?: string
+  avatarUrl?: string | null
   senderName?: string
   senderId?: string
   codeBlock?: {
@@ -257,7 +258,7 @@ export default function UserSupportChatPage() {
       })
     }
     if (messagesData?.length) {
-      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; sender: { id?: string; name?: string; avatar_url?: string } | null }) => {
+      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; sender: { id?: string; name?: string; avatar_url?: string | null } | null }) => {
         list.push({
           id: msg.id,
           sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -270,6 +271,7 @@ export default function UserSupportChatPage() {
             minute: "2-digit",
           }),
           avatar: msg.sender?.name?.[0]?.toUpperCase() || (msg.sender_type === "user" ? (user?.name?.[0] || "Y") : "H"),
+          avatarUrl: msg.sender?.avatar_url ?? null,
           senderName: msg.sender?.name || (msg.sender_type === "user" ? (user?.name || "You") : "Helper"),
           senderId: msg.sender_id ?? msg.sender?.id,
         })
@@ -500,7 +502,8 @@ export default function UserSupportChatPage() {
     senderType: m.isSystemMessage ? "system" : m.sender,
     senderName: m.senderName,
     senderAvatarInitial: m.avatar,
-    senderAvatarUrl: m.id === "1" && m.sender === "system" ? projectLogo : undefined,
+    senderAvatarUrl:
+      m.avatarUrl ?? (m.id === "1" && m.sender === "system" ? projectLogo : undefined),
     senderId: m.senderId,
     timestamp: m.timestamp,
     content: m.content,
@@ -511,6 +514,7 @@ export default function UserSupportChatPage() {
     id: p.user.id,
     name: p.user.name,
     avatarInitial: p.user.name?.[0]?.toUpperCase() ?? "U",
+    avatarUrl: p.user.avatar_url ?? null,
     isCurrentUser: p.participant_id === user?.id,
   }))
 
