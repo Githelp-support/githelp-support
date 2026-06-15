@@ -550,16 +550,6 @@ export default function TicketsPage() {
                                   </div>
                                 </div>
 
-                                {/* Type of help */}
-                                <div>
-                                  <h4 className="text-[13px] font-semibold text-foreground mb-2">Type of help</h4>
-                                  <div className="flex gap-2 flex-wrap">
-                                    <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
-                                      {card.helpType}
-                                    </Badge>
-                                  </div>
-                                </div>
-
                                 {/* Rates */}
                                 <div>
                                   <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
@@ -683,16 +673,6 @@ export default function TicketsPage() {
                                       </div>
                                     </div>
                                   )}
-
-                                  {/* Type of help */}
-                                  <div>
-                                    <h4 className="text-[13px] font-semibold text-foreground mb-2">Type of help</h4>
-                                    <div className="flex gap-2 flex-wrap">
-                                      <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
-                                        {ticket.type}
-                                      </Badge>
-                                    </div>
-                                  </div>
 
                                   {/* Rates */}
                                   <div>
