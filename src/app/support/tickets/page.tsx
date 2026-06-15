@@ -280,7 +280,7 @@ export default function SupportTicketsPage() {
                 </div>
                 <Button
                   onClick={() => setIsNewTicketModalOpen(true)}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                  className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
                 >
                   <Plus className="h-4 w-4" />
                   New ticket
@@ -298,7 +298,7 @@ export default function SupportTicketsPage() {
                     </p>
                     <Button
                       onClick={() => setIsNewTicketModalOpen(true)}
-                      className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                      className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
                     >
                       <Plus className="h-4 w-4" />
                       New ticket
