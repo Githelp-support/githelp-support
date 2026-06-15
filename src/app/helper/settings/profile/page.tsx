@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
@@ -224,8 +225,11 @@ export default function HelperProfilePage() {
 
           <div className="space-y-8">
           {/* Editable contact information */}
-          <section>
-            <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
+          <Card className="border-0 shadow-none rounded-lg py-0">
+            <CardContent className="py-6 px-0">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-base font-semibold text-foreground">Contact information</h2>
+            </div>
             <div className="space-y-4">
               <div className="flex gap-5">
                 <FormField label="Display name" className="flex-1 max-w-md">
@@ -280,11 +284,15 @@ export default function HelperProfilePage() {
                 )}
               </Button>
             </div>
-          </section>
+            </CardContent>
+          </Card>
 
           {/* Editable category */}
-          <section>
-            <h2 className="text-base font-semibold text-foreground mb-4">Helper category</h2>
+          <Card className="border-0 shadow-none rounded-lg py-0">
+            <CardContent className="py-6 px-0">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-base font-semibold text-foreground">Helper category</h2>
+            </div>
             <div className="flex items-center gap-4 flex-wrap">
               <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
                 <SelectTrigger className="w-[180px]">
@@ -305,11 +313,15 @@ export default function HelperProfilePage() {
                 {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
               </Button>
             </div>
-          </section>
+            </CardContent>
+          </Card>
 
           {/* Project keywords / topics */}
-          <section>
-            <h2 className="text-base font-semibold text-foreground mb-4">Topics & keywords</h2>
+          <Card className="border-0 shadow-none rounded-lg py-0">
+            <CardContent className="py-6 px-0">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-base font-semibold text-foreground">Topics & keywords</h2>
+            </div>
             <p className="text-sm text-muted-foreground mb-4">
               Select the project topics you can help with. This helps route relevant tickets to you.
             </p>
@@ -343,7 +355,8 @@ export default function HelperProfilePage() {
                 "Save topics"
               )}
             </Button>
-          </section>
+            </CardContent>
+          </Card>
           </div>
         </main>
       </div>
