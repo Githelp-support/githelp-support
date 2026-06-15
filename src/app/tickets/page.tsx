@@ -12,7 +12,9 @@ import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpD
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
+import { useMyParticipatingTicketIds } from "@/hooks/useTicketParticipants"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useUser } from "@/contexts/user-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
@@ -76,8 +78,17 @@ export default function TicketsPage() {
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
 
+  // Current user / role — helpers should only see claimed/in-progress/completed
+  // tickets where they are a participant.
+  const { user } = useUser()
+  const isHelper = user.role === "helper"
+
   // Fetch tickets
   const { data: ticketsData, isLoading } = useTicketsWithDetails(projectId)
+
+  // Ticket IDs in this project where the current auth user has a
+  // tickets_participants row (covers both 'claimed' and 'invited' cases).
+  const { data: participatingTicketIds } = useMyParticipatingTicketIds(projectId)
 
   // Fetch payment settings
   const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
@@ -120,6 +131,17 @@ export default function TicketsPage() {
     })) as Ticket[]
   }, [ticketsData, ratePerMinute])
 
+  // For helpers, scope claimed/in-progress/completed tickets to the ones they
+  // participate in. Available tickets remain unfiltered so helpers can still
+  // pick up new work. Admins and end-users see the full list.
+  const visibleTickets = useMemo(() => {
+    if (!isHelper) return tickets
+    return tickets.filter((t) => {
+      if (t.status === "available") return true
+      return participatingTicketIds?.has(t.id) ?? false
+    })
+  }, [tickets, isHelper, participatingTicketIds])
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       if (sortDirection === "asc") {
@@ -135,7 +157,7 @@ export default function TicketsPage() {
   }
 
   const getSortedTickets = () => {
-    const filtered = tickets.filter((ticket) => {
+    const filtered = visibleTickets.filter((ticket) => {
       if (statusFilter !== "all" && ticket.status !== statusFilter) return false
       if (typeFilter !== "all" && ticket.type !== typeFilter) return false
       if (priorityFilter !== "all" && ticket.priority !== priorityFilter) return false
@@ -205,27 +227,29 @@ export default function TicketsPage() {
 
   const filteredTickets = getSortedTickets()
   const sortedPreviewCards = getSortedPreviewCards()
+  /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
+  const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
+  /** Only render the preview cards when there are no real tickets yet. When real tickets exist, the "Available" filter must show actual available tickets so the table and the "Available" stat container agree. */
+  const showAvailablePreviewCards = statusFilter === "available" && showTicketsPreview
   const visibleTicketCount =
-    statusFilter === "available" ? sortedPreviewCards.length : filteredTickets.length
+    showAvailablePreviewCards ? sortedPreviewCards.length : filteredTickets.length
 
   const getStatusColor = (status: string) =>
     getTicketStatusBadgeClass(status)
   const getPriorityColor = (priority: string) =>
     getPriorityBadgeClass(priority)
 
-  /** Show the preview disclaimer only when the project has no real tickets yet (mirrors the Reports page payout preview behavior). */
-  const showTicketsPreview = !!projectId && !isLoading && tickets.length === 0
-
   const getTicketStats = () => {
-    const total = tickets.length
+    const total = visibleTickets.length
     // When showing preview cards (no real tickets yet), the "Available" stat should reflect
     // the preview cards rendered in the table — otherwise the container reads 0 while 3 preview
-    // tickets are visible.
+    // tickets are visible. Available tickets aren't scoped per-helper, so this count is the
+    // same regardless of role.
     const available = showTicketsPreview
       ? SUPPORT_TICKET_PREVIEW_CARDS.length
       : tickets.filter((t) => t.status === "available").length
-    const inProgress = tickets.filter((t) => t.status === "in-progress").length
-    const completed = tickets.filter((t) => t.status === "completed").length
+    const inProgress = visibleTickets.filter((t) => t.status === "in-progress").length
+    const completed = visibleTickets.filter((t) => t.status === "completed").length
 
     return { total, available, inProgress, completed }
   }
@@ -399,7 +423,7 @@ export default function TicketsPage() {
 
           {/* Tickets Table */}
           <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
-            {statusFilter === "available" ? (
+            {showAvailablePreviewCards ? (
             <>
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">

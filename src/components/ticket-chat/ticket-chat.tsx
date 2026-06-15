@@ -9,7 +9,7 @@ import { Check, Info, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -38,12 +38,19 @@ export type TicketChatParticipant = {
   id: string
   name: string
   avatarInitial: string
+  avatarUrl?: string | null
   isCurrentUser?: boolean
 }
 
 export interface TicketChatProps {
   headerTitle: string
   headerSubtitle?: string
+  /** Subtitle text rendered below the title in the header (separate from inline headerSubtitle). */
+  subtitle?: string
+  /** Optional icon rendered to the left of the title/subtitle block in the header. */
+  headerLeadingIcon?: React.ReactNode
+  /** Optional CSS background color applied to the header container. */
+  headerBackgroundColor?: string
   showBackButton?: boolean
 
   // Intro section shown above the message thread (rates, ticket meta, CTA buttons, etc.)
@@ -84,13 +91,15 @@ export function TicketChat(props: TicketChatProps) {
   const {
     headerTitle,
     headerSubtitle,
+    subtitle,
+    headerLeadingIcon,
+    headerBackgroundColor,
     showBackButton,
     intro,
     messages,
     participants,
     participantsLoading,
     topics = [],
-    helpTypes = [],
     message,
     onMessageChange,
     onSend,
@@ -123,22 +132,27 @@ export function TicketChat(props: TicketChatProps) {
   )
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="relative border-b border-border z-10">
-        <Header
-          title={headerTitle}
-          showBackButton={showBackButton}
-          inlineRightContent={
-            headerSubtitle ? (
-              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
-            ) : undefined
-          }
-        />
-      </div>
+    <div className="flex-1 flex overflow-hidden">
+      {/* Left column: Header + main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="relative border-b border-border z-10">
+          <Header
+            title={headerTitle}
+            subtitle={subtitle}
+            showBackButton={showBackButton}
+            leadingIcon={headerLeadingIcon}
+            backgroundColor={headerBackgroundColor}
+            inlineRightContent={
+              headerSubtitle ? (
+                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
+              ) : undefined
+            }
+          />
+        </div>
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col">
           {/* Messages Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
@@ -154,12 +168,13 @@ export function TicketChat(props: TicketChatProps) {
                         <div key={msg.id} className="flex gap-3 items-start">
                           {msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended") ? (
                             <div className="flex items-start gap-3 w-full">
-                              <div
-                                className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                                style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
-                              >
-                                {msg.senderAvatarInitial || "M"}
-                              </div>
+                              <ProfileAvatar
+                                id={msg.senderId}
+                                name={msg.senderName}
+                                avatarUrl={msg.senderAvatarUrl ?? null}
+                                size="sm"
+                                radius="9.625px"
+                              />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
@@ -185,12 +200,13 @@ export function TicketChat(props: TicketChatProps) {
                           ) : (
                             <>
                               {msg.senderType !== "system" && (
-                                <div
-                                  className="w-7 h-7 rounded-[9.625px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                                  style={{ backgroundColor: getAvatarColorHexForId(msg.senderId) }}
-                                >
-                                  {msg.senderAvatarInitial || "U"}
-                                </div>
+                                <ProfileAvatar
+                                  id={msg.senderId}
+                                  name={msg.senderName}
+                                  avatarUrl={msg.senderAvatarUrl ?? null}
+                                  size="sm"
+                                  radius="9.625px"
+                                />
                               )}
 
                               <div className="flex-1">
@@ -275,7 +291,7 @@ export function TicketChat(props: TicketChatProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="cursor-pointer text-foreground font-semibold text-[15px] hover:bg-transparent"
+                  className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
                 >
                   End session
                 </Button>
@@ -300,9 +316,11 @@ export function TicketChat(props: TicketChatProps) {
             />
           )}
         </div>
+        </main>
+      </div>
 
-        {/* Right Sidebar */}
-        <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
+      {/* Right Sidebar */}
+      <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
           <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
             {/* People in Chat */}
             <div>
@@ -324,12 +342,12 @@ export function TicketChat(props: TicketChatProps) {
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
                     <div key={p.id} className="flex items-center gap-2">
-                      <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                        style={{ backgroundColor: getAvatarColorHexForId(p.id) }}
-                      >
-                        {p.avatarInitial}
-                      </div>
+                      <ProfileAvatar
+                        id={p.id}
+                        name={p.name}
+                        avatarUrl={p.avatarUrl ?? null}
+                        size="md"
+                      />
                       <span className="text-[13px] text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
                     </div>
                   ))}
@@ -353,7 +371,7 @@ export function TicketChat(props: TicketChatProps) {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <h3
-                  className="mb-3 uppercase"
+                  className="uppercase leading-none"
                   style={{
                     fontSize: '11px',
                     letterSpacing: '0.05em',
@@ -363,7 +381,7 @@ export function TicketChat(props: TicketChatProps) {
                 >
                   Other topics in this chat
                 </h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
+                <Info className="w-4 h-4 text-muted-foreground shrink-0" />
               </div>
 
               {topics.length > 0 ? (
@@ -379,32 +397,9 @@ export function TicketChat(props: TicketChatProps) {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="border-t border-border my-6 -ml-5 -mr-4" />
-
-            {/* Type of Help */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-[13px] text-foreground" style={{ fontWeight: 550 }}>Type of help</h3>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
-              {helpTypes.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {helpTypes.map((h) => (
-                    <Badge key={h} variant="secondary" className="bg-muted text-muted-foreground">
-                      {h}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
-              )}
-            </div>
-
             {rightSidebarFooter}
           </div>
         </div>
-      </main>
     </div>
   )
 }

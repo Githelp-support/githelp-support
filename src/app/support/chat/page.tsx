@@ -35,6 +35,7 @@ interface Message {
   content: string
   timestamp: string
   avatar?: string
+  avatarUrl?: string | null
   senderName?: string
   senderId?: string
   codeBlock?: {
@@ -271,7 +272,7 @@ export default function UserSupportChatPage() {
       })
     }
     if (messagesData?.length) {
-      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; metadata?: Record<string, unknown> | null; sender: { id?: string; name?: string; avatar_url?: string } | null }) => {
+      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; metadata?: Record<string, unknown> | null; sender: { id?: string; name?: string; avatar_url?: string | null } | null }) => {
         list.push({
           id: msg.id,
           sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -284,6 +285,7 @@ export default function UserSupportChatPage() {
             minute: "2-digit",
           }),
           avatar: msg.sender?.name?.[0]?.toUpperCase() || (msg.sender_type === "user" ? (user?.name?.[0] || "Y") : "H"),
+          avatarUrl: msg.sender?.avatar_url ?? null,
           senderName: msg.sender?.name || (msg.sender_type === "user" ? (user?.name || "You") : "Helper"),
           senderId: msg.sender_id ?? msg.sender?.id,
           isSystemMessage: msg.sender_type === "system",
@@ -530,7 +532,8 @@ export default function UserSupportChatPage() {
     senderType: m.isSystemMessage ? "system" : m.sender,
     senderName: m.senderName,
     senderAvatarInitial: m.avatar,
-    senderAvatarUrl: m.id === "1" && m.sender === "system" ? projectLogo : undefined,
+    senderAvatarUrl:
+      m.avatarUrl ?? (m.id === "1" && m.sender === "system" ? projectLogo : undefined),
     senderId: m.senderId,
     timestamp: m.timestamp,
     content: m.content,
@@ -583,11 +586,12 @@ export default function UserSupportChatPage() {
     id: p.user.id,
     name: p.user.name,
     avatarInitial: p.user.name?.[0]?.toUpperCase() ?? "U",
+    avatarUrl: p.user.avatar_url ?? null,
     isCurrentUser: p.participant_id === user?.id,
   }))
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+    <div className="flex h-screen overflow-hidden bg-bg-subtle">
       <Sidebar />
 
       <TicketChat
@@ -615,7 +619,7 @@ export default function UserSupportChatPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 550 }}>{projectName} Team</span>
-                  <span className="text-xs" style={{ color: '#818185' }}>
+                  <span className="text-xs" style={{ color: 'rgba(0,0,0,0.5)', fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontVariantNumeric: 'tabular-nums' }}>
                     {new Date().toLocaleString("en-GB", {
                       day: "2-digit",
                       month: "2-digit",
@@ -714,7 +718,7 @@ export default function UserSupportChatPage() {
         }}
         paymentCtaLoading={createCheckout.isPending}
         rightSidebarFooter={
-          ticketId ? (
+          ticketId && claimer && isAuthenticated ? (
             <>
               <div>
                 <div className="flex items-center gap-2 mb-3">

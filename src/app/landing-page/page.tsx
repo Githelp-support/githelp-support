@@ -89,7 +89,7 @@ export default function LandingPageSettings() {
         <main className="flex-1 px-8 py-6 overflow-auto">
           <div className="max-w-4xl">
 
-            <div className="bg-white rounded-lg p-6 mb-6">
+            <div className="bg-white rounded-lg p-6 mb-3">
               <h2 className="text-base font-semibold text-foreground mb-5">Your support page</h2>
               <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
               <div className="flex items-center gap-2 mt-3">
@@ -130,7 +130,7 @@ export default function LandingPageSettings() {
             </div>
 
             {/* Resources Section */}
-            <div className="space-y-6">
+            <div className="space-y-3">
               {/* Add Resource Section */}
                 <div className="bg-white rounded-lg p-6">
                   <h2 className="text-base font-semibold text-foreground mb-5">Add resource</h2>

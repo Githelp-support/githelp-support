@@ -235,7 +235,7 @@ export default function ProfileSettingsPage() {
 
           {/* Payment details (user role only) */}
           {user?.role === "user" && (
-            <div className="bg-card rounded-lg p-6">
+            <div className="bg-card rounded-lg py-6">
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-semibold text-foreground">Payment details</h2>
                 <Info className="w-4 h-4 text-muted-foreground" />

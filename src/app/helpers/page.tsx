@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -119,6 +120,7 @@ export default function HelpersPage() {
       githubAccount: helper.user?.username || "-",
       category: helper.category || "Community",
       color: getAvatarColorHexForId(helper.user_id ?? helper.helper_id),
+      avatarUrl: helper.user?.avatar_url ?? null,
       isRegistered: !!helper.user_id,
     }))
   }, [helpersData])
@@ -132,6 +134,7 @@ export default function HelpersPage() {
       discordUser: request.name || "-",
       githubAccount: request.email || "-",
       color: getAvatarColorHexForId(request.user_id ?? request.email ?? request.name),
+      avatarUrl: null,
     }))
   }, [pendingRequestsData])
 
@@ -458,7 +461,7 @@ export default function HelpersPage() {
                   Add myself as helper
                 </Button>
               )}
-              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-xl px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
+              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
                 <Plus className="w-4 h-4" />
                 Add new helper
               </Button>
@@ -659,12 +662,11 @@ export default function HelpersPage() {
                           <input type="checkbox" className="rounded border-border" />
                         </div>
                         <div className="col-span-3 flex items-center gap-[18px]">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: helper.color }}
-                          >
-                            {helper.initial}
-                          </div>
+                          <ProfileAvatar
+                            id={helper.id}
+                            name={helper.name}
+                            avatarUrl={helper.avatarUrl}
+                          />
                           <span className="text-sm font-medium text-foreground">{helper.name}</span>
                         </div>
                         <div className="col-span-3 flex items-center space-x-2">
@@ -706,7 +708,7 @@ export default function HelpersPage() {
                       <div className="px-6 py-12 text-center">
                         <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
                         <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                        <Button className="rounded-xl px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
+                        <Button className="rounded-md px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
                           <Plus className="w-4 h-4" />
                           Add new helper
                         </Button>
@@ -728,12 +730,11 @@ export default function HelpersPage() {
                           <input type="checkbox" className="rounded border-border" />
                         </div>
                         <div className="col-span-3 flex items-center gap-[18px]">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: request.color }}
-                          >
-                            {request.initial}
-                          </div>
+                          <ProfileAvatar
+                            id={request.user_id ?? request.email ?? request.name}
+                            name={request.name}
+                            avatarUrl={request.avatarUrl}
+                          />
                           <span className="text-sm font-medium text-foreground">{request.name}</span>
                         </div>
                         <div className="col-span-3 flex items-center space-x-2">
