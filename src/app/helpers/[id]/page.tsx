@@ -111,30 +111,32 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       ])
     )
 
-    return helperTicketsData.map((ticket) => {
-      const transfer = transfersMap.get(ticket.id)
-      return {
-        id: ticket.id,
-        displayId: ticket.id.slice(0, 5),
-        date: ticket.completed_at
-          ? new Date(ticket.completed_at).toLocaleDateString("en-GB")
-          : ticket.created_at
-            ? new Date(ticket.created_at).toLocaleDateString("en-GB")
+    return helperTicketsData
+      // Only list tickets the helper is actively part of: those that are
+      // "in-progress" or "completed". Excludes unclaimed/available tickets
+      // and any other states.
+      .filter(
+        (ticket) =>
+          ticket.status === "completed" || ticket.status === "in-progress"
+      )
+      .map((ticket) => {
+        const transfer = transfersMap.get(ticket.id)
+        return {
+          id: ticket.id,
+          displayId: ticket.id.slice(0, 5),
+          date: ticket.completed_at
+            ? new Date(ticket.completed_at).toLocaleDateString("en-GB")
+            : ticket.created_at
+              ? new Date(ticket.created_at).toLocaleDateString("en-GB")
+              : "-",
+          type: "Bug", // TODO: Get from ticket help category
+          amount: transfer
+            ? formatAmount(transfer.amount_smallest_unit, transfer.currency)
             : "-",
-        type: "Bug", // TODO: Get from ticket help category
-        amount: transfer
-          ? formatAmount(transfer.amount_smallest_unit, transfer.currency)
-          : "-",
-        status:
-          ticket.status === "completed"
-            ? "Completed"
-            : ticket.status === "in-progress"
-              ? "In progress"
-              : ticket.status === "available"
-                ? "Available"
-                : "Unknown",
-      }
-    })
+          status:
+            ticket.status === "completed" ? "Completed" : "In progress",
+        }
+      })
   }, [helperTicketsData, transfersData])
 
   if (helperLoading) {
