@@ -554,17 +554,17 @@ export default function TicketsPage() {
                                 <div>
                                   <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
                                   <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-card border border-border rounded-lg px-5 py-[15px]">
-                                      <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                                      <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                                    <div className="bg-card border border-border rounded-lg px-7 py-[15px]">
+                                      <p className="text-sm text-muted-foreground mb-1 whitespace-nowrap">Start price</p>
+                                      <p className="text-sm font-medium text-foreground whitespace-nowrap">USD {startPrice}</p>
                                     </div>
-                                    <div className="bg-card border border-border rounded-lg px-5 py-[15px]">
-                                      <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                                      <p className="text-sm font-medium text-foreground">USD {ratePerMinute}/min</p>
+                                    <div className="bg-card border border-border rounded-lg px-7 py-[15px]">
+                                      <p className="text-sm text-muted-foreground mb-1 whitespace-nowrap">First 60 min</p>
+                                      <p className="text-sm font-medium text-foreground whitespace-nowrap">USD {ratePerMinute}/min</p>
                                     </div>
-                                    <div className="bg-card border border-border rounded-lg px-5 py-[15px]">
-                                      <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                                      <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                                    <div className="bg-card border border-border rounded-lg px-7 py-[15px]">
+                                      <p className="text-sm text-muted-foreground mb-1 whitespace-nowrap">After 60 min</p>
+                                      <p className="text-sm font-medium text-foreground whitespace-nowrap">USD {after60Price}/min</p>
                                     </div>
                                   </div>
                                 </div>
@@ -678,17 +678,17 @@ export default function TicketsPage() {
                                   <div>
                                     <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
                                     <div className="grid grid-cols-3 gap-4">
-                                      <div className="bg-card border border-border rounded-lg px-5 py-[15px]">
-                                        <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                                        <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                                      <div className="bg-card border border-border rounded-lg px-7 py-[15px]">
+                                        <p className="text-sm text-muted-foreground mb-1 whitespace-nowrap">Start price</p>
+                                        <p className="text-sm font-medium text-foreground whitespace-nowrap">USD {startPrice}</p>
                                       </div>
-                                      <div className="bg-card border border-border rounded-lg px-5 py-[15px]">
-                                        <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                                        <p className="text-sm font-medium text-foreground">USD {ratePerMinute}/min</p>
+                                      <div className="bg-card border border-border rounded-lg px-7 py-[15px]">
+                                        <p className="text-sm text-muted-foreground mb-1 whitespace-nowrap">First 60 min</p>
+                                        <p className="text-sm font-medium text-foreground whitespace-nowrap">USD {ratePerMinute}/min</p>
                                       </div>
-                                      <div className="bg-card border border-border rounded-lg px-5 py-[15px]">
-                                        <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                                        <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                                      <div className="bg-card border border-border rounded-lg px-7 py-[15px]">
+                                        <p className="text-sm text-muted-foreground mb-1 whitespace-nowrap">After 60 min</p>
+                                        <p className="text-sm font-medium text-foreground whitespace-nowrap">USD {after60Price}/min</p>
                                       </div>
                                     </div>
                                   </div>
