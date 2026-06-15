@@ -325,11 +325,11 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "available"}
               className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative w-[160px] overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "available" && (
                   <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
                 )}
-                <CardContent className="px-5 py-4">
+                <CardContent className="pl-6 pr-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.unclaimed}</div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-3 h-3 text-muted-foreground" />
