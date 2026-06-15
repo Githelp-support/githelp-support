@@ -453,13 +453,31 @@ export default function TicketsPage() {
             <>
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                  <div className="col-span-9 flex items-center space-x-2">
+                  <div className="col-span-5 flex items-center space-x-2">
                     <button type="button"
                       onClick={() => handleSort("title")}
                       className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
                     >
                       <span className="text-sm font-medium text-foreground">Ticket</span>
                       <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <button type="button"
+                      onClick={() => handleSort("type")}
+                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                    >
+                      <span className="text-sm font-medium text-foreground">Type</span>
+                      <TicketsSortIcon field="type" sortField={sortField} sortDirection={sortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <button type="button"
+                      onClick={() => handleSort("status")}
+                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                    >
+                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <TicketsSortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
                   <div className="col-span-2 flex items-center space-x-2">
@@ -495,7 +513,7 @@ export default function TicketsPage() {
                     className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50 cursor-pointer hover:bg-gray-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
                   >
                     <div className="grid grid-cols-12 gap-4 items-start">
-                      <div className="col-span-9">
+                      <div className="col-span-5">
                         <div className="flex items-start gap-[18px]">
                           <div
                             className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
@@ -510,11 +528,16 @@ export default function TicketsPage() {
                                 Preview
                               </Badge>
                             </div>
-                            <p className="text-sm font-medium text-foreground mt-0.5">{card.title}</p>
-                            <p className="text-sm text-muted-foreground mt-1 truncate">{card.description}</p>
+                            <p className="text-sm text-muted-foreground">{card.title}</p>
 
                             {isExpanded && (
                               <div className="mt-4 space-y-4">
+                                {/* Full question */}
+                                <div>
+                                  <h4 className="text-[13px] font-semibold text-foreground mb-2">Question</h4>
+                                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{card.description}</p>
+                                </div>
+
                                 {/* Other topics */}
                                 <div>
                                   <h4 className="text-[13px] font-semibold text-foreground mb-2">Other topics</h4>
@@ -576,6 +599,16 @@ export default function TicketsPage() {
                         </div>
                       </div>
                       <div className="col-span-2">
+                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs capitalize">
+                          {card.helpType}
+                        </Badge>
+                      </div>
+                      <div className="col-span-2">
+                        <Badge className={`text-xs ${getStatusColor("unclaimed")}`}>
+                          Unclaimed
+                        </Badge>
+                      </div>
+                      <div className="col-span-2">
                         <div className="text-sm text-muted-foreground">
                           <div>{card.timestamp.split(", ")[0]}</div>
                           <div className="text-xs text-muted-foreground">{card.timestamp.split(", ")[1]}</div>
@@ -611,7 +644,7 @@ export default function TicketsPage() {
                       className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50 cursor-pointer hover:bg-gray-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
                     >
                       <div className="grid grid-cols-12 gap-4 items-start">
-                        <div className="col-span-9">
+                        <div className="col-span-5">
                           <div className="flex items-start gap-[18px]">
                             <div
                               className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
@@ -627,11 +660,16 @@ export default function TicketsPage() {
                               >
                                 {ticket.user.name}
                               </Link>
-                              <p className="text-sm font-medium text-foreground mt-0.5">{ticket.title}</p>
-                              <p className="text-sm text-muted-foreground mt-1 truncate">{ticket.description}</p>
+                              <p className="text-sm text-muted-foreground">{ticket.title}</p>
 
                               {isExpanded && (
                                 <div className="mt-4 space-y-4">
+                                  {/* Full question */}
+                                  <div>
+                                    <h4 className="text-[13px] font-semibold text-foreground mb-2">Question</h4>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
+                                  </div>
+
                                   {/* Other topics */}
                                   {ticket.topics.length > 0 && (
                                     <div>
@@ -695,6 +733,16 @@ export default function TicketsPage() {
                               )}
                             </div>
                           </div>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                            {ticket.type}
+                          </Badge>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge className={`text-xs ${getStatusColor("unclaimed")}`}>
+                            Unclaimed
+                          </Badge>
                         </div>
                         <div className="col-span-2">
                           <div className="text-sm text-muted-foreground">
