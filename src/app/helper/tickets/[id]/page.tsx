@@ -303,8 +303,11 @@ export default function TicketDetailPage() {
   }
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    // Defer to after layout so the (tall) ended/outcome summary — which renders
+    // based on ticket status, not message count — is measured before we scroll.
+    const id = requestAnimationFrame(() => scrollToBottom())
+    return () => cancelAnimationFrame(id)
+  }, [messages, isTicketEnded])
 
   const handleSendMessage = async () => {
     if (!message.trim() || !ticketId || !currentUser?.id) return
@@ -694,7 +697,7 @@ export default function TicketDetailPage() {
                               radius="9.625px"
                             />
                           )}
-                          <div className={`flex-1 ${msg.sender === "system" ? "text-center" : ""}`}>
+                          <div className="flex-1">
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
@@ -713,7 +716,7 @@ export default function TicketDetailPage() {
                             <div
                               className={
                                 msg.sender === "system"
-                                  ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg inline-block text-sm"
+                                  ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                   : "text-sm"
                               }
                               style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}

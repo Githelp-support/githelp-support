@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
-import { Info } from "lucide-react"
+import { Info, CreditCard } from "lucide-react"
 import { toast } from "sonner"
 import { useUser } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -14,6 +14,23 @@ import { useSetupPaymentMethod } from "@/hooks/useSetupPaymentMethod"
 import { usePaymentStatus } from "@/hooks/usePaymentStatus"
 
 const RETURN_PATH = "/user/settings/payment"
+
+// Stripe card `brand` values → display names. Falls back to a Title-cased
+// version of whatever Stripe sends so a new/unknown brand still reads sensibly.
+const CARD_BRAND_LABELS: Record<string, string> = {
+  visa: "Visa",
+  mastercard: "Mastercard",
+  amex: "American Express",
+  discover: "Discover",
+  diners: "Diners Club",
+  jcb: "JCB",
+  unionpay: "UnionPay",
+}
+
+const formatCardBrand = (brand: string | null): string => {
+  if (!brand || brand === "unknown") return "Card"
+  return CARD_BRAND_LABELS[brand] ?? brand.charAt(0).toUpperCase() + brand.slice(1)
+}
 
 /**
  * Individual user's payment settings: manage the card used to pay for support
@@ -31,6 +48,8 @@ export default function UserPaymentSettingsPage() {
   const setupCard = useSetupPaymentMethod()
   const status = usePaymentStatus({ scope: "user", scopeId: userId })
   const hasCardOnFile = !!status.data?.default_payment_method_id
+  const cardLast4 = status.data?.card_last4 ?? null
+  const cardBrandLabel = formatCardBrand(status.data?.card_brand ?? null)
 
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
@@ -93,13 +112,23 @@ export default function UserPaymentSettingsPage() {
                     ? "Starting..."
                     : hasCardOnFile ? "Replace card" : "Add card"}
                 </Button>
-                <span className="text-sm text-muted-foreground">
-                  {status.isLoading
-                    ? "Checking…"
-                    : hasCardOnFile
-                      ? <span className="font-medium text-foreground">Card on file</span>
-                      : "No card yet"}
-                </span>
+                {status.isLoading ? (
+                  <span className="text-sm text-muted-foreground">Checking…</span>
+                ) : hasCardOnFile ? (
+                  <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5">
+                    <CreditCard className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
+                      {cardBrandLabel}
+                      {cardLast4 ? (
+                        <span className="text-muted-foreground font-normal">
+                          {" "}•••• {cardLast4}
+                        </span>
+                      ) : null}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">No card yet</span>
+                )}
               </div>
             </div>
           </div>

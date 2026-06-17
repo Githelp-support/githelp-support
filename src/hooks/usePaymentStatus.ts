@@ -12,6 +12,8 @@ interface UsePaymentStatusArgs {
 
 export type PaymentStatusData = ConnectStatusFields & {
   default_payment_method_id: string | null
+  card_brand: string | null
+  card_last4: string | null
 }
 
 /**
@@ -22,6 +24,11 @@ export function usePaymentStatus({ scope, scopeId }: UsePaymentStatusArgs) {
   const table = scope === "organization"
     ? "organizations_payments_config"
     : "users_payments_config"
+  // card_brand / card_last4 exist only on users_payments_config for now; the
+  // org config table keeps id-only display until org-billed payments land.
+  const columns = scope === "organization"
+    ? "stripe_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_payouts_enabled, default_payment_method_id"
+    : "stripe_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_payouts_enabled, default_payment_method_id, card_brand, card_last4"
   return useQuery({
     queryKey: ["payment-status", scope, scopeId],
     enabled: !!scopeId,
@@ -31,9 +38,7 @@ export function usePaymentStatus({ scope, scopeId }: UsePaymentStatusArgs) {
     queryFn: async (): Promise<PaymentStatusData | null> => {
       const { data, error } = await supabase
         .from(table)
-        .select(
-          "stripe_account_id, stripe_details_submitted, stripe_charges_enabled, stripe_payouts_enabled, default_payment_method_id",
-        )
+        .select(columns)
         .eq("id", scopeId)
         .maybeSingle()
       if (error) throw error

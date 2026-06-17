@@ -118,8 +118,11 @@ export function TicketChat(props: TicketChatProps) {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages.length])
+    // Defer to after layout so any ended/outcome summary (driven by ticket
+    // status, not message count) is measured before we scroll to the bottom.
+    const id = requestAnimationFrame(() => scrollToBottom())
+    return () => cancelAnimationFrame(id)
+  }, [messages.length, isEnded])
 
   const thread = useMemo(() => messages ?? [], [messages])
 
@@ -152,7 +155,7 @@ export function TicketChat(props: TicketChatProps) {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Main Content */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
           {/* Messages Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">

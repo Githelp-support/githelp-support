@@ -1,11 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Info, Landmark, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { Logo } from "@/components/brand/logo"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
@@ -232,51 +231,6 @@ export default function ProfileSettingsPage() {
               </Button>
             </div>
           </section>
-
-          {/* Payment details (user role only) */}
-          {user?.role === "user" && (
-            <div className="bg-card rounded-lg py-6">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-foreground">Payment details</h2>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
-
-              <div className="mt-8 flex flex-col gap-10">
-                {/* Stripe → GitHub connection */}
-                <div className="flex items-center gap-1">
-                  <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[14px]">
-                    <img
-                      src="/images/stripe-svg.svg"
-                      alt="Stripe"
-                      className="size-[22px] object-contain"
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5 px-0.5">
-                    <span className="size-1 rounded-full bg-muted-foreground/40" />
-                    <span className="size-1 rounded-full bg-muted-foreground/40" />
-                    <span className="size-1 rounded-full bg-muted-foreground/40" />
-                  </div>
-                  <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[14px]">
-                    <Logo className="size-6 text-[#24292f]" variant="dark" />
-                  </div>
-                </div>
-
-                <p className="max-w-[502px] text-sm leading-normal tracking-tight text-text-muted">
-                  Go to Stripe to set up payment details
-                </p>
-
-                <Button
-                  className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
-                  onClick={() => {
-                    // TODO: wire up Stripe payment setup flow
-                  }}
-                >
-                  <Landmark className="w-4 h-4" />
-                  Set up payment with Stripe
-                </Button>
-              </div>
-            </div>
-          )}
         </main>
       </div>
     </div>
