@@ -290,6 +290,38 @@ export function useUserActiveTicketsSidebar(
     });
 }
 
+/**
+ * The single most recently active ticket created by the user, ordered by
+ * `updated_at` desc (i.e. the last ticket they were active in). Used to land
+ * the user on that ticket when the Support page is opened without any params,
+ * instead of the most recently *created* ticket.
+ */
+export function useLatestUserActiveTicket(userId?: string) {
+    return useQuery({
+        queryKey: ["latest-user-active-ticket", userId],
+        queryFn: async () => {
+            if (!userId) return null;
+
+            const { data, error } = await supabase
+                .from("tickets")
+                .select("id, project_id, updated_at")
+                .eq("created_by", userId)
+                .is("deleted_at", null)
+                .order("updated_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data as { id: string; project_id: string; updated_at: string } | null;
+        },
+        enabled: !!userId,
+        retry: false,
+        staleTime: 60000,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+    });
+}
+
 /** Fetch all tickets created by the given user (for "User" role tickets list). */
 export function useUserTickets(userId?: string) {
     return useQuery({

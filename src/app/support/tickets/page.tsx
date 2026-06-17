@@ -198,7 +198,7 @@ export default function SupportTicketsPage() {
   }, [tickets, statusFilter, sortField, sortDirection])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden bg-background">
@@ -280,7 +280,7 @@ export default function SupportTicketsPage() {
                 </div>
                 <Button
                   onClick={() => setIsNewTicketModalOpen(true)}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                  className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
                 >
                   <Plus className="h-4 w-4" />
                   New ticket
@@ -298,7 +298,7 @@ export default function SupportTicketsPage() {
                     </p>
                     <Button
                       onClick={() => setIsNewTicketModalOpen(true)}
-                      className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                      className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
                     >
                       <Plus className="h-4 w-4" />
                       New ticket

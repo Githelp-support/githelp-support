@@ -101,6 +101,67 @@ export function useMyParticipatingTicketIds(projectId?: string) {
     });
 }
 
+/**
+ * Returns the set of ticket IDs in the given project that are taken by ANOTHER
+ * helper — i.e. a `tickets_participants` row exists for a participant who is
+ * neither the current user nor the ticket creator (whether they have claimed
+ * the ticket or are merely participating in the chat). Used to decide whether
+ * a ticket is still "Unclaimed" from the current helper's perspective. Purely
+ * derived from existing tables — no backend changes.
+ */
+export function useOtherHelperParticipatingTicketIds(projectId?: string) {
+    return useQuery({
+        queryKey: ["other-helper-participating-ticket-ids", projectId],
+        queryFn: async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            if (!projectId) return new Set<string>();
+            const currentUserId = user?.id ?? null;
+
+            const { data: ticketRows } = await supabase
+                .from("tickets")
+                .select("id, created_by")
+                .eq("project_id", projectId)
+                .is("deleted_at", null);
+
+            const ids = (ticketRows || []).map((t: { id: string }) => t.id);
+            if (ids.length === 0) return new Set<string>();
+
+            const creatorByTicket = new Map(
+                (ticketRows || []).map(
+                    (t: { id: string; created_by: string | null }) => [
+                        t.id,
+                        t.created_by,
+                    ]
+                )
+            );
+
+            const { data: rows } = await supabase
+                .from("tickets_participants")
+                .select("ticket_id, participant_id")
+                .in("ticket_id", ids);
+
+            const taken = new Set<string>();
+            (rows || []).forEach(
+                (r: { ticket_id: string; participant_id: string }) => {
+                    // Skip the current user (it's "me", not another helper) and
+                    // the ticket creator (the end-user asking for help).
+                    if (r.participant_id === currentUserId) return;
+                    if (r.participant_id === creatorByTicket.get(r.ticket_id))
+                        return;
+                    taken.add(r.ticket_id);
+                }
+            );
+
+            return taken;
+        },
+        enabled: !!projectId,
+        retry: false,
+        staleTime: 60000,
+    });
+}
+
 export function useClaimTicket() {
     const queryClient = useQueryClient();
 

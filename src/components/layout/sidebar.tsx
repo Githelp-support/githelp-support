@@ -195,9 +195,19 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <div
       suppressHydrationWarning
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 h-full overflow-hidden ${className}`}
+      // `self-stretch` (not `h-full`) sizes the sidebar: support (user) pages get
+      // their height through a `flex-1 min-h-0` chain from the root layout's
+      // `min-h-full` container, and percentage heights don't resolve through that
+      // chain (`h-full` computes to `auto`, collapsing the sidebar to its content
+      // height — which left the profile block floating up instead of pinned to the
+      // bottom). Stretching as a flex item uses the row's actual laid-out height
+      // instead, so the sidebar always fills the area below the TopBar and the
+      // profile block stays pinned to the bottom of the screen. On Admin/Helper
+      // pages the parent row is `h-screen` (a definite height), where
+      // `self-stretch` and `h-full` are equivalent — so this is a no-op there.
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px]">
+      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px] shrink-0">
         {!isCollapsed ? (
           <Button
             variant="ghost"
@@ -238,7 +248,7 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       {!isCollapsed && !isAuthenticated && (
-        <div className="px-3 pb-3">
+        <div className="px-3 pb-3 shrink-0">
           <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
             <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
               <Link href={`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`}>
@@ -400,7 +410,7 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </nav>
 
-      <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5">
+      <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5 shrink-0">
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
           const className = `flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
@@ -431,7 +441,7 @@ export function Sidebar({ className }: SidebarProps) {
         })}
       </div>
 
-      <div className="px-3 py-2.5 border-t border-sidebar-border">
+      <div className="px-3 py-2.5 border-t border-sidebar-border shrink-0">
         <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
           <ProfileAvatar
             id={user.id}

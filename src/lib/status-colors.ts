@@ -25,13 +25,13 @@ export function getStatusBadgeClass(status: string): string {
 /** Ticket status with in-progress using brand primary */
 export function getTicketStatusBadgeClass(status: string): string {
   switch (status.toLowerCase()) {
-    case "available":
     case "completed":
       return "bg-status-success-bg text-status-success-text"
     case "claimed":
-      return "bg-status-warning-bg text-status-warning-text"
     case "in-progress":
-      return "bg-brand-primary/10 text-brand-primary"
+      return "bg-status-warning-bg text-status-warning-text"
+    case "available":
+      return "bg-muted text-muted-foreground"
     default:
       return "bg-muted text-muted-foreground"
   }

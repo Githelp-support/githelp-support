@@ -17,7 +17,7 @@ import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
-import { useTicketWithDetails, useUserActiveTicketsSidebar, useUserTickets } from "@/hooks/useTicketsWithDetails"
+import { useTicketWithDetails, useUserActiveTicketsSidebar, useLatestUserActiveTicket } from "@/hooks/useTicketsWithDetails"
 import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { loginUserGoogle } from "@/lib/supabase/auth"
@@ -86,15 +86,15 @@ export default function UserSupportChatPage() {
   // the sidebar), we need to either send the user to their last ticket or let
   // them pick a project to get support from. These hooks only fetch when
   // `noParams` is true so they don't run on the normal chat flow.
-  const { data: userTicketsForResolve = [], isLoading: userTicketsLoadingForResolve } =
-    useUserTickets(noParams && user?.id ? user.id : undefined)
+  const { data: latestUserTicket, isLoading: userTicketsLoadingForResolve } =
+    useLatestUserActiveTicket(noParams && user?.id ? user.id : undefined)
   const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects({
     enabled: noParams,
   })
-  const latestUserTicket = userTicketsForResolve[0]
 
-  // If the user has at least one ticket, redirect to the most recent one so
-  // they land on their "last support page" instead of an empty chooser.
+  // If the user has at least one ticket, redirect to the one they were most
+  // recently active in (ordered by updated_at desc) so they land on their
+  // "last support page" instead of an empty chooser.
   useEffect(() => {
     if (!noParams) return
     if (!latestUserTicket) return
@@ -365,7 +365,7 @@ export default function UserSupportChatPage() {
     )
 
     return (
-      <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -591,7 +591,7 @@ export default function UserSupportChatPage() {
   }))
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-subtle">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
       <Sidebar />
 
       <TicketChat
@@ -718,43 +718,47 @@ export default function UserSupportChatPage() {
         }}
         paymentCtaLoading={createCheckout.isPending}
         rightSidebarFooter={
-          ticketId && claimer && isAuthenticated ? (
+          isAuthenticated ? (
             <>
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Logged time</h3>
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                </div>
-                {timeEntriesDisplay.length > 0 ? (
-                  <div className="space-y-2 mb-3">
-                    {timeEntriesDisplay.map((entry) => (
-                      <div key={entry.id} className="py-2 border-b border-border">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                            </div>
-                            <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
-                          </div>
-                          <span className="text-[13px] text-muted-foreground">
-                            {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                          </span>
-                        </div>
-                        {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between py-2 font-medium">
-                      <span className="text-[13px] text-foreground">Total</span>
-                      <span className="text-[13px] text-foreground">{totalLoggedFormatted}</span>
+              {ticketId && claimer && (
+                <>
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Logged time</h3>
+                      <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
+                    {timeEntriesDisplay.length > 0 ? (
+                      <div className="space-y-2 mb-3">
+                        {timeEntriesDisplay.map((entry) => (
+                          <div key={entry.id} className="py-2 border-b border-border">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                                  <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
+                                </div>
+                                <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                              </div>
+                              <span className="text-[13px] text-muted-foreground">
+                                {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                              </span>
+                            </div>
+                            {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                          </div>
+                        ))}
+                        <div className="flex items-center justify-between py-2 font-medium">
+                          <span className="text-[13px] text-foreground">Total</span>
+                          <span className="text-[13px] text-foreground">{totalLoggedFormatted}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[13px] text-muted-foreground">No time logged yet.</p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-[13px] text-muted-foreground">No time logged yet.</p>
-                )}
-              </div>
 
-              {/* Divider */}
-              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+                  {/* Divider */}
+                  <div className="border-t border-border my-6 -ml-5 -mr-4" />
+                </>
+              )}
 
               {/* Active Tickets — latest active tickets for this user */}
               <div>
