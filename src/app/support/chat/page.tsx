@@ -335,7 +335,7 @@ export default function UserSupportChatPage() {
     )
 
     return (
-      <div className="flex h-screen overflow-hidden bg-[#f7f9ff]">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -519,7 +519,7 @@ export default function UserSupportChatPage() {
   }))
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-subtle">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
       <Sidebar />
 
       <TicketChat

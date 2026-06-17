@@ -198,7 +198,7 @@ export default function SupportTicketsPage() {
   }, [tickets, statusFilter, sortField, sortDirection])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden bg-background">
