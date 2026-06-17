@@ -6,6 +6,10 @@ export type SetupPaymentMethodScope = "organization" | "user"
 interface SetupArgs {
   scope: SetupPaymentMethodScope
   organizationId?: string
+  /** Selects the Stripe mode via the project's sandbox flag (test vs live). */
+  projectId?: string
+  /** Relative app path to return to after Stripe Checkout. */
+  returnPath?: string
 }
 
 interface SetupResult {
@@ -20,7 +24,7 @@ interface SetupResult {
  */
 export function useSetupPaymentMethod() {
   return useMutation({
-    mutationFn: async ({ scope, organizationId }: SetupArgs): Promise<SetupResult> => {
+    mutationFn: async ({ scope, organizationId, projectId, returnPath }: SetupArgs): Promise<SetupResult> => {
       const body: Record<string, unknown> = { scope }
       if (scope === "organization") {
         if (!organizationId) {
@@ -28,6 +32,8 @@ export function useSetupPaymentMethod() {
         }
         body.organization_id = organizationId
       }
+      if (projectId) body.project_id = projectId
+      if (returnPath) body.return_path = returnPath
       const resp = await supabase.functions.invoke("payments-setup-method", { body })
       if (resp.error) {
         throw new Error(resp.error.message || "Failed to start card setup")

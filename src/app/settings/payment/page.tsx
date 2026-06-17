@@ -11,7 +11,6 @@ import { Info, Landmark } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
 import { useProject, useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { useStartPaymentConnect } from "@/hooks/usePaymentConnect"
-import { useSetupPaymentMethod } from "@/hooks/useSetupPaymentMethod"
 import { usePaymentStatus } from "@/hooks/usePaymentStatus"
 import { useOrgSpendingCaps, useUpdateOrgSpendingCaps } from "@/hooks/useOrgSpendingCaps"
 import { connectStatusLabel } from "@/lib/payment-status"
@@ -19,6 +18,10 @@ import { formatCapDollars, parseCapDollars } from "@/lib/cap-format"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
 import { cn } from "@/lib/utils"
+
+// Org-level spending caps are temporarily hidden from the admin Payments page.
+// The section and its wiring are kept intact below — flip this to re-enable.
+const SHOW_SPENDING_CAPS = false
 
 export default function PaymentSettingsPage() {
   const [activeTab, setActiveTab] = useState<"helper" | "user">("user")
@@ -71,22 +74,6 @@ export default function PaymentSettingsPage() {
       setCapsOriginal({ org: orgMonthlyCap, user: defaultUserCap })
     } catch (err) {
       console.error("Failed to save spending caps:", err)
-    }
-  }
-
-  const setupCard = useSetupPaymentMethod()
-  const hasCardOnFile = !!orgStatus.data?.default_payment_method_id
-
-  const handleAddOrReplaceCard = async () => {
-    if (!orgId) return
-    try {
-      const { checkoutUrl } = await setupCard.mutateAsync({
-        scope: "organization",
-        organizationId: orgId,
-      })
-      window.location.assign(checkoutUrl)
-    } catch (err) {
-      console.error("Failed to start card setup:", err)
     }
   }
 
@@ -790,37 +777,8 @@ export default function PaymentSettingsPage() {
                   </div>
                 </div>
 
-                {/* Card on file section */}
-                <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-semibold text-foreground">Card on file</h2>
-                      <Info className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Used to place authorization holds on employer-billed tickets.
-                    Stored securely with Stripe.
-                  </p>
-                  <div className="mt-6 flex items-center gap-3">
-                    <Button
-                      className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
-                      onClick={handleAddOrReplaceCard}
-                      disabled={!orgId || setupCard.isPending}
-                    >
-                      {setupCard.isPending
-                        ? "Starting..."
-                        : hasCardOnFile ? "Replace card" : "Add card"}
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      {hasCardOnFile
-                        ? <span className="font-medium text-foreground">Card on file</span>
-                        : "No card yet"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Spending caps Section */}
+                {/* Spending caps Section (temporarily hidden — see SHOW_SPENDING_CAPS) */}
+                {SHOW_SPENDING_CAPS && (
                 <div className="bg-card rounded-lg border border-border p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-2">
@@ -885,6 +843,7 @@ export default function PaymentSettingsPage() {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Set up payouts Section */}
                 <div className="bg-card rounded-lg p-6">
