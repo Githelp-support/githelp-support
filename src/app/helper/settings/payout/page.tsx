@@ -9,17 +9,32 @@ import { getAvatarColorHexForId } from "@/lib/constants"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useUser } from "@/contexts/user-context"
+import { useStartHelperPaymentConnect } from "@/hooks/usePaymentConnect"
+import { usePaymentStatus } from "@/hooks/usePaymentStatus"
+import { connectStatusLabel } from "@/lib/payment-status"
 
 export default function HelperPayoutPage() {
   const { user } = useUser()
+  const userId = user?.id ?? ""
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
 
   const { data: helperId, isLoading: currentHelperLoading } = useCurrentHelper(projectId)
   const { data: helperData, isLoading: helperLoading } = useHelper(helperId ?? "")
 
-  // Reference user to mirror existing helper profile imports/conventions
-  void user
+  // Stripe Connect onboarding is user-scoped (not tied to a single project).
+  const startConnect = useStartHelperPaymentConnect()
+  const status = usePaymentStatus({ scope: "user", scopeId: userId })
+  const statusLabel = status.data ? connectStatusLabel(status.data).label : "Not set up"
+
+  const handleSetupPayout = async () => {
+    try {
+      const { url } = await startConnect.mutateAsync()
+      window.location.assign(url)
+    } catch (err) {
+      console.error("Failed to start helper Connect onboarding:", err)
+    }
+  }
 
   const isLoading = currentHelperLoading || (!!projectId && !!helperId && helperLoading)
 
@@ -109,15 +124,19 @@ export default function HelperPayoutPage() {
                 Go to Stripe to set up your payout details. This is the account where you will receive all funds from any support activities.
               </p>
 
-              <Button
-                className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
-                onClick={() => {
-                  // TODO: wire up Stripe payout setup flow
-                }}
-              >
-                <Landmark className="w-4 h-4" />
-                Set up payout with Stripe
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                  onClick={handleSetupPayout}
+                  disabled={!userId || startConnect.isPending}
+                >
+                  <Landmark className="w-4 h-4" />
+                  {startConnect.isPending ? "Starting..." : "Set up payout with Stripe"}
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Status: <span className="font-medium text-foreground">{statusLabel}</span>
+                </span>
+              </div>
             </div>
           </div>
         </main>

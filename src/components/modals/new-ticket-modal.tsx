@@ -69,7 +69,7 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
           <DialogTitle>New ticket</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <Input
             type="text"
             placeholder="Search for a project..."
@@ -122,11 +122,11 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
                               : "hover:bg-muted/50 text-foreground"
                           )}
                         >
-                          <span className="truncate font-medium">{project.name}</span>
+                          <span className="min-w-0 flex-1 truncate font-medium">{project.name}</span>
                           {project.slug && (
                             <span
                               className={cn(
-                                "ml-3 truncate text-xs",
+                                "ml-3 min-w-0 max-w-[45%] truncate text-xs",
                                 isSelected ? "text-brand-primary/80" : "text-muted-foreground"
                               )}
                             >

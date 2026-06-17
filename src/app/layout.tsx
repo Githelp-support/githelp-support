@@ -42,7 +42,7 @@ export default function RootLayout({
             <UserProvider>
               <ProjectProvider>
                 <ProtectedLayout>
-                  <div className="flex flex-col min-h-full">
+                  <div className="flex flex-col h-screen">
                     <TopBar />
                     {children}
                   </div>

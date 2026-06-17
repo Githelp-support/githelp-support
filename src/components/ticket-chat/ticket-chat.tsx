@@ -11,6 +11,13 @@ import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 
+export type PaymentSystemMessageKind =
+  | "payment_required"
+  | "payment_authorized"
+  | "payment_requires_action"
+  | "payment_cap_exceeded"
+  | "sla_covered"
+
 export type TicketChatMessage = {
   id: string
   senderType: "user" | "helper" | "system"
@@ -21,6 +28,10 @@ export type TicketChatMessage = {
   timestamp: string
   content: string
   kind?: "claimed" | "ended"
+  paymentMetadata?: {
+    kind: PaymentSystemMessageKind
+    [key: string]: unknown
+  } | null
 }
 
 export type TicketChatParticipant = {
@@ -70,6 +81,10 @@ export interface TicketChatProps {
 
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
+
+  /** Called when the user clicks the "Add payment method" CTA on a payment_required system message. */
+  onPaymentCtaClick?: (msg: TicketChatMessage) => void
+  paymentCtaLoading?: boolean
 }
 
 export function TicketChat(props: TicketChatProps) {
@@ -93,6 +108,8 @@ export function TicketChat(props: TicketChatProps) {
     attachmentStoragePrefix,
     onImageUploaded,
     rightSidebarFooter,
+    onPaymentCtaClick,
+    paymentCtaLoading,
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
@@ -101,10 +118,21 @@ export function TicketChat(props: TicketChatProps) {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages.length])
+    // Defer to after layout so any ended/outcome summary (driven by ticket
+    // status, not message count) is measured before we scroll to the bottom.
+    const id = requestAnimationFrame(() => scrollToBottom())
+    return () => cancelAnimationFrame(id)
+  }, [messages.length, isEnded])
 
   const thread = useMemo(() => messages ?? [], [messages])
+
+  // Once the ticket's payment is authorized, any earlier payment_required /
+  // payment_cap_exceeded system messages are stale — suppress their CTAs so the
+  // "Add payment method" button disappears after the hold is placed.
+  const paymentResolved = useMemo(
+    () => thread.some((m) => m.paymentMetadata?.kind === "payment_authorized"),
+    [thread],
+  )
 
   return (
     <div className="flex-1 flex overflow-hidden">
@@ -127,7 +155,7 @@ export function TicketChat(props: TicketChatProps) {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Main Content */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
           {/* Messages Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
@@ -205,12 +233,38 @@ export function TicketChat(props: TicketChatProps) {
                                 <div
                                   className={
                                     msg.senderType === "system"
-                                      ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                      ? msg.paymentMetadata?.kind === "payment_cap_exceeded"
+                                        ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                        : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent content={msg.content} />
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
+                                    <div className="mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        disabled={paymentCtaLoading}
+                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                      >
+                                        {paymentCtaLoading ? "Opening Stripe…" : "Add payment method"}
+                                      </button>
+                                    </div>
+                                  )}
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_cap_exceeded" && !paymentResolved && (
+                                    <div className="mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        disabled={paymentCtaLoading}
+                                        className="inline-flex items-center gap-2 rounded-md bg-amber-900 hover:bg-amber-800 text-amber-50 px-4 py-2 text-sm font-medium disabled:opacity-60"
+                                      >
+                                        {paymentCtaLoading ? "Opening Stripe…" : "Pay yourself instead"}
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </>

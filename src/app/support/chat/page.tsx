@@ -12,11 +12,14 @@ import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { useCreateTicket } from "@/hooks/useTickets"
+import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
+import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useTicketWithDetails, useUserActiveTicketsSidebar, useLatestUserActiveTicket } from "@/hooks/useTicketsWithDetails"
 import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
+import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -40,6 +43,7 @@ interface Message {
     code: string
   }
   isSystemMessage?: boolean
+  paymentMetadata?: TicketChatMessage["paymentMetadata"]
 }
 
 interface Person {
@@ -67,6 +71,8 @@ export default function UserSupportChatPage() {
   const [projectSearch, setProjectSearch] = useState("")
   /** When user creates ticket without being signed in, first message is not persisted; we show it locally. */
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
+  /** Surfaces the ConfirmPaymentModal when an off-session hold lands in requires_action (SCA). */
+  const [pendingSca, setPendingSca] = useState<{ ticketId: string; clientSecret: string } | null>(null)
 
   // Get project_id and optional existing ticket from query params
   const projectIdParam = searchParams.get("project")
@@ -109,6 +115,13 @@ export default function UserSupportChatPage() {
   const organizationName = hasSLA ? projectName : null
   const freeHelpRemaining: string | null = null
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
+
+  // Ticket-ended summary for the customer: reflect that the helper closed the
+  // session and what was charged. Payment status is realtime so the amount
+  // settles from "Processing…" to the captured value without a reload.
+  const ticketEnded =
+    existingTicket?.status === "completed" || existingTicket?.status === "cancelled"
+  const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, { slaId })
 
   // When opening an existing ticket from URL, set ticket state
   useEffect(() => {
@@ -161,6 +174,7 @@ export default function UserSupportChatPage() {
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
+  const createCheckout = useCreateCheckoutForTicket()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
@@ -258,7 +272,7 @@ export default function UserSupportChatPage() {
       })
     }
     if (messagesData?.length) {
-      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; sender: { id?: string; name?: string; avatar_url?: string | null } | null }) => {
+      messagesData.forEach((msg: { id: string; content: string; created_at: string; sender_type: string; sender_id?: string; metadata?: Record<string, unknown> | null; sender: { id?: string; name?: string; avatar_url?: string | null } | null }) => {
         list.push({
           id: msg.id,
           sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -274,11 +288,27 @@ export default function UserSupportChatPage() {
           avatarUrl: msg.sender?.avatar_url ?? null,
           senderName: msg.sender?.name || (msg.sender_type === "user" ? (user?.name || "You") : "Helper"),
           senderId: msg.sender_id ?? msg.sender?.id,
+          isSystemMessage: msg.sender_type === "system",
+          paymentMetadata: (msg.metadata as TicketChatMessage["paymentMetadata"]) ?? null,
         })
       })
     }
     return list
   }, [welcomeMessage, claimer, pendingFirstMessage, messagesData, user?.id, user?.name, user?.avatar])
+
+  // When a payment_requires_action system message arrives, open the existing
+  // ConfirmPaymentModal with its client_secret. The webhook will eventually
+  // mark payments.status='authorized' and a follow-up system message will
+  // confirm; until then the customer can resolve SCA in-page.
+  useEffect(() => {
+    if (pendingSca) return
+    const scaMsg = messages.find((m) => m.paymentMetadata?.kind === "payment_requires_action")
+    if (!scaMsg) return
+    const clientSecret = scaMsg.paymentMetadata?.client_secret as string | undefined
+    const metaTicketId = scaMsg.paymentMetadata?.ticket_id as string | undefined
+    if (!clientSecret) return
+    setPendingSca({ ticketId: metaTicketId || ticketId, clientSecret })
+  }, [messages, pendingSca, ticketId])
 
   // All participants: from tickets_participants, plus ticket creator if not already in (e.g. old tickets)
   const allParticipants: ParticipantWithUser[] = useMemo(() => {
@@ -507,8 +537,50 @@ export default function UserSupportChatPage() {
     senderId: m.senderId,
     timestamp: m.timestamp,
     content: m.content,
-    kind: m.isSystemMessage ? "claimed" : undefined,
+    // Reserve kind="claimed" for the synthetic "Ticket is claimed by X" message —
+    // it triggers a render branch in TicketChat that swaps the layout for a
+    // helper-avatar variant and DOESN'T render the payment CTA. Payment
+    // system messages need the standard render path so their CTA shows.
+    kind: m.isSystemMessage && !m.paymentMetadata ? "claimed" : undefined,
+    paymentMetadata: m.paymentMetadata ?? null,
   }))
+
+  // Append an end-of-session summary for the customer once the helper closes
+  // the ticket. kind:undefined keeps it on the standard system-bubble render
+  // path (the "claimed" layout branch is keyed on the top-level kind).
+  if (ticketEnded) {
+    const cancelled = existingTicket?.status === "cancelled"
+    const chargedLine = cancelled
+      ? "No charge"
+      : slaId
+        ? "Covered by your SLA"
+        : paymentStatus.status === "distributing" || paymentStatus.status === "completed"
+          ? paymentStatus.capturedAmountSmallestUnit != null
+            ? `$${(paymentStatus.capturedAmountSmallestUnit / 100).toFixed(2)}`
+            : "Charged"
+          : paymentStatus.status === "failed"
+            ? "Payment could not be processed"
+            : "Processing…"
+    chatMessages.push({
+      id: "session-summary",
+      senderType: "system",
+      senderName: null,
+      senderAvatarInitial: null,
+      senderId: null,
+      timestamp: "",
+      content: [
+        "**Session ended**",
+        "",
+        `The helper has ended this session — ${cancelled ? "they were not able to help" : "marked as resolved"}.`,
+        "",
+        `- **Outcome:** ${cancelled ? "Not able to help" : "Resolved"}`,
+        `- **Time logged:** ${totalLoggedFormatted}`,
+        `- **Amount charged:** ${chargedLine}`,
+      ].join("\n"),
+      kind: undefined,
+      paymentMetadata: null,
+    })
+  }
 
   const chatParticipants: TicketChatParticipant[] = allParticipants.map((p) => ({
     id: p.user.id,
@@ -628,11 +700,23 @@ export default function UserSupportChatPage() {
         onMessageChange={setMessage}
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
-        isEnded={false}
+        isEnded={ticketEnded}
         attachmentStoragePrefix={ticketId && effectiveProjectId ? `${effectiveProjectId}/${ticketId}` : undefined}
         onImageUploaded={(url) => {
           setMessage((prev) => prev + `\n![attachment](${url})\n`)
         }}
+        onPaymentCtaClick={async (msg) => {
+          const metaTicketId = msg.paymentMetadata?.ticket_id as string | undefined
+          const target = metaTicketId || ticketId
+          if (!target) return
+          try {
+            const out = await createCheckout.mutateAsync({ ticketId: target })
+            window.location.assign(out.checkoutUrl)
+          } catch (err) {
+            console.error("Failed to start Stripe Checkout:", err)
+          }
+        }}
+        paymentCtaLoading={createCheckout.isPending}
         rightSidebarFooter={
           isAuthenticated ? (
             <>
@@ -731,6 +815,19 @@ export default function UserSupportChatPage() {
           ) : undefined
         }
       />
+      {pendingSca && (
+        <ConfirmPaymentModal
+          clientSecret={pendingSca.clientSecret}
+          onResolved={(status) => {
+            if (status === "authorized") {
+              setTicketCreated(true)
+              setTicketId(pendingSca.ticketId)
+            }
+            setPendingSca(null)
+          }}
+          onCancel={() => setPendingSca(null)}
+        />
+      )}
     </div>
   )
 }

@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useCreateProject, useListUserGithubRepos, useCreateProjectFromGitHub } from "@/hooks/useProject"
+import { useCreateProject, useListUserGithubRepos, useCreateProjectFromGitHub, useCreateSandboxProject, useHasSandbox } from "@/hooks/useProject"
 import { useCompleteOnboarding, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { useProjectSelection } from "@/contexts/project-context"
-import { Loader2, Plus, Users, Github, ArrowLeft, Check, Search } from "lucide-react"
+import { Loader2, Plus, Users, Github, ArrowLeft, Check, Search, FlaskConical } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { signInWithGitHub } from "@/lib/supabase/auth"
 import { toast } from "sonner"
@@ -29,6 +29,8 @@ export default function OnboardingPage() {
     const queryClient = useQueryClient()
     const createProject = useCreateProject()
     const createFromGitHub = useCreateProjectFromGitHub()
+    const createSandbox = useCreateSandboxProject()
+    const { data: hasSandbox } = useHasSandbox()
     const completeOnboarding = useCompleteOnboarding()
     const { setSelectedProjectId } = useProjectSelection()
     const { data: onboardingStatus, isLoading: onboardingStatusLoading } = useOnboardingStatus()
@@ -155,6 +157,29 @@ export default function OnboardingPage() {
         }
     }
 
+    const handleCreateSandbox = async () => {
+        setIsCreating(true)
+        try {
+            // The edge function provisions the demo data and marks onboarding
+            // complete server-side, so we only refetch to pick up the changes.
+            const result = await createSandbox.mutateAsync()
+
+            await Promise.all([
+                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
+                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
+            ])
+
+            setSelectedProjectId(result.project.project_id)
+            toast.success("Sandbox ready! Explore your demo project.")
+            router.push("/")
+        } catch (error: unknown) {
+            console.error("Failed to create sandbox:", error)
+            toast.error(error instanceof Error ? error.message : "Failed to create sandbox. Please try again.")
+        } finally {
+            setIsCreating(false)
+        }
+    }
+
     const handleJoinProject = () => {
         router.push("/onboarding/join")
     }
@@ -275,6 +300,28 @@ export default function OnboardingPage() {
                                 </div>
                             </div>
                         </Button>
+
+                        {!hasSandbox && (
+                            <Button
+                                onClick={handleCreateSandbox}
+                                disabled={isCreating}
+                                className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
+                                variant="outline"
+                            >
+                                <div className="flex items-center gap-3 w-full">
+                                    <FlaskConical className="w-6 h-6 text-brand-primary flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <div className="font-semibold text-lg text-foreground">Try a sandbox</div>
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            Explore a demo project pre-filled with helpers, tickets, and reports
+                                        </div>
+                                    </div>
+                                    {isCreating && (
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0" />
+                                    )}
+                                </div>
+                            </Button>
+                        )}
                     </CardContent>
                 </Card>
             </div>

@@ -208,7 +208,7 @@ export function useClaimTicket() {
                 return data;
             }
         },
-        onSuccess: (data, variables) => {
+        onSuccess: async (data, variables) => {
             // Invalidate participants query
             queryClient.invalidateQueries({
                 queryKey: ["ticket-participants", variables.ticketId],
@@ -218,6 +218,27 @@ export function useClaimTicket() {
                 queryKey: ["ticket", variables.ticketId],
             });
             queryClient.invalidateQueries({ queryKey: ["tickets"] });
+
+            // Fire-and-forget: invoke payments-authorize-on-claim. Failures
+            // are non-fatal — the claim itself stands; the customer can
+            // retry from the chat CTA if a system message wasn't written.
+            try {
+                const resp = await supabase.functions.invoke(
+                    "payments-authorize-on-claim",
+                    { body: { ticket_id: variables.ticketId } },
+                );
+                if (resp.error) {
+                    console.warn(
+                        `payments-authorize-on-claim failed for ${variables.ticketId}:`,
+                        resp.error.message,
+                    );
+                }
+            } catch (err) {
+                console.warn(
+                    `payments-authorize-on-claim threw for ${variables.ticketId}:`,
+                    err,
+                );
+            }
         },
     });
 }
