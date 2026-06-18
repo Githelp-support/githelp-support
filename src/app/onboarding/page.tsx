@@ -308,9 +308,9 @@ export default function OnboardingPage() {
                                 className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
                                 variant="outline"
                             >
-                                <div className="flex items-center gap-3 w-full">
-                                    <FlaskConical className="w-6 h-6 text-brand-primary flex-shrink-0" />
-                                    <div className="flex-1">
+                                <div className="flex items-center gap-3">
+                                    <FlaskConical className="w-6 h-6 text-brand-primary" />
+                                    <div>
                                         <div className="font-semibold text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
                                             Explore a demo project pre-filled with helpers, tickets, and reports
