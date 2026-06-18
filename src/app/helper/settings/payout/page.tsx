@@ -59,7 +59,7 @@ export default function HelperPayoutPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Payout" subtitle="Set up payout details for support" />
           <main className="flex-1 overflow-auto p-6">
-            <p className="text-muted-foreground">You are not registered as a helper in this project.</p>
+            <p className="text-sm text-left pl-2 text-muted-foreground">You are not registered as a helper in this project.</p>
           </main>
         </div>
       </div>
