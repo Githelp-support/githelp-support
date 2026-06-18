@@ -6,11 +6,10 @@ export default function ConnectReturnPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
       <div className="max-w-md space-y-4 text-center">
-        <h1 className="text-2xl font-semibold">Account setup complete</h1>
+        <h1 className="text-2xl font-semibold">Account setup aborted</h1>
         <p className="text-sm text-muted-foreground">
-          Stripe is finalising your account. Status updates appear here once
-          Stripe confirms everything is in order — usually within a few
-          seconds.
+          Stripe wasn’t able to finalise your account. Go back to Stripe to
+          complete the setup in order to be able to accept payments.
         </p>
         <Link
           href="/settings/payment"
