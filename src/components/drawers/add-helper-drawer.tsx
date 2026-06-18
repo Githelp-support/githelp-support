@@ -222,7 +222,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="flex-1 h-11 rounded-xl text-[14px] font-semibold shadow-sm"
+            className="flex-1 py-2.5 rounded-md text-[13px] font-medium shadow-sm"
           >
             {hasSuccessResult ? "Close" : "Cancel"}
           </Button>
@@ -232,7 +232,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
               form="add-helper-form"
               disabled={isSubmitting || !canSubmit}
               variant="default"
-              className="flex-1 h-11 rounded-xl text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md"
+              className="flex-1 py-2.5 rounded-md text-[13px] font-medium bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md"
             >
               {isSubmitting ? "Creating..." : "Create invite"}
             </Button>
