@@ -74,7 +74,7 @@ export default function HelpPage() {
             </div>
 
             {/* FAQ */}
-            <Card className="border-[#D1D9DF] shadow-none rounded-lg">
+            <Card className="border-[#CFCFD8] shadow-none rounded-lg">
               <CardContent className="p-0">
                 <Accordion type="single" collapsible className="w-full">
                   {FAQ_ITEMS.map((item, index) => (
@@ -92,7 +92,7 @@ export default function HelpPage() {
             </Card>
 
             {/* Get support CTA */}
-            <Card className="border-[#D1D9DF] shadow-none rounded-lg bg-muted/30">
+            <Card className="border-[#CFCFD8] shadow-none rounded-lg bg-muted/30">
               <CardContent className="p-6">
                 <h3 className="font-semibold text-foreground mb-2">Still need help?</h3>
                 <p className="text-sm text-muted-foreground mb-4">

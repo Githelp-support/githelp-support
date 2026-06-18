@@ -539,7 +539,7 @@ export default function SupportPage() {
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-[18px] mb-12">
                       {/* Ticket start price */}
-                      <div className="rounded-lg overflow-hidden border border-[#D1D9DF] shadow-none flex flex-col">
+                      <div className="rounded-lg overflow-hidden border border-[#CFCFD8] shadow-none flex flex-col">
                         <div className="bg-gradient-to-br from-[#c5b0ef] to-[#b8a0e8] px-6 py-4 text-center">
                           <div className="text-lg font-semibold text-[#2d2a49]">{startPrice} USD</div>
                         </div>
@@ -552,7 +552,7 @@ export default function SupportPage() {
                       </div>
 
                       {/* First 60 minutes */}
-                      <div className="rounded-lg overflow-hidden border border-[#D1D9DF] shadow-none flex flex-col">
+                      <div className="rounded-lg overflow-hidden border border-[#CFCFD8] shadow-none flex flex-col">
                         <div className="bg-gradient-to-br from-[#e7e5fd] to-[#d8d4f7] px-6 py-4 text-center">
                           <div className="text-lg font-semibold text-[#2d2a49]">{first60Price} USD/min</div>
                         </div>
@@ -565,7 +565,7 @@ export default function SupportPage() {
                       </div>
 
                       {/* After 60 minutes */}
-                      <div className="rounded-lg overflow-hidden border border-[#D1D9DF] shadow-none flex flex-col">
+                      <div className="rounded-lg overflow-hidden border border-[#CFCFD8] shadow-none flex flex-col">
                         <div className="bg-gradient-to-br from-[#f9f7ff] to-[#f0ecff] px-6 py-4 text-center">
                           <div className="text-lg font-semibold text-[#2d2a49]">{after60Price} USD/min</div>
                         </div>
@@ -581,7 +581,7 @@ export default function SupportPage() {
                     {/* Info cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-[18px] mb-8">
                       {/* Average response time */}
-                      <div className="bg-white rounded-lg p-6 shadow-none border border-[#D1D9DF]">
+                      <div className="bg-white rounded-lg p-6 shadow-none border border-[#CFCFD8]">
                         <Clock className="h-5 w-5 text-[#444444] mb-2" />
                         <div className="flex items-center gap-2 mb-4">
                           <h3 className="text-[14px] font-semibold text-[#444444]">Average response time</h3>
@@ -591,7 +591,7 @@ export default function SupportPage() {
                       </div>
 
                       {/* Core team support */}
-                      <div className="bg-white rounded-lg p-6 shadow-none border border-[#D1D9DF]">
+                      <div className="bg-white rounded-lg p-6 shadow-none border border-[#CFCFD8]">
                         <Target className="h-5 w-5 text-[#444444] mb-2" />
                         <div className="flex items-center gap-2 mb-4">
                           <h3 className="text-[14px] font-semibold text-[#444444]">Core team support</h3>
@@ -639,7 +639,7 @@ export default function SupportPage() {
                     </div>
                   )}
 
-                  <Card className="max-w-3xl border-[#D1D9DF] shadow-none rounded-lg">
+                  <Card className="max-w-3xl border-[#CFCFD8] shadow-none rounded-lg">
                     <CardContent className="p-0">
                       <div className="px-6 py-6">
                         <h3 className="text-sm font-semibold text-[#444444] mb-6">Do you have any questions on how support works?</h3>
@@ -704,7 +704,7 @@ export default function SupportPage() {
                   {/* Get started section */}
                   <div>
                     <h2 className="text-xl font-normal text-[#444444] mb-6">Get started</h2>
-                    <div className="bg-white rounded-lg p-8 border border-[#D1D9DF] shadow-none max-w-[52rem]">
+                    <div className="bg-white rounded-lg p-8 border border-[#CFCFD8] shadow-none max-w-[52rem]">
                       <div className="space-y-0 max-w-[36rem]">
                         {/* Step 1 */}
                         <div className="flex gap-4">
@@ -741,7 +741,7 @@ export default function SupportPage() {
                   {/* Receive help section */}
                   <div>
                     <h2 className="text-xl font-normal text-[#444444] mb-6">Receive help</h2>
-                    <div className="bg-white rounded-lg p-8 border border-[#D1D9DF] shadow-none max-w-[52rem]">
+                    <div className="bg-white rounded-lg p-8 border border-[#CFCFD8] shadow-none max-w-[52rem]">
                       <div className="space-y-0 max-w-[36rem]">
                         {/* Step 1 */}
                         <div className="flex gap-4">
@@ -793,7 +793,7 @@ export default function SupportPage() {
                   {/* Payment and reports section */}
                   <div>
                     <h2 className="text-xl font-normal text-[#444444] mb-6">Payment and reports</h2>
-                    <div className="bg-white rounded-lg p-8 border border-[#D1D9DF] shadow-none max-w-[52rem]">
+                    <div className="bg-white rounded-lg p-8 border border-[#CFCFD8] shadow-none max-w-[52rem]">
                       <div className="space-y-0 max-w-[36rem]">
                         {/* Step 1 */}
                         <div className="flex gap-4">
