@@ -312,7 +312,7 @@ export default function UserReportsPage() {
             {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
           </div>
         )}
-        <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+        <div className="bg-white rounded-lg border border-[#D1D9DF] overflow-hidden shadow-none">
           <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
             <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
               <div className="flex items-center">
@@ -522,7 +522,7 @@ export default function UserReportsPage() {
 
       {/* Monthly Reports Tab Content */}
       {activeTab === "monthly" && (
-        <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+        <div className="bg-white rounded-lg border border-[#D1D9DF] overflow-hidden shadow-none">
           <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
             <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
               <div className="col-span-3 flex items-center space-x-2">

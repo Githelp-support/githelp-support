@@ -473,7 +473,7 @@ export default function HelpersPage() {
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
               <Select value={currentView} onValueChange={(value) => handleViewChange(value as "added" | "requests" | "invited")}>
-                <SelectTrigger className="w-full h-[46px] data-[size=default]:h-[46px] border-[#E1E1E1] shadow-none rounded-lg text-[14px] font-normal">
+                <SelectTrigger className="w-full h-[46px] data-[size=default]:h-[46px] border-[#D1D9DF] shadow-none rounded-lg text-[14px] font-normal">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -486,7 +486,7 @@ export default function HelpersPage() {
                 <Search className="w-[18px] h-[18px] absolute left-3.5 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" />
                 <Input
                   placeholder="Search name or GitHub account"
-                  className="pl-10 h-[46px] border-[#E1E1E1] shadow-none rounded-lg text-[13px] placeholder:text-[#94a3b8] focus:border-brand-primary transition-colors"
+                  className="pl-10 h-[46px] border-[#D1D9DF] shadow-none rounded-lg text-[13px] placeholder:text-[#94a3b8] focus:border-brand-primary transition-colors"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -501,7 +501,7 @@ export default function HelpersPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-lg border border-[#E1E1E1] shadow-none overflow-hidden">
+          <div className="bg-white rounded-lg border border-[#D1D9DF] shadow-none overflow-hidden">
             {/* Table Header */}
             <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
               {currentView === "invited" ? (

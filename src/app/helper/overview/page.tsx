@@ -199,7 +199,7 @@ export default function HelperOverviewPage() {
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-[#D1D9DF] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -208,7 +208,7 @@ export default function HelperOverviewPage() {
                   <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-[#D1D9DF] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -217,7 +217,7 @@ export default function HelperOverviewPage() {
                   <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-[#D1D9DF] shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
@@ -244,7 +244,7 @@ export default function HelperOverviewPage() {
                   onChange={(value) => setIssueFilter(value as typeof issueFilter)}
                 />
               </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+              <Card className="border-[#D1D9DF] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
                   <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                     <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
@@ -286,7 +286,7 @@ export default function HelperOverviewPage() {
                     </div>
                   ) : (
                     sortedIssueTypes.map((issue, index) => (
-                      <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                      <div key={index} className="px-6 py-2.5 border-b border-[#D1D9DF] last:border-b-0">
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
                           <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.tickets}</div>
@@ -312,7 +312,7 @@ export default function HelperOverviewPage() {
                   onChange={(value) => setTicketFilter(value as typeof ticketFilter)}
                 />
               </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+              <Card className="border-[#D1D9DF] rounded-lg py-0 shadow-none overflow-hidden">
                 <CardContent className="p-0">
                   <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                     <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
@@ -327,7 +327,7 @@ export default function HelperOverviewPage() {
                     </div>
                   ) : (
                     filteredInProgressTickets.map((ticket) => (
-                      <div key={ticket.id} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
+                      <div key={ticket.id} className="px-6 py-2.5 border-b border-[#D1D9DF] last:border-b-0">
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-6 text-sm text-foreground">{ticket.title}</div>
                           <div className="col-span-3">
