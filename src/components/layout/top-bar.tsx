@@ -149,6 +149,13 @@ export function TopBar() {
     if (isSignedIn) {
       try {
         await logoutUser()
+        // Force a clean reload to /auth/signin so no partially-viewable
+        // portal remains, regardless of the user's role.
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth/signin"
+        } else {
+          router.push("/auth/signin")
+        }
       } catch (error) {
         console.error("Sign out failed:", error)
       }
