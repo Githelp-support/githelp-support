@@ -364,15 +364,22 @@ export default function UserSupportChatPage() {
       p.name.toLowerCase().includes(projectSearch.trim().toLowerCase()),
     )
 
+    // Only reveal the results list once the user has typed at least 3
+    // alphanumeric characters (letters or digits) — ignore spaces/punctuation.
+    const alphanumericSearchLength = projectSearch
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "").length
+    const showProjectResults = alphanumericSearchLength >= 3
+
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#FFFFFF]">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
             <h1 className="text-2xl font-semibold text-foreground mb-2">
               Which project do you need support with?
             </h1>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-[14px] text-muted-foreground mb-6">
               {isAuthenticated
                 ? "You have no support tickets yet. Pick a project to start a new conversation."
                 : "Pick a project to start a new support conversation."}
@@ -390,35 +397,37 @@ export default function UserSupportChatPage() {
               />
             </div>
 
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
-              {allProjectsLoading ? (
-                <div className="px-4 py-6 text-sm text-muted-foreground">
-                  Loading projects…
-                </div>
-              ) : filteredProjects.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-muted-foreground">
-                  No projects match &ldquo;{projectSearch}&rdquo;.
-                </div>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {filteredProjects.map((p) => (
-                    <li key={p.project_id}>
-                      <Link
-                        href={`/support/chat?slug=${encodeURIComponent(p.slug)}`}
-                        className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
-                      >
-                        <span className="text-sm font-medium text-foreground">
-                          {p.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          Get support
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            {showProjectResults && (
+              <div className="bg-white rounded-lg border border-border overflow-hidden">
+                {allProjectsLoading ? (
+                  <div className="px-4 py-6 text-sm text-muted-foreground">
+                    Loading projects…
+                  </div>
+                ) : filteredProjects.length === 0 ? (
+                  <div className="px-4 py-6 text-sm text-muted-foreground">
+                    No projects match &ldquo;{projectSearch}&rdquo;.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {filteredProjects.map((p) => (
+                      <li key={p.project_id}>
+                        <Link
+                          href={`/support/chat?slug=${encodeURIComponent(p.slug)}`}
+                          className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                        >
+                          <span className="text-sm font-medium text-foreground">
+                            {p.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Get support
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>
