@@ -405,7 +405,7 @@ export default function OnboardingPage() {
                                                 className="w-full flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 hover:border-brand-primary/50 text-left transition-colors disabled:opacity-50"
                                             >
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-foreground truncate">{repo.full_name}</div>
+                                                    <div className="font-medium text-foreground truncate text-sm">{repo.full_name}</div>
                                                     {repo.description && (
                                                         <div className="text-sm text-muted-foreground truncate mt-0.5">
                                                             {repo.description}
