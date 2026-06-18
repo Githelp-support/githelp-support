@@ -92,7 +92,7 @@ export default function UserPaymentSettingsPage() {
         <Header title="Payment" subtitle="Manage how you pay for support" />
         <main className="flex-1 px-8 py-6 overflow-y-auto">
           <div className="max-w-3xl space-y-6">
-            <div className="bg-card rounded-lg border border-border p-6">
+            <div className="bg-card rounded-lg p-6">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-base font-semibold text-foreground">Card and payment</h2>
                 <Info className="w-4 h-4 text-muted-foreground" />
