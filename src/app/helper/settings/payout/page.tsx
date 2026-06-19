@@ -22,14 +22,16 @@ export default function HelperPayoutPage() {
   const { data: helperId, isLoading: currentHelperLoading } = useCurrentHelper(projectId)
   const { data: helperData, isLoading: helperLoading } = useHelper(helperId ?? "")
 
-  // Stripe Connect onboarding is user-scoped (not tied to a single project).
+  // Connect onboarding is user-scoped but mode follows the selected project:
+  // a sandbox project onboards a test-mode account, a real project a live one,
+  // kept strictly separate server-side.
   const startConnect = useStartHelperPaymentConnect()
-  const status = usePaymentStatus({ scope: "user", scopeId: userId })
+  const status = usePaymentStatus({ scope: "user", scopeId: userId, projectId })
   const statusLabel = status.data ? connectStatusLabel(status.data).label : "Not set up"
 
   const handleSetupPayout = async () => {
     try {
-      const { url } = await startConnect.mutateAsync()
+      const { url } = await startConnect.mutateAsync({ projectId })
       window.location.assign(url)
     } catch (err) {
       console.error("Failed to start helper Connect onboarding:", err)

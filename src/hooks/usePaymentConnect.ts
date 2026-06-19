@@ -50,26 +50,34 @@ export function useStartPaymentConnect() {
   })
 }
 
+interface StartHelperArgs {
+  /**
+   * The project the helper is onboarding for. Drives Stripe mode server-side:
+   * a sandbox project onboards a test-mode Connect account, a real project a
+   * live one. Omit only for onboarding with no project context (defaults live).
+   */
+  projectId?: string
+}
+
 /**
  * Helper-side Connect onboarding: invokes payments-create-account (scope=user)
  * then payments-link-account, returning the Stripe-hosted onboarding URL the
  * caller should redirect to. No organizationId — the authenticated user is
- * the scope.
+ * the scope. Passing `projectId` keeps test and live Connect accounts strictly
+ * separate per the project being set up for.
  */
 export function useStartHelperPaymentConnect() {
   return useMutation({
-    mutationFn: async () => {
-      const created = await supabase.functions.invoke("payments-create-account", {
-        body: { scope: "user" },
-      })
+    mutationFn: async ({ projectId }: StartHelperArgs = {}) => {
+      const body: Record<string, unknown> = { scope: "user" }
+      if (projectId) body.project_id = projectId
+      const created = await supabase.functions.invoke("payments-create-account", { body })
       if (created.error) {
-        throw new Error(created.error.message || "Failed to create Connect account")
+        throw await toInvokeError(created.error, "Failed to create Connect account")
       }
-      const linked = await supabase.functions.invoke("payments-link-account", {
-        body: { scope: "user" },
-      })
+      const linked = await supabase.functions.invoke("payments-link-account", { body })
       if (linked.error) {
-        throw new Error(linked.error.message || "Failed to create onboarding link")
+        throw await toInvokeError(linked.error, "Failed to create onboarding link")
       }
       const url = (linked.data as { url?: string } | null)?.url
       if (!url) throw new Error("No onboarding URL returned")

@@ -36,7 +36,7 @@ export default function PaymentSettingsPage() {
   const { data: project } = useProject(projectId || "")
   const startConnect = useStartPaymentConnect()
   const orgId = project?.organization_id ?? ""
-  const orgStatus = usePaymentStatus({ scope: "organization", scopeId: orgId })
+  const orgStatus = usePaymentStatus({ scope: "organization", scopeId: orgId, projectId: projectId || undefined })
   const orgStatusLabel = orgStatus.data
     ? connectStatusLabel(orgStatus.data).label
     : "Not set up"

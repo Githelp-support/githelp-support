@@ -104,6 +104,35 @@ describe("useStartHelperPaymentConnect", () => {
         );
     });
 
+    it("forwards project_id so a sandbox project onboards in test mode", async () => {
+        vi.mocked(supabase.functions.invoke)
+            .mockResolvedValueOnce({
+                data: { scope: "user", stripe_account_id: "acct_helper_sb" },
+                error: null,
+            } as never)
+            .mockResolvedValueOnce({
+                data: { scope: "user", url: "https://connect.stripe.com/onboarding/helper-sb" },
+                error: null,
+            } as never);
+
+        const { result } = renderHook(() => useStartHelperPaymentConnect(), {
+            wrapper: makeWrapper(),
+        });
+
+        await result.current.mutateAsync({ projectId: "proj-sb" });
+
+        expect(supabase.functions.invoke).toHaveBeenNthCalledWith(
+            1,
+            "payments-create-account",
+            { body: { scope: "user", project_id: "proj-sb" } },
+        );
+        expect(supabase.functions.invoke).toHaveBeenNthCalledWith(
+            2,
+            "payments-link-account",
+            { body: { scope: "user", project_id: "proj-sb" } },
+        );
+    });
+
     it("rejects if payments-create-account returns an error", async () => {
         vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
             data: null,

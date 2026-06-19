@@ -46,7 +46,7 @@ export default function UserPaymentSettingsPage() {
   // so the card is created in the same environment the user gets support in.
   const { selectedProjectId } = useProjectSelection()
   const setupCard = useSetupPaymentMethod()
-  const status = usePaymentStatus({ scope: "user", scopeId: userId })
+  const status = usePaymentStatus({ scope: "user", scopeId: userId, projectId: selectedProjectId ?? undefined })
   const hasCardOnFile = !!status.data?.default_payment_method_id
   const cardLast4 = status.data?.card_last4 ?? null
   const cardBrandLabel = formatCardBrand(status.data?.card_brand ?? null)
