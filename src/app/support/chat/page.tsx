@@ -818,6 +818,7 @@ export default function UserSupportChatPage() {
       {pendingSca && (
         <ConfirmPaymentModal
           clientSecret={pendingSca.clientSecret}
+          mode={project?.sandbox ? "test" : "live"}
           onResolved={(status) => {
             if (status === "authorized") {
               setTicketCreated(true)

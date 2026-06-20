@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { getStripe } from "@/lib/stripe"
+import { getStripe, type StripeMode } from "@/lib/stripe"
 
 interface Props {
   clientSecret: string
+  /** Mode of the PaymentIntent being confirmed — a sandbox ticket is "test". */
+  mode: StripeMode
   onResolved: (status: "authorized" | "requires_action") => void
   onCancel: () => void
 }
@@ -17,7 +19,7 @@ interface Props {
  * call onResolved("requires_action") so the caller can decide what to do
  * next.
  */
-export function ConfirmPaymentModal({ clientSecret, onResolved, onCancel }: Props) {
+export function ConfirmPaymentModal({ clientSecret, mode, onResolved, onCancel }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +27,7 @@ export function ConfirmPaymentModal({ clientSecret, onResolved, onCancel }: Prop
     setBusy(true)
     setError(null)
     try {
-      const stripe = await getStripe()
+      const stripe = await getStripe(mode)
       if (!stripe) {
         setError("Stripe is not configured.")
         return

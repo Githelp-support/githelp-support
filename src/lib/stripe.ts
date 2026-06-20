@@ -1,21 +1,41 @@
 import { loadStripe, type Stripe } from "@stripe/stripe-js"
 
-let stripePromise: Promise<Stripe | null> | null = null
+export type StripeMode = "test" | "live"
+
+// One memoized Stripe.js instance per mode.
+const promises: Partial<Record<StripeMode, Promise<Stripe | null>>> = {}
+
+function publishableKeyFor(mode: StripeMode): string | undefined {
+  if (mode === "test") {
+    return process.env.NEXT_PUBLIC_STRIPE_TEST_PUBLISHABLE_KEY
+  }
+  // Live: prefer the explicit live var; fall back to the legacy single-key var
+  // so deployments that only set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY keep working.
+  return (
+    process.env.NEXT_PUBLIC_STRIPE_LIVE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  )
+}
 
 /**
- * Lazy, memoized Stripe.js loader. Reads the publishable key from the env.
- * Returns null in environments without a configured key (e.g. tests) so
- * callers can surface a useful error instead of crashing.
+ * Lazy, memoized Stripe.js loader — one instance per mode. A sandbox project's
+ * PaymentIntents live in Stripe **test** mode, so confirming their client_secret
+ * (e.g. an SCA/3D-Secure step) requires the **test** publishable key; live
+ * projects require the live key. Using the wrong-mode key makes Stripe.js reject
+ * the client_secret, so the caller must pass the payment's mode (sandbox → test).
+ *
+ * Returns null when the matching key is unset (e.g. in tests) so callers can
+ * surface a useful error instead of crashing.
  */
-export function getStripe(): Promise<Stripe | null> {
-  if (!stripePromise) {
-    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+export function getStripe(mode: StripeMode): Promise<Stripe | null> {
+  if (!promises[mode]) {
+    const key = publishableKeyFor(mode)
     if (!key) {
-      console.warn("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set")
-      stripePromise = Promise.resolve(null)
+      console.warn(`Stripe ${mode} publishable key is not set`)
+      promises[mode] = Promise.resolve(null)
     } else {
-      stripePromise = loadStripe(key)
+      promises[mode] = loadStripe(key)
     }
   }
-  return stripePromise
+  return promises[mode]!
 }
