@@ -293,7 +293,7 @@ export default function SupportTicketsPage() {
               ) : tickets.length === 0 ? (
                 <Card className="border-border">
                   <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground mb-4">
+                    <p className="text-muted-foreground mb-4 text-[14px]">
                       You have not created any support tickets yet.
                     </p>
                     <Button
