@@ -129,7 +129,7 @@ export default function JoinProjectPage() {
 
                     <div className="border-t pt-6 space-y-4">
                         <div>
-                            <h3 className="font-medium text-foreground mb-1">Find projects you&apos;ve contributed to</h3>
+                            <h3 className="text-sm font-medium text-foreground mb-1">Find projects you&apos;ve contributed to</h3>
                             <p className="text-sm text-muted-foreground mb-3">
                                 See which of your GitHub contributions are registered as projects. Request to become a helper and the project admin can approve.
                             </p>
