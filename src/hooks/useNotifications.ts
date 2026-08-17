@@ -15,6 +15,27 @@ export interface Notification {
     } | null;
 }
 
+export const NOTIFICATION_TYPES = [
+    "HELPER_REQUEST",
+    "NEW_PAYOUT",
+    "SUPPORT_TICKET",
+    "TICKET_MESSAGE",
+    "PAYMENT_REQUIRED",
+    "INFO",
+] as const;
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+// metadata.type is the canonical discriminator (see
+// docs/superpowers/specs/2026-07-02-notifications-design.md); unknown or
+// missing values render as INFO.
+export function notificationType(notification: Notification): NotificationType {
+    const type = notification.metadata?.type;
+    return NOTIFICATION_TYPES.includes(type as NotificationType)
+        ? (type as NotificationType)
+        : "INFO";
+}
+
 export function useNotifications() {
     return useQuery({
         queryKey: ["notifications"],

@@ -101,6 +101,7 @@ export function Sidebar({ className }: SidebarProps) {
         { name: "Profile", href: "/settings/profile", icon: "fi-rr-user" },
         { name: "Project", href: "/settings/project", icon: "fi-rr-folder" },
         { name: "Branding", href: "/settings/branding", icon: "fi-rr-paint-brush" },
+        { name: "Integrations", href: "/settings/integrations", icon: "fi-rr-plug" },
       ],
     },
   ]

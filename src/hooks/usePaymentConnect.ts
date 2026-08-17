@@ -68,7 +68,11 @@ interface StartHelperArgs {
  */
 export function useStartHelperPaymentConnect() {
   return useMutation({
-    mutationFn: async ({ projectId }: StartHelperArgs = {}) => {
+    // `| void` lets callers invoke mutateAsync() with no argument (the
+    // documented no-project-context case) — a parameter default alone
+    // doesn't affect the TVariables react-query infers.
+    mutationFn: async (args: StartHelperArgs | void) => {
+      const projectId = args?.projectId
       const body: Record<string, unknown> = { scope: "user" }
       if (projectId) body.project_id = projectId
       const created = await supabase.functions.invoke("payments-create-account", { body })

@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Logo } from "@/components/brand/logo"
-import { NotificationsPanel, type Notification } from "./notifications-panel"
+import { NotificationsPanel } from "./notifications-panel"
+import type { Notification } from "@/hooks/useNotifications"
 import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
@@ -24,7 +25,7 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from "@/hooks/useNotifications"
-import { formatRelativeTime } from "@/lib/format"
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications"
 import type { Database } from "@/types/database"
 
 type Project = Database["public"]["Tables"]["projects"]["Row"]
@@ -75,34 +76,25 @@ export function TopBar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const bellButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Fetch notifications
+  // Fetch notifications; the realtime subscription keeps the bell live and
+  // fires a toast on new rows.
+  useRealtimeNotifications()
   const { data: notificationsData } = useNotifications()
   const markNotificationRead = useMarkNotificationRead()
   const markAllRead = useMarkAllNotificationsRead()
 
-  // Transform notifications to UI format
-  const notifications: Notification[] = (notificationsData || []).map((notif) => ({
-    id: notif.id,
-    title: notif.title,
-    type: (notif.metadata?.type || "INFO") as "SUPPORT_TICKET" | "HELPER_REQUEST" | "NEW_PAYOUT" | "INFO",
-    content: notif.content,
-    route: notif.route || "#",
-    timestamp: formatRelativeTime(notif.created_at),
-    isRead: notif.is_read,
-  }))
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const notifications: Notification[] = notificationsData || []
+  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   const handleMarkAllAsRead = async () => {
     await markAllRead.mutateAsync()
   }
 
+  // Navigation on click is handled inside NotificationsPanel (it owns the
+  // per-type route overrides); this callback only marks the row read.
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.isRead) {
+    if (!notification.is_read) {
       await markNotificationRead.mutateAsync(notification.id)
-    }
-    if (notification.route && notification.route !== "#") {
-      router.push(notification.route)
     }
   }
 
@@ -306,7 +298,7 @@ export function TopBar() {
             <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
-                {unreadCount}
+                {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </button>

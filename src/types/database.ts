@@ -4,6 +4,82 @@
 export type Database = {
     public: {
         Tables: {
+            notifications: {
+                Row: {
+                    id: string;
+                    created_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    title: string;
+                    content: string;
+                    route: string | null;
+                    is_read: boolean;
+                    read_at: string | null;
+                    metadata: Record<string, any> | null;
+                    config: Record<string, any> | null;
+                };
+                Insert: Partial<{
+                    id: string;
+                    created_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    title: string;
+                    content: string;
+                    route: string | null;
+                    is_read: boolean;
+                    read_at: string | null;
+                    metadata: Record<string, any> | null;
+                    config: Record<string, any> | null;
+                }>;
+                Update: Partial<{
+                    id: string;
+                    created_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    title: string;
+                    content: string;
+                    route: string | null;
+                    is_read: boolean;
+                    read_at: string | null;
+                    metadata: Record<string, any> | null;
+                    config: Record<string, any> | null;
+                }>;
+            };
+            notification_preferences: {
+                Row: {
+                    id: string;
+                    created_at: string;
+                    updated_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    channel: string;
+                    event_group: string;
+                    enabled: boolean;
+                    digest_frequency: string | null;
+                };
+                Insert: Partial<{
+                    id: string;
+                    created_at: string;
+                    updated_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    channel: string;
+                    event_group: string;
+                    enabled: boolean;
+                    digest_frequency: string | null;
+                }>;
+                Update: Partial<{
+                    id: string;
+                    created_at: string;
+                    updated_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    channel: string;
+                    event_group: string;
+                    enabled: boolean;
+                    digest_frequency: string | null;
+                }>;
+            };
             projects: {
                 Row: {
                     id: number;

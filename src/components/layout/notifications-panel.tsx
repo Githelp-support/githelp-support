@@ -5,16 +5,24 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import type { RefObject } from "react"
 import { createPortal } from "react-dom"
+import { notificationType, type Notification, type NotificationType } from "@/hooks/useNotifications"
+import { formatRelativeTime } from "@/lib/format"
 
-export interface Notification {
-  id: string
-  title: string
-  type: "HELPER_REQUEST" | "NEW_PAYOUT" | "SUPPORT_TICKET" | "INFO"
-  content: string
-  route?: string
-  metadata?: Record<string, any>
-  timestamp: string
-  isRead: boolean
+export function notificationTypeColor(type: NotificationType) {
+  switch (type) {
+    case "HELPER_REQUEST":
+      return "text-chart-3"
+    case "NEW_PAYOUT":
+      return "text-chart-2"
+    case "SUPPORT_TICKET":
+      return "text-chart-2"
+    case "TICKET_MESSAGE":
+      return "text-chart-2"
+    case "PAYMENT_REQUIRED":
+      return "text-destructive"
+    default:
+      return "text-muted-foreground"
+  }
 }
 
 interface NotificationsPanelProps {
@@ -82,31 +90,23 @@ export function NotificationsPanel({
     }
   }, [isOpen, anchorRef])
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "HELPER_REQUEST":
-        return "text-chart-3"
-      case "NEW_PAYOUT":
-        return "text-chart-2"
-      case "SUPPORT_TICKET":
-        return "text-chart-2"
-      default:
-        return "text-muted-foreground"
-    }
-  }
-
   const stripQuotes = (text: string) => text.replace(/^["“”]+|["“”]+$/g, "")
 
   const handleNotificationClick = (notification: Notification) => {
     onNotificationClick(notification)
     if (notification.route) {
-      if (notification.type === "HELPER_REQUEST") {
+      if (notificationType(notification) === "HELPER_REQUEST") {
         router.push("/helpers?view=requests")
       } else {
         router.push(notification.route)
       }
     }
     onClose()
+  }
+
+  const handleSeeAll = () => {
+    onClose()
+    router.push("/notifications")
   }
 
   if (!isOpen || !mounted) return null
@@ -129,37 +129,40 @@ export function NotificationsPanel({
             <div className="p-6 text-center text-muted-foreground">No notifications</div>
           ) : (
             <div className="p-4 space-y-4">
-              {notifications.slice(0, 3).map((notification) => (
-                <div
-                  key={notification.id}
-                  className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <span className={`text-xs font-medium uppercase tracking-wide ${getTypeColor(notification.type)}`}>
-                      {notification.type.replace("_", " ")}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs ${
-                          !notification.isRead ? "text-[#2E2D31]" : "text-[#868686]"
-                        }`}
-                      >
-                        {notification.timestamp}
-                      </span>
-                      {!notification.isRead && <div className="w-2 h-2 bg-brand-primary rounded-full" />}
-                    </div>
-                  </div>
-                  <p
-                    className={`text-[13px] leading-relaxed ${
-                      !notification.isRead ? "text-[#2E2D31]" : "text-[#868686]"
-                    }`}
+              {notifications.slice(0, 3).map((notification) => {
+                const type = notificationType(notification)
+                return (
+                  <div
+                    key={notification.id}
+                    className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                    onClick={() => handleNotificationClick(notification)}
                   >
-                    {stripQuotes(notification.content)}
-                  </p>
-                </div>
-              ))}
-              <Button variant="ghost" className="w-full">See all notifications</Button>
+                    <div className="flex items-start justify-between mb-2">
+                      <span className={`text-xs font-medium uppercase tracking-wide ${notificationTypeColor(type)}`}>
+                        {type.replace("_", " ")}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs ${
+                            !notification.is_read ? "text-[#2E2D31]" : "text-[#868686]"
+                          }`}
+                        >
+                          {formatRelativeTime(notification.created_at)}
+                        </span>
+                        {!notification.is_read && <div className="w-2 h-2 bg-brand-primary rounded-full" />}
+                      </div>
+                    </div>
+                    <p
+                      className={`text-[13px] leading-relaxed ${
+                        !notification.is_read ? "text-[#2E2D31]" : "text-[#868686]"
+                      }`}
+                    >
+                      {stripQuotes(notification.content)}
+                    </p>
+                  </div>
+                )
+              })}
+              <Button variant="ghost" className="w-full" onClick={handleSeeAll}>See all notifications</Button>
             </div>
           )}
         </div>
