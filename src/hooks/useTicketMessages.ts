@@ -93,7 +93,13 @@ export function useSendMessage() {
                 sender: participant?.user || null,
             };
         },
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
+            // Cancel any in-flight fetch first: React Query dedupes an
+            // invalidation onto a pending fetch that has no data yet, which
+            // would cache the pre-insert (empty) result for the full staleTime.
+            await queryClient.cancelQueries({
+                queryKey: ["ticket-messages", data.ticket_id],
+            });
             queryClient.invalidateQueries({
                 queryKey: ["ticket-messages", data.ticket_id],
             });

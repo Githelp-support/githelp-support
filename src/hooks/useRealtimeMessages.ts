@@ -18,7 +18,10 @@ export function useRealtimeMessages(ticketId?: string) {
           table: 'tickets_messages',
           filter: `ticket_id=eq.${ticketId}`,
         },
-        () => {
+        async () => {
+          // Cancel an in-flight fetch so the invalidation actually refetches
+          // (a pending fetch with no data yet would otherwise be reused).
+          await queryClient.cancelQueries({ queryKey: ['ticket-messages', ticketId] })
           // Invalidate messages query to refetch
           queryClient.invalidateQueries({ queryKey: ['ticket-messages', ticketId] })
           // Also invalidate ticket details to update message count

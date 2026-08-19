@@ -10,6 +10,7 @@ import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -72,6 +73,17 @@ export interface TicketChatProps {
   isEnded?: boolean
 
   /**
+   * Customer-side "End session". Pressing the toolbar button does not end the
+   * ticket — it asks the helper to finalise. When `endSessionRequestedAt` is
+   * set, the button is replaced by a status banner with a cancel action.
+   * Omit `onRequestEndSession` to hide the button entirely (e.g. no ticket yet).
+   */
+  onRequestEndSession?: () => void | Promise<void>
+  onCancelEndSessionRequest?: () => void | Promise<void>
+  endSessionRequestedAt?: string | null
+  endSessionRequestPending?: boolean
+
+  /**
    * When provided, enables the image attachment button in the chat toolbar.
    * Format: "{projectId}/{ticketId}" — used as the storage path prefix under the ticket-attachments bucket.
    */
@@ -105,6 +117,10 @@ export function TicketChat(props: TicketChatProps) {
     onSend,
     sendDisabled,
     isEnded,
+    onRequestEndSession,
+    onCancelEndSessionRequest,
+    endSessionRequestedAt,
+    endSessionRequestPending,
     attachmentStoragePrefix,
     onImageUploaded,
     rightSidebarFooter,
@@ -113,6 +129,8 @@ export function TicketChat(props: TicketChatProps) {
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
+  const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false)
+  const endSessionRequested = !!endSessionRequestedAt && !isEnded
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -282,6 +300,14 @@ export function TicketChat(props: TicketChatProps) {
             </div>
           </div>
 
+          {endSessionRequested && (
+            <EndSessionRequestedBanner
+              requestedAt={endSessionRequestedAt}
+              pending={endSessionRequestPending}
+              onCancel={() => void onCancelEndSessionRequest?.()}
+            />
+          )}
+
           <TicketChatInput
             value={message}
             onChange={onMessageChange}
@@ -290,10 +316,12 @@ export function TicketChat(props: TicketChatProps) {
             placeholder="Message #askanything"
             onImageClick={attachmentStoragePrefix ? () => setImageUploadOpen(true) : undefined}
             toolbarEndContent={
-              !isEnded ? (
+              !isEnded && onRequestEndSession && !endSessionRequested ? (
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => setEndSessionDialogOpen(true)}
+                  disabled={endSessionRequestPending}
                   className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
                 >
                   End session
@@ -301,6 +329,18 @@ export function TicketChat(props: TicketChatProps) {
               ) : undefined
             }
           />
+
+          {onRequestEndSession && (
+            <EndSessionRequestDialog
+              open={endSessionDialogOpen}
+              onOpenChange={setEndSessionDialogOpen}
+              pending={endSessionRequestPending}
+              onConfirm={async () => {
+                await onRequestEndSession()
+                setEndSessionDialogOpen(false)
+              }}
+            />
+          )}
 
           {attachmentStoragePrefix && (
             <ImageUploadModal

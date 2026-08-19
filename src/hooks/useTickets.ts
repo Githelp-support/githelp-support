@@ -106,3 +106,58 @@ export function useUpdateTicket() {
         },
     });
 }
+
+/**
+ * Customer-side "End session" intent.
+ *
+ * The ticket creator can't end a session (that's the helper's job — they log
+ * remaining time and pick an outcome in the End ticket drawer). Instead they
+ * flag the ticket with `end_requested_at`; the helper's page picks that up
+ * over the `tickets` realtime channel and prompts them to finalise. The
+ * customer can withdraw the request any time until the helper ends the
+ * session. Both directions also leave a `tickets_events` audit row.
+ */
+export function useRequestEndSession() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            ticketId,
+            userId,
+            cancel = false,
+        }: {
+            ticketId: string;
+            userId: string;
+            /** true = withdraw a previous request */
+            cancel?: boolean;
+        }) => {
+            const updates: TicketUpdate = cancel
+                ? { end_requested_at: null, end_requested_by: null }
+                : { end_requested_at: new Date().toISOString(), end_requested_by: userId };
+
+            const { data, error } = await supabase
+                .from("tickets")
+                .update(updates)
+                .eq("id", ticketId)
+                // Only meaningful while the session is live; never resurrect a
+                // request on an already-ended ticket.
+                .in("status", ["available", "claimed", "in-progress"])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            void supabase.from("tickets_events").insert({
+                ticket_id: ticketId,
+                type: cancel ? "end_request_cancelled" : "end_requested",
+                payload: { by: userId },
+            });
+
+            return data as Ticket;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ["ticket", data.id] });
+            queryClient.invalidateQueries({ queryKey: ["ticket-with-details", data.id] });
+        },
+    });
+}

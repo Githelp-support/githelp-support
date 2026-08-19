@@ -13,9 +13,11 @@ interface EndTicketDrawerProps {
   onClose: () => void
   onEndTicket: (outcome: string) => void
   timeEntries?: TimeEntry[]
+  /** Set when the customer has asked to end the session — shown as a reminder to log remaining time first. */
+  userRequestedEnd?: boolean
 }
 
-export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = [] }: EndTicketDrawerProps) {
+export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = [], userRequestedEnd }: EndTicketDrawerProps) {
   const [supportOutcome, setSupportOutcome] = useState("")
 
   const formatTimeEntry = (entry: TimeEntry) => {
@@ -59,6 +61,14 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
       }
     >
       <div className="flex-1 p-6 space-y-6 overflow-auto">
+        {userRequestedEnd && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
+            <p className="font-medium">The user has asked to end this session.</p>
+            <p className="text-muted-foreground mt-1">
+              Make sure all your time is logged below before ending — ending finalises the ticket and the charge.
+            </p>
+          </div>
+        )}
         <div>
           <h3 className="font-medium text-foreground mb-4">How did the support go?</h3>
           <RadioGroup value={supportOutcome} onValueChange={setSupportOutcome}>

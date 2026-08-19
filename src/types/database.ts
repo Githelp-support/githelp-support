@@ -115,6 +115,8 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -136,6 +138,8 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -157,6 +161,8 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
