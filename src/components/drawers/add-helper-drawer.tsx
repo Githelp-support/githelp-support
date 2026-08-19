@@ -215,6 +215,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
       title="Add new helper"
       width="w-[440px]"
       className="shadow-2xl"
+      footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
           <Button

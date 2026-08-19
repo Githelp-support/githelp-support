@@ -23,6 +23,8 @@ export interface DrawerPanelProps {
   backdropClassName?: string
   /** Extra class for the panel container */
   className?: string
+  /** Extra class for the footer wrapper (e.g. border-t-0 to remove the divider) */
+  footerClassName?: string
 }
 
 /**
@@ -39,6 +41,7 @@ export function DrawerPanel({
   width = "w-96",
   backdropClassName = "bg-black/20",
   className,
+  footerClassName,
 }: DrawerPanelProps) {
   if (!isOpen) return null
 
@@ -82,7 +85,9 @@ export function DrawerPanel({
         )}
         <div className="flex-1 flex flex-col min-h-0">{children}</div>
         {footer != null && (
-          <div className="px-6 py-4 border-t border-border flex-shrink-0">{footer}</div>
+          <div className={cn("px-6 py-4 border-t border-border flex-shrink-0", footerClassName)}>
+            {footer}
+          </div>
         )}
       </div>
     </>
