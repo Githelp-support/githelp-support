@@ -20,6 +20,8 @@ import { useUser } from "@/contexts/user-context"
 
 interface SidebarProps {
   className?: string
+  /** When provided, renders a discrete "See project page" external link above the bottom items. */
+  projectPageHref?: string
 }
 
 interface NavigationItem {
@@ -38,7 +40,7 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, projectPageHref }: SidebarProps) {
   const pathname = usePathname()
   // The Sidebar is mounted per-page (not in a shared layout), so its state
   // is wiped on every navigation. Derive the initially-expanded parent from
@@ -411,6 +413,20 @@ export function Sidebar({ className }: SidebarProps) {
       </nav>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5 shrink-0">
+        {projectPageHref && (
+          <a
+            href={projectPageHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-xs font-medium text-muted-foreground hover:text-sidebar-foreground hover:bg-bg-subtle cursor-pointer transition-colors"
+            title={isCollapsed ? "See project page" : undefined}
+          >
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <FlaticonIcon iconClass="fi-rr-browser" />
+            </span>
+            {!isCollapsed && "See project page"}
+          </a>
+        )}
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
           const className = `flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
