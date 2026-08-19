@@ -217,8 +217,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Plus className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Create a new project</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -233,8 +233,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Users className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Users className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Join an existing project</div>
                                     <div className="text-sm text-muted-foreground mt-1">
