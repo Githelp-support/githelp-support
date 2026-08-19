@@ -323,7 +323,10 @@ export default function TicketDetailPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    // block:"nearest" keeps the scroll local to the messages container; with
+    // block:"start" (default) the browser also scrolls ancestor scrollers —
+    // including the window — if the document is ever taller than the viewport.
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }
 
   useEffect(() => {
@@ -531,7 +534,7 @@ export default function TicketDetailPage() {
           : "—"
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-subtle">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="relative border-b border-border z-10">

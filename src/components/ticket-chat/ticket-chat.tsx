@@ -133,7 +133,7 @@ export function TicketChat(props: TicketChatProps) {
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
 
   useEffect(() => {
     // Defer to after layout so any ended/outcome summary (driven by ticket
