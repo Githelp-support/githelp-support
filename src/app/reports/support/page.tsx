@@ -132,7 +132,7 @@ export default function ReportsSupportPage() {
 
     let list = transfersData.map((transfer) => {
       const helperName = getHelperDisplayName(transfer.helper)
-      const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper_id)
+      const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper?.user_id ?? transfer.helper_id)
       const dateStr = transfer.completed_at || transfer.created_at
       return {
         id: transfer.id,

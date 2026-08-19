@@ -114,12 +114,13 @@ export default function HelpersPage() {
     if (!helpersData) return []
     return helpersData.map((helper) => ({
       id: helper.helper_id,
+      // Must match the helper profile page (/helpers/[id]) so avatar colors are consistent
+      avatarId: helper.user_id ?? helper.helper_id,
       name: helper.user?.name || "Unknown",
       initial: (helper.user?.name || "U")[0].toUpperCase(),
       discordUser: helper.user?.username || "-",
       githubAccount: helper.user?.username || "-",
       category: helper.category || "Community",
-      color: getAvatarColorHexForId(helper.user_id ?? helper.helper_id),
       avatarUrl: helper.user?.avatar_url ?? null,
       isRegistered: !!helper.user_id,
     }))
@@ -663,7 +664,7 @@ export default function HelpersPage() {
                         </div>
                         <div className="col-span-3 flex items-center gap-[18px]">
                           <ProfileAvatar
-                            id={helper.id}
+                            id={helper.avatarId}
                             name={helper.name}
                             avatarUrl={helper.avatarUrl}
                           />
