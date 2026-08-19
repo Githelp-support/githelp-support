@@ -74,7 +74,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       // the TopBar and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px] shrink-0">
+      <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
           <Button
             variant="ghost"
