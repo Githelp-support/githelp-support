@@ -418,7 +418,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
             href={projectPageHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-xs font-medium text-muted-foreground hover:text-sidebar-foreground hover:bg-bg-subtle cursor-pointer transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
             title={isCollapsed ? "See project page" : undefined}
           >
             <span className="flex h-5 w-5 shrink-0 items-center justify-center">
