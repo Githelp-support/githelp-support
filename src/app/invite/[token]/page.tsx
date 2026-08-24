@@ -278,7 +278,7 @@ export default function InviteAcceptancePage() {
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
                     <CardDescription className="text-sm mt-2">
-                        Join <span className="font-semibold">{String(project?.name ?? "this project")}</span> {inviteTypeLabel}
+                        Join {String(project?.name ?? "this project")} {inviteTypeLabel}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
