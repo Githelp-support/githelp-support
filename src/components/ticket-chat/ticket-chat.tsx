@@ -94,6 +94,9 @@ export interface TicketChatProps {
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
 
+  /** Optional banner rendered above the chat input (e.g. a send-failure error with a retry action). */
+  errorBanner?: React.ReactNode
+
   /** Called when the user clicks the "Add payment method" CTA on a payment_required system message. */
   onPaymentCtaClick?: (msg: TicketChatMessage) => void
   paymentCtaLoading?: boolean
@@ -124,6 +127,7 @@ export function TicketChat(props: TicketChatProps) {
     attachmentStoragePrefix,
     onImageUploaded,
     rightSidebarFooter,
+    errorBanner,
     onPaymentCtaClick,
     paymentCtaLoading,
   } = props
@@ -299,6 +303,8 @@ export function TicketChat(props: TicketChatProps) {
               <div className="w-full border-b border-border"></div>
             </div>
           </div>
+
+          {errorBanner}
 
           {endSessionRequested && (
             <EndSessionRequestedBanner
