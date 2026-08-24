@@ -1,7 +1,7 @@
 "use client"
 
 import { Bell, ChevronDown, Check, Plus } from "lucide-react"
-import { useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -18,7 +18,7 @@ import { NotificationsPanel, type Notification } from "./notifications-panel"
 import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
-import { useUserMaxRole } from "@/hooks/useProjectRole"
+import { useUserRoles } from "@/hooks/useProjectRole"
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -67,7 +67,7 @@ export function TopBar() {
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
-  const { data: maxUserRole } = useUserMaxRole()
+  const { data: userRoles, isSuccess: rolesLoaded } = useUserRoles()
 
   const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
   const { data: selectedProjectBranding } = useProjectBranding(selectedProject?.project_id || "")
@@ -164,37 +164,28 @@ export function TopBar() {
     }
   }
 
-  const getAvailableRoles = (): UserRole[] => {
-    // Available roles must reflect what the profile is permitted to assume
-    // across ALL of their projects — not the role for the currently selected
-    // project (which can be cleared/lowered when navigating, e.g. to /support
-    // pages where the user is acting as "user"). Using a per-page projectRole
-    // here previously caused other roles to disappear after switching to user,
-    // making it impossible to switch back.
-    const profileMaxRole: UserRole | null = maxUserRole ?? user.projectRole ?? null
-
-    // If the profile has no project membership at all, only "user" is offered
-    // (support users without projects).
-    if (!profileMaxRole) {
-      return ["user"]
+  // Available roles reflect the role categories the profile is ACTUALLY
+  // registered for across ALL of their projects (no implied roles), ordered
+  // admin → helper → user. While the query is loading, fall back to the
+  // current role so the dropdown is never empty.
+  const availableRoles: UserRole[] = useMemo(() => {
+    const order: UserRole[] = ["admin", "helper", "user"]
+    if (rolesLoaded && userRoles && userRoles.length > 0) {
+      return order.filter((role) => userRoles.includes(role))
     }
+    return [user.role]
+  }, [rolesLoaded, userRoles, user.role])
 
-    // Define role hierarchy: admin > helper > user
-    const roleHierarchy: Record<UserRole, number> = {
-      admin: 2,
-      helper: 1,
-      user: 0,
+  // Once roles are loaded, if the current role isn't one the profile holds,
+  // switch to the first available role (e.g. a freshly registered helper
+  // lands in the Helper view instead of the default User view).
+  useEffect(() => {
+    if (!isSignedIn || !rolesLoaded || availableRoles.length === 0) return
+    if (!availableRoles.includes(user.role)) {
+      handleSwitchRole(availableRoles[0])
     }
-
-    const profileRoleLevel = roleHierarchy[profileMaxRole] || 0
-
-    const allowedRoles: UserRole[] = []
-    if (profileRoleLevel >= 2) allowedRoles.push("admin")
-    if (profileRoleLevel >= 1) allowedRoles.push("helper")
-    allowedRoles.push("user")
-
-    return allowedRoles
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, rolesLoaded, availableRoles, user.role])
 
   if (!isSignedIn) return null
 
@@ -212,9 +203,9 @@ export function TopBar() {
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
-              {getAvailableRoles().length > 0 ? (
+              {availableRoles.length > 0 ? (
                 <>
-                  {getAvailableRoles().map((role) => {
+                  {availableRoles.map((role) => {
                     const isCurrent = role === user.role
                     return (
                       <DropdownMenuItem
