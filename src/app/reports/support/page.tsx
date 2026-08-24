@@ -13,6 +13,7 @@ import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
+import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 
 type MonthlySortField = "period" | "description" | "amount" | "status"
 type TicketsSortField = "ticketId" | "date" | "helper" | "amount" | "status"
@@ -76,6 +77,7 @@ export default function ReportsSupportPage() {
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
   const [ticketsSortField, setTicketsSortField] = useState<TicketsSortField | null>(null)
   const [ticketsSortDirection, setTicketsSortDirection] = useState<SortDirection>("asc")
+  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -532,8 +534,9 @@ export default function ReportsSupportPage() {
                               variant="outline"
                               size="sm"
                               className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                              onClick={() => setRequestPdfOpen(true)}
                             >
-                              Download PDF
+                              Request PDF
                             </Button>
                           </div>
                         </div>
@@ -629,8 +632,9 @@ export default function ReportsSupportPage() {
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            onClick={() => setRequestPdfOpen(true)}
                           >
-                            Download PDF
+                            Request PDF
                           </Button>
                         </div>
                       </div>
@@ -642,6 +646,8 @@ export default function ReportsSupportPage() {
           </div>
         </main>
       </div>
+
+      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }
