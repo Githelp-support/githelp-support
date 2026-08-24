@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X } from "lucide-react"
 import { toast } from "sonner"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -457,7 +457,7 @@ export default function HelpersPage() {
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <i className="fi fi-rr-user inline-flex items-center justify-center leading-none w-4 h-4" />
                   Add myself as helper
                 </Button>
               )}
