@@ -274,8 +274,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Plus className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Create from scratch</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -290,8 +290,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Github className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Github className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Import from GitHub</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -308,8 +308,8 @@ export default function OnboardingPage() {
                                 className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
                                 variant="outline"
                             >
-                                <div className="flex items-center gap-3 w-full">
-                                    <FlaskConical className="w-6 h-6 text-brand-primary flex-shrink-0" />
+                                <div className="flex items-start gap-3 w-full">
+                                    <FlaskConical className="w-6 h-6 mt-0.5 text-brand-primary flex-shrink-0" />
                                     <div className="flex-1">
                                         <div className="font-semibold text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
@@ -317,7 +317,7 @@ export default function OnboardingPage() {
                                         </div>
                                     </div>
                                     {isCreating && (
-                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0" />
+                                        <Loader2 className="w-5 h-5 mt-1 animate-spin text-muted-foreground flex-shrink-0" />
                                     )}
                                 </div>
                             </Button>
