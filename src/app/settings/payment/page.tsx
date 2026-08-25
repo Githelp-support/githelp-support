@@ -91,17 +91,17 @@ export default function PaymentSettingsPage() {
   }
 
   // Team sharing ratios (core_helper_percentage)
-  const [teamMemberRatio, setTeamMemberRatio] = useState([50])
-  const [teamProjectRatio, setTeamProjectRatio] = useState([50])
+  const [teamMemberRatio, setTeamMemberRatio] = useState([100])
+  const [teamProjectRatio, setTeamProjectRatio] = useState([0])
 
   // Community sharing ratios (community_helper_percentage)
-  const [communityHelperRatio, setCommunityHelperRatio] = useState([85])
-  const [communityProjectRatio, setCommunityProjectRatio] = useState([15])
+  const [communityHelperRatio, setCommunityHelperRatio] = useState([100])
+  const [communityProjectRatio, setCommunityProjectRatio] = useState([0])
 
   // External consultant settings (consultant_helper_percentage, extended_contract_type)
-  const [contractType, setContractType] = useState<"ticket" | "outside">("ticket")
-  const [consultantRatio, setConsultantRatio] = useState([70])
-  const [consultantProjectRatio, setConsultantProjectRatio] = useState([30])
+  const [contractType, setContractType] = useState<"ticket" | "outside">("outside")
+  const [consultantRatio, setConsultantRatio] = useState([100])
+  const [consultantProjectRatio, setConsultantProjectRatio] = useState([0])
 
   // Track original values to detect changes
   const [originalValues, setOriginalValues] = useState<{
@@ -140,14 +140,14 @@ export default function PaymentSettingsPage() {
       const corePercentage = paymentSettings.core_helper_percentage
       const communityPercentage = paymentSettings.community_helper_percentage
       const consultantPercentage = paymentSettings.consultant_helper_percentage
-      const contractTypeValue = paymentSettings.extended_contract_type || "ticket"
+      const contractTypeValue = paymentSettings.extended_contract_type || "outside"
       const ticketsEnabled = paymentSettings.tickets_enabled ?? false
       const slaEnabled = paymentSettings.sla_enabled ?? false
 
       // Convert cents to dollars for display (database stores in cents)
-      const startPriceCents = paymentSettings.ticket_start_price ?? 1000
-      const first60Cents = paymentSettings.ticket_price_minute_first_60 ?? 150
-      const after60Cents = paymentSettings.ticket_price_minute_after_60 ?? 100
+      const startPriceCents = paymentSettings.ticket_start_price ?? 0
+      const first60Cents = paymentSettings.ticket_price_minute_first_60 ?? 0
+      const after60Cents = paymentSettings.ticket_price_minute_after_60 ?? 0
 
       setTeamMemberRatio([corePercentage])
       setTeamProjectRatio([100 - corePercentage])
