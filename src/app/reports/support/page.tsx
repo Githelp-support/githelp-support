@@ -13,6 +13,7 @@ import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 
 type MonthlySortField = "period" | "description" | "amount" | "status"
 type TicketsSortField = "ticketId" | "date" | "helper" | "amount" | "status"
@@ -84,6 +85,8 @@ export default function ReportsSupportPage() {
     projectId,
     enabled: !!projectId,
   })
+  // Refresh when a ticket closes and its payout rows land / settle.
+  useRealtimePaymentTransfers(projectId)
 
   // Generate months for dropdown
   const months = useMemo(() => {
@@ -130,7 +133,9 @@ export default function ReportsSupportPage() {
   const ticketsData = useMemo(() => {
     if (!transfersData) return []
 
-    let list = transfersData.map((transfer) => {
+    // The org's own cut is also a payments_transfers row (transfer_user_type
+    // "project", no helper); the per-ticket table is about helper payouts.
+    let list = transfersData.filter((t) => t.transfer_user_type === "helper").map((transfer) => {
       const helperName = getHelperDisplayName(transfer.helper)
       const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper?.user_id ?? transfer.helper_id)
       const dateStr = transfer.completed_at || transfer.created_at

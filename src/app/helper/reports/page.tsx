@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
+import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -74,6 +75,7 @@ export default function HelperReportsPage() {
 
   const transfersQueryEnabled = !!projectId && helperFetched && !!helperId
 
+  useRealtimePaymentTransfers(projectId)
   // Fetch payment transfers only once we know the current user's helper row (avoids unscoped queries).
   const { data: transfersData, isLoading: transfersLoading, isFetched: transfersFetched } = usePaymentTransfers({
     helperId: helperId ?? undefined,

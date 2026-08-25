@@ -13,13 +13,26 @@ import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, useSearchParams } from "next/navigation"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
-import { TicketChat, type TicketChatMessage } from "@/components/ticket-chat/ticket-chat"
+import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
+import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
+import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
+import {
+  buildCustomerThreadMessages,
+  buildSessionEndedMessage,
+  describeChargedLine,
+  findPendingSca,
+  formatChatTimestamp,
+} from "@/lib/customer-chat-messages"
 import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
+import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
+import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
-import { loginUserGoogle } from "@/lib/supabase/auth"
+import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
+import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId } from "@/lib/constants"
 
@@ -91,6 +104,7 @@ export default function SupportPage() {
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
 
   const createTicket = useCreateTicket()
+  const createCheckout = useCreateCheckoutForTicket()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
@@ -99,6 +113,21 @@ export default function SupportPage() {
   const { data: liveTicket } = useTicket(ticketId)
 
   const isAuthenticated = !!user?.id
+
+  // Right sidebar data — same hook as /support/chat so "People in this chat",
+  // "Logged time" and "Active tickets" behave identically on both pages.
+  // Anonymous visitors (no user id) get participants only; the footer below
+  // is rendered for signed-in users.
+  const {
+    participants,
+    participantsLoading,
+    claimer,
+    timeEntriesDisplay,
+    totalLoggedFormatted,
+    activeTicketsSidebar,
+    activeTicketsCount,
+  } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
+  const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, user?.id)
 
   // Customer "End session" = ask the helper to finalise (see useRequestEndSession).
   const requestEndSession = useRequestEndSession()
@@ -113,6 +142,7 @@ export default function SupportPage() {
     }
   }
   const ticketEnded = liveTicket?.status === "completed" || liveTicket?.status === "cancelled"
+  const paymentStatus = useTicketPaymentStatus(ticketId || null)
 
   // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
@@ -121,100 +151,83 @@ export default function SupportPage() {
     [projectName],
   )
 
-  // Disclaimer text rendered inside the grey (muted) container at the top of
-  // the chat thread — the first system message a visitor sees in the chat
-  // window. Keeps the visitor informed that they're not charged before the
-  // ticket is confirmed by both parties.
-  const ticketDisclaimerContent =
-    "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm."
 
-  const nowFormatted = useMemo(
-    () =>
-      new Date().toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    [],
-  )
+  const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
 
+  // Thread: disclaimer → claimed banner → (pending first message) → persisted
+  // messages → session summary once ended. Shared with /support/chat.
   const chatMessages: TicketChatMessage[] = useMemo(() => {
-    const list: TicketChatMessage[] = [
-      {
-        id: "welcome",
-        senderType: "system",
-        content: ticketDisclaimerContent,
-        senderName: `${projectName} Team`,
-        senderAvatarUrl: projectLogo,
-        timestamp: nowFormatted,
-      },
-    ]
-
-    // Show the locally-known first message until the persisted one arrives.
-    const hasPersistedUserMessage = !!messagesData?.some(
-      (m: { sender_type: string }) => m.sender_type === "user"
-    )
-    if (pendingFirstMessage && !hasPersistedUserMessage) {
-      list.push({
-        id: "pending-first",
-        senderType: "user",
-        content: pendingFirstMessage,
-        senderName: user?.name || "You",
-        senderAvatarInitial: user?.name?.[0]?.toUpperCase() || "Y",
-        senderId: user?.id,
-        timestamp: nowFormatted,
-      })
-    }
-
-    if (messagesData?.length) {
-      messagesData.forEach(
-        (msg: {
-          id: string
-          content: string
-          created_at: string
-          sender_type: string
-          sender_id?: string
-          sender: { id?: string; name?: string; avatar_url?: string | null } | null
-        }) => {
-          const senderType: TicketChatMessage["senderType"] =
-            msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system"
-          list.push({
-            id: msg.id,
-            senderType,
-            content: msg.content,
-            senderName:
-              msg.sender?.name ||
-              (senderType === "user" ? user?.name || "You" : senderType === "helper" ? "Helper" : `${projectName} Team`),
-            senderAvatarInitial:
-              msg.sender?.name?.[0]?.toUpperCase() ||
-              (senderType === "user" ? user?.name?.[0]?.toUpperCase() || "Y" : "H"),
-            senderAvatarUrl: msg.sender?.avatar_url ?? null,
-            senderId: msg.sender_id ?? msg.sender?.id,
-            timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          })
-        },
+    const list = buildCustomerThreadMessages({
+      projectName,
+      projectLogo,
+      nowFormatted,
+      messagesData,
+      claimer,
+      pendingFirstMessage,
+      fallbackDescription: liveTicket?.description ?? null,
+      fallbackTimestamp: liveTicket?.created_at ?? null,
+      currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+    })
+    if (ticketEnded) {
+      const cancelled = liveTicket?.status === "cancelled"
+      list.push(
+        buildSessionEndedMessage({
+          cancelled,
+          totalLoggedFormatted,
+          chargedLine: describeChargedLine({
+            cancelled,
+            slaCovered: false,
+            paymentStatus: paymentStatus.status,
+            capturedAmountSmallestUnit: paymentStatus.capturedAmountSmallestUnit,
+          }),
+        }),
       )
     }
-
     return list
   }, [
-    ticketDisclaimerContent,
     projectName,
     projectLogo,
     nowFormatted,
-    pendingFirstMessage,
     messagesData,
+    claimer,
+    pendingFirstMessage,
+    liveTicket?.description,
+    liveTicket?.created_at,
+    liveTicket?.status,
+    ticketEnded,
+    totalLoggedFormatted,
+    paymentStatus.status,
+    paymentStatus.capturedAmountSmallestUnit,
     user?.id,
     user?.name,
+    user?.avatarUrl,
   ])
+
+  // Off-session hold that landed in requires_action (SCA): open the existing
+  // ConfirmPaymentModal with the client_secret from the system message. The
+  // webhook then marks the payment authorized and a follow-up system message
+  // confirms. Derived from the thread (no effect) — `handledScaMessageId`
+  // keeps a resolved/cancelled prompt from reopening.
+  const [handledScaMessageId, setHandledScaMessageId] = useState<string | null>(null)
+  const pendingSca = useMemo(
+    () => findPendingSca(chatMessages, handledScaMessageId),
+    [chatMessages, handledScaMessageId],
+  )
+
+  const handlePaymentCta = async (msg: TicketChatMessage) => {
+    const metaTicketId = msg.paymentMetadata?.ticket_id as string | undefined
+    const target = metaTicketId || ticketId
+    if (!target) return
+    try {
+      // Stripe Checkout returns to /support/chat?ticket=… which now renders
+      // the same chat/sidebar as this page.
+      const out = await createCheckout.mutateAsync({ ticketId: target })
+      window.location.assign(out.checkoutUrl)
+    } catch (err) {
+      console.error("Failed to start Stripe Checkout:", err)
+      toast.error("Couldn't open Stripe Checkout. Please try again.")
+    }
+  }
 
   const handleSendMessage = async () => {
     if (!message.trim()) return
@@ -283,14 +296,10 @@ export default function SupportPage() {
     }
   }
 
-  const handleSignIn = async () => {
-    try {
-      const currentUrl = window.location.href
-      await loginUserGoogle(`/auth/confirmed?redirect=${encodeURIComponent(currentUrl)}&skipOnboarding=true`)
-    } catch (error) {
-      console.error("Sign in error:", error)
-    }
-  }
+  // Sign-in options open in a modal so the visitor keeps the page (and its
+  // project context in the URL); the modal redirects back here after auth.
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
+  const handleSignIn = () => setIsSignInModalOpen(true)
 
   const faqs = [
     {
@@ -355,83 +364,18 @@ export default function SupportPage() {
   }
 
   const chatIntro = (
-    <div className="flex gap-3">
-      {projectLogo ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={projectLogo}
-          alt={`${projectName} logo`}
-          className="w-8 h-8 rounded-[11px] object-cover shrink-0"
-        />
-      ) : (
-        <div
-          className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-          style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
-        >
-          {projectName?.[0]?.toUpperCase() || "A"}
-        </div>
-      )}
-      <div className="flex-1 space-y-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm" style={{ color: "#2E2D31", fontWeight: 550 }}>
-              {projectName} Team
-            </span>
-            <span
-              className="text-xs"
-              style={{
-                color: 'rgba(0,0,0,0.5)',
-                fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {nowFormatted}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground whitespace-pre-line">{welcomeMessageContent}</p>
-        </div>
-
-        <div>
-          <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm text-muted-foreground mb-1">Start price</p>
-              <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-              <p className="text-sm font-medium text-foreground">USD {first60Price}/min</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-              <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
-            </div>
-          </div>
-        </div>
-
-        {isAuthenticated && !ticketCreated && (
-          <div className="flex items-center gap-2 text-sm text-brand-primary">
-            <Check className="w-4 h-4" />
-            <span>You are signed in as {user?.name}</span>
-          </div>
-        )}
-
-        {!isAuthenticated && !ticketCreated && (
-          <div className="flex flex-col gap-2">
-            <Button
-              onClick={handleSignIn}
-              variant="outline"
-              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-            >
-              Sign in with Google
-            </Button>
-            <p className="text-xs text-[#868c98] mt-2">
-              You can also start typing your message below to create a ticket. Signing in helps us track your support history.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+    <CustomerChatIntro
+      projectId={projectId ?? ""}
+      projectName={projectName}
+      projectLogo={projectLogo}
+      welcomeText={welcomeMessageContent}
+      timestamp={nowFormatted}
+      rates={{ startPrice, first60Price, after60Price }}
+      isAuthenticated={isAuthenticated}
+      ticketCreated={ticketCreated}
+      userName={user?.name}
+      onSignIn={handleSignIn}
+    />
   )
 
   return (
@@ -505,6 +449,7 @@ export default function SupportPage() {
               </div>
             </div>
           ) : (
+          <>
           <TicketChat
             headerTitle={projectName}
             subtitle={`Welcome to the support page for ${projectName}`}
@@ -538,6 +483,8 @@ export default function SupportPage() {
             showBackButton={false}
             intro={chatIntro}
             messages={chatMessages}
+            participants={chatParticipants}
+            participantsLoading={participantsLoading}
             message={message}
             onMessageChange={setMessage}
             onSend={handleSendMessage}
@@ -551,7 +498,31 @@ export default function SupportPage() {
             onImageUploaded={(url) => {
               setMessage((prev) => prev + `\n![attachment](${url})\n`)
             }}
+            onPaymentCtaClick={handlePaymentCta}
+            paymentCtaLoading={createCheckout.isPending}
+            rightSidebarFooter={
+              isAuthenticated ? (
+                <CustomerTicketSidebarFooter
+                  ticketId={ticketId || undefined}
+                  hasClaimer={!!claimer}
+                  timeEntries={timeEntriesDisplay}
+                  totalLoggedFormatted={totalLoggedFormatted}
+                  activeTickets={activeTicketsSidebar}
+                  activeTicketsCount={activeTicketsCount}
+                />
+              ) : undefined
+            }
           />
+          {pendingSca && (
+            <ConfirmPaymentModal
+              clientSecret={pendingSca.clientSecret}
+              mode={project?.sandbox ? "test" : "live"}
+              onResolved={() => setHandledScaMessageId(pendingSca.messageId)}
+              onCancel={() => setHandledScaMessageId(pendingSca.messageId)}
+            />
+          )}
+          <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
+          </>
           )
         ) : (
           <div className="flex-1 overflow-y-auto">

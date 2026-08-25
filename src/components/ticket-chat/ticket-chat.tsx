@@ -5,11 +5,12 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Info, Plus } from "lucide-react"
+import { Check, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 
 export type PaymentSystemMessageKind =
@@ -367,20 +368,10 @@ export function TicketChat(props: TicketChatProps) {
           <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
             {/* People in Chat */}
             <div>
-              <h3
-                className="mb-3 uppercase"
-                style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.05em',
-                  color: 'rgba(0,0,0,0.5)',
-                  fontWeight: 500,
-                }}
-              >
-                People in this chat
-              </h3>
+              <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
 
               {participantsLoading ? (
-                <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
+                <SidebarEmpty>Loading...</SidebarEmpty>
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
@@ -396,7 +387,7 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+                <SidebarEmpty />
               )}
 
               {!isEnded && (
@@ -407,25 +398,11 @@ export function TicketChat(props: TicketChatProps) {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="border-t border-border my-6 -ml-5 -mr-4" />
+            <SidebarDivider />
 
             {/* Other Topics */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h3
-                  className="uppercase leading-none"
-                  style={{
-                    fontSize: '11px',
-                    letterSpacing: '0.05em',
-                    color: 'rgba(0,0,0,0.5)',
-                    fontWeight: 500,
-                  }}
-                >
-                  Other topics in this chat
-                </h3>
-                <Info className="w-4 h-4 text-muted-foreground shrink-0" />
-              </div>
+              <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
 
               {topics.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -436,11 +413,17 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+                <SidebarEmpty />
               )}
             </div>
 
-            {rightSidebarFooter}
+            {/* Page-specific sections (Logged time / Active tickets), separated like the sections above */}
+            {rightSidebarFooter && (
+              <>
+                <SidebarDivider />
+                {rightSidebarFooter}
+              </>
+            )}
           </div>
         </div>
     </div>
