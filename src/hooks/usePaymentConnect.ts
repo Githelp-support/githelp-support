@@ -71,7 +71,7 @@ export function useStartHelperPaymentConnect() {
     mutationFn: async (args: StartHelperArgs | void) => {
       const projectId = args?.projectId
       const body: Record<string, unknown> = { scope: "user" }
-      if (projectId) body.project_id = projectId
+      if (args?.projectId) body.project_id = args.projectId
       const created = await supabase.functions.invoke("payments-create-account", { body })
       if (created.error) {
         throw await toInvokeError(created.error, "Failed to create Connect account")

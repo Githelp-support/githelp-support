@@ -12,6 +12,7 @@ import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 import {
     PAYOUT_PREVIEW_ROWS,
     REPORTS_PAYOUTS_PREVIEW_DISCLAIMER,
@@ -68,6 +69,7 @@ export default function HelperReportsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
+  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -356,8 +358,9 @@ export default function HelperReportsPage() {
                           size="sm"
                           type="button"
                           className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                          onClick={() => setRequestPdfOpen(true)}
                         >
-                          Download PDF
+                          Request PDF
                         </Button>
                       </div>
                     </div>
@@ -437,8 +440,9 @@ export default function HelperReportsPage() {
                         variant="outline"
                         size="sm"
                         className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        onClick={() => setRequestPdfOpen(true)}
                       >
-                        Download PDF
+                        Request PDF
                       </Button>
                     </div>
                   </div>
@@ -498,6 +502,8 @@ export default function HelperReportsPage() {
       )}
         </main>
       </div>
+
+      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }
