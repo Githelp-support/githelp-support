@@ -449,7 +449,13 @@ export function useCreateProjectInvite() {
                 throw new Error(data?.error || "Failed to create invite");
             }
 
-            return data.invite as ProjectInvite & { invite_url: string };
+            return {
+                ...(data.invite as ProjectInvite & { invite_url: string }),
+                // Whether an invite email was actually delivered (only
+                // meaningful when `email` was passed).
+                email_sent: Boolean(data.email_sent),
+                email_error: data.email_error as string | undefined,
+            };
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({

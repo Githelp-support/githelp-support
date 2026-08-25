@@ -176,7 +176,7 @@ export default function HelpersPage() {
       github_username: newHelper.github_username,
     })
 
-    return { invite_url: result.invite_url }
+    return { invite_url: result.invite_url, email_sent: result.email_sent }
   }
 
   const handleAcceptRequest = (index: number) => {
