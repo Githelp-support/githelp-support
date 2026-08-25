@@ -6,22 +6,26 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ExternalLink, Github, Loader2, Users, CheckCircle, ArrowLeft } from "lucide-react"
+import { Search, Github, Loader2, Users, CheckCircle, ArrowLeft, ChevronRight } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { signInWithGitHub } from "@/lib/supabase/auth"
-import { useListContributedProjects } from "@/hooks/useProject"
+import { useListContributedProjects, useSearchProjects, PROJECT_SEARCH_MIN_CHARS } from "@/hooks/useProject"
 import { useCreatePendingRequest } from "@/hooks/usePendingRequests"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { toast } from "sonner"
 
 export default function JoinProjectPage() {
     const router = useRouter()
-    const [projectId, setProjectId] = useState("")
+    const [searchInput, setSearchInput] = useState("")
+    const [debouncedSearch, setDebouncedSearch] = useState("")
     const [githubToken, setGithubToken] = useState<string | null>(null)
     const [requestedProjectIds, setRequestedProjectIds] = useState<Set<string>>(new Set())
     const [requestingProjectId, setRequestingProjectId] = useState<string | null>(null)
 
     const { data: contributedProjects = [], isLoading: loadingContributed } = useListContributedProjects(githubToken)
+    const searchTerm = debouncedSearch.trim()
+    const canSearch = searchTerm.length >= PROJECT_SEARCH_MIN_CHARS
+    const { data: searchResults = [], isFetching: searching, isError: searchFailed } = useSearchProjects(debouncedSearch)
     const createRequest = useCreatePendingRequest()
     const { data: onboardingStatus } = useOnboardingStatus()
     const completeOnboarding = useCompleteOnboarding()
@@ -36,6 +40,11 @@ export default function JoinProjectPage() {
         }
         checkGithubSession()
     }, [])
+
+    useEffect(() => {
+        const handle = setTimeout(() => setDebouncedSearch(searchInput), 250)
+        return () => clearTimeout(handle)
+    }, [searchInput])
 
     useEffect(() => {
         if (!githubToken || contributedProjects.length === 0) return
@@ -59,10 +68,8 @@ export default function JoinProjectPage() {
         checkExistingRequests()
     }, [githubToken, contributedProjects])
 
-    const handleGoToProject = () => {
-        if (projectId.trim()) {
-            router.push(`/projects/${projectId.trim()}`)
-        }
+    const handleGoToProject = (project: { project_id: string; slug: string | null }) => {
+        router.push(`/projects/${project.slug || project.project_id}`)
     }
 
     const handleConnectGitHub = () => {
@@ -94,37 +101,82 @@ export default function JoinProjectPage() {
                 <CardHeader className="px-7">
                     <CardTitle className="text-2xl font-bold">Join an existing project</CardTitle>
                     <CardDescription>
-                        Enter a project ID, or connect with GitHub to find projects you&apos;ve contributed to that are registered in the system.
+                        Search for a project by name, or connect with GitHub to find projects you&apos;ve contributed to that are registered in the system.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="px-7 space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="project-id" className="text-[13px] font-semibold">Project ID or Slug</Label>
-                        <div className="flex gap-2">
+                        <Label htmlFor="project-search" className="text-[13px] font-semibold">Search projects</Label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <Input
-                                id="project-id"
-                                type="text"
-                                placeholder="Enter project ID or slug"
-                                value={projectId}
-                                onChange={(e) => setProjectId(e.target.value)}
+                                id="project-search"
+                                type="search"
+                                autoComplete="off"
+                                placeholder="Search by project name"
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === "Enter" && projectId.trim()) {
-                                        handleGoToProject()
+                                    if (e.key === "Enter" && canSearch && searchResults.length === 1) {
+                                        handleGoToProject(searchResults[0])
                                     }
                                 }}
-                                className="flex-1"
+                                className="pl-9"
+                                aria-controls="project-search-results"
                             />
-                            <Button
-                                onClick={handleGoToProject}
-                                disabled={!projectId.trim()}
-                                variant="lavender"
-                            >
-                                <ExternalLink className="w-4 h-4" />
-                            </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Or ask a project admin for the project landing page URL
-                        </p>
+                        <div id="project-search-results" aria-live="polite">
+                            {!canSearch ? (
+                                <p className="text-xs text-muted-foreground">
+                                    {searchInput.trim().length > 0
+                                        ? `Type at least ${PROJECT_SEARCH_MIN_CHARS} characters to search`
+                                        : "Or ask a project admin for the project landing page URL"}
+                                </p>
+                            ) : searchFailed ? (
+                                <p className="text-xs text-destructive">Search failed. Please try again.</p>
+                            ) : searching && searchResults.length === 0 ? (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Searching…
+                                </div>
+                            ) : searchResults.length === 0 ? (
+                                <p className="text-xs text-muted-foreground py-2">
+                                    No projects found matching &quot;{searchTerm}&quot;
+                                </p>
+                            ) : (
+                                <ul className="space-y-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-card p-1">
+                                    {searchResults.map((project) => (
+                                        <li key={project.project_id}>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleGoToProject(project)}
+                                                className="w-full flex items-center gap-3 p-2 rounded-md text-left hover:bg-muted focus-visible:bg-muted outline-none transition-colors"
+                                            >
+                                                {project.logo_url ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img
+                                                        src={project.logo_url}
+                                                        alt=""
+                                                        className="w-8 h-8 rounded-md object-cover flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground flex-shrink-0">
+                                                        {project.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="font-medium truncate">{project.name}</div>
+                                                    {project.slug && (
+                                                        <div className="text-xs text-muted-foreground truncate">{project.slug}</div>
+                                                    )}
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -148,7 +200,7 @@ export default function JoinProjectPage() {
                                 </div>
                             ) : contributedProjects.length === 0 ? (
                                 <p className="text-sm text-muted-foreground py-4">
-                                    No projects found that match repositories you&apos;ve contributed to. You can still join by entering a project ID above.
+                                    No projects found that match repositories you&apos;ve contributed to. You can still find a project using the search above.
                                 </p>
                             ) : (
                                 <div className="space-y-2 max-h-60 overflow-y-auto">
