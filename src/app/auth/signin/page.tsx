@@ -100,7 +100,7 @@ export default function SignInPage() {
           <Button
             onClick={handleGitHubSignIn}
             disabled={isLoading}
-            className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white"
+            className="w-full bg-[#3C2EC5] hover:bg-[#3C2EC5]/90 text-white"
             size="lg"
           >
             {isLoading ? (
