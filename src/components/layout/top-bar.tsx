@@ -20,6 +20,7 @@ import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
 import { useProjectAvailableRoles, projectAvailableRolesQueryOptions } from "@/hooks/useProjectRole"
+import { homeRouteForRole } from "@/lib/roles"
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -117,13 +118,7 @@ export function TopBar() {
   }
 
   const routeForRole = (role: UserRole) => {
-    if (role === "admin") {
-      router.push("/")
-    } else if (role === "helper") {
-      router.push("/helper/overview")
-    } else {
-      router.push("/support/tickets")
-    }
+    router.push(homeRouteForRole(role))
   }
 
   const handleProjectSelect = async (project: Project) => {

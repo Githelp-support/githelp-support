@@ -759,6 +759,14 @@ export function useAcceptProjectInvite() {
             queryClient.invalidateQueries({
                 queryKey: ["project-invites", data.project_id],
             });
+            // Membership/helper status just changed, so any cached role
+            // lookups for this project are stale.
+            queryClient.invalidateQueries({
+                queryKey: ["project-available-roles", data.project_id],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["project-role", data.project_id],
+            });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         },
     });
