@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X } from "lucide-react"
 import { toast } from "sonner"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -114,12 +114,13 @@ export default function HelpersPage() {
     if (!helpersData) return []
     return helpersData.map((helper) => ({
       id: helper.helper_id,
+      // Must match the helper profile page (/helpers/[id]) so avatar colors are consistent
+      avatarId: helper.user_id ?? helper.helper_id,
       name: helper.user?.name || "Unknown",
       initial: (helper.user?.name || "U")[0].toUpperCase(),
       discordUser: helper.user?.username || "-",
       githubAccount: helper.user?.username || "-",
       category: helper.category || "Community",
-      color: getAvatarColorHexForId(helper.user_id ?? helper.helper_id),
       avatarUrl: helper.user?.avatar_url ?? null,
       isRegistered: !!helper.user_id,
     }))
@@ -453,11 +454,11 @@ export default function HelpersPage() {
               {showAddSelfAsHelper && (
                 <Button
                   variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-xl text-[13px] font-medium"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <i className="fi fi-rr-user inline-flex items-center justify-center leading-none w-4 h-4" />
                   Add myself as helper
                 </Button>
               )}
@@ -663,7 +664,7 @@ export default function HelpersPage() {
                         </div>
                         <div className="col-span-3 flex items-center gap-[18px]">
                           <ProfileAvatar
-                            id={helper.id}
+                            id={helper.avatarId}
                             name={helper.name}
                             avatarUrl={helper.avatarUrl}
                           />
