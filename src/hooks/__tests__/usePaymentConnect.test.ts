@@ -89,7 +89,7 @@ describe("useStartHelperPaymentConnect", () => {
             wrapper: makeWrapper(),
         });
 
-        const out = await result.current.mutateAsync();
+        const out = await result.current.mutateAsync({});
 
         expect(out).toEqual({ url: "https://connect.stripe.com/onboarding/helper" });
         expect(supabase.functions.invoke).toHaveBeenNthCalledWith(
@@ -142,7 +142,7 @@ describe("useStartHelperPaymentConnect", () => {
             wrapper: makeWrapper(),
         });
         await waitFor(async () => {
-            await expect(result.current.mutateAsync()).rejects.toThrow("nope");
+            await expect(result.current.mutateAsync({})).rejects.toThrow("nope");
         });
     });
 });

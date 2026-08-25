@@ -6,7 +6,7 @@ import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { Sidebar } from "@/components/layout/sidebar"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
-import { Check, Info, Search } from "lucide-react"
+import { AlertCircle, Check, Info, Search } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
@@ -73,6 +73,14 @@ export default function UserSupportChatPage() {
   const [projectSearch, setProjectSearch] = useState("")
   /** When user creates ticket without being signed in, first message is not persisted; we show it locally. */
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
+  /** Inline error shown above the composer when sending fails; the typed message stays in the input for retry. */
+  const [sendError, setSendError] = useState<string | null>(null)
+  /**
+   * Set when the ticket was created but persisting the participant/first message
+   * failed. Retry then reuses the stored ticketId (no duplicate ticket) and only
+   * re-runs the failed steps — ensureParticipant is idempotent.
+   */
+  const [needsParticipantRetry, setNeedsParticipantRetry] = useState(false)
   /** Surfaces the ConfirmPaymentModal when an off-session hold lands in requires_action (SCA). */
   const [pendingSca, setPendingSca] = useState<{ ticketId: string; clientSecret: string } | null>(null)
 
@@ -481,6 +489,7 @@ export default function UserSupportChatPage() {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return
+    setSendError(null)
 
     if (!ticketCreated && effectiveProjectId) {
       try {
@@ -502,17 +511,30 @@ export default function UserSupportChatPage() {
         setPendingFirstMessage(firstMessageContent)
 
         if (user?.id) {
-          await ensureParticipant.mutateAsync({
-            ticketId: ticket.id,
-            participantId: user.id,
-            claimed: false,
-          })
-          await sendMessage.mutateAsync({
-            ticket_id: ticket.id,
-            sender_id: user.id,
-            sender_type: "user",
-            content: firstMessageContent,
-          })
+          try {
+            await ensureParticipant.mutateAsync({
+              ticketId: ticket.id,
+              participantId: user.id,
+              claimed: false,
+            })
+            await sendMessage.mutateAsync({
+              ticket_id: ticket.id,
+              sender_id: user.id,
+              sender_type: "user",
+              content: firstMessageContent,
+            })
+          } catch (error) {
+            // The ticket exists but the participant/first message wasn't
+            // persisted. Put the message back in the input and flag retry so
+            // the next send reuses this ticket instead of creating another.
+            console.error("Failed to send first message:", error)
+            setMessage(firstMessageContent)
+            setPendingFirstMessage(null)
+            setNeedsParticipantRetry(true)
+            setSendError("Your ticket was created, but your message couldn't be sent.")
+            toast.error("Your ticket was created, but your message couldn't be sent. Please retry.")
+            return
+          }
         }
 
         supabase.functions.invoke("classify-ticket", {
@@ -524,23 +546,56 @@ export default function UserSupportChatPage() {
           },
         }).then(() => {}).catch(() => {})
       } catch (error) {
+        // createTicket itself failed (later steps handle their own errors and
+        // return above). Keep the typed message in the input so the user can
+        // simply resend.
         console.error("Failed to create ticket:", error)
+        setSendError("Your message wasn't sent — we couldn't create your ticket.")
+        toast.error("Couldn't create your ticket. Please try again.")
         return
       }
       return
     }
 
     if (!ticketId || !user?.id) return
+    const content = message.trim()
     try {
+      if (needsParticipantRetry) {
+        // Only re-run the steps that failed after ticket creation.
+        // ensureParticipant checks for an existing row, so this is safe.
+        await ensureParticipant.mutateAsync({
+          ticketId,
+          participantId: user.id,
+          claimed: false,
+        })
+      }
       await sendMessage.mutateAsync({
         ticket_id: ticketId,
         sender_id: user.id,
         sender_type: "user",
-        content: message.trim(),
+        content,
       })
+      if (needsParticipantRetry) {
+        setNeedsParticipantRetry(false)
+        // Show the question immediately, as the normal first-message flow does.
+        setPendingFirstMessage(content)
+        // Kick off the classification the failed first attempt never reached.
+        if (effectiveProjectId) {
+          supabase.functions.invoke("classify-ticket", {
+            body: {
+              ticket_id: ticketId,
+              project_id: effectiveProjectId,
+              title: content.substring(0, 100) || "Support Request",
+              description: content,
+            },
+          }).then(() => {}).catch(() => {})
+        }
+      }
       setMessage("")
     } catch (error) {
       console.error("Failed to send message:", error)
+      setSendError("Your message wasn't sent.")
+      toast.error("Couldn't send your message. Please try again.")
     }
   }
 
@@ -734,6 +789,31 @@ export default function UserSupportChatPage() {
         onMessageChange={setMessage}
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
+        errorBanner={
+          sendError ? (
+            <div
+              role="alert"
+              className="mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-red-300 bg-red-50 px-4 py-3"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+              <div className="flex-1 text-sm leading-relaxed text-foreground">
+                <p className="font-medium">{sendError}</p>
+                <p className="text-muted-foreground">
+                  Your message is still in the box below — retry when you&apos;re ready.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleSendMessage()}
+                disabled={createTicket.isPending || ensureParticipant.isPending || sendMessage.isPending}
+                className="shrink-0 cursor-pointer"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : undefined
+        }
         isEnded={ticketEnded}
         onRequestEndSession={
           existingTicket?.id && user?.id ? () => handleRequestEndSession(false) : undefined
