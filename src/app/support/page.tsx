@@ -366,7 +366,7 @@ export default function SupportPage() {
       ) : (
         <div
           className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-          style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+          style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
         >
           {projectName?.[0]?.toUpperCase() || "A"}
         </div>
@@ -477,7 +477,7 @@ export default function SupportPage() {
                 ) : (
                   <div
                     className="w-20 h-20 rounded-[12px] flex items-center justify-center text-2xl font-medium text-foreground border border-[#E1E4EA]"
-                    style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                    style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                   >
                     {projectName?.[0]?.toUpperCase() || "A"}
                   </div>
@@ -529,7 +529,7 @@ export default function SupportPage() {
                   // header — only on this icon, not on any other avatar icon in
                   // the chat.
                   className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground border border-[#E1E4EA]"
-                  style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                  style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                 >
                   {projectName?.[0]?.toUpperCase() || "A"}
                 </div>
