@@ -49,6 +49,7 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
       isOpen={isOpen}
       onClose={onClose}
       title="End ticket"
+      footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
           <Button variant="outline" onClick={onClose} className="flex-1">
@@ -70,7 +71,7 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
           </div>
         )}
         <div>
-          <h3 className="font-medium text-foreground mb-4">How did the support go?</h3>
+          <h3 className="text-sm font-medium text-foreground mb-4">How did the support go?</h3>
           <RadioGroup value={supportOutcome} onValueChange={setSupportOutcome}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="able-to-help" id="able-to-help" />
@@ -89,13 +90,13 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
         </div>
 
         <div>
-          <h3 className="font-medium text-foreground mb-4">Logged time</h3>
+          <h3 className="text-sm font-medium text-foreground mb-4">Logged time</h3>
           {timeEntries.length > 0 ? (
             <div className="space-y-3">
               {timeEntries.map((entry) => {
                 const formatted = formatTimeEntry(entry)
                 return (
-                  <div key={entry.id} className="py-2 border-b border-border">
+                  <div key={entry.id} className="py-2">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
@@ -123,7 +124,7 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
         </div>
 
         <div className="bg-muted/50 rounded-lg p-4 border border-border">
-          <h4 className="font-medium text-foreground mb-2">Completed support</h4>
+          <h4 className="text-[13px] font-semibold text-foreground mb-2">Completed support</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
             If the support was completed successfully, log the time spent. If you were not able to help, consider
             adjusting any time spent, in accordance with the user&apos;s expectations and actual delivery.

@@ -68,7 +68,8 @@ interface StartHelperArgs {
  */
 export function useStartHelperPaymentConnect() {
   return useMutation({
-    mutationFn: async ({ projectId }: StartHelperArgs = {}) => {
+    mutationFn: async (args: StartHelperArgs | void) => {
+      const projectId = args?.projectId
       const body: Record<string, unknown> = { scope: "user" }
       if (projectId) body.project_id = projectId
       const created = await supabase.functions.invoke("payments-create-account", { body })
