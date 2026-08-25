@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
+import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
 import { useTimeEntries, useCreateTimeEntry, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
@@ -34,6 +35,7 @@ import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
+import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
@@ -163,6 +165,7 @@ export default function TicketDetailPage() {
 
   // Set up real-time subscriptions
   useRealtimeMessages(ticketId)
+  useRealtimeTicket(ticketId)
 
   const updateLastReadMessage = useUpdateLastReadMessage()
 
@@ -210,6 +213,27 @@ export default function TicketDetailPage() {
   }, [participants, ticket?.created_by, ticketDetails?.user])
 
   const isTicketEnded = (ticket?.status === "completed" || ticket?.status === "cancelled") || justEndedLocal
+
+  // Customer asked to end the session (tickets.end_requested_at, realtime via
+  // useRealtimeTicket). Only the helper can actually end — they log remaining
+  // time and confirm in the End ticket drawer. The customer may withdraw the
+  // request until then, so this is derived from the live row, not local state.
+  const endRequestedAt = ticket?.end_requested_at ?? null
+  const endRequested = !!endRequestedAt && !isTicketEnded
+  const prevEndRequestedAtRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const prev = prevEndRequestedAtRef.current
+    prevEndRequestedAtRef.current = endRequestedAt
+    // Skip the initial hydration; only toast on a live transition.
+    if (prev === undefined || isTicketEnded) return
+    if (!prev && endRequestedAt) {
+      toast.info("The user has asked to end the session.", {
+        description: "Log any remaining time, then end the session to finalise the ticket.",
+      })
+    } else if (prev && !endRequestedAt) {
+      toast.info("The user withdrew their request to end the session.")
+    }
+  }, [endRequestedAt, isTicketEnded])
 
   const isClaimed =
     justClaimedLocal ||
@@ -299,7 +323,10 @@ export default function TicketDetailPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    // block:"nearest" keeps the scroll local to the messages container; with
+    // block:"start" (default) the browser also scrolls ancestor scrollers —
+    // including the window — if the document is ever taller than the viewport.
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }
 
   useEffect(() => {
@@ -412,7 +439,8 @@ export default function TicketDetailPage() {
 
     void updateTicket.mutateAsync({
       id: ticketId,
-      updates: { status, completed_at: completedAt },
+      // Ending also resolves any outstanding customer "end session" request.
+      updates: { status, completed_at: completedAt, end_requested_at: null, end_requested_by: null },
     })
 
     // Log ended event
@@ -506,7 +534,7 @@ export default function TicketDetailPage() {
           : "—"
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-subtle">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="relative border-b border-border z-10">
@@ -811,6 +839,26 @@ export default function TicketDetailPage() {
             </div>
             </div>
 
+            {endRequested && (
+              <EndSessionRequestedHelperBanner
+                requesterName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+                requestedAt={endRequestedAt}
+                onLogTime={
+                  paymentGate.isReady
+                    ? () => {
+                        if (isAdminButNotHelper) {
+                          setPendingAction("logTime")
+                          setIsAddSelfAsHelperDialogOpen(true)
+                        } else {
+                          setIsLogTimeDrawerOpen(true)
+                        }
+                      }
+                    : undefined
+                }
+                onEndSession={() => setIsEndTicketDrawerOpen(true)}
+              />
+            )}
+
             <TicketChatInput
               value={message}
               onChange={setMessage}
@@ -1022,6 +1070,7 @@ export default function TicketDetailPage() {
         isOpen={isEndTicketDrawerOpen}
         onClose={() => setIsEndTicketDrawerOpen(false)}
         onEndTicket={handleEndTicket}
+        userRequestedEnd={endRequested}
         timeEntries={timeEntries}
       />
 

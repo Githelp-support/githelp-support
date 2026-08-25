@@ -239,6 +239,11 @@ export function useClaimTicket() {
                     err,
                 );
             }
+            // The hold (if any) now exists — refresh the payment gate so "Log
+            // time" unlocks without waiting on realtime or a page refresh.
+            queryClient.invalidateQueries({
+                queryKey: ["ticket-payment-status", variables.ticketId],
+            });
         },
     });
 }

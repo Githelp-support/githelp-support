@@ -7,15 +7,17 @@ import { useProjectRole } from "@/hooks/useProjectRole"
 import { Sidebar } from "@/components/layout/sidebar"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { Check, Info, Search } from "lucide-react"
+import { toast } from "sonner"
 import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
-import { useCreateTicket } from "@/hooks/useTickets"
+import { useCreateTicket, useRequestEndSession } from "@/hooks/useTickets"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
+import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useTicketParticipants, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useTicketWithDetails, useUserActiveTicketsSidebar, useLatestUserActiveTicket } from "@/hooks/useTicketsWithDetails"
 import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
@@ -123,6 +125,23 @@ export default function UserSupportChatPage() {
     existingTicket?.status === "completed" || existingTicket?.status === "cancelled"
   const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, { slaId })
 
+  // "End session" from the customer only signals intent: the helper logs any
+  // remaining time and ends from their side. Until then the customer can keep
+  // chatting or withdraw the request. Realtime on the ticket row keeps
+  // `end_requested_at` fresh on both ends.
+  const requestEndSession = useRequestEndSession()
+  const endSessionRequestedAt = existingTicket?.end_requested_at ?? null
+  const handleRequestEndSession = async (cancel: boolean) => {
+    if (!existingTicket?.id || !user?.id) return
+    try {
+      await requestEndSession.mutateAsync({ ticketId: existingTicket.id, userId: user.id, cancel })
+      toast.success(cancel ? "End request cancelled." : "The helper has been notified.")
+    } catch (error) {
+      console.error("Failed to update end-session request:", error)
+      toast.error(cancel ? "Couldn't cancel the request. Please try again." : "Couldn't notify the helper. Please try again.")
+    }
+  }
+
   // When opening an existing ticket from URL, set ticket state
   useEffect(() => {
     if (ticketIdParam && existingTicket?.id) {
@@ -179,6 +198,7 @@ export default function UserSupportChatPage() {
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
   useRealtimeMessages(ticketId)
+  useRealtimeTicket(ticketId)
   const { data: participants, isLoading: participantsLoading } = useTicketParticipants(ticketId)
   const { data: timeEntriesFromDb = [] } = useTimeEntries(
     ticketId ? { ticketId } : undefined,
@@ -254,18 +274,26 @@ export default function UserSupportChatPage() {
         isSystemMessage: true,
       })
     }
-    if (pendingFirstMessage) {
+    // The customer's initial question: prefer the persisted user message. If it
+    // isn't in the DB yet (race right after creation) or was never persisted
+    // (ticket created before signing in), fall back to what we have locally or
+    // to the ticket description — same fallback the helper view uses.
+    const hasPersistedUserMessage = !!messagesData?.some(
+      (m: { sender_type: string }) => m.sender_type === "user"
+    )
+    const firstMessageFallback = pendingFirstMessage || existingTicket?.description || null
+    if (!hasPersistedUserMessage && firstMessageFallback) {
       list.push({
         id: "pending-first",
         sender: "user",
-        content: pendingFirstMessage,
-        timestamp: new Date().toLocaleString("en-GB", {
+        content: firstMessageFallback,
+        timestamp: existingTicket?.created_at ? new Date(existingTicket.created_at).toLocaleString("en-GB", {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
           hour: "2-digit",
           minute: "2-digit",
-        }),
+        }) : welcomeMessage.timestamp,
         avatar: user?.avatar || "Y",
         senderName: user?.name || "You",
         senderId: user?.id,
@@ -294,7 +322,7 @@ export default function UserSupportChatPage() {
       })
     }
     return list
-  }, [welcomeMessage, claimer, pendingFirstMessage, messagesData, user?.id, user?.name, user?.avatar])
+  }, [welcomeMessage, claimer, pendingFirstMessage, existingTicket, messagesData, user?.id, user?.name, user?.avatar])
 
   // When a payment_requires_action system message arrives, open the existing
   // ConfirmPaymentModal with its client_secret. The webhook will eventually
@@ -464,6 +492,9 @@ export default function UserSupportChatPage() {
         setTicketId(ticket.id)
         const firstMessageContent = message.trim()
         setMessage("")
+        // Show the question immediately; it's replaced by the persisted
+        // message once the messages query includes it.
+        setPendingFirstMessage(firstMessageContent)
 
         if (user?.id) {
           await ensureParticipant.mutateAsync({
@@ -477,8 +508,6 @@ export default function UserSupportChatPage() {
             sender_type: "user",
             content: firstMessageContent,
           })
-        } else {
-          setPendingFirstMessage(firstMessageContent)
         }
 
         supabase.functions.invoke("classify-ticket", {
@@ -701,6 +730,12 @@ export default function UserSupportChatPage() {
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
         isEnded={ticketEnded}
+        onRequestEndSession={
+          existingTicket?.id && user?.id ? () => handleRequestEndSession(false) : undefined
+        }
+        onCancelEndSessionRequest={() => handleRequestEndSession(true)}
+        endSessionRequestedAt={endSessionRequestedAt}
+        endSessionRequestPending={requestEndSession.isPending}
         attachmentStoragePrefix={ticketId && effectiveProjectId ? `${effectiveProjectId}/${ticketId}` : undefined}
         onImageUploaded={(url) => {
           setMessage((prev) => prev + `\n![attachment](${url})\n`)

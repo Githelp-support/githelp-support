@@ -9,6 +9,7 @@ import { ReactQueryProvider } from "@/lib/react-query/provider"
 import { ProtectedLayout } from "@/components/layout/protected-layout"
 import { TopBar } from "@/components/layout/top-bar"
 import { LoadingFallback } from "@/components/ui/loading-fallback"
+import { Toaster } from "@/components/ui/sonner"
 import { Suspense } from "react"
 
 const openSans = Open_Sans({
@@ -46,6 +47,7 @@ export default function RootLayout({
                     <TopBar />
                     {children}
                   </div>
+                  <Toaster position="top-right" richColors closeButton />
                 </ProtectedLayout>
               </ProjectProvider>
             </UserProvider>

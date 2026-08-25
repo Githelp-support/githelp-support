@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { FunctionsHttpError } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase/client"
 
@@ -82,6 +82,48 @@ export function useStartHelperPaymentConnect() {
       const url = (linked.data as { url?: string } | null)?.url
       if (!url) throw new Error("No onboarding URL returned")
       return { url }
+    },
+  })
+}
+
+export interface SyncConnectArgs {
+  scope: "organization" | "user"
+  /** Required when scope is "organization". */
+  organizationId?: string
+  /** Drives Stripe mode server-side (sandbox → test). Omit for live. */
+  projectId?: string
+}
+
+export interface SyncConnectResult {
+  scope: "organization" | "user"
+  mode: "test" | "live"
+  stripe_account_id: string
+  stripe_details_submitted: boolean
+  stripe_charges_enabled: boolean
+  stripe_payouts_enabled: boolean
+}
+
+/**
+ * Reconcile Connect status from Stripe into the local config row (invokes
+ * payments-sync-account) and invalidate cached payment-status queries so the
+ * "Pending verification" label refreshes without waiting on the
+ * `account.updated` webhook. Used by the onboarding return page.
+ */
+export function useSyncPaymentConnect() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ scope, organizationId, projectId }: SyncConnectArgs) => {
+      const body: Record<string, unknown> = { scope }
+      if (organizationId) body.organization_id = organizationId
+      if (projectId) body.project_id = projectId
+      const res = await supabase.functions.invoke("payments-sync-account", { body })
+      if (res.error) {
+        throw await toInvokeError(res.error, "Failed to sync Connect account status")
+      }
+      return res.data as SyncConnectResult
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["payment-status"] })
     },
   })
 }

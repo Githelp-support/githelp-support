@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Search, Clock, Target, HelpCircle, Check } from "lucide-react"
+import { toast } from "sonner"
 import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
@@ -13,9 +14,10 @@ import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, useSearchParams } from "next/navigation"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
 import { TicketChat, type TicketChatMessage } from "@/components/ticket-chat/ticket-chat"
-import { useCreateTicket } from "@/hooks/useTickets"
+import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
 import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
+import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
 import { loginUserGoogle } from "@/lib/supabase/auth"
 import { supabase } from "@/lib/supabase/client"
@@ -93,8 +95,24 @@ export default function SupportPage() {
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
   useRealtimeMessages(ticketId)
+  useRealtimeTicket(ticketId)
+  const { data: liveTicket } = useTicket(ticketId)
 
   const isAuthenticated = !!user?.id
+
+  // Customer "End session" = ask the helper to finalise (see useRequestEndSession).
+  const requestEndSession = useRequestEndSession()
+  const handleRequestEndSession = async (cancel: boolean) => {
+    if (!ticketId || !user?.id) return
+    try {
+      await requestEndSession.mutateAsync({ ticketId, userId: user.id, cancel })
+      toast.success(cancel ? "End request cancelled." : "The helper has been notified.")
+    } catch (error) {
+      console.error("Failed to update end-session request:", error)
+      toast.error(cancel ? "Couldn't cancel the request. Please try again." : "Couldn't notify the helper. Please try again.")
+    }
+  }
+  const ticketEnded = liveTicket?.status === "completed" || liveTicket?.status === "cancelled"
 
   // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
@@ -134,7 +152,11 @@ export default function SupportPage() {
       },
     ]
 
-    if (pendingFirstMessage) {
+    // Show the locally-known first message until the persisted one arrives.
+    const hasPersistedUserMessage = !!messagesData?.some(
+      (m: { sender_type: string }) => m.sender_type === "user"
+    )
+    if (pendingFirstMessage && !hasPersistedUserMessage) {
       list.push({
         id: "pending-first",
         senderType: "user",
@@ -212,6 +234,8 @@ export default function SupportPage() {
         setTicketId(ticket.id)
         const firstMessageContent = message.trim()
         setMessage("")
+        // Show the question immediately; hidden once the persisted message arrives.
+        setPendingFirstMessage(firstMessageContent)
 
         if (user?.id) {
           await ensureParticipant.mutateAsync({
@@ -225,8 +249,6 @@ export default function SupportPage() {
             sender_type: "user",
             content: firstMessageContent,
           })
-        } else {
-          setPendingFirstMessage(firstMessageContent)
         }
 
         supabase.functions
@@ -519,8 +541,12 @@ export default function SupportPage() {
             message={message}
             onMessageChange={setMessage}
             onSend={handleSendMessage}
-            sendDisabled={!message.trim() || createTicket.isPending}
-            isEnded={false}
+            sendDisabled={!message.trim() || createTicket.isPending || ticketEnded}
+            isEnded={ticketEnded}
+            onRequestEndSession={ticketId && user?.id ? () => handleRequestEndSession(false) : undefined}
+            onCancelEndSessionRequest={() => handleRequestEndSession(true)}
+            endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
+            endSessionRequestPending={requestEndSession.isPending}
             attachmentStoragePrefix={ticketId && projectId ? `${projectId}/${ticketId}` : undefined}
             onImageUploaded={(url) => {
               setMessage((prev) => prev + `\n![attachment](${url})\n`)

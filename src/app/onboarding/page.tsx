@@ -206,8 +206,8 @@ export default function OnboardingPage() {
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-2xl">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-2xl font-bold">Welcome! Let&apos;s get you started</CardTitle>
-                        <CardDescription className="text-base mt-2">
+                        <CardTitle className="text-2xl font-bold">Welcome to Githelp! Let&apos;s get you started</CardTitle>
+                        <CardDescription className="text-sm mt-2">
                             Choose how you&apos;d like to get started with Githelp
                         </CardDescription>
                     </CardHeader>
