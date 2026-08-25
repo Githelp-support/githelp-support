@@ -11,6 +11,11 @@ import Link from "next/link"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { HelperInviteAcceptance } from "@/components/auth/helper-invite-acceptance"
 import { useAcceptProjectInvite } from "@/hooks/useProject"
+import { useQueryClient } from "@tanstack/react-query"
+import { useUser, type UserRole } from "@/contexts/user-context"
+import { useProjectSelection } from "@/contexts/project-context"
+import { projectAvailableRolesQueryOptions } from "@/hooks/useProjectRole"
+import { homeRouteForRole } from "@/lib/roles"
 
 export default function InviteAcceptancePage() {
     const params = useParams()
@@ -30,6 +35,41 @@ export default function InviteAcceptancePage() {
     const { data: onboardingStatus } = useOnboardingStatus()
     const completeOnboarding = useCompleteOnboarding()
     const acceptInvite = useAcceptProjectInvite()
+    const queryClient = useQueryClient()
+    const { user, switchRole } = useUser()
+    const { setSelectedProjectId } = useProjectSelection()
+
+    /**
+     * Make the project the user just joined the active one, and switch them
+     * into the highest role they now hold there (admin > helper > user).
+     * Returns that role so the caller can route to its home page.
+     */
+    const selectJoinedProject = async (projectId: string): Promise<UserRole> => {
+        // ProjectProvider drops any selection that isn't in the loaded project
+        // list, so wait for the (just invalidated) list to include the new
+        // project before selecting it.
+        try {
+            await queryClient.refetchQueries({ queryKey: ["user-projects"] })
+        } catch (err) {
+            console.error("Failed to refresh user projects:", err)
+        }
+        setSelectedProjectId(projectId)
+
+        // Roles come back ordered admin > helper > user. staleTime 0 forces a
+        // fresh read since membership just changed.
+        let nextRole: UserRole = "user"
+        try {
+            const roles = await queryClient.fetchQuery({
+                ...projectAvailableRolesQueryOptions(projectId),
+                staleTime: 0,
+            })
+            nextRole = roles[0] ?? "user"
+        } catch (err) {
+            console.error("Failed to resolve roles for joined project:", err)
+        }
+        if (nextRole !== user.role) switchRole(nextRole)
+        return nextRole
+    }
 
     // Check authentication and find invite by token
     useEffect(() => {
@@ -176,10 +216,12 @@ export default function InviteAcceptancePage() {
             }
             
             toast.success(result.message || "Successfully joined the project!")
-            
-            // Redirect to dashboard after a short delay
+
+            // Land in the newly joined project, in the highest role held there.
+            const nextRole = await selectJoinedProject(result.project_id)
+            const destination = homeRouteForRole(nextRole)
             setTimeout(() => {
-                router.push("/")
+                router.push(destination)
             }, 1500)
         } catch (err: unknown) {
             console.error("Failed to accept invite:", err)
@@ -277,8 +319,8 @@ export default function InviteAcceptancePage() {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
-                    <CardDescription className="text-base mt-2">
-                        Join <span className="font-semibold">{String(project?.name ?? "this project")}</span> {inviteTypeLabel}
+                    <CardDescription className="text-sm mt-2">
+                        Join {String(project?.name ?? "this project")} {inviteTypeLabel}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

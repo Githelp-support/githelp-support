@@ -28,6 +28,7 @@ export interface PaymentTransfer {
   created_at: string
   completed_at: string | null
   helper?: {
+    user_id?: string | null
     user?: {
       name: string
       username: string | null
@@ -83,6 +84,7 @@ export function usePaymentTransfers(filters?: {
         .select(`
           *,
           helper:projects_helpers(
+            user_id,
             user:users_public(name, username, email)
           ),
           ticket:tickets(id, title, sla:slas(name))

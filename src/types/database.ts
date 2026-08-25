@@ -331,16 +331,19 @@ export type Database = {
             users: {
                 Row: {
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 };
                 Insert: Partial<{
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;
                 Update: Partial<{
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;

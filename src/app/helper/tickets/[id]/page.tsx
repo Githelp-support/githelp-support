@@ -295,7 +295,7 @@ export default function TicketDetailPage() {
     if (firstUser) {
       return {
         content: firstUser.content,
-        senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "Customer",
+        senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "User",
         senderId: (firstUser as { sender_id?: string }).sender_id ?? ticketCreatorId,
         senderAvatarUrl:
           (firstUser as { sender?: { avatar_url?: string | null } }).sender?.avatar_url ?? ticketCreatorAvatarUrl,
@@ -305,7 +305,7 @@ export default function TicketDetailPage() {
     if (ticket?.description || ticketDetails?.description) {
       return {
         content: ticket?.description ?? ticketDetails?.description ?? "",
-        senderName: ticketDetails?.user?.name ?? "Customer",
+        senderName: ticketDetails?.user?.name ?? "User",
         senderId: ticketCreatorId,
         senderAvatarUrl: ticketCreatorAvatarUrl,
         timestamp: ticket?.created_at ?? "",
@@ -313,7 +313,7 @@ export default function TicketDetailPage() {
     }
     return {
       content: "",
-      senderName: ticketDetails?.user?.name ?? "Customer",
+      senderName: ticketDetails?.user?.name ?? "User",
       senderId: ticketCreatorId,
       senderAvatarUrl: ticketCreatorAvatarUrl,
       timestamp: ticket?.created_at ?? "",
@@ -560,7 +560,7 @@ export default function TicketDetailPage() {
                 <div className="flex gap-3 items-start">
                   <ProfileAvatar
                     id={firstIssueMessage.senderId}
-                    name={firstIssueMessage.senderName ?? "C"}
+                    name={firstIssueMessage.senderName ?? "U"}
                     avatarUrl={firstIssueMessage.senderAvatarUrl ?? null}
                     size="sm"
                     radius="9.625px"

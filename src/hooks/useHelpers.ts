@@ -129,6 +129,14 @@ export function useAddSelfAsHelper() {
             queryClient.invalidateQueries({
                 queryKey: ["current-helper", data.project_id],
             });
+            // The user now holds the helper role in this project — refresh the
+            // role queries so the top-bar role switcher offers "Helper".
+            queryClient.invalidateQueries({
+                queryKey: ["project-available-roles", data.project_id],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["project-role", data.project_id],
+            });
         },
     });
 }

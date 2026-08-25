@@ -20,6 +20,8 @@ import { useUser } from "@/contexts/user-context"
 
 interface SidebarProps {
   className?: string
+  /** When provided, renders a discrete "See project page" external link above the bottom items. */
+  projectPageHref?: string
 }
 
 interface NavigationItem {
@@ -38,7 +40,7 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, projectPageHref }: SidebarProps) {
   const pathname = usePathname()
   // The Sidebar is mounted per-page (not in a shared layout), so its state
   // is wiped on every navigation. Derive the initially-expanded parent from
@@ -207,7 +209,7 @@ export function Sidebar({ className }: SidebarProps) {
       // `self-stretch` and `h-full` are equivalent — so this is a no-op there.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px] shrink-0">
+      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
           <Button
             variant="ghost"
@@ -392,7 +394,7 @@ export function Sidebar({ className }: SidebarProps) {
                 ) : (
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
-                      className={`flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
+                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                       title={isCollapsed ? item.name : undefined}
@@ -411,9 +413,23 @@ export function Sidebar({ className }: SidebarProps) {
       </nav>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5 shrink-0">
+        {projectPageHref && (
+          <a
+            href={projectPageHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            title={isCollapsed ? "See project page" : undefined}
+          >
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <FlaticonIcon iconClass="fi-rr-browser" />
+            </span>
+            {!isCollapsed && "See project page"}
+          </a>
+        )}
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
-          const className = `flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
+          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
             isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
           }`
           const content = (

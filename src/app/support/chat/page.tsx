@@ -113,6 +113,11 @@ export default function UserSupportChatPage() {
   const project = projectIdParam ? projectById : (slugParam ? projectBySlug : projectById)
   // Use the project's UUID when only a slug is provided, or fall back to projectId from URL/ticket
   const effectiveProjectId = project?.project_id || projectId || ""
+  const projectPageHref = project?.slug
+    ? `/support/${encodeURIComponent(project.slug)}`
+    : effectiveProjectId
+      ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
+      : undefined
   const projectName = project?.name ?? "Support"
   const organizationName = hasSLA ? projectName : null
   const freeHelpRemaining: string | null = null
@@ -621,7 +626,7 @@ export default function UserSupportChatPage() {
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
-      <Sidebar />
+      <Sidebar projectPageHref={projectPageHref} />
 
       <TicketChat
         headerTitle={`Ticket with ${projectName}`}
@@ -800,7 +805,7 @@ export default function UserSupportChatPage() {
                 <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets ({activeTicketsCount})</h3>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
-                    <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+                    <p className="text-[13px] text-muted-foreground pl-5 pr-4">No active tickets</p>
                   ) : (
                     activeTicketsSidebar.map((item) => (
                       <Link

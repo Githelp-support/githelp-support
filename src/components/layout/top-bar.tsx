@@ -2,6 +2,7 @@
 
 import { Bell, ChevronDown, Check, Plus } from "lucide-react"
 import { useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -18,7 +19,8 @@ import { NotificationsPanel, type Notification } from "./notifications-panel"
 import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
-import { useUserMaxRole } from "@/hooks/useProjectRole"
+import { useProjectAvailableRoles, projectAvailableRolesQueryOptions } from "@/hooks/useProjectRole"
+import { homeRouteForRole } from "@/lib/roles"
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -64,12 +66,13 @@ const ProjectLogo = ({
 
 export function TopBar() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
-  const { data: maxUserRole } = useUserMaxRole()
 
   const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
+  const { data: projectAvailableRoles } = useProjectAvailableRoles(selectedProject?.project_id)
   const { data: selectedProjectBranding } = useProjectBranding(selectedProject?.project_id || "")
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -114,18 +117,28 @@ export function TopBar() {
     return branding?.logo_url ?? null
   }
 
-  const handleProjectSelect = (project: Project) => {
+  const routeForRole = (role: UserRole) => {
+    router.push(homeRouteForRole(role))
+  }
+
+  const handleProjectSelect = async (project: Project) => {
     const isDifferentProject = project.project_id !== selectedProjectId
     setSelectedProjectId(project.project_id)
-    if (isDifferentProject) {
-      if (user.role === "admin") {
-        router.push("/")
-      } else if (user.role === "helper") {
-        router.push("/helper/overview")
-      } else if (user.role === "user") {
-        router.push("/support/tickets")
-      }
+    if (!isDifferentProject) return
+
+    // Always land in the HIGHEST role the user holds in the newly selected
+    // project (e.g. helper in A → admin in B switches to admin; admin in A →
+    // helper-only in B switches to helper). Roles come back ordered
+    // admin > helper > user, and fetchQuery shares the switcher's cache.
+    let nextRole: UserRole = "user"
+    try {
+      const roles = await queryClient.fetchQuery(projectAvailableRolesQueryOptions(project.project_id))
+      nextRole = roles[0] ?? "user"
+    } catch (error) {
+      console.error("Failed to resolve roles for project:", error)
     }
+    if (nextRole !== user.role) switchRole(nextRole)
+    routeForRole(nextRole)
   }
 
   const getRoleDisplayName = (role: UserRole) => {
@@ -134,13 +147,7 @@ export function TopBar() {
 
   const handleSwitchRole = (role: UserRole) => {
     switchRole(role)
-    if (role === "admin") {
-      router.push("/")
-    } else if (role === "helper") {
-      router.push("/helper/overview")
-    } else if (role === "user") {
-      router.push("/support/tickets")
-    }
+    routeForRole(role)
   }
 
   const isSignedIn = Boolean(user.id)
@@ -165,35 +172,18 @@ export function TopBar() {
   }
 
   const getAvailableRoles = (): UserRole[] => {
-    // Available roles must reflect what the profile is permitted to assume
-    // across ALL of their projects — not the role for the currently selected
-    // project (which can be cleared/lowered when navigating, e.g. to /support
-    // pages where the user is acting as "user"). Using a per-page projectRole
-    // here previously caused other roles to disappear after switching to user,
-    // making it impossible to switch back.
-    const profileMaxRole: UserRole | null = maxUserRole ?? user.projectRole ?? null
-
-    // If the profile has no project membership at all, only "user" is offered
-    // (support users without projects).
-    if (!profileMaxRole) {
-      return ["user"]
+    // Roles are scoped to the SELECTED project: a helper only sees Helper and
+    // User unless they are also an admin of that project. Keyed by the
+    // persisted selected project id — not the per-page projectRole, which
+    // gets cleared/lowered on /support pages and previously made roles
+    // disappear from the switcher.
+    if (!projectAvailableRoles) {
+      // Query not resolved yet, or the profile has no projects at all
+      // (support-only users). Keep the active role listed so the menu never
+      // drops the role currently in use.
+      return user.role === "user" ? ["user"] : [user.role, "user"]
     }
-
-    // Define role hierarchy: admin > helper > user
-    const roleHierarchy: Record<UserRole, number> = {
-      admin: 2,
-      helper: 1,
-      user: 0,
-    }
-
-    const profileRoleLevel = roleHierarchy[profileMaxRole] || 0
-
-    const allowedRoles: UserRole[] = []
-    if (profileRoleLevel >= 2) allowedRoles.push("admin")
-    if (profileRoleLevel >= 1) allowedRoles.push("helper")
-    allowedRoles.push("user")
-
-    return allowedRoles
+    return projectAvailableRoles
   }
 
   if (!isSignedIn) return null
@@ -278,7 +268,7 @@ export function TopBar() {
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
                   onClick={() => {
-                    if (typeof window !== "undefined") window.location.href = "/onboarding"
+                    if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
                   }}
                 >
                   <Plus className="w-4 h-4" />

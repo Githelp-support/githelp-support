@@ -62,6 +62,12 @@ export default function OnboardingPage() {
         }
     }, [searchParams])
 
+    // Existing members can come back here on purpose to add another project
+    // (top-bar "Add new", sandbox "Exit sandbox", GitHub import). Those entry
+    // points pass an explicit intent param so the redirect below is skipped.
+    const wantsAnotherProject =
+        searchParams.get("new") === "1" || searchParams.get("import") === "github"
+
     // CRM / admin-seeded users already have a project; this route is public so
     // AuthGuard does not redirect them away — send them to the app instead of
     // showing "Create or join" again.
@@ -69,17 +75,19 @@ export default function OnboardingPage() {
     // Do not use `!needsOnboarding` alone: when logged out, useOnboardingStatus
     // returns needsOnboarding: false (no user), which would wrongly redirect.
     const hasFinishedOnboardingWizard =
-        onboardingStatus &&
+        !wantsAnotherProject &&
+        !!onboardingStatus &&
         (onboardingStatus.isMember || onboardingStatus.onboardingCompleted)
 
     useEffect(() => {
         if (onboardingStatusLoading || !onboardingStatus) return
+        if (wantsAnotherProject) return
         const done =
             onboardingStatus.isMember || onboardingStatus.onboardingCompleted
         if (done) {
             router.replace("/")
         }
-    }, [onboardingStatus, onboardingStatusLoading, router])
+    }, [onboardingStatus, onboardingStatusLoading, router, wantsAnotherProject])
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
@@ -206,8 +214,8 @@ export default function OnboardingPage() {
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-2xl">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-2xl font-bold">Welcome! Let&apos;s get you started</CardTitle>
-                        <CardDescription className="text-base mt-2">
+                        <CardTitle className="text-2xl font-bold">Welcome to Githelp! Let&apos;s get you started</CardTitle>
+                        <CardDescription className="text-sm mt-2">
                             Choose how you&apos;d like to get started with Githelp
                         </CardDescription>
                     </CardHeader>
@@ -217,8 +225,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Plus className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Create a new project</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -233,8 +241,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Users className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Users className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Join an existing project</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -274,8 +282,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Plus className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Create from scratch</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -290,8 +298,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Github className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Github className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Import from GitHub</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -308,8 +316,8 @@ export default function OnboardingPage() {
                                 className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
                                 variant="outline"
                             >
-                                <div className="flex items-center gap-3 w-full">
-                                    <FlaskConical className="w-6 h-6 text-brand-primary flex-shrink-0" />
+                                <div className="flex items-start gap-3 w-full">
+                                    <FlaskConical className="w-6 h-6 mt-0.5 text-brand-primary flex-shrink-0" />
                                     <div className="flex-1">
                                         <div className="font-semibold text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
@@ -317,7 +325,7 @@ export default function OnboardingPage() {
                                         </div>
                                     </div>
                                     {isCreating && (
-                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0" />
+                                        <Loader2 className="w-5 h-5 mt-1 animate-spin text-muted-foreground flex-shrink-0" />
                                     )}
                                 </div>
                             </Button>

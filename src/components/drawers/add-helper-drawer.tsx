@@ -31,7 +31,7 @@ interface AddHelperDrawerProps {
     invitee_identifier?: string
     github_username?: string
     github_usernames?: string[]
-  }) => Promise<{ invite_url?: string; invite_urls?: Record<string, string> }>
+  }) => Promise<{ invite_url?: string; invite_urls?: Record<string, string>; email_sent?: boolean }>
 }
 
 export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHelperDrawerProps) {
@@ -140,8 +140,15 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             setCopied(true)
             toast.success("Invite link copied to clipboard!")
             setTimeout(() => setCopied(false), 2000)
+          } else if (formData.inviteMethod === "email" && !result.email_sent) {
+            // Invite exists but the email didn't go out — keep the drawer
+            // open so the link can be copied and shared manually.
+            toast.error("Invite created, but the email could not be sent. Copy the link below to share it.")
+            return
+          } else if (formData.inviteMethod === "email") {
+            toast.success(`Invite email sent to ${formData.email}`)
           } else {
-            toast.success("Invite email sent!")
+            toast.success("Invite created!")
           }
         }
 
@@ -215,6 +222,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
       title="Add new helper"
       width="w-[440px]"
       className="shadow-2xl"
+      footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
           <Button

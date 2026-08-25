@@ -178,7 +178,7 @@ export default function LandingPageSettings() {
                       <p className="text-sm text-[#818185]">Loading resources...</p>
                     </div>
                   ) : resources.length === 0 ? (
-                    <div className="text-center py-8">
+                    <div className="text-left py-8">
                       <p className="text-sm text-[#818185]">No resources added yet</p>
                     </div>
                   ) : (
