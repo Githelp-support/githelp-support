@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
@@ -722,7 +723,7 @@ export default function TicketsPage() {
                           {/* Full question asked */}
                           <div>
                             <h4 className="text-[13px] font-semibold text-foreground mb-2">Question asked</h4>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
+                            <MarkdownContent content={ticket.description} className="text-muted-foreground" />
                           </div>
 
                           {/* Rates associated with the ticket */}

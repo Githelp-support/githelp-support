@@ -82,6 +82,20 @@ export function TicketChatInput({
     [value, onChange]
   )
 
+  /** Code button: inline `code` for single-line selections, a fenced ``` block for multi-line ones */
+  const insertCode = useCallback(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    const selected = value.slice(ta.selectionStart, ta.selectionEnd)
+    if (selected.includes("\n")) {
+      const before = value.slice(0, ta.selectionStart)
+      const needsLeadingBreak = before.length > 0 && !before.endsWith("\n")
+      insertFormat((needsLeadingBreak ? "\n" : "") + "```\n", "\n```")
+    } else {
+      insertFormat("`")
+    }
+  }, [value, insertFormat])
+
   useLayoutEffect(() => {
     const pending = pendingSelectionRef.current
     const ta = textareaRef.current
@@ -111,7 +125,7 @@ export function TicketChatInput({
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertLinePrefix("- ")} title="Bullet list">
           <List className="w-4 h-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("`")} title="Code">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={insertCode} title="Code">
           <Code className="w-[18px] h-[18px]" />
         </Button>
         <Button
