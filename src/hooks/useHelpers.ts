@@ -133,6 +133,40 @@ export function useAddSelfAsHelper() {
     });
 }
 
+export function useRemoveHelper() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            helperId,
+            projectId,
+        }: {
+            helperId: string;
+            projectId: string;
+        }) => {
+            const { error } = await supabase
+                .from("projects_helpers")
+                .delete()
+                .eq("helper_id", helperId)
+                .eq("project_id", projectId);
+
+            if (error) throw error;
+            return { helperId, projectId };
+        },
+        onSuccess: ({ helperId, projectId }) => {
+            queryClient.invalidateQueries({
+                queryKey: ["helpers", projectId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["helper", helperId],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["current-helper", projectId],
+            });
+        },
+    });
+}
+
 export function useUpdateHelper() {
     const queryClient = useQueryClient();
 

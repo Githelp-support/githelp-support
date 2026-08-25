@@ -8,13 +8,26 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { AddHelperDrawer } from "@/components/drawers/add-helper-drawer"
 import { AcceptRequestDrawer } from "@/components/drawers/accept-request-drawer"
-import { useHelpers, useCreateHelper, useAddSelfAsHelper } from "@/hooks/useHelpers"
+import { useHelpers, useCreateHelper, useAddSelfAsHelper, useRemoveHelper } from "@/hooks/useHelpers"
 import { usePendingRequests, useUpdatePendingRequest } from "@/hooks/usePendingRequests"
 import { useCreateProjectInvite, useListProjectInvites, useRevokeProjectInvite } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -84,6 +97,9 @@ export default function HelpersPage() {
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)
 
+  const [helperToRemove, setHelperToRemove] = useState<{ id: string; name: string } | null>(null)
+  const [isRemovedDialogOpen, setIsRemovedDialogOpen] = useState(false)
+
   // Derive view from URL so we don't need setState in effect
   const currentView = (searchParams.get("view") === "requests" ? "requests" : searchParams.get("view") === "invited" ? "invited" : "added") as "added" | "requests" | "invited"
 
@@ -100,6 +116,7 @@ export default function HelpersPage() {
   const updatePendingRequest = useUpdatePendingRequest()
   const createInvite = useCreateProjectInvite()
   const revokeInvite = useRevokeProjectInvite()
+  const removeHelper = useRemoveHelper()
 
   // Admin is a helper if their user_id appears in the project's helpers list
   const isCurrentUserHelper = !!(
@@ -234,6 +251,21 @@ export default function HelpersPage() {
     })
 
     setSelectedRequest(null)
+  }
+
+  const handleConfirmRemoveHelper = async () => {
+    if (!helperToRemove || !projectId) return
+    try {
+      await removeHelper.mutateAsync({
+        helperId: helperToRemove.id,
+        projectId: projectId,
+      })
+      setHelperToRemove(null)
+      setIsRemovedDialogOpen(true)
+    } catch (error) {
+      console.error("Failed to remove helper:", error)
+      toast.error("Failed to remove helper. Please try again.")
+    }
   }
 
   const handleSort = (field: SortField) => {
@@ -694,9 +726,26 @@ export default function HelpersPage() {
                           ) : (
                             <span className="text-sm text-muted-foreground px-3 py-1">Not registered</span>
                           )}
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:bg-muted"
+                                aria-label={`Open menu for ${helper.name}`}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
+                              >
+                                Remove helper
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
@@ -788,6 +837,53 @@ export default function HelpersPage() {
         onSubmit={handleConfirmAcceptRequest}
         requestData={selectedRequest}
       />
+
+      {/* Remove helper confirmation dialog */}
+      <Dialog
+        open={!!helperToRemove}
+        onOpenChange={(open) => {
+          if (!open) setHelperToRemove(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Are you sure you want to remove this helper?</DialogTitle>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setHelperToRemove(null)}
+              disabled={removeHelper.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+              onClick={handleConfirmRemoveHelper}
+              disabled={removeHelper.isPending}
+            >
+              Yes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Helper removed confirmation dialog */}
+      <Dialog open={isRemovedDialogOpen} onOpenChange={setIsRemovedDialogOpen}>
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>The helper is now removed from the project</DialogTitle>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+              onClick={() => setIsRemovedDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
