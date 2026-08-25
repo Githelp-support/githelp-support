@@ -10,6 +10,7 @@ import { useSearchParams } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectBranding } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
+import { cn } from "@/lib/utils"
 
 export default function GetSupportPage() {
   const searchParams = useSearchParams()
@@ -67,7 +68,10 @@ export default function GetSupportPage() {
           <div className="w-20 h-20 bg-white rounded-lg shadow-sm flex items-center justify-center overflow-hidden">
             <Avatar className="w-20 h-20">
               <AvatarImage src={projectLogo} alt={projectName} />
-              <AvatarFallback className="bg-brand-primary text-white text-xs">
+              <AvatarFallback
+                className={cn("text-white text-xs", !brandingData?.primary_color && "bg-brand-primary")}
+                style={brandingData?.primary_color ? { backgroundColor: brandingData.primary_color } : undefined}
+              >
                 {projectName?.[0]?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>

@@ -644,7 +644,7 @@ export default function UserSupportChatPage() {
             ) : (
               <div
                 className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                style={{ backgroundColor: getAvatarColorHexForId(effectiveProjectId) }}
+                style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(effectiveProjectId) }}
               >
                 {projectName?.[0]?.toUpperCase() || "A"}
               </div>
