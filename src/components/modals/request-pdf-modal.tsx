@@ -45,14 +45,14 @@ export function RequestPdfModal({ open, onOpenChange, onConfirm }: RequestPdfMod
       <DialogContent className="sm:max-w-md">
         {!requested ? (
           <>
-            <DialogHeader>
+            <DialogHeader className="items-center text-center sm:text-center">
               <DialogTitle>Request PDF</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="mt-[3px]">
                 At the moment, PDF-reports must be requested. We hope to offer
                 directly downloadable PDFs for all reports shortly.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
+            <DialogFooter className="mt-[3px] sm:justify-center">
               <Button variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
@@ -65,7 +65,7 @@ export function RequestPdfModal({ open, onOpenChange, onConfirm }: RequestPdfMod
           <>
             <DialogHeader className="items-center text-center sm:text-center">
               <CheckCircle
-                className={cn("size-10 text-green-600 dark:text-green-500")}
+                className={cn("size-7 text-green-600 dark:text-green-500")}
                 aria-hidden="true"
               />
               <DialogTitle className="sr-only">Request received</DialogTitle>
