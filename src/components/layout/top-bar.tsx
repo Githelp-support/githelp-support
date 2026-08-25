@@ -273,7 +273,7 @@ export function TopBar() {
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
                   onClick={() => {
-                    if (typeof window !== "undefined") window.location.href = "/onboarding"
+                    if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
                   }}
                 >
                   <Plus className="w-4 h-4" />

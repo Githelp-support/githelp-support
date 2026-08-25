@@ -62,6 +62,12 @@ export default function OnboardingPage() {
         }
     }, [searchParams])
 
+    // Existing members can come back here on purpose to add another project
+    // (top-bar "Add new", sandbox "Exit sandbox", GitHub import). Those entry
+    // points pass an explicit intent param so the redirect below is skipped.
+    const wantsAnotherProject =
+        searchParams.get("new") === "1" || searchParams.get("import") === "github"
+
     // CRM / admin-seeded users already have a project; this route is public so
     // AuthGuard does not redirect them away — send them to the app instead of
     // showing "Create or join" again.
@@ -69,17 +75,19 @@ export default function OnboardingPage() {
     // Do not use `!needsOnboarding` alone: when logged out, useOnboardingStatus
     // returns needsOnboarding: false (no user), which would wrongly redirect.
     const hasFinishedOnboardingWizard =
-        onboardingStatus &&
+        !wantsAnotherProject &&
+        !!onboardingStatus &&
         (onboardingStatus.isMember || onboardingStatus.onboardingCompleted)
 
     useEffect(() => {
         if (onboardingStatusLoading || !onboardingStatus) return
+        if (wantsAnotherProject) return
         const done =
             onboardingStatus.isMember || onboardingStatus.onboardingCompleted
         if (done) {
             router.replace("/")
         }
-    }, [onboardingStatus, onboardingStatusLoading, router])
+    }, [onboardingStatus, onboardingStatusLoading, router, wantsAnotherProject])
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
