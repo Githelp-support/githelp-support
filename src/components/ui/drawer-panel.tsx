@@ -23,7 +23,7 @@ export interface DrawerPanelProps {
   backdropClassName?: string
   /** Extra class for the panel container */
   className?: string
-  /** Extra class for the footer wrapper */
+  /** Extra class for the footer wrapper (e.g. border-t-0 to remove the divider) */
   footerClassName?: string
 }
 
