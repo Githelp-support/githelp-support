@@ -3,62 +3,60 @@ import { supabase } from "@/lib/supabase/client"
 import type { UserRole } from "@/contexts/user-context"
 
 /**
- * Gets the user's HIGHEST role across all their projects.
- *
- * This is independent of the currently selected project, so it can be used
- * to determine which roles a profile is permitted to assume in the role
- * switcher — even when the active page has temporarily cleared/changed the
- * per-project role (e.g. on support pages where the user acts as "user").
- *
- * Returns the highest role: admin > helper > user, or null if not signed in.
+ * Query options shared by `useProjectAvailableRoles` and imperative
+ * `queryClient.fetchQuery` calls (e.g. resolving the highest role when
+ * switching projects), so both hit the same cache entry.
  */
-export function useUserMaxRole() {
-  return useQuery({
-    queryKey: ["user-max-role"],
-    queryFn: async (): Promise<UserRole | null> => {
+export function projectAvailableRolesQueryOptions(projectId?: string) {
+  return {
+    queryKey: ["project-available-roles", projectId] as const,
+    queryFn: async (): Promise<UserRole[]> => {
+      if (!projectId) return ["user"]
+
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return null
+      if (!user) return ["user"]
 
-      // Check if user is an admin in any project
-      const { data: adminMemberships } = await supabase
-        .from("projects_members")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .is("deleted_at", null)
-        .limit(1)
+      const [{ data: memberData }, { data: helperData }] = await Promise.all([
+        supabase
+          .from("projects_members")
+          .select("role")
+          .eq("project_id", projectId)
+          .eq("user_id", user.id)
+          .is("deleted_at", null)
+          .maybeSingle(),
+        supabase
+          .from("projects_helpers")
+          .select("helper_id")
+          .eq("project_id", projectId)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ])
 
-      if (adminMemberships && adminMemberships.length > 0) {
-        return "admin"
-      }
-
-      // Check if user is a helper in any project
-      const { data: helperRows } = await supabase
-        .from("projects_helpers")
-        .select("helper_id")
-        .eq("user_id", user.id)
-        .limit(1)
-
-      if (helperRows && helperRows.length > 0) {
-        return "helper"
-      }
-
-      // Check if user is a member of any project
-      const { data: memberRows } = await supabase
-        .from("projects_members")
-        .select("role")
-        .eq("user_id", user.id)
-        .is("deleted_at", null)
-        .limit(1)
-
-      if (memberRows && memberRows.length > 0) {
-        return "user"
-      }
-
-      // Not a project member at all
-      return null
+      // Ordered highest → lowest so callers can take roles[0] as the top role.
+      const roles: UserRole[] = []
+      if (memberData?.role === "admin") roles.push("admin")
+      if (helperData) roles.push("helper")
+      roles.push("user")
+      return roles
     },
     staleTime: 1800000,
+  }
+}
+
+/**
+ * Gets the roles the user actually holds in a specific project, for the role
+ * switcher: "admin" if they are an admin member of the project, "helper" if
+ * they are a helper in the project, and "user" always (any profile can act
+ * as a support user).
+ *
+ * Keyed by project id — NOT by the per-page projectRole in user context,
+ * which gets cleared/lowered on support pages and previously made roles
+ * disappear from the switcher.
+ */
+export function useProjectAvailableRoles(projectId?: string) {
+  return useQuery({
+    ...projectAvailableRolesQueryOptions(projectId),
+    enabled: !!projectId,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   })
