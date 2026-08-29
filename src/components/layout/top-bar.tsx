@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -253,17 +254,21 @@ export function TopBar() {
                 className="w-56 font-sans"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
-                {userProjects.map((project) => {
-                  const isSelected = selectedProject?.project_id === project.project_id
-                  return (
-                    <ProjectLogoWithBranding
-                      key={project.project_id}
-                      project={project}
-                      isSelected={isSelected}
-                      onSelect={handleProjectSelect}
-                    />
-                  )
-                })}
+                {/* Scrollable project list — capped at three rows (3 × 32px) so the
+                    separator and "Add new" below always stay visible. */}
+                <div className={cn("max-h-24 overflow-y-auto")}>
+                  {userProjects.map((project) => {
+                    const isSelected = selectedProject?.project_id === project.project_id
+                    return (
+                      <ProjectLogoWithBranding
+                        key={project.project_id}
+                        project={project}
+                        isSelected={isSelected}
+                        onSelect={handleProjectSelect}
+                      />
+                    )
+                  })}
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
