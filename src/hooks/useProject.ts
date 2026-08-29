@@ -48,16 +48,38 @@ export function useUserProjects() {
             } = await supabase.auth.getUser();
             if (!user) return [];
 
-            const { data: memberData, error: memberError } = await supabase
-                .from("projects_members")
-                .select("project_id")
-                .eq("user_id", user.id)
-                .is("deleted_at", null);
+            // Projects where the user is an admin (creator trigger inserts an
+            // admin row, or the user was added as admin by another owner) …
+            const [
+                { data: memberData, error: memberError },
+                { data: helperData, error: helperError },
+            ] = await Promise.all([
+                supabase
+                    .from("projects_members")
+                    .select("project_id")
+                    .eq("user_id", user.id)
+                    .eq("role", "admin")
+                    .is("deleted_at", null),
+                // … plus projects where the user is a validated helper (a
+                // projects_helpers row only exists once the helper is
+                // self-added or approved).
+                supabase
+                    .from("projects_helpers")
+                    .select("project_id")
+                    .eq("user_id", user.id),
+            ]);
 
             if (memberError) throw memberError;
-            if (!memberData || memberData.length === 0) return [];
+            if (helperError) throw helperError;
 
-            const projectIds = memberData.map((m) => m.project_id);
+            const projectIds = Array.from(
+                new Set(
+                    [...(memberData ?? []), ...(helperData ?? [])]
+                        .map((row) => row.project_id)
+                        .filter((id): id is string => !!id),
+                ),
+            );
+            if (projectIds.length === 0) return [];
 
             const { data: projectsData, error: projectsError } = await supabase
                 .from("projects")
