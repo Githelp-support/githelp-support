@@ -280,8 +280,8 @@ export default function InviteContributorsPage() {
                         </>
                     )}
 
-                    <div className="pt-4 border-t">
-                        <Button asChild className="w-full">
+                    <div className="pt-2.5">
+                        <Button asChild>
                             <Link href="/">Continue to dashboard</Link>
                         </Button>
                     </div>
