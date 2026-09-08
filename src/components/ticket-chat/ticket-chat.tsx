@@ -18,6 +18,8 @@ export type PaymentSystemMessageKind =
   | "payment_authorized"
   | "payment_requires_action"
   | "payment_cap_exceeded"
+  | "payment_failed"
+  | "payment_completed"
   | "sla_covered"
 
 /**
@@ -102,7 +104,12 @@ export interface TicketChatProps {
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
 
-  /** Called when the user clicks the "Add payment method" CTA on a payment_required system message. */
+  /**
+   * Called when the user clicks a payment CTA on a system message: "Add
+   * payment method" (payment_required), "Pay yourself instead"
+   * (payment_cap_exceeded) or "Update payment method" (payment_failed).
+   * Branch on `msg.paymentMetadata?.kind`.
+   */
   onPaymentCtaClick?: (msg: TicketChatMessage) => void
   paymentCtaLoading?: boolean
 }
@@ -157,6 +164,12 @@ export function TicketChat(props: TicketChatProps) {
   // "Add payment method" button disappears after the hold is placed.
   const paymentResolved = useMemo(
     () => thread.some((m) => m.paymentMetadata?.kind === "payment_authorized"),
+    [thread],
+  )
+  // A payment_failed CTA stays live until a later payment_completed message
+  // confirms the retry went through (index order = chronological order).
+  const paymentCompletedIdx = useMemo(
+    () => thread.findIndex((m) => m.paymentMetadata?.kind === "payment_completed"),
     [thread],
   )
 
@@ -261,7 +274,9 @@ export function TicketChat(props: TicketChatProps) {
                                     msg.senderType === "system"
                                       ? msg.paymentMetadata?.kind === "payment_cap_exceeded"
                                         ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                        : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                        : msg.paymentMetadata?.kind === "payment_failed"
+                                          ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                          : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
@@ -276,6 +291,20 @@ export function TicketChat(props: TicketChatProps) {
                                         className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
                                       >
                                         {paymentCtaLoading ? "Opening Stripe…" : "Add payment method"}
+                                      </button>
+                                    </div>
+                                  )}
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "payment_failed" &&
+                                    (paymentCompletedIdx === -1 || paymentCompletedIdx < thread.indexOf(msg)) && (
+                                    <div className="mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        disabled={paymentCtaLoading}
+                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                      >
+                                        {paymentCtaLoading ? "Opening Stripe…" : "Update payment method"}
                                       </button>
                                     </div>
                                   )}

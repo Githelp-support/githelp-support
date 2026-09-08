@@ -14,6 +14,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { useCreateTicket, useRequestEndSession } from "@/hooks/useTickets"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
+import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
@@ -144,6 +145,23 @@ export default function UserSupportChatPage() {
     }
   }
 
+  // Back from the "Update payment method" Checkout (see
+  // payments-retry-ticket-payment): the retry charge runs from the webhook
+  // and the summary updates via realtime — just tell the user what to expect.
+  const cardParam = searchParams.get("card")
+  useEffect(() => {
+    if (!ticketIdParam || !cardParam) return
+    if (cardParam === "updated") {
+      toast.success("Card updated. We're retrying the payment now…")
+    } else if (cardParam === "cancelled") {
+      toast.info("Card update cancelled. Your previous card is still on file.")
+    }
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("card")
+    router.replace(`/support/chat?${params.toString()}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketIdParam, cardParam])
+
   // When opening an existing ticket from URL, set ticket state
   useEffect(() => {
     if (ticketIdParam && existingTicket?.id) {
@@ -196,6 +214,7 @@ export default function UserSupportChatPage() {
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
   const createCheckout = useCreateCheckoutForTicket()
+  const retryPayment = useRetryTicketPayment()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
@@ -261,6 +280,7 @@ export default function UserSupportChatPage() {
             slaCovered: !!slaId,
             paymentStatus: paymentStatus.status,
             capturedAmountSmallestUnit: paymentStatus.capturedAmountSmallestUnit,
+            failureReason: paymentStatus.failureReason,
           }),
         }),
       )
@@ -281,6 +301,7 @@ export default function UserSupportChatPage() {
     slaId,
     paymentStatus.status,
     paymentStatus.capturedAmountSmallestUnit,
+    paymentStatus.failureReason,
     user?.id,
     user?.name,
     user?.avatarUrl,
@@ -558,6 +579,18 @@ export default function UserSupportChatPage() {
           const metaTicketId = msg.paymentMetadata?.ticket_id as string | undefined
           const target = metaTicketId || ticketId
           if (!target) return
+          // Failed final charge → save a new card; the backend retries the
+          // charge as soon as Stripe confirms it.
+          if (msg.paymentMetadata?.kind === "payment_failed") {
+            try {
+              const out = await retryPayment.mutateAsync({ ticketId: target })
+              window.location.assign(out.checkoutUrl)
+            } catch (err) {
+              console.error("Failed to start card update:", err)
+              toast.error(err instanceof Error ? err.message : "Couldn't open Stripe Checkout. Please try again.")
+            }
+            return
+          }
           try {
             const out = await createCheckout.mutateAsync({ ticketId: target })
             window.location.assign(out.checkoutUrl)
@@ -565,7 +598,7 @@ export default function UserSupportChatPage() {
             console.error("Failed to start Stripe Checkout:", err)
           }
         }}
-        paymentCtaLoading={createCheckout.isPending}
+        paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}
         rightSidebarFooter={
           isAuthenticated ? (
             <CustomerTicketSidebarFooter

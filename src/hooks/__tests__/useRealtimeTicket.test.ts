@@ -62,19 +62,25 @@ describe("useRealtimeTicket", () => {
         expect(channelMock.subscribe).toHaveBeenCalledTimes(1);
     });
 
-    it("a ticket UPDATE (e.g. a claim) also refreshes participants and time entries", async () => {
+    it("a ticket UPDATE (e.g. a claim) also refreshes participants, time entries and messages", async () => {
         const { queryClient, invalidate } = setup();
+        const cancel = vi.spyOn(queryClient, "cancelQueries");
         // Seed queries so the time-entries predicate has something to match.
         queryClient.setQueryData(["time-entries", undefined, TICKET, undefined, undefined, undefined], []);
         queryClient.setQueryData(["time-entries", undefined, "other", undefined, undefined, undefined], []);
         queryClient.setQueryData(["ticket-participants", TICKET], []);
+        queryClient.setQueryData(["ticket-messages", TICKET], []);
 
         fire("tickets");
 
-        // Participants are refreshed via cancel-then-invalidate (async).
+        // Participants and messages are refreshed via cancel-then-invalidate (async).
         await waitFor(() =>
             expect(invalidate).toHaveBeenCalledWith({ queryKey: ["ticket-participants", TICKET] })
         );
+        await waitFor(() =>
+            expect(invalidate).toHaveBeenCalledWith({ queryKey: ["ticket-messages", TICKET] })
+        );
+        expect(cancel).toHaveBeenCalledWith({ queryKey: ["ticket-messages", TICKET] });
         const keys = invalidate.mock.calls.map((c) => c[0]?.queryKey).filter(Boolean);
         expect(keys).toEqual(
             expect.arrayContaining([
@@ -82,8 +88,12 @@ describe("useRealtimeTicket", () => {
                 ["ticket-with-details", TICKET],
                 ["ticket-payment-status", TICKET],
                 ["ticket-participants", TICKET],
+                ["ticket-messages", TICKET],
             ])
         );
+        // The message row (payment_required CTA) exists before the status flips,
+        // so the fallback refetch must actually mark the messages query stale.
+        expect(queryClient.getQueryState(["ticket-messages", TICKET])?.isInvalidated).toBe(true);
         // Predicate-based time-entries invalidation only touches this ticket's query.
         const mine = queryClient.getQueryState(["time-entries", undefined, TICKET, undefined, undefined, undefined]);
         const other = queryClient.getQueryState(["time-entries", undefined, "other", undefined, undefined, undefined]);
@@ -99,6 +109,8 @@ describe("useRealtimeTicket", () => {
         await waitFor(() =>
             expect(invalidate).toHaveBeenLastCalledWith({ queryKey: ["ticket-participants", TICKET] })
         );
+        // Only the ticket-row UPDATE carries the messages fallback.
+        expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["ticket-messages", TICKET] });
 
         invalidate.mockClear();
         fire("tickets_time_entries");

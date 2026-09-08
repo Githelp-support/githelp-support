@@ -26,6 +26,7 @@ import {
 } from "@/lib/customer-chat-messages"
 import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
+import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
@@ -106,6 +107,7 @@ export default function SupportPage() {
 
   const createTicket = useCreateTicket()
   const createCheckout = useCreateCheckoutForTicket()
+  const retryPayment = useRetryTicketPayment()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
   const { data: messagesData } = useTicketMessages(ticketId)
@@ -180,6 +182,7 @@ export default function SupportPage() {
             slaCovered: false,
             paymentStatus: paymentStatus.status,
             capturedAmountSmallestUnit: paymentStatus.capturedAmountSmallestUnit,
+            failureReason: paymentStatus.failureReason,
           }),
         }),
       )
@@ -199,6 +202,7 @@ export default function SupportPage() {
     totalLoggedFormatted,
     paymentStatus.status,
     paymentStatus.capturedAmountSmallestUnit,
+    paymentStatus.failureReason,
     user?.id,
     user?.name,
     user?.avatarUrl,
@@ -219,6 +223,18 @@ export default function SupportPage() {
     const metaTicketId = msg.paymentMetadata?.ticket_id as string | undefined
     const target = metaTicketId || ticketId
     if (!target) return
+    // Failed final charge → save a new card; the backend retries the charge
+    // as soon as Stripe confirms it.
+    if (msg.paymentMetadata?.kind === "payment_failed") {
+      try {
+        const out = await retryPayment.mutateAsync({ ticketId: target })
+        window.location.assign(out.checkoutUrl)
+      } catch (err) {
+        console.error("Failed to start card update:", err)
+        toast.error(err instanceof Error ? err.message : "Couldn't open Stripe Checkout. Please try again.")
+      }
+      return
+    }
     try {
       // Stripe Checkout returns to /support/chat?ticket=… which now renders
       // the same chat/sidebar as this page.
@@ -500,7 +516,7 @@ export default function SupportPage() {
               setMessage((prev) => prev + `\n![attachment](${url})\n`)
             }}
             onPaymentCtaClick={handlePaymentCta}
-            paymentCtaLoading={createCheckout.isPending}
+            paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}
             rightSidebarFooter={
               isAuthenticated ? (
                 <CustomerTicketSidebarFooter

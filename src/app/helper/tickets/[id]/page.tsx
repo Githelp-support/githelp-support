@@ -465,7 +465,12 @@ export default function TicketDetailPage() {
       })
       captureTicket.mutate(
         { ticketId },
-        { onError: () => toast.error("Failed to process payment. You can retry below.") },
+        {
+          onError: (error) =>
+            toast.error(`Payment failed: ${error.message}`, {
+              description: "The customer has been asked to update their card. You can also retry below.",
+            }),
+        },
       )
     }
   }
@@ -519,6 +524,11 @@ export default function TicketDetailPage() {
     paymentGate.status === "completed" ||
     captureTicket.isSuccess
   const paymentFailed = captureTicket.isError || paymentGate.status === "failed"
+  // Why it failed: Stripe's message from the payments row (realtime, survives
+  // reloads), else from the last capture attempt in this session.
+  const paymentFailureReason = paymentFailed
+    ? paymentGate.failureReason ?? captureTicket.error?.message ?? null
+    : null
   const paymentProcessing =
     !paymentSettled &&
     !paymentFailed &&
@@ -803,12 +813,27 @@ export default function TicketDetailPage() {
                                 </div>
                               </div>
 
+                              {paymentFailed && paymentFailureReason && (
+                                <p className="mt-2 text-[12px] leading-snug text-destructive">
+                                  {paymentFailureReason}
+                                </p>
+                              )}
+                              {paymentFailed && (
+                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
+                                </p>
+                              )}
                               {paymentFailed && (
                                 <Button
                                   onClick={() =>
                                     captureTicket.mutate(
                                       { ticketId },
-                                      { onError: () => toast.error("Failed to process payment. Please try again.") },
+                                      {
+                                        onError: (error) =>
+                                          toast.error(`Payment failed: ${error.message}`, {
+                                            description: "The customer has been asked to update their card.",
+                                          }),
+                                      },
                                     )
                                   }
                                   disabled={captureTicket.isPending}

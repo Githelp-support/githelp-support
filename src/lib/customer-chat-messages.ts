@@ -147,6 +147,8 @@ export function describeChargedLine(opts: {
     slaCovered: boolean;
     paymentStatus: TicketPaymentStatus;
     capturedAmountSmallestUnit: number | null;
+    /** Stripe's reason when `paymentStatus` is "failed". */
+    failureReason?: string | null;
 }): string {
     if (opts.cancelled) return "No charge";
     if (opts.slaCovered) return "Covered by your SLA";
@@ -155,7 +157,12 @@ export function describeChargedLine(opts: {
             ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}`
             : "Charged";
     }
-    if (opts.paymentStatus === "failed") return "Payment could not be processed";
+    if (opts.paymentStatus === "failed") {
+        const reason = opts.failureReason?.trim();
+        return reason
+            ? `Payment could not be processed (${reason.replace(/\.$/, "")})`
+            : "Payment could not be processed";
+    }
     return "Processing…";
 }
 

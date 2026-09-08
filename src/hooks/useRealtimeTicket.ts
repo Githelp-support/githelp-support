@@ -19,9 +19,17 @@ import { refetchTicketParticipants } from '@/hooks/useTicketParticipants'
  *    (a claim always flips the status, so this alone covers the claim), and
  *  - the channel additionally listens on those two tables for this ticket, so
  *    time logged mid-session shows up live. Those listeners only deliver if
- *    the tables are in the `supabase_realtime` publication (see the
- *    `tickets_participants_time_entries_realtime` migration); otherwise they
+ *    the tables are in the `supabase_realtime` publication; otherwise they
  *    are harmless no-ops and the UPDATE fallback still applies.
+ *
+ * The UPDATE also refreshes the ticket's messages. The helper's claim awaits
+ * `payments-authorize-on-claim` — which writes the `payment_required` /
+ * `payment_authorized` system message — before it flips the status to
+ * "claimed", so by the time this event lands the message row already exists.
+ * `useRealtimeMessages` normally picks it up via `tickets_messages`, but that
+ * only works when the table is in the realtime publication (migration
+ * 20260908120000_time_logged_system_messages adds it); this fallback keeps
+ * the "Add payment method" CTA from needing a manual refresh either way.
  */
 export function useRealtimeTicket(ticketId?: string | null) {
   const queryClient = useQueryClient()
@@ -31,6 +39,15 @@ export function useRealtimeTicket(ticketId?: string | null) {
 
     const invalidateParticipants = () => {
       void refetchTicketParticipants(queryClient, ticketId)
+    }
+
+    // Cancel-then-invalidate, like useRealtimeMessages: a plain invalidate
+    // would dedupe onto an in-flight messages fetch that has no data yet and
+    // cache its pre-claim result for the full staleTime.
+    const refetchMessages = async () => {
+      const queryKey = ['ticket-messages', ticketId]
+      await queryClient.cancelQueries({ queryKey })
+      await queryClient.invalidateQueries({ queryKey })
     }
 
     // `useTimeEntries` keys are ["time-entries", helperId, ticketId, projectId, start, end];
@@ -56,6 +73,7 @@ export function useRealtimeTicket(ticketId?: string | null) {
           queryClient.invalidateQueries({ queryKey: ['ticket-payment-status', ticketId] })
           invalidateParticipants()
           invalidateTimeEntries()
+          void refetchMessages()
         },
       )
       .on(
