@@ -55,6 +55,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { UserPlus } from "lucide-react"
+import { prepareOutgoingMessage } from "@/lib/code-format"
 
 interface Message {
   id: string
@@ -353,7 +354,7 @@ export default function TicketDetailPage() {
         ticket_id: ticketId,
         sender_id: currentUser.id,
         sender_type: "helper",
-        content: message.trim(),
+        content: await prepareOutgoingMessage(message),
       })
       setMessage("")
     } catch (error) {

@@ -35,6 +35,7 @@ import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustome
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId } from "@/lib/constants"
+import { prepareOutgoingMessage } from "@/lib/code-format"
 
 type TabKey = "get-support" | "rates" | "resources" | "about"
 
@@ -245,7 +246,7 @@ export default function SupportPage() {
 
         setTicketCreated(true)
         setTicketId(ticket.id)
-        const firstMessageContent = message.trim()
+        const firstMessageContent = await prepareOutgoingMessage(message)
         setMessage("")
         // Show the question immediately; hidden once the persisted message arrives.
         setPendingFirstMessage(firstMessageContent)
@@ -288,7 +289,7 @@ export default function SupportPage() {
         ticket_id: ticketId,
         sender_id: user.id,
         sender_type: "user",
-        content: message.trim(),
+        content: await prepareOutgoingMessage(message),
       })
       setMessage("")
     } catch (error) {

@@ -38,6 +38,7 @@ import csharp from "react-syntax-highlighter/dist/esm/languages/prism/csharp"
 import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript"
 import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript"
 import python from "react-syntax-highlighter/dist/esm/languages/prism/python"
+import { prepareOutgoingMessage } from "@/lib/code-format"
 
 interface Person {
   name: string
@@ -413,7 +414,7 @@ export default function UserSupportChatPage() {
         setTicketCreated(true)
         setTicketId(ticket.id)
         setCreatedTicketId(ticket.id)
-        const firstMessageContent = message.trim()
+        const firstMessageContent = await prepareOutgoingMessage(message)
         setMessage("")
         // Show the question immediately; it's replaced by the persisted
         // message once the messages query includes it.
@@ -465,7 +466,7 @@ export default function UserSupportChatPage() {
         ticket_id: ticketId,
         sender_id: user.id,
         sender_type: "user",
-        content: message.trim(),
+        content: await prepareOutgoingMessage(message),
       })
       setMessage("")
     } catch (error) {
