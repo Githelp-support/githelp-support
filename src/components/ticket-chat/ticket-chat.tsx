@@ -20,6 +20,13 @@ export type PaymentSystemMessageKind =
   | "payment_cap_exceeded"
   | "sla_covered"
 
+/**
+ * `metadata.kind` of persisted system messages. Payment kinds are written by
+ * the payments edge functions; `time_logged` is written by the DB trigger on
+ * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages).
+ */
+export type SystemMessageKind = PaymentSystemMessageKind | "time_logged"
+
 export type TicketChatMessage = {
   id: string
   senderType: "user" | "helper" | "system"
@@ -31,7 +38,7 @@ export type TicketChatMessage = {
   content: string
   kind?: "claimed" | "ended"
   paymentMetadata?: {
-    kind: PaymentSystemMessageKind
+    kind: SystemMessageKind
     [key: string]: unknown
   } | null
 }

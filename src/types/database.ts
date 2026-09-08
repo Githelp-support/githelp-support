@@ -298,7 +298,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -309,7 +310,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -320,7 +322,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
