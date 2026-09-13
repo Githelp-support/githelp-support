@@ -47,6 +47,7 @@ export default function RootLayout({
                     <TopBar />
                     {children}
                   </div>
+                  <Toaster position="top-right" richColors closeButton />
                 </ProtectedLayout>
               </ProjectProvider>
             </UserProvider>

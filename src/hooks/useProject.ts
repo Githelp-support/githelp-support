@@ -449,7 +449,13 @@ export function useCreateProjectInvite() {
                 throw new Error(data?.error || "Failed to create invite");
             }
 
-            return data.invite as ProjectInvite & { invite_url: string };
+            return {
+                ...(data.invite as ProjectInvite & { invite_url: string }),
+                // Whether an invite email was actually delivered (only
+                // meaningful when `email` was passed).
+                email_sent: Boolean(data.email_sent),
+                email_error: data.email_error as string | undefined,
+            };
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
@@ -758,6 +764,14 @@ export function useAcceptProjectInvite() {
             });
             queryClient.invalidateQueries({
                 queryKey: ["project-invites", data.project_id],
+            });
+            // Membership/helper status just changed, so any cached role
+            // lookups for this project are stale.
+            queryClient.invalidateQueries({
+                queryKey: ["project-available-roles", data.project_id],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["project-role", data.project_id],
             });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         },

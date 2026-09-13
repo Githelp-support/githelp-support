@@ -13,6 +13,8 @@ import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
+import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 
 type MonthlySortField = "period" | "description" | "amount" | "status"
 type TicketsSortField = "ticketId" | "date" | "helper" | "amount" | "status"
@@ -76,6 +78,7 @@ export default function ReportsSupportPage() {
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
   const [ticketsSortField, setTicketsSortField] = useState<TicketsSortField | null>(null)
   const [ticketsSortDirection, setTicketsSortDirection] = useState<SortDirection>("asc")
+  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -84,6 +87,8 @@ export default function ReportsSupportPage() {
     projectId,
     enabled: !!projectId,
   })
+  // Refresh when a ticket closes and its payout rows land / settle.
+  useRealtimePaymentTransfers(projectId)
 
   // Generate months for dropdown
   const months = useMemo(() => {
@@ -130,9 +135,11 @@ export default function ReportsSupportPage() {
   const ticketsData = useMemo(() => {
     if (!transfersData) return []
 
-    let list = transfersData.map((transfer) => {
+    // The org's own cut is also a payments_transfers row (transfer_user_type
+    // "project", no helper); the per-ticket table is about helper payouts.
+    let list = transfersData.filter((t) => t.transfer_user_type === "helper").map((transfer) => {
       const helperName = getHelperDisplayName(transfer.helper)
-      const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper_id)
+      const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper?.user_id ?? transfer.helper_id)
       const dateStr = transfer.completed_at || transfer.created_at
       return {
         id: transfer.id,
@@ -532,8 +539,9 @@ export default function ReportsSupportPage() {
                               variant="outline"
                               size="sm"
                               className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                              onClick={() => setRequestPdfOpen(true)}
                             >
-                              Download PDF
+                              Request PDF
                             </Button>
                           </div>
                         </div>
@@ -629,8 +637,9 @@ export default function ReportsSupportPage() {
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            onClick={() => setRequestPdfOpen(true)}
                           >
-                            Download PDF
+                            Request PDF
                           </Button>
                         </div>
                       </div>
@@ -642,6 +651,8 @@ export default function ReportsSupportPage() {
           </div>
         </main>
       </div>
+
+      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }

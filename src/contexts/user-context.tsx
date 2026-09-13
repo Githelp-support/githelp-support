@@ -211,8 +211,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const switchRole = (role: UserRole) => {
     // The role switcher in the top bar is responsible for offering only
-    // the roles the profile is permitted to assume (computed from the user's
-    // maximum role across ALL their projects). The previous per-current-project
+    // the roles the profile actually holds in the selected project (queried
+    // by project id via useProjectAvailableRoles). The previous
     // validation here used `prev.projectRole`, which gets cleared/lowered when
     // navigating between pages (e.g. /support/* sets it to null for support
     // users) — that incorrectly blocked legitimate role switches back from

@@ -191,6 +191,8 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -212,6 +214,8 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -233,6 +237,8 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -368,7 +374,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -379,7 +386,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -390,7 +398,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -401,16 +410,19 @@ export type Database = {
             users: {
                 Row: {
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 };
                 Insert: Partial<{
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;
                 Update: Partial<{
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;

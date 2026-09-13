@@ -61,6 +61,7 @@ interface TicketRow {
 
 interface HelperPublic {
   helper_id: string
+  user_id: string | null
   user: { name: string } | null
 }
 
@@ -100,12 +101,13 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects_helpers")
-        .select("helper_id, user:users_public(name)")
+        .select("helper_id, user_id, user:users_public(name)")
         .eq("project_id", sla!.project_id)
       if (error) throw error
       // Supabase returns user as array when using foreign tables
       return ((data ?? []) as any[]).map((h) => ({
         helper_id: h.helper_id,
+        user_id: h.user_id ?? null,
         user: Array.isArray(h.user) ? (h.user[0] ?? null) : (h.user ?? null),
       })) as HelperPublic[]
     },
@@ -148,6 +150,15 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     const map = new Map<string, string>()
     projectHelpers.forEach((h) => {
       if (h.user?.name) map.set(h.helper_id, h.user.name)
+    })
+    return map
+  }, [projectHelpers])
+
+  // helper_id → avatar key (user_id, falling back to helper_id) so colors match the helpers list/profile
+  const helperAvatarKeyMap = useMemo(() => {
+    const map = new Map<string, string>()
+    projectHelpers.forEach((h) => {
+      map.set(h.helper_id, h.user_id ?? h.helper_id)
     })
     return map
   }, [projectHelpers])
@@ -497,7 +508,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                 <div className="flex items-center gap-3">
                                   <div
                                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                                    style={{ backgroundColor: avatarColor(helper.name) }}
+                                    style={{ backgroundColor: avatarColor(helperAvatarKeyMap.get(helper.id) ?? helper.id) }}
                                   >
                                     {getInitial(helper.name)}
                                   </div>
@@ -578,6 +589,9 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                           const claimedParticipant = ticket.tickets_participants.find((p) => p.claimed)
                           const primaryHelperId = claimedParticipant?.participant_id
                           const primaryHelperName = primaryHelperId ? (helperMap.get(primaryHelperId) ?? "Unknown") : "—"
+                          const primaryHelperAvatarKey = primaryHelperId
+                            ? (helperAvatarKeyMap.get(primaryHelperId) ?? primaryHelperId)
+                            : null
 
                           const ticketMs = ticket.tickets_time_entries.reduce(
                             (sum, e) => sum + (e.time_milliseconds ?? 0), 0
@@ -600,7 +614,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
-                                    style={{ backgroundColor: avatarColor(primaryHelperName) }}
+                                    style={{ backgroundColor: avatarColor(primaryHelperAvatarKey) }}
                                   >
                                     {getInitial(primaryHelperName)}
                                   </div>

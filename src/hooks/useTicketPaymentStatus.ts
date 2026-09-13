@@ -10,18 +10,29 @@ export type TicketPaymentStatus =
   | "failed"
   | "distributing"
   | "completed"
+  | "cancelled"
   | "none"
 
 export interface TicketPaymentResult {
   status: TicketPaymentStatus
   isReady: boolean
-  /** Amount actually captured from the payer, in the smallest currency unit. Null until capture. */
+  /**
+   * Total actually captured from the payer across every payments row for the
+   * ticket (hold capture + any overage charge beyond the hold), in the
+   * smallest currency unit. Null until something has been captured.
+   */
   capturedAmountSmallestUnit: number | null
+  /**
+   * Stripe's human-readable reason for the most recent payment row when it is
+   * `failed` (declined, expired authorization, …). Null otherwise.
+   */
+  failureReason: string | null
 }
 
 interface PaymentRow {
   status: TicketPaymentStatus
   captured_amount_smallest_unit: number | null
+  failure_reason?: string | null
 }
 
 interface Opts {
@@ -30,7 +41,8 @@ interface Opts {
 }
 
 /**
- * Read the latest payments row for a ticket and subscribe to realtime
+ * Read the payments rows for a ticket (status from the most recent one,
+ * captured amount summed across all captured rows) and subscribe to realtime
  * inserts/updates so the helper UI auto-unlocks when the customer
  * completes Stripe Checkout. SLA-covered tickets short-circuit to
  * isReady=true; the existing minutes-based metering takes over from
@@ -49,15 +61,24 @@ export function useTicketPaymentStatus(
     queryFn: async () => {
       const resp = await supabase
         .from("payments")
-        .select("status, captured_amount_smallest_unit")
+        .select("status, captured_amount_smallest_unit, failure_reason")
         .eq("ticket_id", ticketId as string)
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
       if (resp.error) throw resp.error
-      return (resp.data as PaymentRow | null) ?? null
+      return ((resp.data as PaymentRow[] | null) ?? [])
     },
     staleTime: 30_000,
+    // Realtime is the primary signal, but poll while the payment is still in
+    // flight (no row yet / pending / requires_action / authorized-awaiting-
+    // capture) so the UI converges even if a realtime event is missed.
+    refetchInterval: (query) => {
+      const rows = query.state.data
+      const latest = rows?.[0]
+      if (!latest) return 5_000
+      return latest.status === "completed" || latest.status === "failed" || latest.status === "cancelled"
+        ? false
+        : 5_000
+    },
   })
 
   useEffect(() => {
@@ -77,11 +98,21 @@ export function useTicketPaymentStatus(
     }
   }, [ticketId, opts.slaId, queryClient])
 
-  if (opts.slaId) return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null }
-  if (!data) return { status: "none", isReady: false, capturedAmountSmallestUnit: null }
+  if (opts.slaId) {
+    return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null, failureReason: null }
+  }
+  const latest = data?.[0]
+  if (!latest) return { status: "none", isReady: false, capturedAmountSmallestUnit: null, failureReason: null }
+  const capturedRows = (data ?? []).filter(
+    (r) => (r.status === "distributing" || r.status === "completed") && r.captured_amount_smallest_unit != null,
+  )
+  const capturedTotal = capturedRows.length
+    ? capturedRows.reduce((sum, r) => sum + (r.captured_amount_smallest_unit ?? 0), 0)
+    : null
   return {
-    status: data.status,
-    isReady: data.status === "authorized",
-    capturedAmountSmallestUnit: data.captured_amount_smallest_unit ?? null,
+    status: latest.status,
+    isReady: latest.status === "authorized",
+    capturedAmountSmallestUnit: capturedTotal,
+    failureReason: latest.status === "failed" ? latest.failure_reason?.trim() || null : null,
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
+import { refetchTicketParticipants } from '@/hooks/useTicketParticipants'
 
 export function useRealtimeMessages(ticketId?: string) {
   const queryClient = useQueryClient()
@@ -18,11 +19,19 @@ export function useRealtimeMessages(ticketId?: string) {
           table: 'tickets_messages',
           filter: `ticket_id=eq.${ticketId}`,
         },
-        () => {
+        async () => {
+          // Cancel an in-flight fetch so the invalidation actually refetches
+          // (a pending fetch with no data yet would otherwise be reused).
+          await queryClient.cancelQueries({ queryKey: ['ticket-messages', ticketId] })
           // Invalidate messages query to refetch
           queryClient.invalidateQueries({ queryKey: ['ticket-messages', ticketId] })
           // Also invalidate ticket details to update message count
           queryClient.invalidateQueries({ queryKey: ['tickets-with-details'] })
+          // A claim always produces messages (the payment system message, the
+          // helper's first reply), so a new message is a reliable cue that
+          // "People in this chat" may have changed — more reliable than the
+          // tickets UPDATE event alone, which useRealtimeTicket also handles.
+          void refetchTicketParticipants(queryClient, ticketId)
         }
       )
       .subscribe()

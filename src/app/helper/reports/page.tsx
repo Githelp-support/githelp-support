@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
+import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 import {
     PAYOUT_PREVIEW_ROWS,
     REPORTS_PAYOUTS_PREVIEW_DISCLAIMER,
@@ -67,6 +69,7 @@ export default function HelperReportsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
+  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -74,6 +77,7 @@ export default function HelperReportsPage() {
 
   const transfersQueryEnabled = !!projectId && helperFetched && !!helperId
 
+  useRealtimePaymentTransfers(projectId)
   // Fetch payment transfers only once we know the current user's helper row (avoids unscoped queries).
   const { data: transfersData, isLoading: transfersLoading, isFetched: transfersFetched } = usePaymentTransfers({
     helperId: helperId ?? undefined,
@@ -354,8 +358,9 @@ export default function HelperReportsPage() {
                           size="sm"
                           type="button"
                           className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                          onClick={() => setRequestPdfOpen(true)}
                         >
-                          Download PDF
+                          Request PDF
                         </Button>
                       </div>
                     </div>
@@ -435,8 +440,9 @@ export default function HelperReportsPage() {
                         variant="outline"
                         size="sm"
                         className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        onClick={() => setRequestPdfOpen(true)}
                       >
-                        Download PDF
+                        Request PDF
                       </Button>
                     </div>
                   </div>
@@ -496,6 +502,8 @@ export default function HelperReportsPage() {
       )}
         </main>
       </div>
+
+      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }

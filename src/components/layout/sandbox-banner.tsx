@@ -30,7 +30,7 @@ export function SandboxBanner() {
           variant="default"
           size="sm"
           className="bg-amber-900 hover:bg-amber-800 text-amber-50"
-          onClick={() => router.push("/onboarding")}
+          onClick={() => router.push("/onboarding?new=1")}
         >
           Exit sandbox
         </Button>

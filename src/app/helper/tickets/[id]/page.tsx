@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
+import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
 import { useTimeEntries, useCreateTimeEntry, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
@@ -34,6 +35,8 @@ import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
+import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
+import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/sidebar-section"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
@@ -52,6 +55,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { UserPlus } from "lucide-react"
+import { prepareOutgoingMessage } from "@/lib/code-format"
 
 interface Message {
   id: string
@@ -163,6 +167,7 @@ export default function TicketDetailPage() {
 
   // Set up real-time subscriptions
   useRealtimeMessages(ticketId)
+  useRealtimeTicket(ticketId)
 
   const updateLastReadMessage = useUpdateLastReadMessage()
 
@@ -210,6 +215,27 @@ export default function TicketDetailPage() {
   }, [participants, ticket?.created_by, ticketDetails?.user])
 
   const isTicketEnded = (ticket?.status === "completed" || ticket?.status === "cancelled") || justEndedLocal
+
+  // Customer asked to end the session (tickets.end_requested_at, realtime via
+  // useRealtimeTicket). Only the helper can actually end — they log remaining
+  // time and confirm in the End ticket drawer. The customer may withdraw the
+  // request until then, so this is derived from the live row, not local state.
+  const endRequestedAt = ticket?.end_requested_at ?? null
+  const endRequested = !!endRequestedAt && !isTicketEnded
+  const prevEndRequestedAtRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const prev = prevEndRequestedAtRef.current
+    prevEndRequestedAtRef.current = endRequestedAt
+    // Skip the initial hydration; only toast on a live transition.
+    if (prev === undefined || isTicketEnded) return
+    if (!prev && endRequestedAt) {
+      toast.info("The user has asked to end the session.", {
+        description: "Log any remaining time, then end the session to finalise the ticket.",
+      })
+    } else if (prev && !endRequestedAt) {
+      toast.info("The user withdrew their request to end the session.")
+    }
+  }, [endRequestedAt, isTicketEnded])
 
   const isClaimed =
     justClaimedLocal ||
@@ -271,7 +297,7 @@ export default function TicketDetailPage() {
     if (firstUser) {
       return {
         content: firstUser.content,
-        senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "Customer",
+        senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "User",
         senderId: (firstUser as { sender_id?: string }).sender_id ?? ticketCreatorId,
         senderAvatarUrl:
           (firstUser as { sender?: { avatar_url?: string | null } }).sender?.avatar_url ?? ticketCreatorAvatarUrl,
@@ -281,7 +307,7 @@ export default function TicketDetailPage() {
     if (ticket?.description || ticketDetails?.description) {
       return {
         content: ticket?.description ?? ticketDetails?.description ?? "",
-        senderName: ticketDetails?.user?.name ?? "Customer",
+        senderName: ticketDetails?.user?.name ?? "User",
         senderId: ticketCreatorId,
         senderAvatarUrl: ticketCreatorAvatarUrl,
         timestamp: ticket?.created_at ?? "",
@@ -289,7 +315,7 @@ export default function TicketDetailPage() {
     }
     return {
       content: "",
-      senderName: ticketDetails?.user?.name ?? "Customer",
+      senderName: ticketDetails?.user?.name ?? "User",
       senderId: ticketCreatorId,
       senderAvatarUrl: ticketCreatorAvatarUrl,
       timestamp: ticket?.created_at ?? "",
@@ -299,7 +325,10 @@ export default function TicketDetailPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    // block:"nearest" keeps the scroll local to the messages container; with
+    // block:"start" (default) the browser also scrolls ancestor scrollers —
+    // including the window — if the document is ever taller than the viewport.
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }
 
   useEffect(() => {
@@ -325,7 +354,7 @@ export default function TicketDetailPage() {
         ticket_id: ticketId,
         sender_id: currentUser.id,
         sender_type: "helper",
-        content: message.trim(),
+        content: await prepareOutgoingMessage(message),
       })
       setMessage("")
     } catch (error) {
@@ -412,7 +441,8 @@ export default function TicketDetailPage() {
 
     void updateTicket.mutateAsync({
       id: ticketId,
-      updates: { status, completed_at: completedAt },
+      // Ending also resolves any outstanding customer "end session" request.
+      updates: { status, completed_at: completedAt, end_requested_at: null, end_requested_by: null },
     })
 
     // Log ended event
@@ -435,7 +465,12 @@ export default function TicketDetailPage() {
       })
       captureTicket.mutate(
         { ticketId },
-        { onError: () => toast.error("Failed to process payment. You can retry below.") },
+        {
+          onError: (error) =>
+            toast.error(`Payment failed: ${error.message}`, {
+              description: "The customer has been asked to update their card. You can also retry below.",
+            }),
+        },
       )
     }
   }
@@ -489,6 +524,11 @@ export default function TicketDetailPage() {
     paymentGate.status === "completed" ||
     captureTicket.isSuccess
   const paymentFailed = captureTicket.isError || paymentGate.status === "failed"
+  // Why it failed: Stripe's message from the payments row (realtime, survives
+  // reloads), else from the last capture attempt in this session.
+  const paymentFailureReason = paymentFailed
+    ? paymentGate.failureReason ?? captureTicket.error?.message ?? null
+    : null
   const paymentProcessing =
     !paymentSettled &&
     !paymentFailed &&
@@ -506,7 +546,7 @@ export default function TicketDetailPage() {
           : "—"
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-subtle">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="relative border-b border-border z-10">
@@ -532,7 +572,7 @@ export default function TicketDetailPage() {
                 <div className="flex gap-3 items-start">
                   <ProfileAvatar
                     id={firstIssueMessage.senderId}
-                    name={firstIssueMessage.senderName ?? "C"}
+                    name={firstIssueMessage.senderName ?? "U"}
                     avatarUrl={firstIssueMessage.senderAvatarUrl ?? null}
                     size="sm"
                     radius="9.625px"
@@ -773,12 +813,27 @@ export default function TicketDetailPage() {
                                 </div>
                               </div>
 
+                              {paymentFailed && paymentFailureReason && (
+                                <p className="mt-2 text-[12px] leading-snug text-destructive">
+                                  {paymentFailureReason}
+                                </p>
+                              )}
+                              {paymentFailed && (
+                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
+                                </p>
+                              )}
                               {paymentFailed && (
                                 <Button
                                   onClick={() =>
                                     captureTicket.mutate(
                                       { ticketId },
-                                      { onError: () => toast.error("Failed to process payment. Please try again.") },
+                                      {
+                                        onError: (error) =>
+                                          toast.error(`Payment failed: ${error.message}`, {
+                                            description: "The customer has been asked to update their card.",
+                                          }),
+                                      },
                                     )
                                   }
                                   disabled={captureTicket.isPending}
@@ -810,6 +865,26 @@ export default function TicketDetailPage() {
               </div>
             </div>
             </div>
+
+            {endRequested && (
+              <EndSessionRequestedHelperBanner
+                requesterName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+                requestedAt={endRequestedAt}
+                onLogTime={
+                  paymentGate.isReady
+                    ? () => {
+                        if (isAdminButNotHelper) {
+                          setPendingAction("logTime")
+                          setIsAddSelfAsHelperDialogOpen(true)
+                        } else {
+                          setIsLogTimeDrawerOpen(true)
+                        }
+                      }
+                    : undefined
+                }
+                onEndSession={() => setIsEndTicketDrawerOpen(true)}
+              />
+            )}
 
             <TicketChatInput
               value={message}
@@ -852,7 +927,7 @@ export default function TicketDetailPage() {
             <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
               {/* People in Chat */}
               <div>
-                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>People in this chat</h3>
+                <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
                 {participantsLoading ? (
                   <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
                 ) : allParticipants.length > 0 ? (
@@ -886,14 +961,11 @@ export default function TicketDetailPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+              <SidebarDivider />
 
               {/* Other Topics — from ticket keywords */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Other topics in this chat</h3>
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                </div>
+                <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
                 {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
                   <div className="flex gap-2 flex-wrap">
                     {ticketDetails.keywords.map((k) => (
@@ -908,14 +980,11 @@ export default function TicketDetailPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+              <SidebarDivider />
 
               {/* Logged Time */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Logged time</h3>
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                </div>
+                <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
                 {timeEntries.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {timeEntries.map((entry) => (
@@ -961,11 +1030,11 @@ export default function TicketDetailPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+              <SidebarDivider />
 
               {/* Active Tickets — 3 latest claimed by this helper */}
               <div>
-                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets ({activeTicketsCount})</h3>
+                <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
@@ -1022,6 +1091,7 @@ export default function TicketDetailPage() {
         isOpen={isEndTicketDrawerOpen}
         onClose={() => setIsEndTicketDrawerOpen(false)}
         onEndTicket={handleEndTicket}
+        userRequestedEnd={endRequested}
         timeEntries={timeEntries}
       />
 

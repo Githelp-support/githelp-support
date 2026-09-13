@@ -13,11 +13,7 @@ vi.mock("@/lib/supabase/client", () => ({
         from: vi.fn(() => ({
             select: vi.fn(() => ({
                 eq: vi.fn(() => ({
-                    order: vi.fn(() => ({
-                        limit: vi.fn(() => ({
-                            maybeSingle: selectMock,
-                        })),
-                    })),
+                    order: selectMock,
                 })),
             })),
         })),
@@ -58,7 +54,7 @@ describe("useTicketPaymentStatus", () => {
 
     it("returns isReady=true when a payments row has status=authorized", async () => {
         selectMock.mockResolvedValue({
-            data: { status: "authorized" },
+            data: [{ status: "authorized" }],
             error: null,
         });
         const { result } = renderHook(
@@ -81,7 +77,7 @@ describe("useTicketPaymentStatus", () => {
 
     it("returns isReady=false when payments row is in a non-authorized state", async () => {
         selectMock.mockResolvedValue({
-            data: { status: "requires_action" },
+            data: [{ status: "requires_action" }],
             error: null,
         });
         const { result } = renderHook(
@@ -90,5 +86,58 @@ describe("useTicketPaymentStatus", () => {
         );
         await waitFor(() => expect(result.current.status).toBe("requires_action"));
         expect(result.current.isReady).toBe(false);
+    });
+
+    it("sums captured amounts across hold capture and overage rows", async () => {
+        selectMock.mockResolvedValue({
+            data: [
+                { status: "distributing", captured_amount_smallest_unit: 3000 },
+                { status: "failed", captured_amount_smallest_unit: null },
+                { status: "completed", captured_amount_smallest_unit: 10000 },
+            ],
+            error: null,
+        });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-5", { slaId: null }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("distributing"));
+        expect(result.current.capturedAmountSmallestUnit).toBe(13000);
+    });
+});
+
+describe("useTicketPaymentStatus failure reason", () => {
+    it("exposes failure_reason from the latest row when it is failed", async () => {
+        selectMock.mockResolvedValue({
+            data: [
+                { status: "failed", captured_amount_smallest_unit: null, failure_reason: " Your card was declined. " },
+                { status: "completed", captured_amount_smallest_unit: 2500, failure_reason: null },
+            ],
+            error: null,
+        });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-fail", { slaId: null }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("failed"));
+        expect(result.current.failureReason).toBe("Your card was declined.");
+        // Earlier captured segments still count toward what was charged.
+        expect(result.current.capturedAmountSmallestUnit).toBe(2500);
+    });
+
+    it("clears the reason once a later row succeeds", async () => {
+        selectMock.mockResolvedValue({
+            data: [
+                { status: "distributing", captured_amount_smallest_unit: 4000, failure_reason: null },
+                { status: "failed", captured_amount_smallest_unit: null, failure_reason: "declined" },
+            ],
+            error: null,
+        });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-recovered", { slaId: null }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("distributing"));
+        expect(result.current.failureReason).toBeNull();
     });
 });
