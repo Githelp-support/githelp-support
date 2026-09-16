@@ -40,6 +40,8 @@ interface Ticket {
     name: string
     avatar: string
   }
+  /** True when the ticket is covered by an SLA (tickets.sla_id set). */
+  isSla?: boolean
 }
 
 // Helper function to format date
@@ -132,6 +134,7 @@ export default function TicketsPage() {
       rate: `USD ${ratePerMinute}/min`,
       messages: ticket.message_count || 0,
       helper: undefined as { name: string; avatar: string } | undefined, // TODO: Fetch helper data if ticket is claimed/in-progress
+      isSla: !!(ticket as { sla_id?: string | null }).sla_id,
     })) as Ticket[]
   }, [ticketsData, ratePerMinute])
 
@@ -691,9 +694,16 @@ export default function TicketsPage() {
                           </div>
                         </div>
                         <div className="col-span-2">
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                            {ticket.type}
-                          </Badge>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                              {ticket.type}
+                            </Badge>
+                            {ticket.isSla && (
+                              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary text-[10px] uppercase tracking-wide">
+                                SLA
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <div className="col-span-2">
                           <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
@@ -785,9 +795,16 @@ export default function TicketsPage() {
                     </div>
                   </div>
                   <div className="col-span-2">
-                    <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                      {ticket.type}
-                    </Badge>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                        {ticket.type}
+                      </Badge>
+                      {ticket.isSla && (
+                        <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary text-[10px] uppercase tracking-wide">
+                          SLA
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>

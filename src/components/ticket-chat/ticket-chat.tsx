@@ -21,6 +21,8 @@ export type PaymentSystemMessageKind =
   | "payment_failed"
   | "payment_completed"
   | "sla_covered"
+  | "sla_inactive"
+  | "sla_usage_recorded"
 
 /**
  * `metadata.kind` of persisted system messages. Payment kinds are written by
@@ -163,7 +165,10 @@ export function TicketChat(props: TicketChatProps) {
   // payment_cap_exceeded system messages are stale — suppress their CTAs so the
   // "Add payment method" button disappears after the hold is placed.
   const paymentResolved = useMemo(
-    () => thread.some((m) => m.paymentMetadata?.kind === "payment_authorized"),
+    () =>
+      thread.some(
+        (m) => m.paymentMetadata?.kind === "payment_authorized" || m.paymentMetadata?.kind === "sla_covered",
+      ),
     [thread],
   )
   // A payment_failed CTA stays live until a later payment_completed message
@@ -276,12 +281,24 @@ export function TicketChat(props: TicketChatProps) {
                                         ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                         : msg.paymentMetadata?.kind === "payment_failed"
                                           ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                          : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                          : msg.paymentMetadata?.kind === "sla_inactive"
+                                            ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                            : msg.paymentMetadata?.kind === "sla_covered" || msg.paymentMetadata?.kind === "sla_usage_recorded"
+                                              ? "bg-brand-primary/5 border border-brand-primary/20 text-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                              : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent content={msg.content} />
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "sla_usage_recorded" &&
+                                    typeof msg.paymentMetadata.minutes_remaining === "number" &&
+                                    typeof msg.paymentMetadata.minutes_available === "number" && (
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                      {msg.paymentMetadata.minutes_remaining} of {msg.paymentMetadata.minutes_available} included minutes left this period
+                                    </div>
+                                  )}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button

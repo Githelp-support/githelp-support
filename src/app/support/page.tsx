@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Search, Clock, Target, HelpCircle, Check } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -57,6 +65,7 @@ const TAB_KEY_TO_LABEL: Record<TabKey, string> = {
 export default function SupportPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("get-support")
   const [hasEnteredChat, setHasEnteredChat] = useState(false)
+  const [getSlaOpen, setGetSlaOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const { user, setProjectRole } = useUser()
   const searchParams = useSearchParams()
@@ -90,6 +99,11 @@ export default function SupportPage() {
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
+  const slaEntryHref = projectId
+    ? `/support/sla?project=${encodeURIComponent(projectId)}`
+    : slugParam
+      ? `/support/sla?slug=${encodeURIComponent(slugParam)}`
+      : "/support/sla"
 
   // Format payment values (convert cents to dollars)
   const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
@@ -457,10 +471,11 @@ export default function SupportPage() {
                     Get support
                   </Button>
                   <Button
+                    asChild
                     variant="outline"
                     className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
                   >
-                    I have an SLA ID
+                    <Link href={slaEntryHref}>I have an SLA code</Link>
                   </Button>
                 </div>
               </div>
@@ -538,7 +553,28 @@ export default function SupportPage() {
               onCancel={() => setHandledScaMessageId(pendingSca.messageId)}
             />
           )}
-          <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
+          <Dialog open={getSlaOpen} onOpenChange={setGetSlaOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Get an SLA with {projectName}</DialogTitle>
+            <DialogDescription>
+              Service-level agreements are set up by the {projectName} team. Reach out to them to agree on
+              included support time, response guarantees and pricing. Once the agreement is created they
+              will share an SLA code with you, which you enter under &quot;I have an SLA code&quot; to link
+              your organization and start using it.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-between gap-2">
+            <Button asChild variant="outline">
+              <Link href={slaEntryHref}>I already have a code</Link>
+            </Button>
+            <Button variant="lavender" onClick={() => setGetSlaOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
           </>
           )
         ) : (
@@ -620,6 +656,7 @@ export default function SupportPage() {
                       <Button
                         variant="outline"
                         className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
+                        onClick={() => setGetSlaOpen(true)}
                       >
                         Get an SLA
                       </Button>

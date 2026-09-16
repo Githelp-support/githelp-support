@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -8,49 +9,18 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
-import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
-import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useProjectSlaBillingPeriods, useProjectSlaTickets, ticketLoggedMinutes } from "@/hooks/useSlaReports"
 import { getAvatarColorHexForId } from "@/lib/constants"
+import { getTicketStatusBadgeClass } from "@/lib/status-colors"
 import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
+import { computePeriodUsage, formatSlaAmount, formatSlaDate, formatSlaMinutes, periodLabel } from "@/lib/sla"
 
-interface ReportData {
-  id: string
-  period: string
-  periodRaw: number
-  entity: string
-  entityInitial: string
-  entityColor: string
-  amount: string
-  amountRaw: number
-  status: "paid-out" | "pending" | "processing"
-}
-
-interface TicketData {
-  id: string
-  date: string
-  dateRaw: string
-  entity: string
-  entityInitial: string
-  entityColor: string
-  amount: string
-  amountRaw: number
-  status: "completed" | "pending" | "processing"
-}
-
-type MonthlySortField = "period" | "entity" | "amount" | "status"
-type TicketsSortField = "date" | "entity" | "amount" | "status"
+type MonthlySortField = "period" | "entity" | "included" | "consumed" | "overage" | "amount"
+type TicketsSortField = "date" | "entity" | "minutes" | "status"
 type SortDirection = "asc" | "desc"
 
-function ReportsSortIcon<T extends string>({
-  field,
-  sortField,
-  sortDirection,
-}: {
-  field: T
-  sortField: T | null
-  sortDirection: SortDirection
-}) {
+function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
   if (sortField !== field) {
     return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
   }
@@ -61,51 +31,80 @@ function ReportsSortIcon<T extends string>({
   )
 }
 
-// Helper function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
+function SortHeader({
+  label,
+  field,
+  sortField,
+  sortDirection,
+  onSort,
+}: {
+  label: string
+  field: string
+  sortField: string | null
+  sortDirection: SortDirection
+  onSort: (field: string) => void
+}) {
+  return (
+    <button type="button" onClick={() => onSort(field)} className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer">
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <SortIcon field={field} sortField={sortField} sortDirection={sortDirection} />
+    </button>
+  )
 }
 
-// Helper function to get month/year from date
-const getMonthYear = (dateString: string) => {
-  const date = new Date(dateString)
-  const month = date.toLocaleDateString("en-US", { month: "long" })
-  const year = date.getFullYear()
-  return `${month} ${year}`
+function compare(a: string | number, b: string | number, direction: SortDirection) {
+  if (a < b) return direction === "asc" ? -1 : 1
+  if (a > b) return direction === "asc" ? 1 : -1
+  return 0
 }
 
-// Helper function to get initial and color for SLA
-const getSlaInitialAndColor = (slaName: string, slaId: string | null | undefined) => {
-  const initials = (slaName || '?').trim().charAt(0).toUpperCase() || '?'
-  return {
-    initial: initials,
-    color: getAvatarColorHexForId(slaId),
-  }
+function monthLabelOf(dateIso: string): string {
+  return new Date(dateIso).toLocaleDateString("en-US", { month: "long", year: "numeric" })
 }
 
-const months = [
-  "January 2025",
-  "February 2025",
-  "March 2025",
-  "April 2025",
-  "May 2025",
-  "June 2025",
-  "July 2025",
-  "August 2025",
-  "September 2025",
-  "October 2025",
-  "November 2025",
-  "December 2025",
-]
+function calendarDay(day: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(day)
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(day)
+}
+
+interface ReportRow {
+  id: string
+  slaId: string
+  entity: string
+  period: string
+  periodRaw: number
+  /** Calendar month the period starts in, for the month filter. */
+  monthLabel: string
+  included: number
+  rolledOver: number
+  consumed: number
+  remaining: number
+  overage: number
+  overageCostSmallestUnit: number
+  subscriptionSmallestUnit: number
+  currency: string
+  isCurrent: boolean
+}
+
+interface TicketRow {
+  id: string
+  slaId: string | null
+  entity: string
+  title: string
+  date: string
+  dateRaw: string
+  monthLabel: string
+  minutes: number
+  recorded: string | null
+  status: string
+}
+
+const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
 export default function ReportsSLAsPage() {
   const [activeTab, setActiveTab] = useState<"monthly" | "tickets">("monthly")
-  const [selectedMonth, setSelectedMonth] = useState("March 2025")
-  const [selectedFilter, setSelectedFilter] = useState("all")
+  const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
+  const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [selectedTicketRows, setSelectedTicketRows] = useState<string[]>([])
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
@@ -117,206 +116,157 @@ export default function ReportsSLAsPage() {
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
 
-  // Fetch SLAs and payment transfers
-  const { data: slasData } = useSLAs(projectId)
-  const { data: transfersData, isLoading } = usePaymentTransfers({
-    projectId,
-    status: selectedFilter !== "all" ? selectedFilter : undefined,
-  })
+  const { data: periodsData, isLoading: periodsLoading, error: periodsError } = useProjectSlaBillingPeriods(projectId)
+  const { data: ticketsData, isLoading: ticketsLoading, error: ticketsError } = useProjectSlaTickets(projectId)
 
-  // Aggregate monthly reports by SLA and period
-  const reports: ReportData[] = useMemo(() => {
-    if (!transfersData || !slasData) return []
+  // Last 12 months for the month filter dropdown
+  const months = useMemo(() => {
+    const result: string[] = []
+    const currentDate = new Date()
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+      result.push(date.toLocaleDateString("en-US", { month: "long", year: "numeric" }))
+    }
+    return result
+  }, [])
 
-    // Group transfers by SLA and month
-    const grouped = new Map<string, { sla: any; month: string; total: number }>()
+  const targetMonth =
+    selectedFilter === "current" || selectedMonth ? selectedMonth || monthLabelOf(new Date().toISOString()) : null
 
-    transfersData.forEach((transfer) => {
-      if (!transfer.sla || !transfer.completed_at) return
+  const today = new Date().toISOString().slice(0, 10)
 
-      const monthYear = getMonthYear(transfer.completed_at)
-      const slaKey = (transfer.sla as any)?.id || (transfer as any)?.sla_id || "unknown-sla"
-      const key = `${slaKey}-${monthYear}`
-
-      if (!grouped.has(key)) {
-        grouped.set(key, {
-          sla: transfer.sla,
-          month: monthYear,
-          total: 0,
-        })
-      }
-
-      const group = grouped.get(key)!
-      group.total += transfer.amount_smallest_unit
-    })
-
-    // Convert to report format
-    return Array.from(grouped.entries()).map(([key, data]) => {
-      const { initial, color } = getSlaInitialAndColor((data.sla as any)?.name || "Unknown", (data.sla as any)?.id)
+  const allReports: ReportRow[] = useMemo(() => {
+    return (periodsData ?? []).map((p) => {
+      const usage = computePeriodUsage(p)
+      const start = calendarDay(p.period_start)
       return {
-        id: key,
-        period: data.month,
-        periodRaw: new Date(data.month).getTime(),
-        entity: (data.sla as any)?.name || "Unknown",
-        entityInitial: initial,
-        entityColor: color,
-        amount: formatAmount(data.total, "usd"),
-        amountRaw: data.total,
-        status: "paid-out" as const,
+        id: p.id,
+        slaId: p.sla.id,
+        entity: p.sla.name?.trim() || "Unnamed SLA",
+        period: periodLabel(p, p.sla.payment_frequency),
+        periodRaw: start.getTime(),
+        monthLabel: start.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        included: usage.minutesIncluded,
+        rolledOver: usage.minutesRolledOver,
+        consumed: usage.minutesConsumed,
+        remaining: usage.minutesRemaining,
+        overage: usage.overageMinutes,
+        overageCostSmallestUnit: usage.overageMinutes * (p.sla.ticket_price_minute_first_60 || 0),
+        subscriptionSmallestUnit: p.sla.subscription_amount_smallest_unit,
+        currency: p.sla.currency || "usd",
+        isCurrent: p.period_start <= today && today < p.period_end,
       }
     })
-  }, [transfersData, slasData])
+  }, [periodsData, today])
 
-  // Transform ticket transfers to ticket data
-  const tickets: TicketData[] = useMemo(() => {
-    if (!transfersData || !slasData) return []
-
-    return transfersData
-      .filter((transfer) => transfer.ticket_id && transfer.completed_at)
-      .map((transfer) => {
-        const { initial, color } = getSlaInitialAndColor(
-          (transfer.sla as any)?.name || "Unknown",
-          (transfer as any)?.sla_id ?? transfer.id,
-        )
-        return {
-          id: transfer.id,
-          date: formatDate(transfer.completed_at!),
-          dateRaw: transfer.completed_at!,
-          entity: (transfer.sla as any)?.name || "Unknown",
-          entityInitial: initial,
-          entityColor: color,
-          amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
-          amountRaw: transfer.amount_smallest_unit,
-          status: transfer.status === "completed" ? "completed" : "pending",
-        }
-      })
-  }, [transfersData, slasData])
-
-  const sortedReports = useMemo(() => {
-    if (!monthlySortField) return reports
-    const sorted = [...reports]
+  const reports = useMemo(() => {
+    let list = allReports
+    if (targetMonth) list = list.filter((r) => r.monthLabel === targetMonth)
+    if (!monthlySortField) return list
+    const sorted = [...list]
     sorted.sort((a, b) => {
-      let aValue: string | number
-      let bValue: string | number
       switch (monthlySortField) {
         case "period":
-          aValue = a.periodRaw
-          bValue = b.periodRaw
-          break
+          return compare(a.periodRaw, b.periodRaw, monthlySortDirection)
         case "entity":
-          aValue = a.entity.toLowerCase()
-          bValue = b.entity.toLowerCase()
-          break
+          return compare(a.entity.toLowerCase(), b.entity.toLowerCase(), monthlySortDirection)
+        case "included":
+          return compare(a.included + a.rolledOver, b.included + b.rolledOver, monthlySortDirection)
+        case "consumed":
+          return compare(a.consumed, b.consumed, monthlySortDirection)
+        case "overage":
+          return compare(a.overage, b.overage, monthlySortDirection)
         case "amount":
-          aValue = a.amountRaw
-          bValue = b.amountRaw
-          break
-        case "status":
-          aValue = a.status.toLowerCase()
-          bValue = b.status.toLowerCase()
-          break
+          return compare(a.subscriptionSmallestUnit, b.subscriptionSmallestUnit, monthlySortDirection)
         default:
           return 0
       }
-      if (aValue < bValue) return monthlySortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return monthlySortDirection === "asc" ? 1 : -1
-      return 0
     })
     return sorted
-  }, [reports, monthlySortField, monthlySortDirection])
+  }, [allReports, targetMonth, monthlySortField, monthlySortDirection])
 
-  const sortedTickets = useMemo(() => {
-    if (!ticketsSortField) return tickets
-    const sorted = [...tickets]
+  const allTickets: TicketRow[] = useMemo(() => {
+    return (ticketsData ?? []).map((t) => {
+      const dateRaw = t.completed_at || t.created_at
+      return {
+        id: t.id,
+        slaId: t.sla?.id ?? t.sla_id ?? null,
+        entity: t.sla?.name?.trim() || "Unnamed SLA",
+        title: t.title?.trim() || "Untitled ticket",
+        date: formatSlaDate(dateRaw),
+        dateRaw,
+        monthLabel: monthLabelOf(dateRaw),
+        minutes: ticketLoggedMinutes(t.time_entries),
+        recorded: t.sla_usage_recorded_at,
+        status: t.status,
+      }
+    })
+  }, [ticketsData])
+
+  const tickets = useMemo(() => {
+    let list = allTickets
+    if (targetMonth) list = list.filter((t) => t.monthLabel === targetMonth)
+    if (!ticketsSortField) return list
+    const sorted = [...list]
     sorted.sort((a, b) => {
-      let aValue: string | number
-      let bValue: string | number
       switch (ticketsSortField) {
         case "date":
-          aValue = new Date(a.dateRaw).getTime()
-          bValue = new Date(b.dateRaw).getTime()
-          break
+          return compare(new Date(a.dateRaw).getTime(), new Date(b.dateRaw).getTime(), ticketsSortDirection)
         case "entity":
-          aValue = a.entity.toLowerCase()
-          bValue = b.entity.toLowerCase()
-          break
-        case "amount":
-          aValue = a.amountRaw
-          bValue = b.amountRaw
-          break
+          return compare(a.entity.toLowerCase(), b.entity.toLowerCase(), ticketsSortDirection)
+        case "minutes":
+          return compare(a.minutes, b.minutes, ticketsSortDirection)
         case "status":
-          aValue = a.status.toLowerCase()
-          bValue = b.status.toLowerCase()
-          break
+          return compare(a.status, b.status, ticketsSortDirection)
         default:
           return 0
       }
-      if (aValue < bValue) return ticketsSortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return ticketsSortDirection === "asc" ? 1 : -1
-      return 0
     })
     return sorted
-  }, [tickets, ticketsSortField, ticketsSortDirection])
+  }, [allTickets, targetMonth, ticketsSortField, ticketsSortDirection])
 
-  const handleMonthlySort = (field: MonthlySortField) => {
-    if (monthlySortField === field) {
-      if (monthlySortDirection === "asc") {
-        setMonthlySortDirection("desc")
-      } else {
-        setMonthlySortField(null)
-        setMonthlySortDirection("asc")
-      }
-    } else {
-      setMonthlySortField(field)
+  const handleMonthlySort = (field: string) => {
+    const next = field as MonthlySortField
+    if (monthlySortField === next) setMonthlySortDirection(monthlySortDirection === "asc" ? "desc" : "asc")
+    else {
+      setMonthlySortField(next)
       setMonthlySortDirection("asc")
     }
   }
 
-  const handleTicketsSort = (field: TicketsSortField) => {
-    if (ticketsSortField === field) {
-      if (ticketsSortDirection === "asc") {
-        setTicketsSortDirection("desc")
-      } else {
-        setTicketsSortField(null)
-        setTicketsSortDirection("asc")
-      }
-    } else {
-      setTicketsSortField(field)
+  const handleTicketsSort = (field: string) => {
+    const next = field as TicketsSortField
+    if (ticketsSortField === next) setTicketsSortDirection(ticketsSortDirection === "asc" ? "desc" : "asc")
+    else {
+      setTicketsSortField(next)
       setTicketsSortDirection("asc")
     }
   }
 
-  const handleRowSelect = (id: string) => {
-    setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]))
-  }
+  const handleRowSelect = (id: string) =>
+    setSelectedRows((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]))
+  const handleSelectAll = () => setSelectedRows(selectedRows.length === reports.length ? [] : reports.map((r) => r.id))
+  const handleTicketRowSelect = (id: string) =>
+    setSelectedTicketRows((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]))
+  const handleTicketSelectAll = () =>
+    setSelectedTicketRows(selectedTicketRows.length === tickets.length ? [] : tickets.map((t) => t.id))
 
-  const handleSelectAll = () => {
-    setSelectedRows(selectedRows.length === sortedReports.length ? [] : sortedReports.map((report) => report.id))
-  }
-
-  const handleTicketRowSelect = (id: string) => {
-    setSelectedTicketRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]))
-  }
-
-  const handleTicketSelectAll = () => {
-    setSelectedTicketRows(selectedTicketRows.length === sortedTickets.length ? [] : sortedTickets.map((ticket) => ticket.id))
-  }
+  const emptyMessage = (what: string) => (targetMonth ? `No ${what} found for ${targetMonth}` : `No ${what} found`)
+  const error = periodsError ?? ticketsError
 
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          title="Reports and Payouts"
-          subtitle="Keep track of reports and transactions for your SLAs."
-        />
+        <Header title="SLA reports" subtitle="Included time, usage and overage for each agreement." />
 
         <main className="flex-1 p-6 overflow-y-auto">
           {/* Tab Navigation */}
           <div className="mb-6">
             <div className="flex gap-1">
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => setActiveTab("monthly")}
                 className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === "monthly"
@@ -324,9 +274,10 @@ export default function ReportsSLAsPage() {
                     : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
-                Monthly reports
+                Billing periods
               </button>
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => setActiveTab("tickets")}
                 className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === "tickets"
@@ -337,30 +288,27 @@ export default function ReportsSLAsPage() {
                 Tickets
               </button>
             </div>
-            {/* Full-width line below tabs */}
             <div className="h-px bg-border -mx-6"></div>
           </div>
 
           <div className="max-w-7xl space-y-6">
             {/* Filters */}
-            <div className="flex gap-2 mb-6">
-              {activeTab === "tickets" && (
-                <Button
-                  variant={selectedFilter === "current" ? "default" : "outline"}
-                  size="sm"
-                  className={
-                    selectedFilter === "current"
-                      ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                      : "h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
-                  }
-                  onClick={() => {
-                    setSelectedFilter("current")
-                    setSelectedMonth("")
-                  }}
-                >
-                  Current month
-                </Button>
-              )}
+            <div className="flex gap-2">
+              <Button
+                variant={selectedFilter === "current" ? "default" : "outline"}
+                size="sm"
+                className={
+                  selectedFilter === "current"
+                    ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
+                    : `h-9 ${OUTLINE_BUTTON_CLASS}`
+                }
+                onClick={() => {
+                  setSelectedFilter("current")
+                  setSelectedMonth("")
+                }}
+              >
+                Current month
+              </Button>
               <Select
                 value={selectedMonth}
                 onValueChange={(v) => {
@@ -380,9 +328,9 @@ export default function ReportsSLAsPage() {
                 </SelectContent>
               </Select>
               <Button
-                variant={selectedFilter === "all" ? "default" : "outline"}
+                variant={selectedFilter === "all" && !selectedMonth ? "default" : "outline"}
                 size="sm"
-                className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                className={OUTLINE_BUTTON_CLASS}
                 onClick={() => {
                   setSelectedFilter("all")
                   setSelectedMonth("")
@@ -392,251 +340,204 @@ export default function ReportsSLAsPage() {
               </Button>
             </div>
 
-            {/* Monthly Reports Table */}
+            {!projectId && (
+              <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">Select a project to see its SLA reports.</div>
+            )}
+            {error && (
+              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">Could not load SLA reports. Please try again later.</div>
+            )}
+
             {activeTab === "monthly" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
-                {/* Table Header */}
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-1">
+                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: "2rem repeat(12, 1fr)" }}>
+                    <div>
                       <input
                         type="checkbox"
-                        className="rounded border-border accent-brand-primary"
-                        checked={selectedRows.length === sortedReports.length && sortedReports.length > 0}
+                        className="rounded border-border"
+                        checked={selectedRows.length === reports.length && reports.length > 0}
                         onChange={handleSelectAll}
+                        disabled={reports.length === 0}
+                        aria-label="Select all periods"
                       />
                     </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("period")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Period</span>
-                        <ReportsSortIcon field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
                     <div className="col-span-3">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("entity")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Entity</span>
-                        <ReportsSortIcon field="entity" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
+                      <SortHeader label="Agreement" field="entity" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                     </div>
                     <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("amount")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Amount</span>
-                        <ReportsSortIcon field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
+                      <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Available" field="included" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Used" field="consumed" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Overage" field="overage" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                     </div>
                     <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("status")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Status</span>
-                        <ReportsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
+                      <SortHeader label="Subscription" field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                     </div>
-                    <div className="col-span-2"></div>
+                    <div className="col-span-2 text-right">
+                      <span className="text-sm font-medium text-foreground">Actions</span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Table Body */}
                 <div className="divide-y divide-border">
-                  {isLoading ? (
+                  {periodsLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading reports...</div>
-                  ) : sortedReports.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No reports found</div>
+                  ) : reports.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
+                      {allReports.length === 0 && !targetMonth
+                        ? "No billing periods yet. A period appears once an SLA is subscribed or its first ticket completes."
+                        : emptyMessage("billing periods")}
+                    </div>
                   ) : (
-                    sortedReports.map((report) => (
-                    <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-1">
-                          <Checkbox
-                            checked={selectedRows.includes(report.id)}
-                            onCheckedChange={() => handleRowSelect(report.id)}
-                            className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{report.period}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center space-x-3">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: report.entityColor }}
-                          >
-                            {report.entityInitial}
+                    reports.map((r) => (
+                      <div key={r.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                        <div className="grid gap-4 items-center" style={{ gridTemplateColumns: "2rem repeat(12, 1fr)" }}>
+                          <div>
+                            <Checkbox checked={selectedRows.includes(r.id)} onCheckedChange={() => handleRowSelect(r.id)} aria-label={`Select ${r.entity}`} />
                           </div>
-                          <span className="text-sm text-foreground">{report.entity}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{report.amount}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <Badge variant="secondary" className="bg-status-success-bg text-status-success-text hover:opacity-90">
-                            Paid out
-                          </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                          >
-                            Open
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                            onClick={() => setRequestPdfOpen(true)}
-                          >
-                            Request PDF
-                          </Button>
+                          <div className="col-span-3 flex items-center gap-3 min-w-0">
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              style={{ backgroundColor: getAvatarColorHexForId(r.slaId) }}
+                            >
+                              {r.entity.charAt(0).toUpperCase()}
+                            </div>
+                            <Link href={`/slas/${r.slaId}`} className="text-sm font-medium text-foreground hover:text-brand-primary truncate">
+                              {r.entity}
+                            </Link>
+                          </div>
+                          <div className="col-span-2 text-sm text-muted-foreground">
+                            {r.period}
+                            {r.isCurrent && (
+                              <Badge variant="outline" className="ml-2 text-[10px] uppercase tracking-wide">
+                                Current
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="col-span-1 text-sm text-foreground">
+                            {formatSlaMinutes(r.included + r.rolledOver)}
+                            {r.rolledOver > 0 && (
+                              <div className="text-xs text-muted-foreground">incl. {formatSlaMinutes(r.rolledOver)} rolled over</div>
+                            )}
+                          </div>
+                          <div className="col-span-1 text-sm text-foreground">{formatSlaMinutes(r.consumed)}</div>
+                          <div className="col-span-1 text-sm">
+                            {r.overage > 0 ? (
+                              <>
+                                <span className="text-red-700">{formatSlaMinutes(r.overage)}</span>
+                                {r.overageCostSmallestUnit > 0 && (
+                                  <div className="text-xs text-muted-foreground">≈ {formatSlaAmount(r.overageCostSmallestUnit, r.currency)}</div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </div>
+                          <div className="col-span-2 text-sm text-foreground">{formatSlaAmount(r.subscriptionSmallestUnit, r.currency)}</div>
+                          <div className="col-span-2 flex items-center justify-end gap-2">
+                            <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
+                              <Link href={`/slas/${r.slaId}`}>Open</Link>
+                            </Button>
+                            <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} onClick={() => setRequestPdfOpen(true)}>
+                              Request PDF
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
 
             {activeTab === "tickets" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
-                {/* Table Header */}
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-1">
+                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: "2rem repeat(12, 1fr)" }}>
+                    <div>
                       <input
                         type="checkbox"
-                        className="rounded border-border accent-brand-primary"
-                        checked={selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0}
+                        className="rounded border-border"
+                        checked={selectedTicketRows.length === tickets.length && tickets.length > 0}
                         onChange={handleTicketSelectAll}
+                        disabled={tickets.length === 0}
+                        aria-label="Select all tickets"
                       />
                     </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("date")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Date</span>
-                        <ReportsSortIcon field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-3">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("entity")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Entity</span>
-                        <ReportsSortIcon field="entity" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
+                    <div className="col-span-4">
+                      <span className="text-sm font-medium text-foreground">Ticket</span>
                     </div>
                     <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("amount")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Amount</span>
-                        <ReportsSortIcon field="amount" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
+                      <SortHeader label="Agreement" field="entity" sortField={ticketsSortField} sortDirection={ticketsSortDirection} onSort={handleTicketsSort} />
                     </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("status")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Status</span>
-                        <ReportsSortIcon field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
+                    <div className="col-span-1">
+                      <SortHeader label="Date" field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} onSort={handleTicketsSort} />
                     </div>
-                    <div className="col-span-2"></div>
+                    <div className="col-span-1">
+                      <SortHeader label="Logged" field="minutes" sortField={ticketsSortField} sortDirection={ticketsSortDirection} onSort={handleTicketsSort} />
+                    </div>
+                    <div className="col-span-1">
+                      <span className="text-sm font-medium text-foreground">Recorded</span>
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Status" field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} onSort={handleTicketsSort} />
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <span className="text-sm font-medium text-foreground">Actions</span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Table Body */}
                 <div className="divide-y divide-border">
-                  {isLoading ? (
+                  {ticketsLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
-                  ) : sortedTickets.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
+                  ) : tickets.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("SLA tickets")}</div>
                   ) : (
-                    sortedTickets.map((ticket) => (
-                    <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-1">
-                          <Checkbox
-                            checked={selectedTicketRows.includes(ticket.id)}
-                            onCheckedChange={() => handleTicketRowSelect(ticket.id)}
-                            className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{ticket.date}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center space-x-3">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: ticket.entityColor }}
-                          >
-                            {ticket.entityInitial}
+                    tickets.map((t) => (
+                      <div key={t.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                        <div className="grid gap-4 items-center" style={{ gridTemplateColumns: "2rem repeat(12, 1fr)" }}>
+                          <div>
+                            <Checkbox checked={selectedTicketRows.includes(t.id)} onCheckedChange={() => handleTicketRowSelect(t.id)} aria-label={`Select ${t.title}`} />
                           </div>
-                          <span className="text-sm text-foreground">{ticket.entity}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{ticket.amount}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <Badge
-                            variant="secondary"
-                            className="bg-status-success-bg text-status-success-text flex items-center gap-1"
-                          >
-                            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                              <path
-                                d="M10 3L4.5 8.5L2 6"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                            Completed
-                          </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                          >
-                            Open
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                            onClick={() => setRequestPdfOpen(true)}
-                          >
-                            Request PDF
-                          </Button>
+                          <div className="col-span-4 min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate" title={t.title}>{t.title}</div>
+                            <div className="font-mono text-xs text-muted-foreground">{t.id.slice(0, 7)}</div>
+                          </div>
+                          <div className="col-span-2 flex items-center gap-2 min-w-0">
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium text-foreground shrink-0"
+                              style={{ backgroundColor: getAvatarColorHexForId(t.slaId) }}
+                            >
+                              {t.entity.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-sm text-foreground truncate">{t.entity}</span>
+                          </div>
+                          <div className="col-span-1 text-sm text-muted-foreground">{t.date}</div>
+                          <div className="col-span-1 text-sm text-foreground">{formatSlaMinutes(t.minutes)}</div>
+                          <div className="col-span-1 text-sm text-muted-foreground">
+                            {t.recorded ? "Yes" : t.status === "completed" ? "Pending" : "—"}
+                          </div>
+                          <div className="col-span-1">
+                            <Badge variant="secondary" className={`${getTicketStatusBadgeClass(t.status)} border-0 capitalize`}>
+                              {t.status.replace("-", " ")}
+                            </Badge>
+                          </div>
+                          <div className="col-span-2 flex items-center justify-end gap-2">
+                            <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
+                              <Link href={`/helper/tickets/${t.id}`}>Open</Link>
+                            </Button>
+                            <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} onClick={() => setRequestPdfOpen(true)}>
+                              Request PDF
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                   )}
                 </div>
               </div>

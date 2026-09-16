@@ -33,6 +33,9 @@ import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
+import { useSLA, useSlaUsage, useCompleteSlaTicket, useRealtimeSla } from "@/hooks/useSLAs"
+import { formatSlaAmount, formatSlaMinutes, isUnlimitedSla } from "@/lib/sla"
+import { useQueryClient } from "@tanstack/react-query"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
@@ -54,7 +57,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { UserPlus } from "lucide-react"
+import { UserPlus, ShieldCheck } from "lucide-react"
 import { prepareOutgoingMessage } from "@/lib/code-format"
 
 interface Message {
@@ -77,7 +80,7 @@ export default function TicketDetailPage() {
   const [justClaimedLocal, setJustClaimedLocal] = useState(false)
   const [justEndedLocal, setJustEndedLocal] = useState(false)
   const [endOutcome, setEndOutcome] = useState<string | null>(null)
-  const [userHasSLA, setUserHasSLA] = useState(false)
+  const [isSlaDetailsOpen, setIsSlaDetailsOpen] = useState(false)
   const [isRephraseModalOpen, setIsRephraseModalOpen] = useState(false)
   const [isEndTicketDrawerOpen, setIsEndTicketDrawerOpen] = useState(false)
   const [isLogTimeDrawerOpen, setIsLogTimeDrawerOpen] = useState(false)
@@ -96,6 +99,53 @@ export default function TicketDetailPage() {
   const updateTicket = useUpdateTicket()
   const captureTicket = useCaptureTicket()
   const { user: currentUser } = useUser()
+  const queryClient = useQueryClient()
+
+  // SLA-covered tickets: no card hold; logged minutes are recorded against the
+  // SLA's billing period when the helper ends the ticket.
+  const slaId = (ticketDetails as { sla_id?: string | null } | undefined)?.sla_id ?? null
+  const isSlaCovered = !!slaId
+  const slaUsageRecordedAt =
+    (ticketDetails as { sla_usage_recorded_at?: string | null } | undefined)?.sla_usage_recorded_at ?? null
+  const { data: sla } = useSLA(slaId)
+  const slaUsage = useSlaUsage(slaId)
+  useRealtimeSla(slaId)
+  const completeSlaTicket = useCompleteSlaTicket()
+  const slaIsUnlimited = sla ? isUnlimitedSla(sla) : false
+  const slaMinutesRemaining = slaUsage.data?.period.minutesRemaining ?? null
+  const slaMinutesAvailable = slaUsage.data?.period.minutesAvailable ?? null
+  const slaOveragePerMinute = slaUsage.data
+    ? formatSlaAmount(slaUsage.data.overagePricePerMinuteSmallestUnit, slaUsage.data.currency)
+    : null
+
+  const recordSlaUsage = () => {
+    if (!slaId) return
+    completeSlaTicket.mutate(
+      { ticketId },
+      {
+        onSuccess: (result) => {
+          queryClient.invalidateQueries({ queryKey: ["ticket-with-details", ticketId] })
+          queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] })
+          if (result.alreadyRecorded) {
+            toast.info("SLA usage was already recorded for this ticket.")
+            return
+          }
+          const logged = getTotalLoggedTime()
+          const loggedMinutes = logged.hours * 60 + logged.minutes
+          const description = slaIsUnlimited
+            ? undefined
+            : result.deltaOverageMinutes > 0
+              ? `${result.deltaOverageMinutes} minute(s) exceed the included time and will be billed as overage on the next SLA invoice.`
+              : `${formatSlaMinutes(result.minutesRemaining)} of ${formatSlaMinutes(result.minutesAvailable)} included minutes left this period.`
+          toast.success(`Recorded ${formatSlaMinutes(loggedMinutes)} against the SLA.`, { description })
+        },
+        onError: (error) =>
+          toast.error(`Could not record SLA usage: ${error.message}`, {
+            description: "The ticket is ended. Use “Retry recording SLA usage” below to try again.",
+          }),
+      },
+    )
+  }
 
   // Fetch participants
   const { data: participants, isLoading: participantsLoading } = useTicketParticipants(ticketId)
@@ -439,11 +489,24 @@ export default function TicketDetailPage() {
     const status = outcome === "not-able-to-help" ? "cancelled" : "completed"
     const completedAt = new Date().toISOString()
 
-    void updateTicket.mutateAsync({
+    const ended = updateTicket.mutateAsync({
       id: ticketId,
       // Ending also resolves any outstanding customer "end session" request.
       updates: { status, completed_at: completedAt, end_requested_at: null, end_requested_by: null },
     })
+
+    // SLA-covered tickets: once the row is "completed" the backend records the
+    // logged minutes against the SLA period (and bills overage if any).
+    if (status === "completed" && isSlaCovered) {
+      ended
+        .then(() => recordSlaUsage())
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error)
+          toast.error(`Could not end the ticket: ${message}`)
+        })
+    } else {
+      void ended
+    }
 
     // Log ended event
     void supabase.from("tickets_events").insert({
@@ -456,7 +519,6 @@ export default function TicketDetailPage() {
     // the helper actually helped (status=completed), the ticket isn't
     // SLA-covered (those bill via metered usage), and a hold is in place
     // (status=authorized). "Not able to help" leaves the hold to auto-expire.
-    const isSlaCovered = !!(ticketDetails as { sla_id?: string | null } | undefined)?.sla_id
     if (status === "completed" && !isSlaCovered && paymentGate.status === "authorized") {
       void supabase.from("tickets_events").insert({
         ticket_id: ticketId,
@@ -476,7 +538,7 @@ export default function TicketDetailPage() {
   }
 
   const handleSeeDetails = () => {
-    // Here you would typically show a modal or navigate to a details page
+    if (isSlaCovered) setIsSlaDetailsOpen(true)
   }
 
   const originalTicketText =
@@ -783,15 +845,70 @@ export default function TicketDetailPage() {
                           <span>Ticket ended</span>
                         </div>
                         <div className="mt-2">
-                          {userHasSLA ? (
-                            <Button
-                              onClick={handleSeeDetails}
-                              variant="outline"
-                              size="sm"
-                              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-                            >
-                              See details
-                            </Button>
+                          {isSlaCovered ? (
+                            <div className="rounded-lg border border-border bg-muted/40 p-4 max-w-xs">
+                              <div className="space-y-1.5 text-[13px]">
+                                <div className="flex items-center justify-between gap-6">
+                                  <span className="text-muted-foreground">Outcome</span>
+                                  <span className="font-medium text-foreground">
+                                    {isCancelledEnd ? "Not able to help" : "Resolved"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-6">
+                                  <span className="text-muted-foreground">Time logged</span>
+                                  <span className="font-medium text-foreground tabular-nums">
+                                    {getTotalLoggedTime().formatted}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-6">
+                                  <span className="text-muted-foreground">Charged</span>
+                                  <span className="font-medium text-foreground">Covered by SLA</span>
+                                </div>
+                                {!slaIsUnlimited && slaMinutesRemaining != null && slaMinutesAvailable != null && (
+                                  <div className="flex items-center justify-between gap-6">
+                                    <span className="text-muted-foreground">SLA time left</span>
+                                    <span className="font-medium text-foreground tabular-nums">
+                                      {formatSlaMinutes(slaMinutesRemaining)} / {formatSlaMinutes(slaMinutesAvailable)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {!isCancelledEnd && !slaUsageRecordedAt && (
+                                <>
+                                  <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
+                                    {completeSlaTicket.isPending
+                                      ? "Recording the logged time against the SLA…"
+                                      : "The logged time has not been recorded against the SLA yet."}
+                                  </p>
+                                  <Button
+                                    onClick={recordSlaUsage}
+                                    disabled={completeSlaTicket.isPending}
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                  >
+                                    {completeSlaTicket.isPending ? "Recording…" : "Retry recording SLA usage"}
+                                  </Button>
+                                </>
+                              )}
+
+                              <div className="mt-3 flex items-center gap-2">
+                                <Button
+                                  onClick={handleSeeDetails}
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                >
+                                  See details
+                                </Button>
+                                <NextLink href="/tickets">
+                                  <Button variant="default" size="sm">
+                                    Back to tickets
+                                  </Button>
+                                </NextLink>
+                              </div>
+                            </div>
                           ) : (
                             <div className="rounded-lg border border-border bg-muted/40 p-4 max-w-xs">
                               <div className="space-y-1.5 text-[13px]">
@@ -982,6 +1099,72 @@ export default function TicketDetailPage() {
               {/* Divider */}
               <SidebarDivider />
 
+              {isSlaCovered && (
+                <>
+                  {/* SLA coverage */}
+                  <div>
+                    <SidebarSectionHeading info>Service level agreement</SidebarSectionHeading>
+                    <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-brand-primary shrink-0" />
+                        <span className="text-[13px] font-medium text-foreground truncate">
+                          {sla?.name?.trim() || "Covered by SLA"}
+                        </span>
+                        <Badge variant="secondary" className="ml-auto bg-brand-primary/10 text-brand-primary text-[10px] uppercase tracking-wide">
+                          SLA
+                        </Badge>
+                      </div>
+                      {slaUsage.isLoading ? (
+                        <p className="text-[12px] text-muted-foreground">Loading SLA usage…</p>
+                      ) : slaUsage.isError ? (
+                        <p className="text-[12px] text-destructive">Could not load SLA usage.</p>
+                      ) : slaUsage.data ? (
+                        <>
+                          {slaIsUnlimited ? (
+                            <p className="text-[12px] text-muted-foreground">Unlimited support time included.</p>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between text-[12px]">
+                                <span className="text-muted-foreground">Time left this period</span>
+                                <span className="font-medium text-foreground tabular-nums">
+                                  {formatSlaMinutes(slaUsage.data.period.minutesRemaining)} / {formatSlaMinutes(slaUsage.data.period.minutesAvailable)}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${slaUsage.data.period.minutesRemaining === 0 ? "bg-destructive" : "bg-brand-primary"}`}
+                                  style={{
+                                    width: `${slaUsage.data.period.minutesAvailable > 0 ? Math.min(100, Math.round((slaUsage.data.period.minutesConsumed / slaUsage.data.period.minutesAvailable) * 100)) : 100}%`,
+                                  }}
+                                />
+                              </div>
+                              {slaUsage.data.period.minutesRolledOver > 0 && (
+                                <p className="text-[12px] text-muted-foreground">
+                                  Includes {formatSlaMinutes(slaUsage.data.period.minutesRolledOver)} rolled over from the previous period.
+                                </p>
+                              )}
+                              {slaUsage.data.period.minutesRemaining === 0 && (
+                                <p className="text-[12px] leading-snug text-amber-700">
+                                  Included time is used up. Further time is billed as overage at {slaOveragePerMinute} per minute.
+                                </p>
+                              )}
+                            </>
+                          )}
+                          {!slaUsage.data.covered && (
+                            <p className="text-[12px] leading-snug text-destructive">
+                              This SLA is no longer active. Check with the project before logging more time.
+                            </p>
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <SidebarDivider />
+                </>
+              )}
+
               {/* Logged Time */}
               <div>
                 <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
@@ -1078,6 +1261,63 @@ export default function TicketDetailPage() {
           </div>
         </main>
       </div>
+
+      {/* SLA end-of-ticket summary */}
+      <Dialog open={isSlaDetailsOpen} onOpenChange={setIsSlaDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>SLA summary</DialogTitle>
+            <DialogDescription>
+              {sla?.name?.trim() ? `Covered by “${sla.name.trim()}”.` : "This ticket was covered by a service level agreement."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between gap-6">
+              <span className="text-muted-foreground">Time logged on this ticket</span>
+              <span className="font-medium text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
+            </div>
+            <div className="flex items-center justify-between gap-6">
+              <span className="text-muted-foreground">Usage recorded</span>
+              <span className="font-medium text-foreground">
+                {slaUsageRecordedAt ? new Date(slaUsageRecordedAt).toLocaleString() : "Not yet"}
+              </span>
+            </div>
+            {slaIsUnlimited ? (
+              <div className="flex items-center justify-between gap-6">
+                <span className="text-muted-foreground">Included time</span>
+                <span className="font-medium text-foreground">Unlimited</span>
+              </div>
+            ) : slaUsage.data ? (
+              <>
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-muted-foreground">Time left in this period</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatSlaMinutes(slaUsage.data.period.minutesRemaining)} / {formatSlaMinutes(slaUsage.data.period.minutesAvailable)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-muted-foreground">Overage this period</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatSlaMinutes(slaUsage.data.period.overageMinutes)}
+                    {slaUsage.data.period.overageMinutes > 0 && slaOveragePerMinute ? ` · ${slaOveragePerMinute}/min` : ""}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-muted-foreground">Period</span>
+                  <span className="font-medium text-foreground">
+                    {slaUsage.data.period.periodStart} → {slaUsage.data.period.periodEnd}
+                  </span>
+                </div>
+              </>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSlaDetailsOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* AI Rephrase Modal */}
       <AIRephraseModal

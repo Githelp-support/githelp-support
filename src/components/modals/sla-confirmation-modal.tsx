@@ -1,66 +1,90 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
+import { CheckCircle, Copy, Check } from "lucide-react"
+import { toast } from "sonner"
+
 import { Button } from "@/components/ui/button"
-import { X, Copy, Check } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface SLAConfirmationModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onConfirm: () => void
-  slaId: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  /** Row id of the created SLA (for the "View agreement" link). */
+  slaId: string | null
+  /** The XXXX-XXXX-XXXX code the customer types to link their organization. */
+  accessCode: string | null
+  slaName?: string | null
 }
 
-export function SLAConfirmationModal({ isOpen, onClose, onConfirm, slaId }: SLAConfirmationModalProps) {
+/**
+ * Shown right after an SLA is created: surfaces the real access code so the
+ * admin can hand it to the customer.
+ */
+export function SLAConfirmationModal({ open, onOpenChange, slaId, accessCode, slaName }: SLAConfirmationModalProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
+    if (!accessCode) return
     try {
-      await navigator.clipboard.writeText(slaId)
+      await navigator.clipboard.writeText(accessCode)
       setCopied(true)
+      toast.success("Access code copied")
       setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error("Failed to copy:", err)
+    } catch {
+      toast.error("Could not copy. Select the code and copy it manually.")
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-50" onClick={onClose} />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="items-center text-center sm:text-center">
+          <CheckCircle className="size-7 text-green-600 dark:text-green-500" aria-hidden="true" />
+          <DialogTitle>SLA created</DialogTitle>
+          <DialogDescription className="mt-[3px]">
+            {slaName ? `"${slaName}" is ready.` : "Your agreement is ready."} Share this code with your
+            customer. They enter it under Support → I have an SLA code to link their organization and
+            start using the agreement.
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-lg shadow-xl z-50">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">Confirming new SLA</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:bg-muted p-1">
-            <X className="w-5 h-5" />
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+          <span className="font-mono text-lg tracking-widest text-foreground select-all">
+            {accessCode ?? "—"}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+            disabled={!accessCode}
+            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+          >
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied ? "Copied" : "Copy"}
           </Button>
         </div>
 
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-muted-foreground">Support space ID for this SLA:</p>
-
-          <div className="flex items-center justify-center space-x-2 p-4 bg-muted rounded-lg">
-            <span className="font-mono text-sm text-foreground select-all">{slaId}</span>
-            <Button variant="ghost" size="sm" onClick={handleCopy} className="text-muted-foreground hover:bg-brand-primary/10 p-1">
-              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+        <DialogFooter className="mt-[3px] sm:justify-center">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          {slaId && (
+            <Button asChild variant="lavender">
+              <Link href={`/slas/${slaId}`}>View agreement</Link>
             </Button>
-          </div>
-        </div>
-
-        <div className="p-6 border-t border-border flex space-x-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
-            Cancel
-          </Button>
-          <Button onClick={onConfirm} variant="lavender" className="flex-1">
-            Confirm creation
-          </Button>
-        </div>
-      </div>
-    </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

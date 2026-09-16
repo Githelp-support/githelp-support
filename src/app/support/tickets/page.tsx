@@ -45,6 +45,8 @@ interface UITicket {
   createdAt: string
   messages: number
   projectId: string
+  /** Set when the ticket is covered by an SLA. */
+  slaId: string | null
 }
 
 function formatDate(dateString: string) {
@@ -127,6 +129,7 @@ export default function SupportTicketsPage() {
         createdAt: formatDate(ticket.created_at),
         messages: ticket.message_count || 0,
         projectId: ticket.project_id,
+        slaId: ticket.sla_id ?? null,
       }
     })
   }, [ticketsData])
@@ -407,13 +410,22 @@ export default function SupportTicketsPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="col-span-2">
+                            <div className="col-span-2 flex flex-wrap items-center gap-1">
                               <Badge
                                 variant="secondary"
                                 className="bg-muted text-muted-foreground text-xs"
                               >
                                 {ticket.type}
                               </Badge>
+                              {ticket.slaId && (
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-brand-primary/10 text-brand-primary text-xs"
+                                  title="Covered by your SLA"
+                                >
+                                  SLA
+                                </Badge>
+                              )}
                             </div>
                             <div className="col-span-2">
                               <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.displayStatus)}`}>

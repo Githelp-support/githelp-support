@@ -126,6 +126,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   const userNavigationItems: NavigationItem[] = [
     { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
     { name: "Support", href: "/support/chat", icon: "fi-rr-comments" },
+    { name: "SLAs", href: "/user/sla", icon: "fi-rr-star-octogram" },
     { name: "Reports", href: "/user/reports", icon: "fi-rr-document" },
     {
       name: "Settings",

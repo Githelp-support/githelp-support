@@ -129,6 +129,7 @@ export type Database = {
                         | "cancelled";
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
+                    sla_usage_recorded_at: string | null;
                     success: boolean;
                 };
                 Insert: Partial<{
@@ -152,6 +153,7 @@ export type Database = {
                         | "cancelled";
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
+                    sla_usage_recorded_at: string | null;
                     success: boolean;
                 }>;
                 Update: Partial<{
@@ -175,6 +177,7 @@ export type Database = {
                         | "cancelled";
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
+                    sla_usage_recorded_at: string | null;
                     success: boolean;
                 }>;
             };
@@ -221,22 +224,26 @@ export type Database = {
                     contact_email: string | null;
                     space_id: string | null;
                     support_limit_smallest_unit: number;
-                    time_period: "monthly" | "yearly" | null;
+                    time_period: "daily" | "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | null;
                     minutes_included: number;
                     minutes_rollover: boolean;
                     subscription_amount_smallest_unit: number;
                     currency: string;
-                    payment_frequency: "monthly" | "yearly";
+                    payment_frequency: "daily" | "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly";
                     ticket_start_price: number;
                     ticket_price_minute_first_60: number;
                     ticket_price_minute_after_60: number;
                     max_response_time_minutes: number | null;
                     max_downtime: number | null;
-                    status: "active" | "deactivated" | "archived";
-                    start_date: string | null;
+                    status: "active" | "inactive" | "expired" | "cancelled";
+                    start_date: string;
                     end_date: string | null;
                     updated_at: string;
                     deleted_at: string | null;
+                    access_code: string;
+                    stripe_subscription_id: string | null;
+                    stripe_price_id: string | null;
+                    stripe_mode: "test" | "live" | null;
                 };
                 Insert: Partial<{
                     id: string;
@@ -248,22 +255,26 @@ export type Database = {
                     contact_email: string | null;
                     space_id: string | null;
                     support_limit_smallest_unit: number;
-                    time_period: "monthly" | "yearly" | null;
+                    time_period: "daily" | "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | null;
                     minutes_included: number;
                     minutes_rollover: boolean;
                     subscription_amount_smallest_unit: number;
                     currency: string;
-                    payment_frequency: "monthly" | "yearly";
+                    payment_frequency: "daily" | "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly";
                     ticket_start_price: number;
                     ticket_price_minute_first_60: number;
                     ticket_price_minute_after_60: number;
                     max_response_time_minutes: number | null;
                     max_downtime: number | null;
-                    status: "active" | "deactivated" | "archived";
-                    start_date: string | null;
+                    status: "active" | "inactive" | "expired" | "cancelled";
+                    start_date: string;
                     end_date: string | null;
                     updated_at: string;
                     deleted_at: string | null;
+                    access_code: string;
+                    stripe_subscription_id: string | null;
+                    stripe_price_id: string | null;
+                    stripe_mode: "test" | "live" | null;
                 }>;
                 Update: Partial<{
                     id: string;
@@ -275,22 +286,58 @@ export type Database = {
                     contact_email: string | null;
                     space_id: string | null;
                     support_limit_smallest_unit: number;
-                    time_period: "monthly" | "yearly" | null;
+                    time_period: "daily" | "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | null;
                     minutes_included: number;
                     minutes_rollover: boolean;
                     subscription_amount_smallest_unit: number;
                     currency: string;
-                    payment_frequency: "monthly" | "yearly";
+                    payment_frequency: "daily" | "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly";
                     ticket_start_price: number;
                     ticket_price_minute_first_60: number;
                     ticket_price_minute_after_60: number;
                     max_response_time_minutes: number | null;
                     max_downtime: number | null;
-                    status: "active" | "deactivated" | "archived";
-                    start_date: string | null;
+                    status: "active" | "inactive" | "expired" | "cancelled";
+                    start_date: string;
                     end_date: string | null;
                     updated_at: string;
                     deleted_at: string | null;
+                    access_code: string;
+                    stripe_subscription_id: string | null;
+                    stripe_price_id: string | null;
+                    stripe_mode: "test" | "live" | null;
+                }>;
+            };
+            sla_billing_periods: {
+                Row: {
+                    id: string;
+                    created_at: string;
+                    sla_id: string;
+                    period_start: string;
+                    period_end: string;
+                    minutes_included: number;
+                    minutes_consumed: number;
+                    minutes_rolled_over: number;
+                };
+                Insert: Partial<{
+                    id: string;
+                    created_at: string;
+                    sla_id: string;
+                    period_start: string;
+                    period_end: string;
+                    minutes_included: number;
+                    minutes_consumed: number;
+                    minutes_rolled_over: number;
+                }>;
+                Update: Partial<{
+                    id: string;
+                    created_at: string;
+                    sla_id: string;
+                    period_start: string;
+                    period_end: string;
+                    minutes_included: number;
+                    minutes_consumed: number;
+                    minutes_rolled_over: number;
                 }>;
             };
             tickets_messages: {

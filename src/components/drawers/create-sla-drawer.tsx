@@ -1,354 +1,378 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
+import { toast } from "sonner"
+import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { FormField } from "@/components/ui/form-field"
+import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { X, Info } from "lucide-react"
-import { SLAConfirmationModal } from "@/components/modals/sla-confirmation-modal"
-
-export interface SLAPayload {
-  id: string
-  contractName: string
-  mainContactPerson: string
-  emailAddress: string
-  supportLimitation: string
-  monthlyHours: string
-  unusedHoursRollover: boolean
-  subscriptionCost: string
-  paymentFrequency: string
-  startPrice: string
-  firstSixtyMinRate: string
-  afterSixtyMinRate: string
-  maxResponseTime: string
-  maxDownTime: string
-}
+import { useCreateSLA, useUpdateSLA } from "@/hooks/useSLAs"
+import {
+  EMPTY_SLA_FORM,
+  SLA_FREQUENCY_OPTIONS,
+  frequencyPerLabel,
+  slaFormToRow,
+  slaRowToForm,
+  validateSlaForm,
+  type SlaFormErrors,
+  type SlaFormValues,
+  type SlaPaymentFrequency,
+  type SlaRow,
+} from "@/lib/sla"
+import { cn } from "@/lib/utils"
 
 interface CreateSLADrawerProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (sla: SLAPayload) => void
+  /** Project the agreement belongs to (create mode). */
+  projectId?: string
+  /** When set, the drawer edits this SLA instead of creating a new one. */
+  sla?: SlaRow | null
+  /** Called with the saved row after a successful create or update. */
+  onSaved?: (sla: SlaRow, mode: "create" | "edit") => void
 }
 
-export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerProps) {
-  const [showConfirmation, setShowConfirmation] = useState(false)
-  const [generatedSlaId, setGeneratedSlaId] = useState("")
+function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: string }) {
+  return (
+    <div className="pt-2">
+      <h3 className="text-sm font-semibold text-foreground">{children}</h3>
+      {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
+    </div>
+  )
+}
 
-  const [formData, setFormData] = useState({
-    contractName: "",
-    mainContactPerson: "",
-    emailAddress: "",
-    supportLimitation: "unlimited", // "unlimited" or "limited"
-    monthlyHours: "",
-    unusedHoursRollover: false,
-    subscriptionCost: "",
-    paymentFrequency: "",
-    startPrice: "",
-    firstSixtyMinRate: "",
-    afterSixtyMinRate: "",
-    maxResponseTime: "",
-    maxDownTime: "",
-  })
+function ToggleCard({
+  selected,
+  onSelect,
+  title,
+  description,
+}: {
+  selected: boolean
+  onSelect: () => void
+  title: string
+  description: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={cn(
+        "flex-1 rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer",
+        selected ? "border-brand-primary bg-brand-primary/5" : "border-border hover:bg-muted/40",
+      )}
+    >
+      <div className="text-sm font-medium text-foreground">{title}</div>
+      <div className="text-xs text-muted-foreground mt-0.5">{description}</div>
+    </button>
+  )
+}
 
-  const generateSlaId = () => {
-    return Math.random().toString(36).substring(2, 15).toUpperCase()
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const slaId = generateSlaId()
-    setGeneratedSlaId(slaId)
-    setShowConfirmation(true)
-  }
-
-  const handleConfirmCreation = () => {
-    onSubmit({ ...formData, id: generatedSlaId })
-    setFormData({
-      contractName: "",
-      mainContactPerson: "",
-      emailAddress: "",
-      supportLimitation: "unlimited",
-      monthlyHours: "",
-      unusedHoursRollover: false,
-      subscriptionCost: "",
-      paymentFrequency: "",
-      startPrice: "",
-      firstSixtyMinRate: "",
-      afterSixtyMinRate: "",
-      maxResponseTime: "",
-      maxDownTime: "",
-    })
-    setShowConfirmation(false)
-    onClose()
-  }
-
-  const handleCloseConfirmation = () => {
-    setShowConfirmation(false)
-  }
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
+/**
+ * Create or edit a Service Level Agreement. Form values are plain strings
+ * (money in major units, time in hours) and are mapped to the `slas` row
+ * shape by `slaFormToRow`; edit mode is seeded from `slaRowToForm`.
+ */
+export function CreateSLADrawer({ isOpen, onClose, projectId, sla, onSaved }: CreateSLADrawerProps) {
+  // The body mounts fresh every time the drawer opens (and per SLA being
+  // edited), so form state is seeded once in useState instead of an effect.
   if (!isOpen) return null
+  return (
+    <SlaDrawerBody
+      key={sla?.id ?? "new"}
+      onClose={onClose}
+      projectId={projectId}
+      sla={sla ?? null}
+      onSaved={onSaved}
+    />
+  )
+}
+
+function SlaDrawerBody({
+  onClose,
+  projectId,
+  sla,
+  onSaved,
+}: {
+  onClose: () => void
+  projectId?: string
+  sla: SlaRow | null
+  onSaved?: (sla: SlaRow, mode: "create" | "edit") => void
+}) {
+  const isEdit = !!sla
+  const [values, setValues] = useState<SlaFormValues>(() =>
+    sla ? slaRowToForm(sla) : { ...EMPTY_SLA_FORM, startDate: new Date().toISOString().slice(0, 10) },
+  )
+  const [errors, setErrors] = useState<SlaFormErrors>({})
+  const [submitted, setSubmitted] = useState(false)
+
+  const createSla = useCreateSLA()
+  const updateSla = useUpdateSLA()
+  const saving = createSla.isPending || updateSla.isPending
+
+  const set = <K extends keyof SlaFormValues>(field: K, value: SlaFormValues[K]) => {
+    setValues((prev) => {
+      const next = { ...prev, [field]: value }
+      if (submitted) setErrors(validateSlaForm(next))
+      return next
+    })
+  }
+
+  const handleSubmit = async () => {
+    setSubmitted(true)
+    const nextErrors = validateSlaForm(values)
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
+
+    const targetProjectId = sla?.project_id ?? projectId
+    if (!targetProjectId) {
+      toast.error("Select a project before creating an SLA")
+      return
+    }
+
+    const row = slaFormToRow(values, targetProjectId)
+    try {
+      if (isEdit && sla) {
+        const { project_id: _projectId, ...updates } = row
+        const saved = await updateSla.mutateAsync({ id: sla.id, updates })
+        toast.success("Agreement updated")
+        onSaved?.(saved, "edit")
+      } else {
+        const saved = await createSla.mutateAsync(row)
+        toast.success("Agreement created")
+        onSaved?.(saved, "create")
+      }
+      onClose()
+    } catch (e) {
+      console.error("Failed to save SLA", e)
+      toast.error(e instanceof Error ? e.message : "Could not save the agreement")
+    }
+  }
+
+  const limited = values.supportLimitation === "limited"
+  const perLabel = frequencyPerLabel(values.paymentFrequency)
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-[500px] bg-white shadow-xl z-50 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Creating new SLA</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
-            <X className="w-5 h-5" />
+    <DrawerPanel
+      isOpen
+      onClose={onClose}
+      title={isEdit ? "Edit agreement" : "Create new SLA"}
+      width="w-[520px]"
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="button" variant="lavender" onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving..." : isEdit ? "Save changes" : "Create SLA"}
           </Button>
         </div>
+      }
+    >
+      <form
+        className="flex-1 overflow-y-auto px-6 py-5 space-y-5"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void handleSubmit()
+        }}
+      >
+        <SectionTitle hint="Who the agreement is with and when it runs.">Agreement</SectionTitle>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto max-h-full">
-            {/* Contact details */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Contact details</h3>
+        <FormField label="Agreement name" id="sla-name" hint={errors.name} error={!!errors.name}>
+          <Input
+            id="sla-name"
+            value={values.name}
+            onChange={(e) => set("name", e.target.value)}
+            placeholder="Acme Corp — Gold support"
+            aria-invalid={!!errors.name}
+          />
+        </FormField>
 
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700">Contract name</label>
-                <Input
-                  placeholder="Choose name"
-                  value={formData.contractName}
-                  onChange={(e) => handleInputChange("contractName", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                  required
-                />
-              </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Main contact" id="sla-contact-name">
+            <Input
+              id="sla-contact-name"
+              value={values.contactName}
+              onChange={(e) => set("contactName", e.target.value)}
+              placeholder="Jane Doe"
+            />
+          </FormField>
+          <FormField label="Contact email" id="sla-contact-email" hint={errors.contactEmail} error={!!errors.contactEmail}>
+            <Input
+              id="sla-contact-email"
+              type="email"
+              value={values.contactEmail}
+              onChange={(e) => set("contactEmail", e.target.value)}
+              placeholder="jane@acme.example"
+              aria-invalid={!!errors.contactEmail}
+            />
+          </FormField>
+        </div>
 
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700">Main contact person</label>
-                <Input
-                  placeholder="First and last name"
-                  value={formData.mainContactPerson}
-                  onChange={(e) => handleInputChange("mainContactPerson", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                  required
-                />
-              </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Start date" id="sla-start" hint={errors.startDate} error={!!errors.startDate}>
+            <Input
+              id="sla-start"
+              type="date"
+              value={values.startDate}
+              onChange={(e) => set("startDate", e.target.value)}
+              aria-invalid={!!errors.startDate}
+            />
+          </FormField>
+          <FormField label="End date" id="sla-end" hint={errors.endDate ?? "Leave empty for an open-ended agreement."} error={!!errors.endDate}>
+            <Input
+              id="sla-end"
+              type="date"
+              value={values.endDate}
+              onChange={(e) => set("endDate", e.target.value)}
+              aria-invalid={!!errors.endDate}
+            />
+          </FormField>
+        </div>
 
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700">Email address</label>
-                <Input
-                  type="email"
-                  placeholder="Type in address"
-                  value={formData.emailAddress}
-                  onChange={(e) => handleInputChange("emailAddress", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                  required
-                />
-              </div>
-            </div>
+        <SectionTitle hint="How much helper time the subscription includes each billing period.">Support included</SectionTitle>
 
-            {/* Support limitations */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Support limitations</h3>
+        <div className="flex gap-3">
+          <ToggleCard
+            selected={limited}
+            onSelect={() => set("supportLimitation", "limited")}
+            title="Limited"
+            description="A fixed number of hours per period; extra time is billed as overage."
+          />
+          <ToggleCard
+            selected={!limited}
+            onSelect={() => set("supportLimitation", "unlimited")}
+            title="Unlimited"
+            description="No cap on hours; nothing is billed beyond the subscription."
+          />
+        </div>
 
-              <RadioGroup
-                value={formData.supportLimitation}
-                onValueChange={(value) => {
-                  handleInputChange("supportLimitation", value)
-                  if (value === "unlimited") {
-                    setFormData((prev) => ({ ...prev, monthlyHours: "", unusedHoursRollover: false, startPrice: "", firstSixtyMinRate: "", afterSixtyMinRate: "" }))
-                  }
-                }}
-                className="space-y-3"
-              >
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="unlimited" id="unlimited" className="border-gray-300" />
-                  <Label htmlFor="unlimited" className="text-sm text-gray-700 flex items-center gap-2">
-                    Unlimited hours
-                    <Info className="w-4 h-4 text-gray-400" />
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="limited" id="limited" className="border-gray-300" />
-                  <Label htmlFor="limited" className="text-sm text-gray-700 flex items-center gap-2">
-                    Limited hours
-                    <Info className="w-4 h-4 text-gray-400" />
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Hours included */}
-            {formData.supportLimitation === "limited" && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Hours included</h3>
-
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-700">Monthly hours included in contract</label>
-                  <Input
-                    placeholder="Number of hours"
-                    type="number"
-                    value={formData.monthlyHours}
-                    onChange={(e) => handleInputChange("monthlyHours", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="rollover"
-                    checked={formData.unusedHoursRollover}
-                    onCheckedChange={(checked) => handleInputChange("unusedHoursRollover", checked as boolean)}
-                    className="border-gray-300"
-                  />
-                  <Label htmlFor="rollover" className="text-sm text-gray-700 flex items-center gap-2">
-                    Unused hours rollover
-                    <Info className="w-4 h-4 text-gray-400" />
-                  </Label>
-                </div>
-              </div>
-            )}
-
-            {/* Subscription cost */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                Subscription cost
-                <Info className="w-4 h-4 text-gray-400" />
-              </h3>
-
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700">Cost</label>
-                <Input
-                  placeholder="USD 0.00"
-                  value={formData.subscriptionCost}
-                  onChange={(e) => handleInputChange("subscriptionCost", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700 flex items-center gap-2">
-                  Paid
-                  <Info className="w-4 h-4 text-gray-400" />
-                </label>
-                <Select
-                  value={formData.paymentFrequency}
-                  onValueChange={(value) => handleInputChange("paymentFrequency", value)}
-                >
-                  <SelectTrigger className="h-9 text-sm border-gray-300 focus:border-brand-primary">
-                    <SelectValue placeholder="Choose" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="annually">Annually</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Rates beyond included hours */}
-            {formData.supportLimitation === "limited" && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Rates beyond included hours</h3>
-
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-700 flex items-center gap-2">
-                    Start price
-                    <Info className="w-4 h-4 text-gray-400" />
-                  </label>
-                  <Input
-                    placeholder="USD 0.00"
-                    value={formData.startPrice}
-                    onChange={(e) => handleInputChange("startPrice", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-700">USD/min - First 60 min</label>
-                  <Input
-                    placeholder="USD 0.00"
-                    value={formData.firstSixtyMinRate}
-                    onChange={(e) => handleInputChange("firstSixtyMinRate", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-700">USD/min - After 60 min</label>
-                  <Input
-                    placeholder="USD 0.00"
-                    value={formData.afterSixtyMinRate}
-                    onChange={(e) => handleInputChange("afterSixtyMinRate", e.target.value)}
-                    className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Response times */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Response times</h3>
-
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700 flex items-center gap-2">
-                  Max response time
-                  <Info className="w-4 h-4 text-gray-400" />
-                </label>
-                <Input
-                  placeholder="0.0 hours"
-                  value={formData.maxResponseTime}
-                  onChange={(e) => handleInputChange("maxResponseTime", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm text-gray-700 flex items-center gap-2">
-                  Max down time
-                  <Info className="w-4 h-4 text-gray-400" />
-                </label>
-                <Input
-                  placeholder="0.0 hours"
-                  value={formData.maxDownTime}
-                  onChange={(e) => handleInputChange("maxDownTime", e.target.value)}
-                  className="h-9 text-sm border-gray-300 focus:border-brand-primary"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
+        {limited && (
+          <>
+            <FormField
+              label={`Hours included ${perLabel}`}
+              id="sla-hours"
+              hint={errors.hoursIncluded ?? "Decimals are fine, e.g. 7.5"}
+              error={!!errors.hoursIncluded}
             >
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
-              Create SLA
-            </Button>
-          </div>
-        </form>
-      </div>
+              <Input
+                id="sla-hours"
+                inputMode="decimal"
+                value={values.hoursIncluded}
+                onChange={(e) => set("hoursIncluded", e.target.value)}
+                placeholder="10"
+                aria-invalid={!!errors.hoursIncluded}
+              />
+            </FormField>
+            <label className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3 cursor-pointer">
+              <div>
+                <div className="text-sm font-medium text-foreground">Roll over unused hours</div>
+                <div className="text-xs text-muted-foreground">Unused time carries into the next period.</div>
+              </div>
+              <Switch checked={values.minutesRollover} onCheckedChange={(checked) => set("minutesRollover", checked)} />
+            </label>
+          </>
+        )}
 
-      {/* Confirmation Modal */}
-      <SLAConfirmationModal
-        isOpen={showConfirmation}
-        onClose={handleCloseConfirmation}
-        onConfirm={handleConfirmCreation}
-        slaId={generatedSlaId}
-      />
-    </>
+        <SectionTitle hint="Charged automatically to the customer's saved card through Stripe.">Subscription</SectionTitle>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Price" id="sla-price" hint={errors.subscriptionAmount} error={!!errors.subscriptionAmount}>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">USD</span>
+              <Input
+                id="sla-price"
+                inputMode="decimal"
+                className="pl-12"
+                value={values.subscriptionAmount}
+                onChange={(e) => set("subscriptionAmount", e.target.value)}
+                placeholder="499.00"
+                aria-invalid={!!errors.subscriptionAmount}
+              />
+            </div>
+          </FormField>
+          <FormField label="Billed" id="sla-frequency">
+            <Select value={values.paymentFrequency} onValueChange={(v) => set("paymentFrequency", v as SlaPaymentFrequency)}>
+              <SelectTrigger id="sla-frequency" className="w-full">
+                <SelectValue placeholder="Choose frequency" />
+              </SelectTrigger>
+              <SelectContent>
+                {SLA_FREQUENCY_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        </div>
+
+        {limited && (
+          <>
+            <SectionTitle hint="Applied to minutes beyond the included hours. Leave empty for no overage charge.">Overage pricing</SectionTitle>
+            <div className="grid grid-cols-3 gap-4">
+              <FormField label="Start price" id="sla-start-price" hint={errors.ticketStartPrice} error={!!errors.ticketStartPrice}>
+                <Input
+                  id="sla-start-price"
+                  inputMode="decimal"
+                  value={values.ticketStartPrice}
+                  onChange={(e) => set("ticketStartPrice", e.target.value)}
+                  placeholder="0.00"
+                  aria-invalid={!!errors.ticketStartPrice}
+                />
+              </FormField>
+              <FormField label="Per min, first 60" id="sla-first60" hint={errors.pricePerMinuteFirst60} error={!!errors.pricePerMinuteFirst60}>
+                <Input
+                  id="sla-first60"
+                  inputMode="decimal"
+                  value={values.pricePerMinuteFirst60}
+                  onChange={(e) => set("pricePerMinuteFirst60", e.target.value)}
+                  placeholder="1.50"
+                  aria-invalid={!!errors.pricePerMinuteFirst60}
+                />
+              </FormField>
+              <FormField label="Per min, after 60" id="sla-after60" hint={errors.pricePerMinuteAfter60} error={!!errors.pricePerMinuteAfter60}>
+                <Input
+                  id="sla-after60"
+                  inputMode="decimal"
+                  value={values.pricePerMinuteAfter60}
+                  onChange={(e) => set("pricePerMinuteAfter60", e.target.value)}
+                  placeholder="1.00"
+                  aria-invalid={!!errors.pricePerMinuteAfter60}
+                />
+              </FormField>
+            </div>
+          </>
+        )}
+
+        <SectionTitle hint="Shown to the customer as the guarantees of this agreement.">Response guarantees</SectionTitle>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Max response time (hours)" id="sla-response" hint={errors.maxResponseTimeHours} error={!!errors.maxResponseTimeHours}>
+            <Input
+              id="sla-response"
+              inputMode="decimal"
+              value={values.maxResponseTimeHours}
+              onChange={(e) => set("maxResponseTimeHours", e.target.value)}
+              placeholder="4"
+              aria-invalid={!!errors.maxResponseTimeHours}
+            />
+          </FormField>
+          <FormField label="Max downtime (hours)" id="sla-downtime" hint={errors.maxDowntimeHours} error={!!errors.maxDowntimeHours}>
+            <Input
+              id="sla-downtime"
+              inputMode="decimal"
+              value={values.maxDowntimeHours}
+              onChange={(e) => set("maxDowntimeHours", e.target.value)}
+              placeholder="8"
+              aria-invalid={!!errors.maxDowntimeHours}
+            />
+          </FormField>
+        </div>
+        {/* Keeps Enter-to-submit working without a visible button in the form body. */}
+        <button type="submit" className="hidden" aria-hidden />
+      </form>
+    </DrawerPanel>
   )
 }

@@ -32,6 +32,8 @@ import {
   formatChatTimestamp,
 } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { useMySlaForProject, useSLA, useSlaUsage } from "@/hooks/useSLAs"
+import { formatSlaMinutes, isSlaCovering, isUnlimitedSla } from "@/lib/sla"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -78,9 +80,8 @@ export default function UserSupportChatPage() {
   const projectIdParam = searchParams.get("project")
   const slugParam = searchParams.get("slug")
   const ticketIdParam = searchParams.get("ticket")
-  const slaId = searchParams.get("sla")
-  const hasSLA = !!slaId
-  const noParams = !hasSLA && !projectIdParam && !slugParam && !ticketIdParam
+  const slaParam = searchParams.get("sla")
+  const noParams = !slaParam && !projectIdParam && !slugParam && !ticketIdParam
 
   // When the page is opened without any context (e.g. clicking "Support" in
   // the sidebar), we need to either send the user to their last ticket or let
@@ -117,9 +118,48 @@ export default function UserSupportChatPage() {
       ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
       : undefined
   const projectName = project?.name ?? "Support"
-  const organizationName = hasSLA ? projectName : null
-  const freeHelpRemaining: string | null = null
+
+  // Which SLA covers this chat:
+  //  - an existing ticket keeps whatever sla_id it was created with;
+  //  - a new ticket uses `?sla=` when that SLA is active and belongs to this
+  //    project, otherwise the signed-in user's own active SLA for the project
+  //    (linked through their organization), otherwise none.
+  const { data: slaFromParam, isFetched: slaFromParamFetched } = useSLA(slaParam)
+  const { sla: autoSla } = useMySlaForProject(user?.id, effectiveProjectId || null)
+  const paramSlaUsable =
+    !!slaFromParam &&
+    slaFromParam.project_id === effectiveProjectId &&
+    isSlaCovering(slaFromParam)
+  const slaForNewTicket = paramSlaUsable ? slaFromParam : autoSla
+  const slaId: string | null = existingTicket?.id
+    ? (existingTicket as { sla_id?: string | null }).sla_id ?? null
+    : slaForNewTicket?.id ?? null
+  const hasSLA = !!slaId
+  const { data: slaRow } = useSLA(slaId)
+  const slaUsage = useSlaUsage(slaId)
+  const organizationName = hasSLA ? slaRow?.name || slaRow?.contact_name || projectName : null
+  const freeHelpRemaining: string | null = hasSLA
+    ? slaRow && isUnlimitedSla(slaRow)
+      ? "Unlimited"
+      : slaUsage.data
+        ? formatSlaMinutes(slaUsage.data.period.minutesRemaining)
+        : null
+    : null
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
+
+  // `?sla=` that cannot be used here (other project, lapsed, not found): say so once.
+  useEffect(() => {
+    if (!slaParam || !slaFromParamFetched || !effectiveProjectId || existingTicket?.id) return
+    if (paramSlaUsable) return
+    toast.warning(
+      slaFromParam
+        ? slaFromParam.project_id !== effectiveProjectId
+          ? "That SLA belongs to a different project, so this ticket will not use it."
+          : "That SLA is not active right now, so this ticket will be paid per ticket."
+        : "We couldn't find that SLA. This ticket will be paid per ticket.",
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- warn once per param/project
+  }, [slaParam, slaFromParamFetched, effectiveProjectId, paramSlaUsable])
 
   // Ticket-ended summary for the customer: reflect that the helper closed the
   // session and what was charged. Payment status is realtime so the amount
@@ -430,6 +470,9 @@ export default function UserSupportChatPage() {
           created_by: user?.id || null,
           status: "available",
           priority: "medium",
+          // SLA-covered tickets skip the card hold; the DB trigger rejects the
+          // insert if the SLA is inactive or the user is not in its organization.
+          ...(slaForNewTicket && user?.id ? { sla_id: slaForNewTicket.id } : {}),
         })
 
         setTicketCreated(true)
@@ -476,6 +519,8 @@ export default function UserSupportChatPage() {
         }).then(() => {}).catch(() => {})
       } catch (error) {
         console.error("Failed to create ticket:", error)
+        const detail = error instanceof Error ? error.message : typeof error === "object" && error && "message" in error ? String((error as { message: unknown }).message) : ""
+        toast.error(detail ? `Couldn't create the ticket: ${detail}` : "Couldn't create the ticket. Please try again.")
         return
       }
       return
@@ -496,12 +541,6 @@ export default function UserSupportChatPage() {
   }
 
   const handleSignIn = () => setIsSignInModalOpen(true)
-
-  const handleContinueWithoutSignIn = () => {
-    // Allow continuing without sign in (for SLA users)
-    // This doesn't set authentication, but allows ticket creation
-    // The ticket will be created without a created_by user
-  }
 
   // "People in this chat": tickets_participants, plus the ticket creator if
   // they have no participant row (e.g. old tickets).
@@ -535,14 +574,10 @@ export default function UserSupportChatPage() {
             userName={user?.name}
             onSignIn={handleSignIn}
             signedOutExtra={
-              hasSLA ? (
-                <Button
-                  onClick={handleContinueWithoutSignIn}
-                  variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-                >
-                  Continue without signing in
-                </Button>
+              slaParam ? (
+                <p className="text-sm text-muted-foreground">
+                  Your SLA is linked to your organization, so sign in to use its included support time.
+                </p>
               ) : undefined
             }
           >
