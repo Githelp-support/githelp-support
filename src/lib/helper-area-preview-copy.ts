@@ -7,7 +7,7 @@ export const SUPPORT_TICKETS_PREVIEW_DISCLAIMER =
     "There are no real tickets in this project yet. The cards below are a preview of how available tickets will look."
 
 export const REPORTS_PAYOUTS_PREVIEW_DISCLAIMER =
-    "You have no payout records yet. The table below shows sample rows for layout preview only."
+    "You have no payouts yet. You are currently seeing a preview of what this page will look like once you have completed your first tickets."
 
 export const REPORTS_MONTHLY_PREVIEW_DISCLAIMER =
     "Monthly aggregates are not available yet. The figures below are placeholders for preview only."
@@ -171,4 +171,17 @@ export type UserMonthlyPreviewRow = {
 export const USER_MONTHLY_PREVIEW_ROWS: UserMonthlyPreviewRow[] = [
     { id: "preview-user-month-1", period: "May 2026", ticketCount: 1, amount: "USD 42.00" },
     { id: "preview-user-month-2", period: "April 2026", ticketCount: 2, amount: "USD 138.50" },
+]
+
+export type HelperMonthlyPreviewRow = {
+    id: string
+    period: string
+    ticketsClosed: number
+    hoursLogged: string
+    earnings: string
+}
+
+export const HELPER_MONTHLY_PREVIEW_ROWS: HelperMonthlyPreviewRow[] = [
+    { id: "preview-helper-month-1", period: "May 2026", ticketsClosed: 1, hoursLogged: "1h 10m", earnings: "USD 42.00" },
+    { id: "preview-helper-month-2", period: "April 2026", ticketsClosed: 3, hoursLogged: "4h 35m", earnings: "USD 203.75" },
 ]

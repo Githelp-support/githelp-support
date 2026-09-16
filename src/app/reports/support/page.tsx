@@ -15,6 +15,7 @@ import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
+import { aggregateProjectMonthly } from "@/lib/helper-payout-reports"
 
 type MonthlySortField = "period" | "description" | "amount" | "status"
 type TicketsSortField = "ticketId" | "date" | "helper" | "amount" | "status"
@@ -101,34 +102,20 @@ export default function ReportsSupportPage() {
     return result
   }, [])
 
-  // Monthly reports: aggregate payments_transfers by month (completed transfers)
+  // Monthly reports: helper payouts per month. The project's own share is a
+  // separate transfer row type and is reported alongside, never folded into
+  // the "paid out" figure.
   const monthlyReports = useMemo(() => {
     if (!transfersData) return []
-
-    const grouped = new Map<string, { month: string; total: number }>()
-
-    transfersData.forEach((transfer) => {
-      const dateStr = transfer.completed_at || transfer.created_at
-      const monthYear = getMonthYear(dateStr)
-
-      if (!grouped.has(monthYear)) {
-        grouped.set(monthYear, { month: monthYear, total: 0 })
-      }
-      const group = grouped.get(monthYear)!
-      group.total += transfer.amount_smallest_unit
-    })
-
-    return Array.from(grouped.entries())
-      .map(([key, data]) => ({
-        id: key,
-        period: data.month,
-        periodRaw: new Date(data.month).getTime(),
-        description: "Monthly report",
-        amount: formatAmount(data.total, "usd"),
-        amountRaw: data.total,
-        status: "Paid out" as const,
-      }))
-      .sort((a, b) => b.periodRaw - a.periodRaw)
+    return aggregateProjectMonthly(transfersData).map((row) => ({
+      id: row.id,
+      period: row.period,
+      periodRaw: row.periodRaw,
+      description: `${row.ticketCount} ticket${row.ticketCount === 1 ? "" : "s"} · Project share ${formatAmount(row.projectShareSmallestUnit, row.currency)}`,
+      amount: formatAmount(row.helperPayoutSmallestUnit, row.currency),
+      amountRaw: row.helperPayoutSmallestUnit,
+      status: row.allPaidOut ? ("Paid out" as const) : ("Pending" as const),
+    }))
   }, [transfersData])
 
   // Tickets: individual payment transfers with ticket + helper info

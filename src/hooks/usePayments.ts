@@ -40,6 +40,7 @@ export interface PaymentTransfer {
     id: string
     title: string
     sla?: { name: string }
+    categories?: Array<{ help_category: { value: string } | null }> | null
   }
   sla?: { name: string }
 }
@@ -88,7 +89,14 @@ export function usePaymentTransfers(filters?: {
             user_id,
             user:users_public(name, username, email)
           ),
-          ticket:tickets(id, title, sla:slas(name))
+          ticket:tickets(
+            id,
+            title,
+            sla:slas(name),
+            categories:tickets_help_categories(
+              help_category:projects_help_categories(value)
+            )
+          )
         `)
         .order("created_at", { ascending: false })
 
