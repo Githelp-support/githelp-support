@@ -108,3 +108,67 @@ export const MONTHLY_PREVIEW_STATS: { label: string; value: string }[] = [
     { label: "Hours logged (preview)", value: "—" },
     { label: "Earnings (preview)", value: "—" },
 ]
+
+/* ---------------------------------------------------------------------------
+ * End-user ("User" role) Reports page — shown only while the customer has no
+ * tickets/payments yet. Once real rows exist the preview is never rendered.
+ * ------------------------------------------------------------------------- */
+
+export const USER_REPORTS_PREVIEW_DISCLAIMER =
+    "You have no tickets yet. You are currently seeing a preview of what this page will look like once you have your first tickets and payments."
+
+export type UserPaymentPreviewRow = {
+    id: string
+    ticketShortId: string
+    ticketTitle: string
+    projectName: string
+    date: string
+    ticketType: string
+    amount: string
+    status: "Paid" | "On hold" | "Pending"
+}
+
+export const USER_PAYMENT_PREVIEW_ROWS: UserPaymentPreviewRow[] = [
+    {
+        id: "preview-user-payment-1",
+        ticketShortId: "a1b2c3d",
+        ticketTitle: "Login page throws 500 after password reset",
+        projectName: "Preview Project",
+        date: "01/05/2026",
+        ticketType: "Bug",
+        amount: "USD 42.00",
+        status: "Paid",
+    },
+    {
+        id: "preview-user-payment-2",
+        ticketShortId: "e4f5g6h",
+        ticketTitle: "How do webhooks retry on failure?",
+        projectName: "Preview Project",
+        date: "28/04/2026",
+        ticketType: "Question",
+        amount: "USD 18.50",
+        status: "On hold",
+    },
+    {
+        id: "preview-user-payment-3",
+        ticketShortId: "i7j8k9l",
+        ticketTitle: "Export tickets to CSV",
+        projectName: "Preview Project",
+        date: "15/04/2026",
+        ticketType: "General",
+        amount: "USD 120.00",
+        status: "Paid",
+    },
+]
+
+export type UserMonthlyPreviewRow = {
+    id: string
+    period: string
+    ticketCount: number
+    amount: string
+}
+
+export const USER_MONTHLY_PREVIEW_ROWS: UserMonthlyPreviewRow[] = [
+    { id: "preview-user-month-1", period: "May 2026", ticketCount: 1, amount: "USD 42.00" },
+    { id: "preview-user-month-2", period: "April 2026", ticketCount: 2, amount: "USD 138.50" },
+]
