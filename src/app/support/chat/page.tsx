@@ -527,6 +527,7 @@ export default function UserSupportChatPage() {
             projectId={effectiveProjectId}
             projectName={projectName}
             projectLogo={projectLogo}
+            primaryColor={brandingData?.primary_color}
             welcomeText={welcomeText}
             timestamp={nowFormatted}
             rates={{ startPrice, first60Price, after60Price }}

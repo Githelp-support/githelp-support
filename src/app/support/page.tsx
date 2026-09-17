@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Search, Clock, Target, HelpCircle, Check } from "lucide-react"
+import { Search, Clock, Target, HelpCircle } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
@@ -385,6 +385,7 @@ export default function SupportPage() {
       projectId={projectId ?? ""}
       projectName={projectName}
       projectLogo={projectLogo}
+      primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
       timestamp={nowFormatted}
       rates={{ startPrice, first60Price, after60Price }}
@@ -438,7 +439,7 @@ export default function SupportPage() {
                 ) : (
                   <div
                     className="w-20 h-20 rounded-[12px] flex items-center justify-center text-2xl font-medium text-foreground border border-[#E1E4EA]"
-                    style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                    style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                   >
                     {projectName?.[0]?.toUpperCase() || "A"}
                   </div>
@@ -491,7 +492,7 @@ export default function SupportPage() {
                   // header — only on this icon, not on any other avatar icon in
                   // the chat.
                   className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground border border-[#E1E4EA]"
-                  style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                  style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                 >
                   {projectName?.[0]?.toUpperCase() || "A"}
                 </div>

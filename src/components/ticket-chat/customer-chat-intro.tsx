@@ -9,6 +9,8 @@ export interface CustomerChatIntroProps {
   projectId: string
   projectName: string
   projectLogo: string | null
+  /** Branding primary color for the fallback avatar (falls back to a deterministic color). */
+  primaryColor?: string | null
   /** Welcome copy shown as the project team's opening line. */
   welcomeText: string
   timestamp: string
@@ -33,6 +35,7 @@ export function CustomerChatIntro({
   projectId,
   projectName,
   projectLogo,
+  primaryColor,
   welcomeText,
   timestamp,
   rates,
@@ -55,7 +58,7 @@ export function CustomerChatIntro({
       ) : (
         <div
           className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-          style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+          style={{ backgroundColor: primaryColor || getAvatarColorHexForId(projectId) }}
         >
           {projectName?.[0]?.toUpperCase() || "A"}
         </div>
