@@ -94,9 +94,10 @@ export default function AuthConfirmedPage() {
       void ensureUserOrganization("admin")
     }
 
-    // If there's a specific redirect and user doesn't need onboarding, go there
+    // If there's a specific redirect and user doesn't need onboarding,
+    // go through the role chooser first (it skips itself for single-role accounts)
     if (redirectTo && !onboardingStatus.needsOnboarding && onboardingStatus.isMember) {
-      router.push(redirectTo)
+      router.push(`/auth/role?redirect=${encodeURIComponent(redirectTo)}`)
       return
     }
 
@@ -111,8 +112,8 @@ export default function AuthConfirmedPage() {
       return
     }
 
-    // Default: go to dashboard or redirect URL
-    router.push(redirectTo || "/")
+    // Default: go through the role chooser, forwarding any redirect URL
+    router.push(redirectTo ? `/auth/role?redirect=${encodeURIComponent(redirectTo)}` : "/auth/role")
   }, [isProcessing, onboardingLoading, onboardingStatus, router, searchParams])
 
   return (
