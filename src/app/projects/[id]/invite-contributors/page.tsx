@@ -133,7 +133,7 @@ export default function InviteContributorsPage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-2xl">
                 <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between">
                         <div>
                             <CardTitle className="text-2xl font-bold">
                                 Invite contributors as helpers
