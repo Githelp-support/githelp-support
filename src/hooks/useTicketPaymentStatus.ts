@@ -22,11 +22,17 @@ export interface TicketPaymentResult {
    * smallest currency unit. Null until something has been captured.
    */
   capturedAmountSmallestUnit: number | null
+  /**
+   * Stripe's human-readable reason for the most recent payment row when it is
+   * `failed` (declined, expired authorization, …). Null otherwise.
+   */
+  failureReason: string | null
 }
 
 interface PaymentRow {
   status: TicketPaymentStatus
   captured_amount_smallest_unit: number | null
+  failure_reason?: string | null
 }
 
 interface Opts {
@@ -55,7 +61,7 @@ export function useTicketPaymentStatus(
     queryFn: async () => {
       const resp = await supabase
         .from("payments")
-        .select("status, captured_amount_smallest_unit")
+        .select("status, captured_amount_smallest_unit, failure_reason")
         .eq("ticket_id", ticketId as string)
         .order("created_at", { ascending: false })
       if (resp.error) throw resp.error
@@ -92,9 +98,11 @@ export function useTicketPaymentStatus(
     }
   }, [ticketId, opts.slaId, queryClient])
 
-  if (opts.slaId) return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null }
+  if (opts.slaId) {
+    return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null, failureReason: null }
+  }
   const latest = data?.[0]
-  if (!latest) return { status: "none", isReady: false, capturedAmountSmallestUnit: null }
+  if (!latest) return { status: "none", isReady: false, capturedAmountSmallestUnit: null, failureReason: null }
   const capturedRows = (data ?? []).filter(
     (r) => (r.status === "distributing" || r.status === "completed") && r.captured_amount_smallest_unit != null,
   )
@@ -105,5 +113,6 @@ export function useTicketPaymentStatus(
     status: latest.status,
     isReady: latest.status === "authorized",
     capturedAmountSmallestUnit: capturedTotal,
+    failureReason: latest.status === "failed" ? latest.failure_reason?.trim() || null : null,
   }
 }

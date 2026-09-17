@@ -2,7 +2,7 @@
 
 import { useState, use, useMemo } from "react"
 import Link from "next/link"
-import { ArrowLeft, Info, Copy, Edit, ExternalLink, Download } from "lucide-react"
+import { ArrowLeft, Info, Copy, Edit, ExternalLink } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -644,14 +644,9 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                   >
                                     Open
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                    Download PDF
-                                  </Button>
+                                  {/* SLA tickets are billed on the SLA's Stripe
+                                      subscription invoice, so there is no
+                                      per-ticket receipt to link to here. */}
                                 </div>
                               </td>
                             </tr>

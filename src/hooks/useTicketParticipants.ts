@@ -64,10 +64,27 @@ export function useTicketParticipants(ticketId: string) {
         queryFn: () => fetchTicketParticipants(ticketId),
         enabled: !!ticketId,
         retry: false,
-        staleTime: 1800000,
+        staleTime: 60000,
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
     });
+}
+
+/**
+ * Refetch a ticket's participants even if the initial fetch is still in
+ * flight. react-query reuses an in-flight fetch when the query has no data
+ * yet, so a plain `invalidateQueries` fired while the first load is pending
+ * (e.g. right after creating a ticket, when the creator row is inserted a few
+ * ms after the query started) is silently dropped and the pre-insert `[]`
+ * gets cached. Cancelling first forces a real refetch.
+ */
+export async function refetchTicketParticipants(
+    queryClient: ReturnType<typeof useQueryClient>,
+    ticketId: string
+) {
+    const queryKey = ["ticket-participants", ticketId];
+    await queryClient.cancelQueries({ queryKey });
+    await queryClient.invalidateQueries({ queryKey });
 }
 
 /** Returns ticket IDs in the given project where the current user is a participant (for helper dashboard). */
@@ -209,10 +226,8 @@ export function useClaimTicket() {
             }
         },
         onSuccess: async (data, variables) => {
-            // Invalidate participants query
-            queryClient.invalidateQueries({
-                queryKey: ["ticket-participants", variables.ticketId],
-            });
+            // Refresh participants (cancel-then-invalidate, see helper)
+            await refetchTicketParticipants(queryClient, variables.ticketId);
             // Invalidate ticket query to refresh status
             queryClient.invalidateQueries({
                 queryKey: ["ticket", variables.ticketId],
@@ -284,10 +299,11 @@ export function useEnsureParticipant() {
             if (error) throw error;
             return data;
         },
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: ["ticket-participants", variables.ticketId],
-            });
+        onSuccess: async (_, variables) => {
+            // The creator's row is inserted right after the ticket is created,
+            // usually while the participants query's first fetch is still
+            // pending — a plain invalidate would be dropped (see helper).
+            await refetchTicketParticipants(queryClient, variables.ticketId);
         },
     });
 }

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import type { UserPaymentRecord } from "@/lib/user-payment-reports"
 
 export interface Payment {
   id: string
@@ -13,6 +14,12 @@ export interface Payment {
   transaction_id: string | null
   created_at: string
   completed_at: string | null
+  /**
+   * Stripe-hosted receipt page for the charge. Ticket charges are plain
+   * PaymentIntents (no Stripe Invoice), so this is the document to link the
+   * customer to. Null until the charge is captured.
+   */
+  stripe_receipt_url?: string | null
 }
 
 export interface PaymentTransfer {
@@ -39,6 +46,7 @@ export interface PaymentTransfer {
     id: string
     title: string
     sla?: { name: string }
+    categories?: Array<{ help_category: { value: string } | null }> | null
   }
   sla?: { name: string }
 }
@@ -87,7 +95,14 @@ export function usePaymentTransfers(filters?: {
             user_id,
             user:users_public(name, username, email)
           ),
-          ticket:tickets(id, title, sla:slas(name))
+          ticket:tickets(
+            id,
+            title,
+            sla:slas(name),
+            categories:tickets_help_categories(
+              help_category:projects_help_categories(value)
+            )
+          )
         `)
         .order("created_at", { ascending: false })
 
@@ -145,18 +160,48 @@ export function formatAmount(cents: number, currency: string = "usd"): string {
   return `${currencySymbol} ${dollars.toFixed(2)}`
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/**
+ * Every `payments` row for tickets the given user created (the customer's
+ * own charges/holds across all projects). RLS already scopes `payments` to
+ * the ticket creator, so the `created_by` filter only makes the intent explicit.
+ */
+export function useUserPayments(userId?: string) {
+  return useQuery({
+    queryKey: ["user-payments", userId],
+    queryFn: async () => {
+      if (!userId) return []
+      const { data, error } = await supabase
+        .from("payments")
+        .select(`
+          id,
+          ticket_id,
+          project_id,
+          status,
+          currency,
+          created_at,
+          completed_at,
+          amount_smallest_unit,
+          authorized_amount_smallest_unit,
+          captured_amount_smallest_unit,
+          ticket:tickets!inner(
+            id,
+            title,
+            project_id,
+            created_by,
+            project:projects(name),
+            categories:tickets_help_categories(
+              help_category:projects_help_categories(value)
+            )
+          )
+        `)
+        .eq("ticket.created_by", userId)
+        .order("created_at", { ascending: false })
+      if (error) throw error
+      return (data || []) as unknown as UserPaymentRecord[]
+    },
+    enabled: !!userId,
+    retry: false,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+}

@@ -4,6 +4,7 @@ import type React from "react"
 import { useCallback, useLayoutEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { detectLanguage, isInsideOpenFence, looksLikeCode, wrapInFence } from "@/lib/code-blocks"
 import {
   AtSign,
   Bold,
@@ -16,6 +17,7 @@ import {
   Plus,
   Send,
   Smile,
+  SquareCode,
   Strikethrough,
   Video,
 } from "lucide-react"
@@ -44,6 +46,16 @@ export function TicketChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null)
 
+  /** Replace [start, end) of the current value and place the caret afterwards. */
+  const replaceRange = useCallback(
+    (start: number, end: number, replacement: string, caret: { start: number; end: number }) => {
+      const newText = value.slice(0, start) + replacement + value.slice(end)
+      pendingSelectionRef.current = caret
+      onChange(newText)
+    },
+    [value, onChange]
+  )
+
   const insertFormat = useCallback(
     (open: string, close: string = open) => {
       const ta = textareaRef.current
@@ -51,20 +63,45 @@ export function TicketChatInput({
       const start = ta.selectionStart
       const end = ta.selectionEnd
       const selected = value.slice(start, end)
-      const before = value.slice(0, start)
-      const after = value.slice(end)
-      let newEnd: number
-      const newText = selected.length > 0 ? before + open + selected + close + after : before + open + close + after
-      if (selected.length > 0) {
-        newEnd = start + open.length + selected.length + close.length
-      } else {
-        newEnd = start + open.length
-      }
-      pendingSelectionRef.current = { start: newEnd, end: newEnd }
-      onChange(newText)
+      const newEnd = selected.length > 0 ? start + open.length + selected.length + close.length : start + open.length
+      replaceRange(start, end, open + selected + close, { start: newEnd, end: newEnd })
     },
-    [value, onChange]
+    [value, replaceRange]
   )
+
+  /**
+   * Wrap the selection in a fenced code block (```lang … ```). With nothing
+   * selected an empty block is inserted with the caret inside it. The fence
+   * always sits on its own lines so markdown parses it as a block.
+   */
+  const insertCodeBlock = useCallback(
+    (snippet?: string) => {
+      const ta = textareaRef.current
+      if (!ta) return
+      const start = ta.selectionStart
+      const end = ta.selectionEnd
+      const selected = snippet ?? value.slice(start, end)
+      const language = selected ? detectLanguage(selected).language : ""
+      const block = wrapInFence(selected, language)
+      const needsLeadingBreak = start > 0 && value[start - 1] !== "\n"
+      const needsTrailingBreak = end < value.length && value[end] !== "\n"
+      const replacement = (needsLeadingBreak ? "\n" : "") + block + (needsTrailingBreak ? "\n" : "")
+      const caret = selected
+        ? start + replacement.length
+        : start + (needsLeadingBreak ? 1 : 0) + block.indexOf("\n") + 1
+      replaceRange(start, end, replacement, { start: caret, end: caret })
+    },
+    [value, replaceRange]
+  )
+
+  /** Code button: inline `code` for a single line, a fenced block for multi-line selections. */
+  const insertCode = useCallback(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    const selected = value.slice(ta.selectionStart, ta.selectionEnd)
+    if (selected.includes("\n")) insertCodeBlock()
+    else insertFormat("`")
+  }, [value, insertCodeBlock, insertFormat])
 
   const insertLinePrefix = useCallback(
     (prefix: string) => {
@@ -72,14 +109,49 @@ export function TicketChatInput({
       if (!ta) return
       const start = ta.selectionStart
       const lineStart = value.slice(0, start).lastIndexOf("\n") + 1
-      const before = value.slice(0, lineStart)
-      const rest = value.slice(lineStart)
-      const newText = before + prefix + rest
-      const newCursor = start + prefix.length
-      pendingSelectionRef.current = { start: newCursor, end: newCursor }
-      onChange(newText)
+      replaceRange(lineStart, lineStart, prefix, { start: start + prefix.length, end: start + prefix.length })
     },
-    [value, onChange]
+    [value, replaceRange]
+  )
+
+  /**
+   * Pasted multi-line text that looks like source code is wrapped in a code
+   * fence automatically, so people don't have to know markdown to share
+   * readable code. Pasting inside an existing fence is left alone.
+   */
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const ta = textareaRef.current
+      if (!ta) return
+      const text = e.clipboardData.getData("text/plain")
+      if (!text || !text.includes("\n")) return
+      if (isInsideOpenFence(value, ta.selectionStart)) return
+      if (!looksLikeCode(text)) return
+      e.preventDefault()
+      insertCodeBlock(text.replace(/\r\n?/g, "\n"))
+    },
+    [value, insertCodeBlock]
+  )
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      const ta = e.currentTarget
+      const inFence = isInsideOpenFence(value, ta.selectionStart)
+      if (e.key === "Enter" && !e.shiftKey) {
+        // Inside an open ``` block Enter adds a line; the message is sent
+        // once the block is closed (or with Enter outside it).
+        if (inFence) return
+        e.preventDefault()
+        onSend()
+        return
+      }
+      if (e.key === "Tab" && !e.shiftKey && inFence) {
+        e.preventDefault()
+        const caret = ta.selectionStart + 2
+        replaceRange(ta.selectionStart, ta.selectionEnd, "  ", { start: caret, end: caret })
+      }
+    },
+    [value, onSend, replaceRange]
   )
 
   useLayoutEffect(() => {
@@ -111,8 +183,11 @@ export function TicketChatInput({
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertLinePrefix("- ")} title="Bullet list">
           <List className="w-4 h-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("`")} title="Code">
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={insertCode} title="Inline code">
           <Code className="w-[18px] h-[18px]" />
+        </Button>
+        <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertCodeBlock()} title="Code block">
+          <SquareCode className="w-[18px] h-[18px]" />
         </Button>
         <Button
           type="button"
@@ -134,12 +209,9 @@ export function TicketChatInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[17px] text-muted-foreground placeholder:text-muted-foreground"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault()
-              onSend()
-            }
-          }}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+          spellCheck={!isInsideOpenFence(value, value.length)}
         />
         <div className="flex items-center gap-2 mt-2">
           <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">

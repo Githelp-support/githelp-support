@@ -36,6 +36,7 @@ import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
+import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/sidebar-section"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
@@ -54,6 +55,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { UserPlus } from "lucide-react"
+import { prepareOutgoingMessage } from "@/lib/code-format"
 
 interface Message {
   id: string
@@ -352,7 +354,7 @@ export default function TicketDetailPage() {
         ticket_id: ticketId,
         sender_id: currentUser.id,
         sender_type: "helper",
-        content: message.trim(),
+        content: await prepareOutgoingMessage(message),
       })
       setMessage("")
     } catch (error) {
@@ -463,7 +465,12 @@ export default function TicketDetailPage() {
       })
       captureTicket.mutate(
         { ticketId },
-        { onError: () => toast.error("Failed to process payment. You can retry below.") },
+        {
+          onError: (error) =>
+            toast.error(`Payment failed: ${error.message}`, {
+              description: "The customer has been asked to update their card. You can also retry below.",
+            }),
+        },
       )
     }
   }
@@ -517,6 +524,11 @@ export default function TicketDetailPage() {
     paymentGate.status === "completed" ||
     captureTicket.isSuccess
   const paymentFailed = captureTicket.isError || paymentGate.status === "failed"
+  // Why it failed: Stripe's message from the payments row (realtime, survives
+  // reloads), else from the last capture attempt in this session.
+  const paymentFailureReason = paymentFailed
+    ? paymentGate.failureReason ?? captureTicket.error?.message ?? null
+    : null
   const paymentProcessing =
     !paymentSettled &&
     !paymentFailed &&
@@ -801,12 +813,27 @@ export default function TicketDetailPage() {
                                 </div>
                               </div>
 
+                              {paymentFailed && paymentFailureReason && (
+                                <p className="mt-2 text-[12px] leading-snug text-destructive">
+                                  {paymentFailureReason}
+                                </p>
+                              )}
+                              {paymentFailed && (
+                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
+                                </p>
+                              )}
                               {paymentFailed && (
                                 <Button
                                   onClick={() =>
                                     captureTicket.mutate(
                                       { ticketId },
-                                      { onError: () => toast.error("Failed to process payment. Please try again.") },
+                                      {
+                                        onError: (error) =>
+                                          toast.error(`Payment failed: ${error.message}`, {
+                                            description: "The customer has been asked to update their card.",
+                                          }),
+                                      },
                                     )
                                   }
                                   disabled={captureTicket.isPending}
@@ -900,7 +927,7 @@ export default function TicketDetailPage() {
             <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
               {/* People in Chat */}
               <div>
-                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>People in this chat</h3>
+                <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
                 {participantsLoading ? (
                   <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
                 ) : allParticipants.length > 0 ? (
@@ -934,14 +961,11 @@ export default function TicketDetailPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+              <SidebarDivider />
 
               {/* Other Topics — from ticket keywords */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Other topics in this chat</h3>
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                </div>
+                <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
                 {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
                   <div className="flex gap-2 flex-wrap">
                     {ticketDetails.keywords.map((k) => (
@@ -956,14 +980,11 @@ export default function TicketDetailPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+              <SidebarDivider />
 
               {/* Logged Time */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Logged time</h3>
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                </div>
+                <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
                 {timeEntries.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {timeEntries.map((entry) => (
@@ -1009,11 +1030,11 @@ export default function TicketDetailPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-border my-6 -ml-5 -mr-4" />
+              <SidebarDivider />
 
               {/* Active Tickets — 3 latest claimed by this helper */}
               <div>
-                <h3 className="mb-3 uppercase" style={{ fontSize: '11px', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>Active tickets ({activeTicketsCount})</h3>
+                <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
                 <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
