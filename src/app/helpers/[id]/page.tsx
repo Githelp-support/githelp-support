@@ -188,6 +188,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     avatar: (helperData.user?.name || "U")[0].toUpperCase(),
     avatarColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id),
     category: helperData.category || "Community",
+    isRemoved: !!helperData.deleted_at,
     discord: helperData.user?.username || "-",
     email: helperData.user?.email || "-",
     github: helperData.user?.username || "-",
@@ -227,6 +228,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
                     {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
                   </Badge>
+                  {helper.isRemoved && (
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground border-0 text-xs font-medium">
+                      Removed
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="space-y-3 pl-6">

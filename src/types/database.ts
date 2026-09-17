@@ -188,6 +188,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 };
                 Insert: Partial<{
                     id: number;
@@ -198,6 +199,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 }>;
                 Update: Partial<{
                     id: number;
@@ -208,6 +210,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 }>;
             };
             slas: {
