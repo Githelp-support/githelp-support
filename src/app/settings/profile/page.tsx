@@ -219,8 +219,7 @@ export default function ProfileSettingsPage() {
               <Button
                 onClick={handleSaveProfile}
                 disabled={updateUserProfile.isPending}
-                variant="outline"
-                className="border-[rgba(0,0,0,0.06)]"
+                variant="lavender"
                 style={{ marginTop: "22px" }}
               >
                 {updateUserProfile.isPending ? (
