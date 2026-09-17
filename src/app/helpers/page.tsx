@@ -734,7 +734,7 @@ export default function HelpersPage() {
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >
-                                <i className="fi fi-rr-user inline-flex items-center justify-center leading-none size-4 shrink-0 text-base" />
+                                <i className="fi fi-rr-user inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" />
                                 Remove as helper
                               </DropdownMenuItem>
                             </DropdownMenuContent>
