@@ -233,8 +233,8 @@ export default function HelperSettingsPage() {
             <Button
               onClick={handleSaveAvailability}
               disabled={isSavingAvailability}
-              variant="outline"
-              className="border-[rgba(0,0,0,0.1)] mt-[22px]"
+              variant="lavender"
+              className="mt-[22px]"
             >
               {isSavingAvailability ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -373,8 +373,8 @@ export default function HelperSettingsPage() {
             <Button
               onClick={handleSaveNotifications}
               disabled={isSavingNotifications}
-              variant="outline"
-              className="border-border mt-[22px]"
+              variant="lavender"
+              className="mt-[22px]"
             >
               {isSavingNotifications ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

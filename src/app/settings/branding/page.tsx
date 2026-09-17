@@ -147,11 +147,10 @@ export default function BrandingSettingsPage() {
                   </div>
                 </div>
                 <Button
-                  variant="outline"
+                  variant="lavender"
                   size="sm"
                   onClick={handleSaveColor}
                   disabled={updateBranding.isPending}
-                  className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                 >
                   {updateBranding.isPending ? "Saving..." : "Save"}
                 </Button>

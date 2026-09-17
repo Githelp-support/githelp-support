@@ -273,8 +273,7 @@ export default function HelperProfilePage() {
               <Button
                 onClick={handleSaveProfile}
                 disabled={updateUserProfile.isPending}
-                variant="outline"
-                className="border-border"
+                variant="lavender"
                 style={{ marginTop: "22px" }}
               >
                 {updateUserProfile.isPending ? (
@@ -307,8 +306,7 @@ export default function HelperProfilePage() {
               <Button
                 onClick={handleSaveCategory}
                 disabled={updateHelper.isPending}
-                variant="outline"
-                className="border-border"
+                variant="lavender"
               >
                 {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
               </Button>
@@ -346,8 +344,8 @@ export default function HelperProfilePage() {
             <Button
               onClick={handleSaveKeywords}
               disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
-              variant="outline"
-              className="border-border mt-[22px]"
+              variant="lavender"
+              className="mt-[22px]"
             >
               {setHelperKeywords.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

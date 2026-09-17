@@ -209,7 +209,7 @@ export default function LandingPageSettings() {
                     </div>
                   )}
 
-                  <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent mt-3">
+                  <Button variant="lavender" size="sm" className="mt-3">
                     Save
                   </Button>
                 </div>

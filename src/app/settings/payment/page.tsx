@@ -401,9 +401,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveTeamSettings}
                           disabled={!hasTeamChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -466,9 +465,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveCommunitySettings}
                           disabled={!hasCommunityChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -537,9 +535,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveConsultantSettings}
                           disabled={!hasConsultantChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -686,9 +683,8 @@ export default function PaymentSettingsPage() {
 
                   <div className="flex mt-6">
                     <Button
-                      variant="outline"
+                      variant="lavender"
                       size="sm"
-                      className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                       onClick={handleSaveUserOptions}
                       disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
                     >
@@ -765,9 +761,8 @@ export default function PaymentSettingsPage() {
 
                     <div className="flex mt-6">
                       <Button
-                        variant="outline"
+                        variant="lavender"
                         size="sm"
-                        className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                         onClick={handleSaveUserSettings}
                         disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
                       >
@@ -786,9 +781,8 @@ export default function PaymentSettingsPage() {
                       <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <Button
-                      variant="outline"
+                      variant="lavender"
                       size="sm"
-                      className="text-muted-foreground border-border bg-transparent"
                       onClick={handleSaveCaps}
                       disabled={!orgId || !hasCapsChanges || updateCaps.isPending}
                     >
