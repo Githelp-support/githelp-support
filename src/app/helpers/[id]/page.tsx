@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft, HelpCircle } from "lucide-react"
+import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft, HelpCircle, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +12,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
 import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeEntries"
-import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
+import { usePaymentTransfers, usePayments, formatAmount } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getAvatarColorHexForId } from "@/lib/constants"
@@ -50,6 +50,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     helperId: id,
     projectId,
   })
+  // Customer-side charges for this project — the source of the Stripe receipt
+  // link shown on each ticket row.
+  const { data: paymentsData } = usePayments(projectId)
 
   const generateMonthOptions = () => {
     const months = []
@@ -90,6 +93,18 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
   // Transform helper tickets to ticket list
   const tickets = useMemo(() => {
+    // Stripe receipt URLs per ticket, oldest charge first. A ticket can have
+    // more than one charge (hold capture + overage), hence a list.
+    const receiptsByTicket = new Map<string, string[]>()
+    for (const payment of [...(paymentsData ?? [])].reverse()) {
+      if (!payment.ticket_id || !payment.stripe_receipt_url) continue
+      const list = receiptsByTicket.get(payment.ticket_id) ?? []
+      list.push(payment.stripe_receipt_url)
+      receiptsByTicket.set(payment.ticket_id, list)
+    }
+    const receiptsFor = (ticketId: string | null | undefined) =>
+      ticketId ? receiptsByTicket.get(ticketId) ?? [] : []
+
     if (!helperTicketsData || helperTicketsData.length === 0) {
       // Fallback to transfers if no tickets found via participants
       if (!transfersData) return []
@@ -100,6 +115,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         type: "Bug", // TODO: Get from ticket
         amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
         status: transfer.status === "completed" ? "Completed" : "In progress",
+        receipts: receiptsFor(transfer.ticket_id),
       }))
     }
 
@@ -133,9 +149,10 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               : ticket.status === "available"
                 ? "Available"
                 : "Unknown",
+        receipts: receiptsFor(ticket.id),
       }
     })
-  }, [helperTicketsData, transfersData])
+  }, [helperTicketsData, transfersData, paymentsData])
 
   if (helperLoading) {
     return (
@@ -420,13 +437,32 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                   Open
                                 </Button>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-lg border-border text-muted-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
-                              >
-                                Download PDF
-                              </Button>
+                              {ticket.receipts.length === 0 ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-lg border-border text-muted-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+                                  disabled
+                                  title="No Stripe receipt yet — available once the ticket has been charged"
+                                >
+                                  View receipt
+                                </Button>
+                              ) : (
+                                ticket.receipts.map((url, index) => (
+                                  <Button
+                                    key={`${index}-${url}`}
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-lg border-border text-muted-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+                                    asChild
+                                  >
+                                    <a href={url} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      {ticket.receipts.length === 1 ? "View receipt" : `Receipt ${index + 1}`}
+                                    </a>
+                                  </Button>
+                                ))
+                              )}
                             </div>
                           </td>
                         </tr>

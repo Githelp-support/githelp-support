@@ -14,6 +14,12 @@ export interface Payment {
   transaction_id: string | null
   created_at: string
   completed_at: string | null
+  /**
+   * Stripe-hosted receipt page for the charge. Ticket charges are plain
+   * PaymentIntents (no Stripe Invoice), so this is the document to link the
+   * customer to. Null until the charge is captured.
+   */
+  stripe_receipt_url?: string | null
 }
 
 export interface PaymentTransfer {
