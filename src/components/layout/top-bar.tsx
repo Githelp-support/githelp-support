@@ -272,7 +272,7 @@ export function TopBar() {
                   }}
                 >
                   <Plus className="w-4 h-4" />
-                  Add new
+                  {user.role === "helper" ? "Ask to be validated" : "Add new"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
