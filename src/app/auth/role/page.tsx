@@ -78,7 +78,7 @@ export default function RolePage() {
                   key={role}
                   variant="outline"
                   size="lg"
-                  className="w-full"
+                  className="w-full font-[550]"
                   onClick={() => selectRole(role)}
                 >
                   {ROLE_LABELS[role]}
