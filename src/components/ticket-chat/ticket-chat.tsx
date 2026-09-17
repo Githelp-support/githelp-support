@@ -407,7 +407,7 @@ export function TicketChat(props: TicketChatProps) {
               <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
 
               {participantsLoading ? (
-                <SidebarEmpty>Loading...</SidebarEmpty>
+                <SidebarEmpty className="text-[14px]">Loading...</SidebarEmpty>
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (

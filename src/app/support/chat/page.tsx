@@ -322,7 +322,7 @@ export default function UserSupportChatPage() {
     if (resolving) {
       return (
         <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
-          <div className="text-muted-foreground">Loading your support…</div>
+          <div className="text-[14px] text-muted-foreground">Loading your support…</div>
         </div>
       )
     }
@@ -400,7 +400,7 @@ export default function UserSupportChatPage() {
   if (openingOtherTicket && existingTicketLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
-        <div className="text-muted-foreground">Loading ticket…</div>
+        <div className="text-[14px] text-muted-foreground">Loading ticket…</div>
       </div>
     )
   }

@@ -486,7 +486,7 @@ export default function ReportsSupportPage() {
               {/* Table Body */}
               <div className="divide-y divide-border">
                 {isLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
                 ) : activeTab === "monthly" ? (
                   filteredMonthlyReports.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No reports found</div>

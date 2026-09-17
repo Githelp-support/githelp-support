@@ -646,7 +646,7 @@ export default function TicketsPage() {
               </div>
             </div>
             {isLoading ? (
-              <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
+              <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading tickets...</div>
             ) : filteredTickets.length > 0 ? (
               filteredTickets.map((ticket) => {
                 // Unclaimed tickets reuse the expandable gray-row layout from the

@@ -597,7 +597,7 @@ export default function HelpersPage() {
                   )
                 }
                 if (helpersLoading || requestsLoading || invitesLoading) {
-                  return <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">Loading...</div>
+                  return <div className="px-6 py-8 text-center text-[14px] text-muted-foreground">Loading...</div>
                 }
                 if (currentView === "invited") {
                   if (filteredInvites.length > 0) {
