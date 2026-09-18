@@ -188,6 +188,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 };
                 Insert: Partial<{
                     id: number;
@@ -198,6 +199,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 }>;
                 Update: Partial<{
                     id: number;
@@ -208,6 +210,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 }>;
             };
             slas: {
@@ -298,7 +301,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -309,7 +313,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -320,7 +325,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;

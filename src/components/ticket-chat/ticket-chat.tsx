@@ -1,23 +1,35 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Info, Plus } from "lucide-react"
+import { Check, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
-import { ImageUploadModal } from "@/components/modals/image-upload-modal"
+import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
+import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
+import { appendToDraft } from "@/lib/ticket-attachments"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
   | "payment_authorized"
   | "payment_requires_action"
   | "payment_cap_exceeded"
+  | "payment_failed"
+  | "payment_completed"
   | "sla_covered"
+
+/**
+ * `metadata.kind` of persisted system messages. Payment kinds are written by
+ * the payments edge functions; `time_logged` is written by the DB trigger on
+ * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages).
+ */
+export type SystemMessageKind = PaymentSystemMessageKind | "time_logged"
 
 export type TicketChatMessage = {
   id: string
@@ -30,7 +42,7 @@ export type TicketChatMessage = {
   content: string
   kind?: "claimed" | "ended"
   paymentMetadata?: {
-    kind: PaymentSystemMessageKind
+    kind: SystemMessageKind
     [key: string]: unknown
   } | null
 }
@@ -84,17 +96,22 @@ export interface TicketChatProps {
   endSessionRequestPending?: boolean
 
   /**
-   * When provided, enables the image attachment button in the chat toolbar.
-   * Format: "{projectId}/{ticketId}" — used as the storage path prefix under the ticket-attachments bucket.
+   * When provided, enables image attachments (toolbar button, paste, drag & drop).
+   * Format: "{projectId}/{ticketId}" — or "{projectId}/{userId}" before the
+   * ticket exists — used as the folder inside the ticket-attachments bucket.
+   * Uploaded images are added to the message as markdown via `onMessageChange`.
    */
   attachmentStoragePrefix?: string
-  /** Called after a successful image upload with the resolved URL */
-  onImageUploaded?: (url: string) => void
 
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
 
-  /** Called when the user clicks the "Add payment method" CTA on a payment_required system message. */
+  /**
+   * Called when the user clicks a payment CTA on a system message: "Add
+   * payment method" (payment_required), "Pay yourself instead"
+   * (payment_cap_exceeded) or "Update payment method" (payment_failed).
+   * Branch on `msg.paymentMetadata?.kind`.
+   */
   onPaymentCtaClick?: (msg: TicketChatMessage) => void
   paymentCtaLoading?: boolean
 }
@@ -122,7 +139,6 @@ export function TicketChat(props: TicketChatProps) {
     endSessionRequestedAt,
     endSessionRequestPending,
     attachmentStoragePrefix,
-    onImageUploaded,
     rightSidebarFooter,
     onPaymentCtaClick,
     paymentCtaLoading,
@@ -131,6 +147,22 @@ export function TicketChat(props: TicketChatProps) {
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false)
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
+
+  // Uploads finish asynchronously, so append to the latest draft rather than
+  // the one captured when the upload started.
+  const messageRef = useRef(message)
+  useEffect(() => {
+    messageRef.current = message
+  }, [message])
+  const handleImageAttached = useCallback(
+    (markdown: string) => {
+      const next = appendToDraft(messageRef.current, markdown)
+      messageRef.current = next
+      onMessageChange(next)
+    },
+    [onMessageChange],
+  )
+  const { uploadFiles, isUploading } = useTicketAttachmentUpload(attachmentStoragePrefix, handleImageAttached)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
@@ -149,6 +181,12 @@ export function TicketChat(props: TicketChatProps) {
   // "Add payment method" button disappears after the hold is placed.
   const paymentResolved = useMemo(
     () => thread.some((m) => m.paymentMetadata?.kind === "payment_authorized"),
+    [thread],
+  )
+  // A payment_failed CTA stays live until a later payment_completed message
+  // confirms the retry went through (index order = chronological order).
+  const paymentCompletedIdx = useMemo(
+    () => thread.findIndex((m) => m.paymentMetadata?.kind === "payment_completed"),
     [thread],
   )
 
@@ -178,7 +216,17 @@ export function TicketChat(props: TicketChatProps) {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
-              <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+              <div
+                className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                onLoadCapture={(e) => {
+                  // Images load after the initial scroll and push the thread
+                  // down; keep it pinned to the bottom if it was there.
+                  if (!(e.target instanceof HTMLImageElement)) return
+                  const box = e.currentTarget
+                  const distance = box.scrollHeight - box.scrollTop - box.clientHeight
+                  if (distance <= e.target.offsetHeight + 120) scrollToBottom()
+                }}
+              >
                 <div className="px-6 py-5">
                   <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                     {intro}
@@ -253,7 +301,9 @@ export function TicketChat(props: TicketChatProps) {
                                     msg.senderType === "system"
                                       ? msg.paymentMetadata?.kind === "payment_cap_exceeded"
                                         ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                        : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                        : msg.paymentMetadata?.kind === "payment_failed"
+                                          ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                          : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
@@ -268,6 +318,20 @@ export function TicketChat(props: TicketChatProps) {
                                         className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
                                       >
                                         {paymentCtaLoading ? "Opening Stripe…" : "Add payment method"}
+                                      </button>
+                                    </div>
+                                  )}
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "payment_failed" &&
+                                    (paymentCompletedIdx === -1 || paymentCompletedIdx < thread.indexOf(msg)) && (
+                                    <div className="mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        disabled={paymentCtaLoading}
+                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                      >
+                                        {paymentCtaLoading ? "Opening Stripe…" : "Update payment method"}
                                       </button>
                                     </div>
                                   )}
@@ -315,6 +379,8 @@ export function TicketChat(props: TicketChatProps) {
             sendDisabled={sendDisabled}
             placeholder="Message #askanything"
             onImageClick={attachmentStoragePrefix ? () => setImageUploadOpen(true) : undefined}
+            onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
+            imagesUploading={isUploading}
             toolbarEndContent={
               !isEnded && onRequestEndSession && !endSessionRequested ? (
                 <Button
@@ -343,19 +409,11 @@ export function TicketChat(props: TicketChatProps) {
           )}
 
           {attachmentStoragePrefix && (
-            <ImageUploadModal
+            <AttachImageModal
               open={imageUploadOpen}
               onOpenChange={setImageUploadOpen}
-              storagePath={`ticket-attachments/${attachmentStoragePrefix}/${new Date().getTime()}`}
-              onUploadComplete={(url) => {
-                // Insert the image as a markdown reference into the message
-                const imageMarkdown = `\n![attachment](${url})\n`
-                onMessageChange(message + imageMarkdown)
-                onImageUploaded?.(url)
-              }}
-              title="Attach Image"
-              description="Upload an image to attach to this ticket"
-              privateBucket
+              storagePrefix={attachmentStoragePrefix}
+              onAttached={handleImageAttached}
             />
           )}
         </div>
@@ -367,20 +425,10 @@ export function TicketChat(props: TicketChatProps) {
           <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
             {/* People in Chat */}
             <div>
-              <h3
-                className="mb-3 uppercase"
-                style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.05em',
-                  color: 'rgba(0,0,0,0.5)',
-                  fontWeight: 500,
-                }}
-              >
-                People in this chat
-              </h3>
+              <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
 
               {participantsLoading ? (
-                <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
+                <SidebarEmpty>Loading...</SidebarEmpty>
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
@@ -396,7 +444,7 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+                <SidebarEmpty />
               )}
 
               {!isEnded && (
@@ -407,25 +455,11 @@ export function TicketChat(props: TicketChatProps) {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="border-t border-border my-6 -ml-5 -mr-4" />
+            <SidebarDivider />
 
             {/* Other Topics */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h3
-                  className="uppercase leading-none"
-                  style={{
-                    fontSize: '11px',
-                    letterSpacing: '0.05em',
-                    color: 'rgba(0,0,0,0.5)',
-                    fontWeight: 500,
-                  }}
-                >
-                  Other topics in this chat
-                </h3>
-                <Info className="w-4 h-4 text-muted-foreground shrink-0" />
-              </div>
+              <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
 
               {topics.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -436,11 +470,17 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+                <SidebarEmpty />
               )}
             </div>
 
-            {rightSidebarFooter}
+            {/* Page-specific sections (Logged time / Active tickets), separated like the sections above */}
+            {rightSidebarFooter && (
+              <>
+                <SidebarDivider />
+                {rightSidebarFooter}
+              </>
+            )}
           </div>
         </div>
     </div>

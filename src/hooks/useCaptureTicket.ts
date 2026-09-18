@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
 
 export type CaptureTicketStatus = "distributing" | "completed" | "failed"
@@ -24,6 +24,7 @@ export interface CaptureTicketResult {
  * Called when a helper ends a (non-SLA) session.
  */
 export function useCaptureTicket() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (args: CaptureArgs): Promise<CaptureTicketResult> => {
       const resp = await supabase.functions.invoke("payments-capture-ticket", {
@@ -47,6 +48,11 @@ export function useCaptureTicket() {
         cappedAtAuthorized: data.capped_at_authorized as boolean | undefined,
         failureReason: data.failure_reason as string | undefined,
       }
+    },
+    // Capture writes payments_transfers rows; the reports pages cache that
+    // query for 30 min, so refresh it explicitly.
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment-transfers"] })
     },
   })
 }

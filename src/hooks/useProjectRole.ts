@@ -29,6 +29,8 @@ export function projectAvailableRolesQueryOptions(projectId?: string) {
           .select("helper_id")
           .eq("project_id", projectId)
           .eq("user_id", user.id)
+          .is("deleted_at", null)
+          .limit(1)
           .maybeSingle(),
       ])
 
@@ -97,6 +99,8 @@ export function useProjectRole(projectId?: string) {
         .select("helper_id")
         .eq("project_id", projectId)
         .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .limit(1)
         .maybeSingle()
 
       if (helperData) {

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,10 +46,12 @@ const ProjectLogo = ({
   logoUrl,
   projectName,
   size = "w-6 h-6",
+  primaryColor,
 }: {
   logoUrl: string | null | undefined
   projectName: string
   size?: string
+  primaryColor?: string | null
 }) => {
   const firstLetter = projectName?.[0]?.toUpperCase() || "?"
   const radius = sizeRadiusMap[size] || "rounded-[9px]"
@@ -57,7 +60,10 @@ const ProjectLogo = ({
   return (
     <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${radius}`}>
       {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
-      <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
+      <AvatarFallback
+        className={`${primaryColor ? "" : "bg-brand-primary"} text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}
+        style={primaryColor ? { backgroundColor: primaryColor } : undefined}
+      >
         {firstLetter}
       </AvatarFallback>
     </Avatar>
@@ -240,6 +246,7 @@ export function TopBar() {
                       logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
                       projectName={selectedProject?.name || ""}
                       size="w-[22px] h-[22px]"
+                      primaryColor={selectedProjectBranding?.primary_color}
                     />
                     <span className="font-sans text-[14px] font-[550] text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
@@ -253,17 +260,21 @@ export function TopBar() {
                 className="w-56 font-sans"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
-                {userProjects.map((project) => {
-                  const isSelected = selectedProject?.project_id === project.project_id
-                  return (
-                    <ProjectLogoWithBranding
-                      key={project.project_id}
-                      project={project}
-                      isSelected={isSelected}
-                      onSelect={handleProjectSelect}
-                    />
-                  )
-                })}
+                {/* Scrollable project list — capped at three rows (3 × 32px) so the
+                    separator and "Add new" below always stay visible. */}
+                <div className={cn("max-h-24 overflow-y-auto")}>
+                  {userProjects.map((project) => {
+                    const isSelected = selectedProject?.project_id === project.project_id
+                    return (
+                      <ProjectLogoWithBranding
+                        key={project.project_id}
+                        project={project}
+                        isSelected={isSelected}
+                        onSelect={handleProjectSelect}
+                      />
+                    )
+                  })}
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
@@ -339,7 +350,12 @@ function ProjectLogoWithBranding({
       onClick={() => onSelect(project)}
       className={`group gap-2 ${isSelected ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
     >
-      <ProjectLogo logoUrl={logoUrl} projectName={project.name} size="w-5 h-5" />
+      <ProjectLogo
+        logoUrl={logoUrl}
+        projectName={project.name}
+        size="w-5 h-5"
+        primaryColor={branding?.primary_color}
+      />
       <span
         className={`font-sans truncate text-[14px] ${
           isSelected
