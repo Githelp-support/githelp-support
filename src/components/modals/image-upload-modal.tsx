@@ -17,15 +17,21 @@ import { toast } from "sonner"
 interface ImageUploadModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  storagePath: string // e.g., "bucketName/path/to/file" or "ticket-attachments/{projectId}/{ticketId}/{filename}"
+  /** e.g. "bucketName/path/to/file". Required unless `uploadFile` is provided. */
+  storagePath?: string
+  /** Receives the public URL of the uploaded file, or whatever `uploadFile` resolved to. */
   onUploadComplete: (url: string) => void
   title?: string
   description?: string
   maxFileSizeMB?: number
   acceptedFileTypes?: string[]
   currentImageUrl?: string | null
-  /** Set to true when the target bucket is private — uses a signed URL instead of a public URL */
-  privateBucket?: boolean
+  /**
+   * Custom uploader. Replaces the built-in public-bucket upload; its resolved
+   * value is passed to `onUploadComplete`. Used by the ticket chat, which
+   * stores files in a private bucket (see lib/ticket-attachments).
+   */
+  uploadFile?: (file: File) => Promise<string>
 }
 
 export function ImageUploadModal({
@@ -38,7 +44,7 @@ export function ImageUploadModal({
   maxFileSizeMB = 6, // Default 6MB based on bucket limit
   acceptedFileTypes = ["image/*"],
   currentImageUrl,
-  privateBucket = false,
+  uploadFile,
 }: ImageUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null)
@@ -89,48 +95,39 @@ export function ImageUploadModal({
     setIsUploading(true)
 
     try {
-      // Extract bucket name and file path from storagePath
-      // Format: "bucketName/path/to/file" or "bucketName/path/to/file.ext"
-      const [bucketName, ...pathParts] = storagePath.split("/")
-      let filePath = pathParts.join("/")
-
-      if (!bucketName || !filePath) {
-        throw new Error("Invalid storage path format. Expected: 'bucketName/path/to/file'")
-      }
-
-      // If storagePath doesn't have an extension, use the file's extension
-      if (!filePath.includes(".") || filePath.endsWith(".")) {
-        const fileExtension = selectedFile.name.split(".").pop() || "png"
-        filePath = `${filePath}.${fileExtension}`
-      }
-
-      // Upload to Supabase storage
-      const { error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, selectedFile, {
-          upsert: true, // Replace if exists
-		  cacheControl: "3600",
-        })
-
-      if (uploadError) {
-        console.error("Upload error:", uploadError)
-        toast.error("Failed to upload image. Please try again.")
-        return
-      }
-
-      // Get URL — signed for private buckets, public for public buckets
       let fileUrl: string
-      if (privateBucket) {
-        const { data: signedData, error: signedError } = await supabase.storage
+      if (uploadFile) {
+        fileUrl = await uploadFile(selectedFile)
+      } else {
+        // Extract bucket name and file path from storagePath
+        // Format: "bucketName/path/to/file" or "bucketName/path/to/file.ext"
+        const [bucketName, ...pathParts] = (storagePath ?? "").split("/")
+        let filePath = pathParts.join("/")
+
+        if (!bucketName || !filePath) {
+          throw new Error("Invalid storage path format. Expected: 'bucketName/path/to/file'")
+        }
+
+        // If storagePath doesn't have an extension, use the file's extension
+        if (!filePath.includes(".") || filePath.endsWith(".")) {
+          const fileExtension = selectedFile.name.split(".").pop() || "png"
+          filePath = `${filePath}.${fileExtension}`
+        }
+
+        // Upload to Supabase storage
+        const { error: uploadError } = await supabase.storage
           .from(bucketName)
-          .createSignedUrl(filePath, 60 * 60) // 1 hour
-        if (signedError || !signedData?.signedUrl) {
-          console.error("Signed URL error:", signedError)
-          toast.error("Failed to retrieve upload URL. Please try again.")
+          .upload(filePath, selectedFile, {
+            upsert: true, // Replace if exists
+            cacheControl: "3600",
+          })
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError)
+          toast.error("Failed to upload image. Please try again.")
           return
         }
-        fileUrl = signedData.signedUrl
-      } else {
+
         const { data: urlData } = supabase.storage
           .from(bucketName)
           .getPublicUrl(filePath)

@@ -1,10 +1,12 @@
 "use client"
 
 import { Children, isValidElement, type ReactElement, type ReactNode } from "react"
-import ReactMarkdown from "react-markdown"
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import remarkBreaks from "remark-breaks"
+import { ChatImage } from "@/components/ticket-chat/chat-image"
 import { CodeBlock } from "@/components/ticket-chat/code-block"
+import { parseTicketAttachmentPath } from "@/lib/ticket-attachments"
 
 export interface MarkdownContentProps {
   content: string
@@ -34,6 +36,16 @@ function childrenToText(node: ReactNode): string {
   return ""
 }
 
+/**
+ * react-markdown drops URLs with unknown protocols. Let the chat's own
+ * `attachment:` image references through (ChatImage resolves them); everything
+ * else keeps the default sanitising.
+ */
+function urlTransform(url: string, key: string): string {
+  if (key === "src" && url.startsWith("attachment:") && parseTicketAttachmentPath(url)) return url
+  return defaultUrlTransform(url)
+}
+
 /** Renders message content as markdown (code blocks, bold, italic, lists, etc.) */
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
   const normalizedContent = normalizeNewlines(content)
@@ -41,7 +53,11 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
     <div className={className ? `${baseMessageClasses} ${className}` : baseMessageClasses}>
       <ReactMarkdown
         remarkPlugins={[remarkBreaks, remarkGfm]}
+        urlTransform={urlTransform}
         components={{
+          img({ src, alt }) {
+            return <ChatImage src={typeof src === "string" ? src : undefined} alt={alt} />
+          },
           // Fenced / indented code arrives as <pre><code class="language-x">…</code></pre>.
           // Rendering at the <pre> level means blocks without a language tag are
           // still shown as blocks (they used to fall through to inline styling).

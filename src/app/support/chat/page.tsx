@@ -40,6 +40,7 @@ import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javasc
 import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript"
 import python from "react-syntax-highlighter/dist/esm/languages/prism/python"
 import { prepareOutgoingMessage } from "@/lib/code-format"
+import { stripTicketAttachments } from "@/lib/ticket-attachments"
 
 interface Person {
   name: string
@@ -425,7 +426,7 @@ export default function UserSupportChatPage() {
       try {
         const ticket = await createTicket.mutateAsync({
           project_id: effectiveProjectId,
-          title: message.substring(0, 100) || "Support Request",
+          title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
           description: message,
           created_by: user?.id || null,
           status: "available",
@@ -572,10 +573,9 @@ export default function UserSupportChatPage() {
         onCancelEndSessionRequest={() => handleRequestEndSession(true)}
         endSessionRequestedAt={endSessionRequestedAt}
         endSessionRequestPending={requestEndSession.isPending}
-        attachmentStoragePrefix={ticketId && effectiveProjectId ? `${effectiveProjectId}/${ticketId}` : undefined}
-        onImageUploaded={(url) => {
-          setMessage((prev) => prev + `\n![attachment](${url})\n`)
-        }}
+        // Before the first message there is no ticket yet: uploads go to the
+        // user's own folder (see lib/ticket-attachments).
+        attachmentStoragePrefix={user?.id && effectiveProjectId ? `${effectiveProjectId}/${ticketId || user.id}` : undefined}
         onPaymentCtaClick={async (msg) => {
           const metaTicketId = msg.paymentMetadata?.ticket_id as string | undefined
           const target = metaTicketId || ticketId

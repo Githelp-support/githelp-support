@@ -1,17 +1,19 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
-import { ImageUploadModal } from "@/components/modals/image-upload-modal"
+import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
+import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
+import { appendToDraft } from "@/lib/ticket-attachments"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -94,12 +96,12 @@ export interface TicketChatProps {
   endSessionRequestPending?: boolean
 
   /**
-   * When provided, enables the image attachment button in the chat toolbar.
-   * Format: "{projectId}/{ticketId}" — used as the storage path prefix under the ticket-attachments bucket.
+   * When provided, enables image attachments (toolbar button, paste, drag & drop).
+   * Format: "{projectId}/{ticketId}" — or "{projectId}/{userId}" before the
+   * ticket exists — used as the folder inside the ticket-attachments bucket.
+   * Uploaded images are added to the message as markdown via `onMessageChange`.
    */
   attachmentStoragePrefix?: string
-  /** Called after a successful image upload with the resolved URL */
-  onImageUploaded?: (url: string) => void
 
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
@@ -137,7 +139,6 @@ export function TicketChat(props: TicketChatProps) {
     endSessionRequestedAt,
     endSessionRequestPending,
     attachmentStoragePrefix,
-    onImageUploaded,
     rightSidebarFooter,
     onPaymentCtaClick,
     paymentCtaLoading,
@@ -146,6 +147,22 @@ export function TicketChat(props: TicketChatProps) {
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false)
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
+
+  // Uploads finish asynchronously, so append to the latest draft rather than
+  // the one captured when the upload started.
+  const messageRef = useRef(message)
+  useEffect(() => {
+    messageRef.current = message
+  }, [message])
+  const handleImageAttached = useCallback(
+    (markdown: string) => {
+      const next = appendToDraft(messageRef.current, markdown)
+      messageRef.current = next
+      onMessageChange(next)
+    },
+    [onMessageChange],
+  )
+  const { uploadFiles, isUploading } = useTicketAttachmentUpload(attachmentStoragePrefix, handleImageAttached)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
@@ -199,7 +216,17 @@ export function TicketChat(props: TicketChatProps) {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
-              <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+              <div
+                className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                onLoadCapture={(e) => {
+                  // Images load after the initial scroll and push the thread
+                  // down; keep it pinned to the bottom if it was there.
+                  if (!(e.target instanceof HTMLImageElement)) return
+                  const box = e.currentTarget
+                  const distance = box.scrollHeight - box.scrollTop - box.clientHeight
+                  if (distance <= e.target.offsetHeight + 120) scrollToBottom()
+                }}
+              >
                 <div className="px-6 py-5">
                   <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                     {intro}
@@ -352,6 +379,8 @@ export function TicketChat(props: TicketChatProps) {
             sendDisabled={sendDisabled}
             placeholder="Message #askanything"
             onImageClick={attachmentStoragePrefix ? () => setImageUploadOpen(true) : undefined}
+            onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
+            imagesUploading={isUploading}
             toolbarEndContent={
               !isEnded && onRequestEndSession && !endSessionRequested ? (
                 <Button
@@ -380,19 +409,11 @@ export function TicketChat(props: TicketChatProps) {
           )}
 
           {attachmentStoragePrefix && (
-            <ImageUploadModal
+            <AttachImageModal
               open={imageUploadOpen}
               onOpenChange={setImageUploadOpen}
-              storagePath={`ticket-attachments/${attachmentStoragePrefix}/${new Date().getTime()}`}
-              onUploadComplete={(url) => {
-                // Insert the image as a markdown reference into the message
-                const imageMarkdown = `\n![attachment](${url})\n`
-                onMessageChange(message + imageMarkdown)
-                onImageUploaded?.(url)
-              }}
-              title="Attach Image"
-              description="Upload an image to attach to this ticket"
-              privateBucket
+              storagePrefix={attachmentStoragePrefix}
+              onAttached={handleImageAttached}
             />
           )}
         </div>

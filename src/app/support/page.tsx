@@ -37,6 +37,7 @@ import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { prepareOutgoingMessage } from "@/lib/code-format"
+import { stripTicketAttachments } from "@/lib/ticket-attachments"
 
 type TabKey = "get-support" | "rates" | "resources" | "about"
 
@@ -253,7 +254,7 @@ export default function SupportPage() {
       try {
         const ticket = await createTicket.mutateAsync({
           project_id: projectId,
-          title: message.substring(0, 100) || "Support Request",
+          title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
           description: message,
           created_by: user?.id || null,
           status: "available",
@@ -512,10 +513,9 @@ export default function SupportPage() {
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}
             endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
             endSessionRequestPending={requestEndSession.isPending}
-            attachmentStoragePrefix={ticketId && projectId ? `${projectId}/${ticketId}` : undefined}
-            onImageUploaded={(url) => {
-              setMessage((prev) => prev + `\n![attachment](${url})\n`)
-            }}
+            // Before the first message there is no ticket yet: uploads go to the
+            // user's own folder (see lib/ticket-attachments).
+            attachmentStoragePrefix={user?.id && projectId ? `${projectId}/${ticketId || user.id}` : undefined}
             onPaymentCtaClick={handlePaymentCta}
             paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}
             rightSidebarFooter={

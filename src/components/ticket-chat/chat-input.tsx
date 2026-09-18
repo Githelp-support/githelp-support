@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useCallback, useLayoutEffect, useRef } from "react"
+import { useCallback, useLayoutEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { detectLanguage, isInsideOpenFence, looksLikeCode, wrapInFence } from "@/lib/code-blocks"
+import { cn } from "@/lib/utils"
 import {
   AtSign,
   Bold,
@@ -13,6 +14,7 @@ import {
   Italic,
   Link,
   List,
+  Loader2,
   Mic,
   Plus,
   Send,
@@ -32,6 +34,16 @@ export interface TicketChatInputProps {
   toolbarEndContent?: React.ReactNode
   /** Called when the image/attachment button is clicked */
   onImageClick?: () => void
+  /** Called with pasted images and with any dropped files (the receiver validates them). Omit to disable both. */
+  onImageFiles?: (files: File[]) => void
+  /** Shows an "Uploading image…" hint while attachments are in flight */
+  imagesUploading?: boolean
+}
+
+/** Image files carried by a paste or drop. */
+function imageFilesFrom(data: DataTransfer | null): File[] {
+  if (!data) return []
+  return Array.from(data.files).filter((f) => f.type.startsWith("image/"))
 }
 
 export function TicketChatInput({
@@ -42,8 +54,11 @@ export function TicketChatInput({
   placeholder = "Message #askanything",
   toolbarEndContent,
   onImageClick,
+  onImageFiles,
+  imagesUploading,
 }: TicketChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [dragActive, setDragActive] = useState(false)
   const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null)
 
   /** Replace [start, end) of the current value and place the caret afterwards. */
@@ -124,13 +139,43 @@ export function TicketChatInput({
       const ta = textareaRef.current
       if (!ta) return
       const text = e.clipboardData.getData("text/plain")
+      // A pasted screenshot / copied image is uploaded as an attachment. Office
+      // apps put a rendered image next to copied text — that stays a text paste.
+      const images = onImageFiles && !text ? imageFilesFrom(e.clipboardData) : []
+      if (images.length > 0) {
+        e.preventDefault()
+        onImageFiles?.(images)
+        return
+      }
       if (!text || !text.includes("\n")) return
       if (isInsideOpenFence(value, ta.selectionStart)) return
       if (!looksLikeCode(text)) return
       e.preventDefault()
       insertCodeBlock(text.replace(/\r\n?/g, "\n"))
     },
-    [value, insertCodeBlock]
+    [value, insertCodeBlock, onImageFiles]
+  )
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!onImageFiles || !Array.from(e.dataTransfer.types).includes("Files")) return
+      e.preventDefault()
+      setDragActive(true)
+    },
+    [onImageFiles]
+  )
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      setDragActive(false)
+      if (!onImageFiles || !Array.from(e.dataTransfer.types).includes("Files")) return
+      e.preventDefault()
+      // Every dropped file is passed on, so an unsupported one gets an error
+      // message from the uploader instead of vanishing.
+      const files = Array.from(e.dataTransfer.files)
+      if (files.length > 0) onImageFiles(files)
+    },
+    [onImageFiles]
   )
 
   const handleKeyDown = useCallback(
@@ -165,7 +210,15 @@ export function TicketChatInput({
   }, [value])
 
   return (
-    <div className="bg-white border border-border rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] mx-4 mb-4 overflow-hidden">
+    <div
+      className={cn(
+        "bg-white border border-border rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] mx-4 mb-4 overflow-hidden",
+        dragActive && "border-brand-primary ring-2 ring-brand-primary/30"
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDragActive(false)}
+      onDrop={handleDrop}
+    >
       <div className="bg-muted flex items-center gap-2 px-4 py-2.5 border-b border-border">
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
           <Bold className="w-3.5 h-3.5" />
@@ -229,6 +282,12 @@ export function TicketChatInput({
           <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
             <Mic className="w-[22px] h-[22px]" />
           </Button>
+          {imagesUploading && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Uploading image…
+            </span>
+          )}
           <div className="ml-auto">
             <Button
               onClick={onSend}

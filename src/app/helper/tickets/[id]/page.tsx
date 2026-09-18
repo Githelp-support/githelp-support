@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
-import { ImageUploadModal } from "@/components/modals/image-upload-modal"
+import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
@@ -26,7 +26,7 @@ import {
   Mic,
   Video,
 } from "lucide-react"
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
@@ -56,6 +56,8 @@ import {
 } from "@/components/ui/dialog"
 import { UserPlus } from "lucide-react"
 import { prepareOutgoingMessage } from "@/lib/code-format"
+import { appendToDraft } from "@/lib/ticket-attachments"
+import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 
 interface Message {
   id: string
@@ -322,6 +324,17 @@ export default function TicketDetailPage() {
     }
   }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description])
 
+  // Images attached via the toolbar button, paste or drag & drop end up as
+  // markdown in the draft message.
+  const attachmentStoragePrefix = ticket?.project_id ? `${ticket.project_id}/${ticketId}` : undefined
+  const handleImageAttached = useCallback((markdown: string) => {
+    setMessage((prev) => appendToDraft(prev, markdown))
+  }, [])
+  const { uploadFiles, isUploading: imagesUploading } = useTicketAttachmentUpload(
+    attachmentStoragePrefix,
+    handleImageAttached,
+  )
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -565,7 +578,17 @@ export default function TicketDetailPage() {
             <div className="flex-1 flex flex-col min-h-0">
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
-                <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+                <div
+                  className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                  onLoadCapture={(e) => {
+                    // Images load after the initial scroll and push the thread
+                    // down; keep it pinned to the bottom if it was there.
+                    if (!(e.target instanceof HTMLImageElement)) return
+                    const box = e.currentTarget
+                    const distance = box.scrollHeight - box.scrollTop - box.clientHeight
+                    if (distance <= e.target.offsetHeight + 120) scrollToBottom()
+                  }}
+                >
                   <div className="p-6">
                     <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
@@ -892,7 +915,9 @@ export default function TicketDetailPage() {
               onSend={handleSendMessage}
               sendDisabled={!message.trim() || isTicketEnded}
               placeholder="Message #askanything"
-              onImageClick={ticket?.project_id ? () => setIsImageUploadOpen(true) : undefined}
+              onImageClick={attachmentStoragePrefix ? () => setIsImageUploadOpen(true) : undefined}
+              onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
+              imagesUploading={imagesUploading}
               toolbarEndContent={
                 !isTicketEnded ? (
                   <Button
@@ -907,17 +932,12 @@ export default function TicketDetailPage() {
               }
             />
 
-            {ticket?.project_id && (
-              <ImageUploadModal
+            {attachmentStoragePrefix && (
+              <AttachImageModal
                 open={isImageUploadOpen}
                 onOpenChange={setIsImageUploadOpen}
-                storagePath={`ticket-attachments/${ticket.project_id}/${ticketId}/${Date.now()}`}
-                onUploadComplete={(url) => {
-                  setMessage((prev) => prev + `\n![attachment](${url})\n`)
-                }}
-                title="Attach Image"
-                description="Upload an image to attach to this ticket"
-                privateBucket
+                storagePrefix={attachmentStoragePrefix}
+                onAttached={handleImageAttached}
               />
             )}
           </div>
