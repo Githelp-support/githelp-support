@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserMinus } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -216,7 +216,7 @@ export default function HelpersPage() {
     try {
       await removeHelper.mutateAsync({ helperId: id })
       setHelperToRemove(null)
-      toast.success(`${name} has been removed from the project.`)
+      toast.success(`${name} has been removed as helper from the project`)
     } catch (error) {
       console.error("Failed to remove helper:", error)
       toast.error("Failed to remove helper. Please try again.")
@@ -734,8 +734,8 @@ export default function HelpersPage() {
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >
-                                <UserMinus />
-                                Remove helper
+                                <i className="fi fi-rr-user inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" />
+                                Remove as helper
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
