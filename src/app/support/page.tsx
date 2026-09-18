@@ -507,7 +507,7 @@ export default function SupportPage() {
             message={message}
             onMessageChange={setMessage}
             onSend={handleSendMessage}
-            sendDisabled={!message.trim() || createTicket.isPending || ticketEnded}
+            sendDisabled={!message.trim() || createTicket.isPending}
             isEnded={ticketEnded}
             onRequestEndSession={ticketId && user?.id ? () => handleRequestEndSession(false) : undefined}
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}

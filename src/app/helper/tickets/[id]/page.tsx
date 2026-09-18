@@ -913,7 +913,7 @@ export default function TicketDetailPage() {
               value={message}
               onChange={setMessage}
               onSend={handleSendMessage}
-              sendDisabled={!message.trim() || isTicketEnded}
+              sendDisabled={!message.trim()}
               placeholder="Message #askanything"
               onImageClick={attachmentStoragePrefix ? () => setIsImageUploadOpen(true) : undefined}
               onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}

@@ -187,7 +187,8 @@ export function TicketChatInput({
         // once the block is closed (or with Enter outside it).
         if (inFence) return
         e.preventDefault()
-        onSend()
+        // Same rule as the send button, so the two can't disagree.
+        if (!sendDisabled) onSend()
         return
       }
       if (e.key === "Tab" && !e.shiftKey && inFence) {
@@ -196,7 +197,7 @@ export function TicketChatInput({
         replaceRange(ta.selectionStart, ta.selectionEnd, "  ", { start: caret, end: caret })
       }
     },
-    [value, onSend, replaceRange]
+    [value, onSend, sendDisabled, replaceRange]
   )
 
   useLayoutEffect(() => {
