@@ -12,6 +12,7 @@ import Link from "next/link"
 import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
+import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useCreateTicket, useRequestEndSession } from "@/hooks/useTickets"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
@@ -127,7 +128,12 @@ export default function UserSupportChatPage() {
   // settles from "Processing…" to the captured value without a reload.
   const ticketEnded =
     existingTicket?.status === "completed" || existingTicket?.status === "cancelled"
-  const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, { slaId })
+  // Fetch payment settings (the payment status needs them: free support has no payment)
+  const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
+  const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, {
+    slaId,
+    isFree: isFreeSupport(paymentSettings),
+  })
 
   // "End session" from the customer only signals intent: the helper logs any
   // remaining time and ends from their side. Until then the customer can keep
@@ -200,17 +206,12 @@ export default function UserSupportChatPage() {
     checkAuth()
   }, [])
 
-  // Fetch payment settings
-  const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
-  
   // Fetch branding for project logo
   const { data: brandingData } = useProjectBranding(projectId || "")
   const projectLogo = brandingData?.logo_url || null
   
   // Format payment values (convert cents to dollars)
-  const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
-  const first60Price = paymentSettings?.ticket_price_minute_first_60 ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) : "1.50"
-  const after60Price = paymentSettings?.ticket_price_minute_after_60 ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2) : "1.00"
+  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
@@ -532,6 +533,7 @@ export default function UserSupportChatPage() {
             welcomeText={welcomeText}
             timestamp={nowFormatted}
             rates={{ startPrice, first60Price, after60Price }}
+            isFree={isFreeSupport(paymentSettings)}
             isAuthenticated={isAuthenticated}
             ticketCreated={ticketCreated}
             userName={user?.name}

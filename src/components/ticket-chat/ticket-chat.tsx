@@ -23,6 +23,7 @@ export type PaymentSystemMessageKind =
   | "payment_failed"
   | "payment_completed"
   | "sla_covered"
+  | "free_support"
 
 /**
  * `metadata.kind` of persisted system messages. Payment kinds are written by
