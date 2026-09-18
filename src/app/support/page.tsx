@@ -9,6 +9,7 @@ import { Search, Clock, Target, HelpCircle } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
+import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, useSearchParams } from "next/navigation"
@@ -93,9 +94,7 @@ export default function SupportPage() {
   const projectName = project?.name || "Support"
 
   // Format payment values (convert cents to dollars)
-  const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
-  const first60Price = paymentSettings?.ticket_price_minute_first_60 ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) : "1.50"
-  const after60Price = paymentSettings?.ticket_price_minute_after_60 ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2) : "1.00"
+  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
 
   // Transform resources data
   const resources = resourcesData || []
@@ -146,7 +145,7 @@ export default function SupportPage() {
     }
   }
   const ticketEnded = liveTicket?.status === "completed" || liveTicket?.status === "cancelled"
-  const paymentStatus = useTicketPaymentStatus(ticketId || null)
+  const paymentStatus = useTicketPaymentStatus(ticketId || null, { isFree: isFreeSupport(paymentSettings) })
 
   // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
@@ -390,6 +389,7 @@ export default function SupportPage() {
       welcomeText={welcomeMessageContent}
       timestamp={nowFormatted}
       rates={{ startPrice, first60Price, after60Price }}
+      isFree={isFreeSupport(paymentSettings)}
       isAuthenticated={isAuthenticated}
       ticketCreated={ticketCreated}
       userName={user?.name}
@@ -550,6 +550,12 @@ export default function SupportPage() {
                   {/* Rates section */}
                   <div>
                     <h2 className="text-[22px] font-normal text-[#444444] mb-8">{projectName}&apos;s rates</h2>
+
+                    {isFreeSupport(paymentSettings) && (
+                      <p className="text-sm text-[#444444] mb-6">
+                        {projectName} offers support for free — you won&apos;t be charged and no payment method is needed.
+                      </p>
+                    )}
 
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-[18px] mb-12">

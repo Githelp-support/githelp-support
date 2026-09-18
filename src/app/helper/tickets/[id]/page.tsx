@@ -10,7 +10,7 @@ import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
-import { useTimeEntries, useCreateTimeEntry, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
+import { useTimeEntries, useCreateTimeEntry, isPaymentNotAuthorizedError, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
@@ -39,6 +39,7 @@ import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/sidebar-section"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
+import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
@@ -90,8 +91,11 @@ export default function TicketDetailPage() {
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId)
   const { data: ticketDetails } = useTicketWithDetails(ticketId)
+  // Fetch payment settings (the payment gate needs them: free support opens it)
+  const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
   const paymentGate = useTicketPaymentStatus(ticketId, {
     slaId: (ticketDetails as { sla_id?: string | null } | undefined)?.sla_id ?? null,
+    isFree: isFreeSupport(paymentSettings),
   })
   const { data: messagesData, isLoading: messagesLoading } = useTicketMessages(ticketId)
   const sendMessage = useSendMessage()
@@ -104,9 +108,6 @@ export default function TicketDetailPage() {
   const claimTicket = useClaimTicket()
   const ensureParticipant = useEnsureParticipant()
   
-  // Fetch payment settings
-  const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
-
   // Time entries: load from DB, create via mutation
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
   const currentHelperId = useCurrentHelper(ticket?.project_id ?? undefined).data ?? null
@@ -163,9 +164,7 @@ export default function TicketDetailPage() {
   )
   
   // Format payment values (convert cents to dollars)
-  const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
-  const first60Price = paymentSettings?.ticket_price_minute_first_60 ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) : "1.50"
-  const after60Price = paymentSettings?.ticket_price_minute_after_60 ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2) : "1.00"
+  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
 
   // Set up real-time subscriptions
   useRealtimeMessages(ticketId)
@@ -511,7 +510,12 @@ export default function TicketDetailPage() {
         date: dateIso,
       },
       {
-        onError: () => toast.error("Failed to log time. Please try again."),
+        onError: (error) =>
+          isPaymentNotAuthorizedError(error)
+            ? toast.error("Time can't be logged yet", {
+                description: "The payment for this ticket isn't authorized. Ask the customer to add a payment method.",
+              })
+            : toast.error("Failed to log time. Please try again."),
       }
     )
   }
@@ -550,6 +554,8 @@ export default function TicketDetailPage() {
       paymentGate.status === "pending")
   const chargedLabel = isCancelledEnd
     ? "No charge"
+    : paymentGate.status === "free"
+      ? "Free support"
     : paymentSettled && chargedSmallestUnit != null
       ? `$${(chargedSmallestUnit / 100).toFixed(2)}`
       : paymentProcessing

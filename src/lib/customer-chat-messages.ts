@@ -152,6 +152,7 @@ export function describeChargedLine(opts: {
 }): string {
     if (opts.cancelled) return "No charge";
     if (opts.slaCovered) return "Covered by your SLA";
+    if (opts.paymentStatus === "free") return "Free support — no charge";
     if (opts.paymentStatus === "distributing" || opts.paymentStatus === "completed") {
         return opts.capturedAmountSmallestUnit != null
             ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}`

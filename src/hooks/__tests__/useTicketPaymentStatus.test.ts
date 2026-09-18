@@ -140,4 +140,42 @@ describe("useTicketPaymentStatus failure reason", () => {
         await waitFor(() => expect(result.current.status).toBe("distributing"));
         expect(result.current.failureReason).toBeNull();
     });
+
+    it("opens the gate for a free-support ticket with no payments row", async () => {
+        selectMock.mockResolvedValue({ data: [], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-free", { slaId: null, isFree: true }),
+            { wrapper: makeWrapper() },
+        );
+        // Closed while the payments rows are still loading…
+        expect(result.current.status).toBe("none");
+        expect(result.current.isReady).toBe(false);
+        // …and open once we know there is no payments row.
+        await waitFor(() => expect(result.current.status).toBe("free"));
+        expect(result.current.isReady).toBe(true);
+    });
+
+    it("keeps the gate closed without a payments row when the project is not free", async () => {
+        selectMock.mockResolvedValue({ data: [], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-paid", { slaId: null, isFree: false }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(selectMock).toHaveBeenCalled());
+        expect(result.current.status).toBe("none");
+        expect(result.current.isReady).toBe(false);
+    });
+
+    it("lets an existing payments row take precedence over isFree", async () => {
+        selectMock.mockResolvedValue({
+            data: [{ status: "failed", captured_amount_smallest_unit: null, failure_reason: "declined" }],
+            error: null,
+        });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-was-paid", { slaId: null, isFree: true }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("failed"));
+        expect(result.current.isReady).toBe(false);
+    });
 });

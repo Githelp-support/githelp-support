@@ -11,6 +11,7 @@ import { Header } from "@/components/layout/header"
 import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
+import { formatTicketRates } from "@/lib/ticket-pricing"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } from "@/hooks/useTicketParticipants"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -101,15 +102,7 @@ export default function TicketsPage() {
   useRealtimeTickets(projectId)
 
   // Format rate (convert cents to dollars)
-  const ratePerMinute = paymentSettings?.ticket_price_minute_first_60 
-    ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) 
-    : "1.50"
-  const startPrice = paymentSettings?.ticket_start_price
-    ? (paymentSettings.ticket_start_price / 100).toFixed(2)
-    : "10.00"
-  const after60Price = paymentSettings?.ticket_price_minute_after_60
-    ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2)
-    : "1.00"
+  const { startPrice, first60Price: ratePerMinute, after60Price } = formatTicketRates(paymentSettings)
 
   // Transform tickets to UI format
   const tickets = useMemo(() => {

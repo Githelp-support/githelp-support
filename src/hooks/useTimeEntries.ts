@@ -139,6 +139,20 @@ export interface CreateTimeEntryInput {
     date: string; // YYYY-MM-DD
 }
 
+/**
+ * True when an insert was rejected by the database payment gate (trigger
+ * `tickets_time_entries_payment_gate`, backend migration
+ * 20260918130000_time_entries_payment_gate): the ticket is neither SLA-covered
+ * nor free support and has no authorized payment hold.
+ */
+export function isPaymentNotAuthorizedError(error: unknown): boolean {
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        (error as { hint?: unknown }).hint === "payment_not_authorized"
+    );
+}
+
 export function useCreateTimeEntry() {
     const queryClient = useQueryClient();
 
@@ -162,6 +176,15 @@ export function useCreateTimeEntry() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["time-entries"] });
+        },
+        onError: (error, input) => {
+            // The database disagreed with the UI's payment gate, so whatever the
+            // gate was based on is stale (typically cached payment settings after
+            // a project switched from free to paid). Refetch both so it closes.
+            if (isPaymentNotAuthorizedError(error)) {
+                queryClient.invalidateQueries({ queryKey: ["project-payment-settings"] });
+                queryClient.invalidateQueries({ queryKey: ["ticket-payment-status", input.ticketId] });
+            }
         },
     });
 }

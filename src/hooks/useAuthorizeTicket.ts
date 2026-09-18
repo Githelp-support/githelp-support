@@ -6,6 +6,7 @@ export type AuthorizeTicketStatus =
   | "requires_action"
   | "requires_checkout"
   | "sla_covered"
+  | "free"
   | "failed"
   | "pending"
 
@@ -29,7 +30,13 @@ export type AuthorizeTicketResult =
       message?: string
     }
   | {
-      status: Exclude<AuthorizeTicketStatus, "requires_checkout" | "sla_covered">
+      /** The project offers free support — no hold was placed. */
+      status: "free"
+      ticketId?: string
+      message?: string
+    }
+  | {
+      status: Exclude<AuthorizeTicketStatus, "requires_checkout" | "sla_covered" | "free">
       paymentId?: string
       stripePaymentIntentId?: string
       holdAmountSmallestUnit?: number
@@ -75,6 +82,13 @@ export function useAuthorizeTicket() {
           status,
           ticketId: data.ticket_id as string | undefined,
           slaId: data.sla_id as string | undefined,
+          message: data.message as string | undefined,
+        }
+      }
+      if (status === "free") {
+        return {
+          status,
+          ticketId: data.ticket_id as string | undefined,
           message: data.message as string | undefined,
         }
       }

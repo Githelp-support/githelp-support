@@ -37,4 +37,15 @@ describe("describeChargedLine", () => {
             }),
         ).toBe("$40.00");
     });
+
+    it("reports free support instead of a never-ending Processing", () => {
+        expect(
+            describeChargedLine({
+                cancelled: false,
+                slaCovered: false,
+                paymentStatus: "free",
+                capturedAmountSmallestUnit: null,
+            }),
+        ).toBe("Free support — no charge");
+    });
 });
