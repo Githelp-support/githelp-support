@@ -59,3 +59,6 @@ export function getAvatarColorClassForId(id: string | null | undefined): string 
 export function getAvatarColorHexForId(id: string | null | undefined): string {
   return avatarColorsHex[hashStringToIndex(id, avatarColorsHex.length)]
 }
+
+/** Tooltip (native `title`) for buttons that are not wired to any functionality yet. */
+export const ILLUSTRATIVE_BUTTON_TOOLTIP = "This button is currently just illustrative"

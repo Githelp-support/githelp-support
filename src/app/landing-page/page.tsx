@@ -12,6 +12,7 @@ import { Plus, Trash2, ExternalLink, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useUserProjects, useProjectResources, useCreateProjectResource, useDeleteProjectResource } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface Resource {
   id: number
@@ -209,7 +210,7 @@ export default function LandingPageSettings() {
                     </div>
                   )}
 
-                  <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent mt-3">
+                  <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent mt-3" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                     Save
                   </Button>
                 </div>

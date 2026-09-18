@@ -11,7 +11,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 
 interface ReportData {
@@ -489,6 +489,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-2 flex items-center justify-end space-x-2">
                           <Button
+                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
@@ -619,6 +620,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-2 flex items-center justify-end space-x-2">
                           <Button
+                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"

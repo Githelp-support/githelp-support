@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
@@ -516,6 +516,7 @@ export default function ReportsSupportPage() {
                           </div>
                           <div className="col-span-2 flex items-center justify-end space-x-2">
                             <Button
+                              title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                               variant="outline"
                               size="sm"
                               className="text-muted-foreground border-border hover:bg-muted bg-transparent"

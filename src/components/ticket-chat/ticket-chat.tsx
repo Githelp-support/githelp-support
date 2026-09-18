@@ -14,6 +14,7 @@ import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-s
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -449,7 +450,7 @@ export function TicketChat(props: TicketChatProps) {
               )}
 
               {!isEnded && (
-                <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
+                <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                   <Plus className="w-4 h-4" />
                   Invite other helper
                 </Button>

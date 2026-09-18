@@ -26,7 +26,7 @@ import { usePendingRequests, useUpdatePendingRequest } from "@/hooks/usePendingR
 import { useCreateProjectInvite, useListProjectInvites, useRevokeProjectInvite } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import Link from "next/link"
 
 function isPendingInvite(invite: {
@@ -655,7 +655,7 @@ export default function HelpersPage() {
                                 Revoke
                               </Button>
                             )}
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
+                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </div>
@@ -799,7 +799,7 @@ export default function HelpersPage() {
                           >
                             Accept
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </div>

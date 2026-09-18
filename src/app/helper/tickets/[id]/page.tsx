@@ -59,6 +59,7 @@ import { UserPlus } from "lucide-react"
 import { prepareOutgoingMessage } from "@/lib/code-format"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface Message {
   id: string
@@ -979,7 +980,7 @@ export default function TicketDetailPage() {
                   <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
                 )}
                 {!isTicketEnded && (
-                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
+                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                     <Plus className="w-4 h-4" />
                     Invite other helper
                   </Button>

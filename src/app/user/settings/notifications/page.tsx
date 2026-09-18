@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 // TODO: Replace local state with backend-persisted settings once a helper_settings
 // table (or equivalent) exists in the database schema.
@@ -186,6 +187,7 @@ export default function UserNotificationsSettingsPage() {
               </div>
 
               <Button
+                title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                 onClick={handleSaveNotifications}
                 disabled={isSavingNotifications}
                 variant="outline"

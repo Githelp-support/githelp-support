@@ -1,6 +1,7 @@
 "use client"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import type { RefObject } from "react"
@@ -159,7 +160,7 @@ export function NotificationsPanel({
                   </p>
                 </div>
               ))}
-              <Button variant="ghost" className="w-full">See all notifications</Button>
+              <Button variant="ghost" className="w-full" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>See all notifications</Button>
             </div>
           )}
         </div>

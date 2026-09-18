@@ -36,7 +36,7 @@ import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
 import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { prepareOutgoingMessage } from "@/lib/code-format"
 import { stripTicketAttachments } from "@/lib/ticket-attachments"
 
@@ -459,6 +459,7 @@ export default function SupportPage() {
                     Get support
                   </Button>
                   <Button
+                    title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                     variant="outline"
                     className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
                   >
@@ -625,6 +626,7 @@ export default function SupportPage() {
                     {/* Get an SLA button */}
                     <div className="flex items-start gap-2">
                       <Button
+                        title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                         variant="outline"
                         className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
                       >

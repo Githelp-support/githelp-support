@@ -28,6 +28,7 @@ import {
   transferTicketType,
   type HelperMonthlyReportRow,
 } from "@/lib/helper-payout-reports"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface PayoutData {
   id: string
@@ -429,12 +430,16 @@ export default function HelperReportsPage() {
                       </div>
                       <div className="col-span-3">
                         <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                            Open
-                          </Button>
-                          <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                            Request PDF
-                          </Button>
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              Open
+                            </Button>
+                          </span>
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              Request PDF
+                            </Button>
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -545,9 +550,11 @@ export default function HelperReportsPage() {
                       <div className="col-span-2 text-sm text-gray-900">{row.hoursLogged}</div>
                       <div className="col-span-2 text-sm text-gray-900">{row.earnings}</div>
                       <div className="col-span-3">
-                        <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                          Request PDF
-                        </Button>
+                        <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                          <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                            Request PDF
+                          </Button>
+                        </span>
                       </div>
                     </div>
                   </div>

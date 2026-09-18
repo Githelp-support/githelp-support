@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
 interface RequestPdfModalProps {
@@ -56,7 +57,11 @@ export function RequestPdfModal({ open, onOpenChange, onConfirm }: RequestPdfMod
               <Button variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button variant="lavender" onClick={handleConfirm}>
+              <Button
+                variant="lavender"
+                onClick={handleConfirm}
+                title={onConfirm ? undefined : ILLUSTRATIVE_BUTTON_TOOLTIP}
+              >
                 Confirm
               </Button>
             </DialogFooter>

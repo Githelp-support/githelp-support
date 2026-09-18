@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 // TODO: Replace local state with backend-persisted settings once a helper_settings
 // table (or equivalent) exists in the database schema.
@@ -231,6 +232,7 @@ export default function HelperSettingsPage() {
             )}
 
             <Button
+              title={ILLUSTRATIVE_BUTTON_TOOLTIP}
               onClick={handleSaveAvailability}
               disabled={isSavingAvailability}
               variant="outline"
@@ -371,6 +373,7 @@ export default function HelperSettingsPage() {
             </div>
 
             <Button
+              title={ILLUSTRATIVE_BUTTON_TOOLTIP}
               onClick={handleSaveNotifications}
               disabled={isSavingNotifications}
               variant="outline"

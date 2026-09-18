@@ -17,7 +17,7 @@ import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } fro
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 
 interface Ticket {
@@ -552,17 +552,21 @@ export default function TicketsPage() {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-3">
-                                  <Button variant="lavender" disabled>
-                                    Claim ticket
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    disabled
-                                    className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-                                  >
-                                    <Sparkles className="w-4 h-4" />
-                                    Rephrase with AI
-                                  </Button>
+                                  <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                    <Button variant="lavender" disabled>
+                                      Claim ticket
+                                    </Button>
+                                  </span>
+                                  <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                    <Button
+                                      variant="outline"
+                                      disabled
+                                      className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                    >
+                                      <Sparkles className="w-4 h-4" />
+                                      Rephrase with AI
+                                    </Button>
+                                  </span>
                                 </div>
                               </div>
                             )}

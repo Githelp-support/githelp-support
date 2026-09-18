@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { detectLanguage, isInsideOpenFence, looksLikeCode, wrapInFence } from "@/lib/code-blocks"
 import { cn } from "@/lib/utils"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import {
   AtSign,
   Bold,
@@ -268,19 +269,19 @@ export function TicketChatInput({
           spellCheck={!isInsideOpenFence(value, value.length)}
         />
         <div className="flex items-center gap-2 mt-2">
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
             <Plus className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
             <Smile className="w-[18px] h-[18px]" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
             <AtSign className="w-[17px] h-[17px]" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
             <Video className="w-[22px] h-[22px]" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0">
+          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
             <Mic className="w-[22px] h-[22px]" />
           </Button>
           {imagesUploading && (

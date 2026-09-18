@@ -27,6 +27,7 @@ import {
   type UserPaymentDisplayStatus,
   type UserPaymentRow,
 } from "@/lib/user-payment-reports"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 // dd/mm/yyyy, matching the helper reports page
 const formatDate = (dateString: string) => {
@@ -440,12 +441,16 @@ export default function UserReportsPage() {
                           </div>
                           <div className="col-span-2">
                             <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                Open
-                              </Button>
-                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                Request PDF
-                              </Button>
+                              <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                  Open
+                                </Button>
+                              </span>
+                              <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                  Request PDF
+                                </Button>
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -561,9 +566,11 @@ export default function UserReportsPage() {
                             </Badge>
                           </div>
                           <div className="col-span-3">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Request PDF
-                            </Button>
+                            <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                Request PDF
+                              </Button>
+                            </span>
                           </div>
                         </div>
                       </div>
