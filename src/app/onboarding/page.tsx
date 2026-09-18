@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCreateProject, useListUserGithubRepos, useCreateProjectFromGitHub, useCreateSandboxProject, useHasSandbox } from "@/hooks/useProject"
 import { useCompleteOnboarding, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
-import { useProjectSelection } from "@/contexts/project-context"
+import { useEnterProject } from "@/hooks/useEnterProject"
+import { homeRouteForRole } from "@/lib/roles"
 import { Loader2, Plus, Users, Github, ArrowLeft, Check, Search, FlaskConical } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { signInWithGitHub } from "@/lib/supabase/auth"
@@ -32,7 +33,7 @@ export default function OnboardingPage() {
     const createSandbox = useCreateSandboxProject()
     const { data: hasSandbox } = useHasSandbox()
     const completeOnboarding = useCompleteOnboarding()
-    const { setSelectedProjectId } = useProjectSelection()
+    const enterProject = useEnterProject()
     const { data: onboardingStatus, isLoading: onboardingStatusLoading } = useOnboardingStatus()
 
     const { data: githubRepos = [], isLoading: isLoadingRepos } = useListUserGithubRepos(githubToken)
@@ -76,18 +77,24 @@ export default function OnboardingPage() {
     // returns needsOnboarding: false (no user), which would wrongly redirect.
     const hasFinishedOnboardingWizard =
         !wantsAnotherProject &&
+        !isCreating &&
         !!onboardingStatus &&
         (onboardingStatus.isMember || onboardingStatus.onboardingCompleted)
 
     useEffect(() => {
         if (onboardingStatusLoading || !onboardingStatus) return
         if (wantsAnotherProject) return
+        // Creating a project makes the user a member right away; the create
+        // handlers navigate themselves once the new project is selected and
+        // the role is switched. Redirecting here first would race them and
+        // land on "/" before any project is selected.
+        if (isCreating) return
         const done =
             onboardingStatus.isMember || onboardingStatus.onboardingCompleted
         if (done) {
             router.replace("/")
         }
-    }, [onboardingStatus, onboardingStatusLoading, router, wantsAnotherProject])
+    }, [onboardingStatus, onboardingStatusLoading, router, wantsAnotherProject, isCreating])
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
@@ -110,18 +117,18 @@ export default function OnboardingPage() {
             })
 
             await completeOnboarding.mutateAsync()
-            await Promise.all([
-                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
-                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
-            ])
+            await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
 
-            setSelectedProjectId(project.project_id)
+            // The creator is the project's admin — land them there as admin
+            // even if their last active role (e.g. helper) was something else.
+            const role = await enterProject(project.project_id, "admin")
             toast.success("Project created successfully!")
-            router.push("/")
+            router.push(homeRouteForRole(role))
         } catch (error: unknown) {
             console.error("Failed to create project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create project. Please try again.")
-        } finally {
+            // Only reset on failure — on success we navigate away, and
+            // clearing it would re-arm the member redirect above.
             setIsCreating(false)
         }
     }
@@ -149,18 +156,16 @@ export default function OnboardingPage() {
             })
 
             await completeOnboarding.mutateAsync()
-            await Promise.all([
-                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
-                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
-            ])
+            await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
 
-            setSelectedProjectId(result.project.project_id)
+            await enterProject(result.project.project_id, "admin")
             toast.success("Project imported from GitHub successfully!")
             router.push(`/projects/${result.project.project_id}/invite-contributors?repo=${encodeURIComponent(repo.full_name)}`)
         } catch (error: unknown) {
             console.error("Failed to import project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to import project. Please try again.")
-        } finally {
+            // Only reset on failure — on success we navigate away, and
+            // clearing it would re-arm the member redirect above.
             setIsCreating(false)
         }
     }
@@ -172,18 +177,16 @@ export default function OnboardingPage() {
             // complete server-side, so we only refetch to pick up the changes.
             const result = await createSandbox.mutateAsync()
 
-            await Promise.all([
-                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
-                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
-            ])
+            await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
 
-            setSelectedProjectId(result.project.project_id)
+            const role = await enterProject(result.project.project_id, "admin")
             toast.success("Sandbox ready! Explore your demo project.")
-            router.push("/")
+            router.push(homeRouteForRole(role))
         } catch (error: unknown) {
             console.error("Failed to create sandbox:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create sandbox. Please try again.")
-        } finally {
+            // Only reset on failure — on success we navigate away, and
+            // clearing it would re-arm the member redirect above.
             setIsCreating(false)
         }
     }
