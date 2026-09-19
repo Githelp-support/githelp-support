@@ -235,7 +235,7 @@ export default function SLAsPage() {
             {/* Table Body */}
             <div className="divide-y divide-border">
               {isLoading ? (
-                <div className="px-6 py-8 text-center text-muted-foreground">Loading SLAs...</div>
+                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading SLAs...</div>
               ) : filteredAndSortedSLAs.length > 0 ? (
                 filteredAndSortedSLAs.map((sla, index) => (
                 <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">

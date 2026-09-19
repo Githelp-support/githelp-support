@@ -203,7 +203,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="SLA Details" subtitle="View and manage SLA configuration" />
           <main className="flex-1 overflow-auto p-6 flex items-center justify-center">
-            <span className="text-muted-foreground">Loading…</span>
+            <span className="text-muted-foreground text-[14px]">Loading…</span>
           </main>
         </div>
       </div>

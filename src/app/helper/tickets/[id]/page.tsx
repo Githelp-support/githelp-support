@@ -956,7 +956,7 @@ export default function TicketDetailPage() {
               <div>
                 <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
                 {participantsLoading ? (
-                  <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
+                  <div className="text-center text-muted-foreground text-[14px] py-4">Loading...</div>
                 ) : allParticipants.length > 0 ? (
                   <div className="space-y-2 mb-3">
                     {allParticipants.map((participant) => {
