@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { FormField } from "@/components/ui/form-field"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Copy, Check, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
@@ -298,10 +299,17 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                   <RadioGroupItem value="link" id="link" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
                   <Label htmlFor="link" className="cursor-pointer text-sm text-foreground/80">Generate shareable link</Label>
                 </div>
-                <div className="flex items-center space-x-2.5">
-                  <RadioGroupItem value="email" id="email" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
-                  <Label htmlFor="email" className="cursor-pointer text-sm text-foreground/80">Send via email</Label>
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-2.5">
+                        <RadioGroupItem value="email" id="email" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                        <Label htmlFor="email" className="cursor-pointer text-sm text-foreground/80">Send via email</Label>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>This option is currently not available.</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 {projectId && (
                   <>
                     <div className="flex items-center space-x-2.5">
