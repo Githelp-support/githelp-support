@@ -577,10 +577,7 @@ export default function ReportsSupportPage() {
                         </div>
                         <div className="col-span-2">
                           {ticket.statusType === "pending" ? (
-                            <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-                              <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                                <circle cx="6" cy="6" r="2" fill="currentColor" />
-                              </svg>
+                            <Badge className={`${getStatusBadgeClass("pending")} hover:opacity-90 text-[13px] px-3 py-1`}>
                               {ticket.status}
                             </Badge>
                           ) : ticket.statusType === "failed" ? (
