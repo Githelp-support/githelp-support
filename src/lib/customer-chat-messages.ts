@@ -11,6 +11,13 @@ import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
 export const TICKET_DISCLAIMER =
     "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm.";
 
+/**
+ * Synthetic auto-reply shown right after the customer's first message.
+ * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
+ */
+export const AUTO_REPLY =
+    "Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **18 minutes**.";
+
 /** dd/mm/yyyy, hh:mm — the timestamp format used throughout the chat UI. */
 export function formatChatTimestamp(date: Date | string): string {
     const d = typeof date === "string" ? new Date(date) : date;
@@ -137,6 +144,21 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             paymentMetadata: (msg.metadata as TicketChatMessage["paymentMetadata"]) ?? null,
         });
     });
+
+    // Auto-reply right after the customer's first message — whether that is the
+    // synthetic pending-first message or the first persisted user message — so
+    // it shows both in the live session and on reload.
+    const firstUserIndex = list.findIndex((m) => m.senderType === "user");
+    if (firstUserIndex !== -1) {
+        list.splice(firstUserIndex + 1, 0, {
+            id: "auto-reply",
+            senderType: "system",
+            content: AUTO_REPLY,
+            senderName: `${projectName} Team`,
+            senderAvatarUrl: projectLogo,
+            timestamp: list[firstUserIndex].timestamp,
+        });
+    }
 
     return list;
 }
