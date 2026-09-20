@@ -284,7 +284,7 @@ export function TicketChat(props: TicketChatProps) {
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
-                                      {msg.senderName || "Unknown"}
+                                      {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
                                     </span>
                                     <span
                                       className="text-xs"

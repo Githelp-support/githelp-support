@@ -27,7 +27,7 @@ export const SUPPORT_TICKET_PREVIEW_CARDS: SupportTicketPreviewCard[] = [
     {
         id: "preview-support-1",
         title: "Dashboard sidebar collapses on navigation",
-        customer: "Preview Customer",
+        customer: "Preview User",
         avatar: "P",
         description:
             "When switching between Analytics and Settings, the sidebar sometimes collapses unexpectedly. Steps to reproduce are attached in the full ticket.",
@@ -38,7 +38,7 @@ export const SUPPORT_TICKET_PREVIEW_CARDS: SupportTicketPreviewCard[] = [
     {
         id: "preview-support-2",
         title: "Question about webhook retry policy",
-        customer: "Preview Customer",
+        customer: "Preview User",
         avatar: "P",
         description:
             "We need clarification on how many times failed webhooks are retried and whether exponential backoff applies.",
@@ -49,7 +49,7 @@ export const SUPPORT_TICKET_PREVIEW_CARDS: SupportTicketPreviewCard[] = [
     {
         id: "preview-support-3",
         title: "Feature request: export tickets to CSV",
-        customer: "Preview Customer",
+        customer: "Preview User",
         avatar: "P",
         description:
             "Support managers would like a one-click export of filtered tickets for weekly reporting.",
