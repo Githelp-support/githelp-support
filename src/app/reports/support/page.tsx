@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
@@ -271,6 +271,13 @@ export default function ReportsSupportPage() {
     )
   }
 
+  /** Open the Tickets tab filtered to the given month (report.period, e.g. "January 2026"). */
+  const openMonthTickets = (period: string) => {
+    setActiveTab("tickets")
+    setSelectedMonth(period)
+    setSelectedFilter("all")
+  }
+
   const displayReports = activeTab === "monthly" ? filteredMonthlyReports : sortedTickets
   const allSelected =
     activeTab === "monthly"
@@ -492,9 +499,22 @@ export default function ReportsSupportPage() {
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No reports found</div>
                   ) : (
                     filteredMonthlyReports.map((report) => (
-                      <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div
+                        key={report.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View tickets for ${report.period}`}
+                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        onClick={() => openMonthTickets(report.period)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            openMonthTickets(report.period)
+                          }
+                        }}
+                      >
                         <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
-                          <div>
+                          <div onClick={(e) => e.stopPropagation()}>
                             <Checkbox
                               checked={selectedRows.includes(report.id)}
                               onCheckedChange={() => handleRowSelect(report.id)}
@@ -516,10 +536,13 @@ export default function ReportsSupportPage() {
                           </div>
                           <div className="col-span-2 flex items-center justify-end space-x-2">
                             <Button
-                              title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                               variant="outline"
                               size="sm"
                               className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openMonthTickets(report.period)
+                              }}
                             >
                               Open
                             </Button>
@@ -527,7 +550,10 @@ export default function ReportsSupportPage() {
                               variant="outline"
                               size="sm"
                               className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                              onClick={() => setRequestPdfOpen(true)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setRequestPdfOpen(true)
+                              }}
                             >
                               Request PDF
                             </Button>
