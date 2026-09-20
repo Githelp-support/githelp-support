@@ -208,7 +208,7 @@ export default function TicketDetailPage() {
         created_at: "",
         user: {
           id: creatorId,
-          name: (creatorUser as { name?: string })?.name ?? "Unknown",
+          name: (creatorUser as { name?: string })?.name ?? "User",
           avatar_url: (creatorUser as { avatar_url?: string | null })?.avatar_url ?? null,
         },
       })
@@ -281,7 +281,7 @@ export default function TicketDetailPage() {
           minute: "2-digit",
         }),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
-        senderName: msg.sender?.name || "Unknown",
+        senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
         senderId: msg.sender_id ?? msg.sender?.id,
         senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
@@ -481,7 +481,7 @@ export default function TicketDetailPage() {
         {
           onError: (error) =>
             toast.error(`Payment failed: ${error.message}`, {
-              description: "The customer has been asked to update their card. You can also retry below.",
+              description: "The user has been asked to update their card. You can also retry below.",
             }),
         },
       )
@@ -514,7 +514,7 @@ export default function TicketDetailPage() {
         onError: (error) =>
           isPaymentNotAuthorizedError(error)
             ? toast.error("Time can't be logged yet", {
-                description: "The payment for this ticket isn't authorized. Ask the customer to add a payment method.",
+                description: "The payment for this ticket isn't authorized. Ask the user to add a payment method.",
               })
             : toast.error("Failed to log time. Please try again."),
       }
@@ -850,7 +850,7 @@ export default function TicketDetailPage() {
                               )}
                               {paymentFailed && (
                                 <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
+                                  The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
                               {paymentFailed && (
@@ -861,7 +861,7 @@ export default function TicketDetailPage() {
                                       {
                                         onError: (error) =>
                                           toast.error(`Payment failed: ${error.message}`, {
-                                            description: "The customer has been asked to update their card.",
+                                            description: "The user has been asked to update their card.",
                                           }),
                                       },
                                     )
