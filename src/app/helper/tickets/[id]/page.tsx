@@ -9,6 +9,7 @@ import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
+import { TicketEndedSummary } from "@/components/ticket-chat/ticket-ended-summary"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
 import { useTimeEntries, useCreateTimeEntry, isPaymentNotAuthorizedError, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
@@ -553,17 +554,6 @@ export default function TicketDetailPage() {
     (captureTicket.isPending ||
       paymentGate.status === "authorized" ||
       paymentGate.status === "pending")
-  const chargedLabel = isCancelledEnd
-    ? "No charge"
-    : paymentGate.status === "free"
-      ? "Free support"
-    : paymentSettled && chargedSmallestUnit != null
-      ? `$${(chargedSmallestUnit / 100).toFixed(2)}`
-      : paymentProcessing
-        ? "Processing…"
-        : paymentFailed
-          ? "Failed"
-          : "—"
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
@@ -823,66 +813,29 @@ export default function TicketDetailPage() {
                               See details
                             </Button>
                           ) : (
-                            <div className="rounded-lg border border-border bg-muted/40 p-4 max-w-xs">
-                              <div className="space-y-1.5 text-[13px]">
-                                <div className="flex items-center justify-between gap-6">
-                                  <span className="text-muted-foreground">Outcome</span>
-                                  <span className="font-medium text-foreground">
-                                    {isCancelledEnd ? "Not able to help" : "Resolved"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between gap-6">
-                                  <span className="text-muted-foreground">Time logged</span>
-                                  <span className="font-medium text-foreground tabular-nums">
-                                    {getTotalLoggedTime().formatted}
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between gap-6">
-                                  <span className="text-muted-foreground">Charged</span>
-                                  <span className="font-medium text-foreground tabular-nums">{chargedLabel}</span>
-                                </div>
-                              </div>
-
-                              {paymentFailed && paymentFailureReason && (
-                                <p className="mt-2 text-[12px] leading-snug text-destructive">
-                                  {paymentFailureReason}
-                                </p>
-                              )}
-                              {paymentFailed && (
-                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
-                                </p>
-                              )}
-                              {paymentFailed && (
-                                <Button
-                                  onClick={() =>
-                                    captureTicket.mutate(
-                                      { ticketId },
-                                      {
-                                        onError: (error) =>
-                                          toast.error(`Payment failed: ${error.message}`, {
-                                            description: "The customer has been asked to update their card.",
-                                          }),
-                                      },
-                                    )
-                                  }
-                                  disabled={captureTicket.isPending}
-                                  variant="outline"
-                                  size="sm"
-                                  className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-                                >
-                                  {captureTicket.isPending ? "Retrying…" : "Retry payment"}
-                                </Button>
-                              )}
-
-                              <div className="mt-3">
-                                <NextLink href="/tickets">
-                                  <Button variant="default" size="sm">
-                                    Back to tickets
-                                  </Button>
-                                </NextLink>
-                              </div>
-                            </div>
+                            <TicketEndedSummary
+                              ticketId={ticketId}
+                              isCancelledEnd={isCancelledEnd}
+                              isFreeSupport={paymentGate.status === "free"}
+                              chargedSmallestUnit={chargedSmallestUnit}
+                              paymentSettled={paymentSettled}
+                              paymentProcessing={paymentProcessing}
+                              paymentFailed={paymentFailed}
+                              paymentFailureReason={paymentFailureReason}
+                              timeLoggedFormatted={getTotalLoggedTime().formatted}
+                              onRetryPayment={() =>
+                                captureTicket.mutate(
+                                  { ticketId },
+                                  {
+                                    onError: (error) =>
+                                      toast.error(`Payment failed: ${error.message}`, {
+                                        description: "The customer has been asked to update their card.",
+                                      }),
+                                  },
+                                )
+                              }
+                              isRetryingPayment={captureTicket.isPending}
+                            />
                           )}
                         </div>
                       </div>
