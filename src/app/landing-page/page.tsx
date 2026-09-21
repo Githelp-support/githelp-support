@@ -163,6 +163,7 @@ export default function LandingPageSettings() {
                       onClick={handleAddResource}
                       disabled={!newResourceName || !newResourceUrl || createResource.isPending}
                       variant="lavender"
+                      className="text-sm"
                     >
                       <Plus className="w-4 h-4" />
                       {createResource.isPending ? "Adding..." : "Add resource"}
