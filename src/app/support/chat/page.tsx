@@ -323,8 +323,11 @@ export default function UserSupportChatPage() {
       (isAuthenticated && userTicketsLoadingForResolve) || !!latestUserTicket
     if (resolving) {
       return (
-        <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
-          <div className="text-muted-foreground">Loading your support…</div>
+        <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="text-muted-foreground">Loading your support…</div>
+          </main>
         </div>
       )
     }
@@ -401,21 +404,29 @@ export default function UserSupportChatPage() {
   const openingOtherTicket = !!ticketIdParam && ticketIdParam !== createdTicketId
   if (openingOtherTicket && existingTicketLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
-        <div className="text-muted-foreground">Loading ticket…</div>
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+        <Sidebar projectPageHref={projectPageHref} />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-muted-foreground">Loading ticket…</div>
+        </main>
       </div>
     )
   }
 
   if (openingOtherTicket && !existingTicket?.id) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-          <h1 className="text-2xl font-semibold text-foreground mb-2">Ticket not found</h1>
-          <p className="text-muted-foreground">
-            This ticket may have been removed or you may not have access to it.
-          </p>
-        </div>
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+        <Sidebar projectPageHref={projectPageHref} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-6 py-12">
+            <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+              <h1 className="text-2xl font-semibold text-foreground mb-2">Ticket not found</h1>
+              <p className="text-muted-foreground">
+                This ticket may have been removed or you may not have access to it.
+              </p>
+            </div>
+          </div>
+        </main>
       </div>
     )
   }
