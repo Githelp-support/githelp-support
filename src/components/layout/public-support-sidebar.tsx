@@ -160,6 +160,27 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
         </div>
       </nav>
 
+      {/* Pinned link to the user portal — sits just above the profile block's
+          border-t divider. Only rendered for signed-in users; anonymous
+          visitors have no user portal to open. Opens in a new tab so the
+          visitor doesn't lose their place on the public support page. */}
+      {isAuthenticated && (
+        <div className="px-3 pb-3 shrink-0">
+          <a
+            href="/support/tickets"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={isCollapsed ? "Open my user portal" : undefined}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground ${isCollapsed ? "justify-center" : ""}`}
+          >
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <FlaticonIcon iconClass="fi-rr-user" />
+            </span>
+            {!isCollapsed && "Open my user portal"}
+          </a>
+        </div>
+      )}
+
       {/* Bottom profile block — same structure as the main `Sidebar`. Shows
           the signed-in user from the user context, falling back to the
           Incognito guest identity for anonymous visitors. */}
