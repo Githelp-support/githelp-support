@@ -11,6 +11,7 @@ import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
+import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "./right-sidebar-collapse"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
@@ -148,6 +149,9 @@ export function TicketChat(props: TicketChatProps) {
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false)
+  // Collapsed state is shared across views via localStorage (see
+  // right-sidebar-collapse.tsx).
+  const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
 
   // Uploads finish asynchronously, so append to the latest draft rather than
@@ -423,8 +427,14 @@ export function TicketChat(props: TicketChatProps) {
       </div>
 
       {/* Right Sidebar */}
-      <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-          <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
+      <div
+        suppressHydrationWarning
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+      >
+          <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
+
+          {!isCollapsed && (
+          <div className="flex-1 overflow-y-auto px-3 pb-6">
             {/* People in Chat */}
             <div>
               <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
@@ -484,6 +494,7 @@ export function TicketChat(props: TicketChatProps) {
               </>
             )}
           </div>
+          )}
         </div>
     </div>
   )

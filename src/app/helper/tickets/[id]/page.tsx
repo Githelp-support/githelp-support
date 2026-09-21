@@ -37,6 +37,7 @@ import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/sidebar-section"
+import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
@@ -88,6 +89,9 @@ export default function TicketDetailPage() {
   const [isAddSelfAsHelperDialogOpen, setIsAddSelfAsHelperDialogOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<"claim" | "logTime" | null>(null)
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false)
+  // Collapsed state is shared across views via localStorage (see
+  // right-sidebar-collapse.tsx).
+  const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
 
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId)
@@ -950,8 +954,14 @@ export default function TicketDetailPage() {
           </div>
 
           {/* Right Sidebar */}
-          <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-            <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
+          <div
+            suppressHydrationWarning
+            className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+          >
+            <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
+
+            {!isCollapsed && (
+            <div className="flex-1 overflow-y-auto px-3 pb-6">
               {/* People in Chat */}
               <div>
                 <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
@@ -1062,7 +1072,7 @@ export default function TicketDetailPage() {
               {/* Active Tickets — 3 latest claimed by this helper */}
               <div>
                 <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-                <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+                <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
                   {activeTicketsSidebar.length === 0 ? (
                     <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
                   ) : (
@@ -1102,6 +1112,7 @@ export default function TicketDetailPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </main>
       </div>
