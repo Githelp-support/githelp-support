@@ -301,16 +301,24 @@ export function TicketChat(props: TicketChatProps) {
                                 <div
                                   className={
                                     msg.senderType === "system"
-                                      ? msg.paymentMetadata?.kind === "payment_cap_exceeded"
-                                        ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                        : msg.paymentMetadata?.kind === "payment_failed"
-                                          ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                          : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                      ? msg.paymentMetadata?.kind === "payment_authorized"
+                                        ? "bg-status-success-bg text-status-success-text py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                        : msg.paymentMetadata?.kind === "payment_cap_exceeded"
+                                          ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                          : msg.paymentMetadata?.kind === "payment_failed"
+                                            ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                            : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
-                                  <MarkdownContent content={msg.content} />
+                                  <MarkdownContent
+                                    content={
+                                      msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
+                                        ? `✓ ${msg.content}`
+                                        : msg.content
+                                    }
+                                  />
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button
