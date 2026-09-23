@@ -618,7 +618,7 @@ export default function SupportPage() {
                           {avgResponseLoading
                             ? "…"
                             : avgResponseSeconds == null
-                              ? "No data yet"
+                              ? "~"
                               : formatDuration(avgResponseSeconds)}
                         </p>
                       </div>
