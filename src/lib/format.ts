@@ -29,3 +29,24 @@ export function formatRelativeTime(createdAt: string): string {
   if (diffDays < 7) return `${diffDays}d`
   return created.toLocaleDateString()
 }
+
+/**
+ * Format a duration in seconds as days, hours and minutes, dropping any unit
+ * that is zero: 93000 → "1d 1h 50m", 5400 → "1h 30m", 1800 → "30m".
+ * Rounded to the nearest minute; anything under half a minute is "<1m".
+ */
+export function formatDuration(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "<1m"
+  const totalMinutes = Math.round(totalSeconds / 60)
+  if (totalMinutes < 1) return "<1m"
+
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+
+  const parts: string[] = []
+  if (days > 0) parts.push(`${days}d`)
+  if (hours > 0) parts.push(`${hours}h`)
+  if (minutes > 0) parts.push(`${minutes}m`)
+  return parts.join(" ")
+}

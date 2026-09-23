@@ -10,6 +10,8 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
+import { formatDuration } from "@/lib/format"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, useSearchParams } from "next/navigation"
@@ -88,6 +90,7 @@ export default function SupportPage() {
   const { data: resourcesData, isLoading: resourcesLoading } = useProjectResources(projectId || "")
   const { data: brandingData } = useProjectBranding(projectId || "")
   const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
+  const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(projectId || "")
 
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
@@ -607,9 +610,17 @@ export default function SupportPage() {
                         <Clock className="h-5 w-5 text-[#444444] mb-2" />
                         <div className="flex items-center gap-2 mb-4">
                           <h3 className="text-[14px] font-semibold text-[#444444]">Average response time</h3>
-                          <HelpCircle className="h-4 w-4 text-[#868c98]" />
+                          <span title="Average time from a ticket being created until a helper claims it or replies, whichever comes first.">
+                            <HelpCircle className="h-4 w-4 text-[#868c98]" />
+                          </span>
                         </div>
-                        <p className="text-lg font-semibold text-[#2d2a49]">6 minutes</p>
+                        <p className="text-lg font-semibold text-[#2d2a49]">
+                          {avgResponseLoading
+                            ? "…"
+                            : avgResponseSeconds == null
+                              ? "No data yet"
+                              : formatDuration(avgResponseSeconds)}
+                        </p>
                       </div>
 
                       {/* Core team support */}
