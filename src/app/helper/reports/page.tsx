@@ -26,8 +26,8 @@ import {
   monthLabel,
   transferDate,
   transferTicketType,
-  type HelperMonthlyReportRow,
 } from "@/lib/helper-payout-reports"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface PayoutData {
@@ -53,7 +53,7 @@ const formatDate = (dateString: string) => {
 }
 
 type SortField = "ticketId" | "date" | "ticketType" | "amount" | "status"
-type MonthlySortField = "month" | "ticketsClosed" | "hoursLogged" | "earnings"
+type MonthlySortField = "period" | "description" | "earnings" | "status"
 type SortDirection = "asc" | "desc"
 
 const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
@@ -69,7 +69,7 @@ const STATUS_BADGE_CLASS: Record<PaymentTransfer["status"], string> = {
 }
 
 const PAYOUTS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
-const MONTHLY_GRID = { gridTemplateColumns: "repeat(12, 1fr)" }
+const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
 function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
@@ -119,6 +119,7 @@ export default function HelperReportsPage() {
   const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [monthlySelectedRows, setMonthlySelectedRows] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
@@ -198,8 +199,19 @@ export default function HelperReportsPage() {
     return sorted
   }, [allPayouts, targetMonth, sortField, sortDirection])
 
-  const monthlyReports: HelperMonthlyReportRow[] = useMemo(() => {
-    let list = aggregateHelperMonthly(transfersData ?? [], timeEntries ?? [])
+  const monthlyReports = useMemo(() => {
+    let list = aggregateHelperMonthly(transfersData ?? [], timeEntries ?? []).map((row) => ({
+      id: row.id,
+      period: row.period,
+      periodRaw: row.periodRaw,
+      description: `${row.ticketsClosed} ticket${row.ticketsClosed === 1 ? "" : "s"} · Total time logged: ${formatMinutes(row.minutesLogged)}`,
+      earnings: formatAmount(row.earningsSmallestUnit, row.currency),
+      earningsRaw: row.earningsSmallestUnit,
+      status:
+        row.earningsSmallestUnit > 0 && row.paidOutSmallestUnit === row.earningsSmallestUnit
+          ? ("Paid out" as const)
+          : ("Pending" as const),
+    }))
     if (targetMonth) {
       list = list.filter((row) => row.period === targetMonth)
     }
@@ -207,14 +219,14 @@ export default function HelperReportsPage() {
     const sorted = [...list]
     sorted.sort((a, b) => {
       switch (monthlySortField) {
-        case "month":
+        case "period":
           return compare(a.periodRaw, b.periodRaw, monthlySortDirection)
-        case "ticketsClosed":
-          return compare(a.ticketsClosed, b.ticketsClosed, monthlySortDirection)
-        case "hoursLogged":
-          return compare(a.minutesLogged, b.minutesLogged, monthlySortDirection)
+        case "description":
+          return compare(a.description.toLowerCase(), b.description.toLowerCase(), monthlySortDirection)
         case "earnings":
-          return compare(a.earningsSmallestUnit, b.earningsSmallestUnit, monthlySortDirection)
+          return compare(a.earningsRaw, b.earningsRaw, monthlySortDirection)
+        case "status":
+          return compare(a.status.toLowerCase(), b.status.toLowerCase(), monthlySortDirection)
         default:
           return 0
       }
@@ -250,6 +262,16 @@ export default function HelperReportsPage() {
     setSelectedRows(selectedRows.length === payouts.length ? [] : payouts.map((payout) => payout.id))
   }
 
+  const handleMonthlyRowSelect = (id: string) => {
+    setMonthlySelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]))
+  }
+
+  const handleMonthlySelectAll = () => {
+    setMonthlySelectedRows(
+      monthlySelectedRows.length === monthlyReports.length ? [] : monthlyReports.map((row) => row.id),
+    )
+  }
+
   const isBusy =
     !!projectId && (!helperFetched || (transfersQueryEnabled && (transfersLoading || !transfersFetched || timeLoading)))
 
@@ -274,15 +296,15 @@ export default function HelperReportsPage() {
 
         <main className="flex-1 overflow-auto p-6 space-y-6">
           {/* Tab Navigation */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+          <div className="mb-6">
+            <div className="flex gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("monthly")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === "monthly"
-                    ? "border-brand-primary text-brand-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "text-brand-primary border-brand-primary"
+                    : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
                 Monthly reports
@@ -290,15 +312,16 @@ export default function HelperReportsPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("payouts")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === "payouts"
-                    ? "border-brand-primary text-brand-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "text-brand-primary border-brand-primary"
+                    : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
                 Payouts
               </button>
-            </nav>
+            </div>
+            <div className="h-px bg-border -mx-6" />
           </div>
 
           {/* Filters */}
@@ -514,83 +537,128 @@ export default function HelperReportsPage() {
 
           {/* Monthly Reports Tab Content */}
           {activeTab === "monthly" && (
-            <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid gap-4 text-sm font-medium text-foreground" style={MONTHLY_GRID}>
+                <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="rounded border-border"
+                      checked={monthlySelectedRows.length === monthlyReports.length && monthlyReports.length > 0}
+                      onChange={handleMonthlySelectAll}
+                      disabled={monthlyReports.length === 0}
+                      aria-label="Select all monthly reports"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                  </div>
                   <div className="col-span-3">
-                    <SortHeader label="Month" field="month" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Tickets closed" field="ticketsClosed" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Hours logged" field="hoursLogged" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                    <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
                   <div className="col-span-2">
                     <SortHeader label="Earnings" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-3 flex items-center">
-                    <span className="text-sm font-medium text-foreground">Actions</span>
+                  <div className="col-span-2">
+                    <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
+                  <div className="col-span-2"></div>
                 </div>
               </div>
-              {isBusy ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
-              ) : showPreview ? (
-                HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
-                  <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
-                    <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                      <div className="col-span-3 flex items-center gap-2 text-sm text-gray-900">
-                        {row.period}
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                          Preview
-                        </Badge>
+              <div className="divide-y divide-border">
+                {isBusy ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
+                ) : showPreview ? (
+                  HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
+                    <div key={row.id} role="presentation" className="px-6 py-4 opacity-80">
+                      <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox disabled checked={false} />
+                        </div>
+                        <div className="col-span-2 flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-foreground">{row.period}</span>
+                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                            Preview
+                          </Badge>
+                        </div>
+                        <div className="col-span-3">
+                          <span className="text-sm text-muted-foreground">{row.description}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">{row.earnings}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                            {row.status}
+                          </Badge>
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              Open
+                            </Button>
+                          </span>
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              Request PDF
+                            </Button>
+                          </span>
+                        </div>
                       </div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.ticketsClosed}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.hoursLogged}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.earnings}</div>
-                      <div className="col-span-3">
-                        <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                          <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                    </div>
+                  ))
+                ) : monthlyReports.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("monthly reports")}</div>
+                ) : (
+                  monthlyReports.map((row) => (
+                    <div key={row.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={monthlySelectedRows.includes(row.id)}
+                            onCheckedChange={() => handleMonthlyRowSelect(row.id)}
+                            aria-label={`Select monthly report for ${row.period}`}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm font-medium text-foreground">{row.period}</span>
+                        </div>
+                        <div className="col-span-3">
+                          <span className="text-sm text-muted-foreground">{row.description}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">{row.earnings}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                            {row.status}
+                          </Badge>
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                          <Button
+                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            className={OUTLINE_BUTTON_CLASS}
+                          >
+                            Open
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            className={OUTLINE_BUTTON_CLASS}
+                            onClick={() => setRequestPdfOpen(true)}
+                          >
                             Request PDF
                           </Button>
-                        </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : monthlyReports.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("monthly reports")}</div>
-              ) : (
-                monthlyReports.map((row) => (
-                  <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
-                    <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                      <div className="col-span-3 text-sm text-gray-900">{row.period}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.ticketsClosed}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{formatMinutes(row.minutesLogged)}</div>
-                      <div className="col-span-2 text-sm text-gray-900">
-                        <div>{formatAmount(row.earningsSmallestUnit, row.currency)}</div>
-                        {row.paidOutSmallestUnit !== row.earningsSmallestUnit && (
-                          <div className="text-xs text-muted-foreground">
-                            {formatAmount(row.paidOutSmallestUnit, row.currency)} paid out
-                          </div>
-                        )}
-                      </div>
-                      <div className="col-span-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          className={OUTLINE_BUTTON_CLASS}
-                          onClick={() => setRequestPdfOpen(true)}
-                        >
-                          Request PDF
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           )}
         </main>
