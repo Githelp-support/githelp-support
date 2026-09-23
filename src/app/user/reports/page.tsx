@@ -24,10 +24,10 @@ import {
   toUserPaymentRow,
   USER_PAYMENT_STATUS_LABELS,
   type UserMonthlyReportRow,
-  type UserPaymentDisplayStatus,
   type UserPaymentRow,
 } from "@/lib/user-payment-reports"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 
 // dd/mm/yyyy, matching the helper reports page
 const formatDate = (dateString: string) => {
@@ -38,27 +38,19 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
-type SortField = "ticket" | "project" | "date" | "ticketType" | "amount" | "status"
+type SortField = "ticket" | "project" | "date" | "amount" | "status"
 type MonthlySortField = "period" | "tickets" | "amount"
 type SortDirection = "asc" | "desc"
 
-const STATUS_BADGE_CLASS: Record<UserPaymentDisplayStatus, string> = {
-  paid: "bg-green-100 text-green-800 hover:bg-green-100",
-  on_hold: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-  pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  action_required: "bg-orange-100 text-orange-800 hover:bg-orange-100",
-  failed: "bg-red-100 text-red-800 hover:bg-red-100",
-  cancelled: "bg-gray-100 text-gray-700 hover:bg-gray-100",
-}
+// Same Badge classes as the Admin reports page (src/app/reports/support/page.tsx):
+// default variant + design-token colours from getStatusBadgeClass.
+const statusBadgeClass = (label: string) =>
+  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
 
-const PREVIEW_STATUS_CLASS: Record<"Paid" | "On hold" | "Pending", string> = {
-  Paid: STATUS_BADGE_CLASS.paid,
-  "On hold": STATUS_BADGE_CLASS.on_hold,
-  Pending: STATUS_BADGE_CLASS.pending,
+const PAYMENTS_GRID = {
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) auto",
 }
-
-const PAYMENTS_GRID = { gridTemplateColumns: "2rem repeat(12, 1fr)" }
-const MONTHLY_GRID = { gridTemplateColumns: "repeat(12, 1fr)" }
+const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
@@ -116,6 +108,7 @@ export default function UserReportsPage() {
   const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [selectedMonthlyRows, setSelectedMonthlyRows] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
@@ -172,8 +165,6 @@ export default function UserReportsPage() {
           return compare(a.projectName.toLowerCase(), b.projectName.toLowerCase(), sortDirection)
         case "date":
           return compare(new Date(a.date).getTime(), new Date(b.date).getTime(), sortDirection)
-        case "ticketType":
-          return compare(a.ticketType.toLowerCase(), b.ticketType.toLowerCase(), sortDirection)
         case "amount":
           return compare(a.amountSmallestUnit, b.amountSmallestUnit, sortDirection)
         case "status":
@@ -239,6 +230,16 @@ export default function UserReportsPage() {
     setSelectedRows(selectedRows.length === payments.length ? [] : payments.map((payment) => payment.id))
   }
 
+  const handleMonthlyRowSelect = (id: string) => {
+    setSelectedMonthlyRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]))
+  }
+
+  const handleMonthlySelectAll = () => {
+    setSelectedMonthlyRows(
+      selectedMonthlyRows.length === monthlyReports.length ? [] : monthlyReports.map((row) => row.id),
+    )
+  }
+
   const isBusy = isAuthenticated ? paymentsLoading || !paymentsFetched : userLoading
   const hasRealData = allPayments.length > 0
 
@@ -280,15 +281,15 @@ export default function UserReportsPage() {
           {(isAuthenticated || userLoading) && (
             <>
               {/* Tab Navigation */}
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
+              <div className="mb-6">
+                <div className="flex gap-1">
                   <button
                     type="button"
                     onClick={() => setActiveTab("monthly")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                       activeTab === "monthly"
-                        ? "border-brand-primary text-brand-primary"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        ? "text-brand-primary border-brand-primary"
+                        : "text-muted-foreground border-transparent hover:text-foreground"
                     }`}
                   >
                     Monthly reports
@@ -296,15 +297,16 @@ export default function UserReportsPage() {
                   <button
                     type="button"
                     onClick={() => setActiveTab("payments")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                       activeTab === "payments"
-                        ? "border-brand-primary text-brand-primary"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        ? "text-brand-primary border-brand-primary"
+                        : "text-muted-foreground border-transparent hover:text-foreground"
                     }`}
                   >
                     Payments
                   </button>
-                </nav>
+                </div>
+                <div className="h-px bg-border -mx-6" />
               </div>
 
               {/* Filters */}
@@ -380,31 +382,25 @@ export default function UserReportsPage() {
                           className="rounded border-border"
                           checked={selectedRows.length === payments.length && payments.length > 0}
                           onChange={handleSelectAll}
-                          disabled={payments.length === 0}
                           aria-label="Select all payments"
                         />
                       </div>
-                      <div className="col-span-3">
+                      <div className="min-w-0">
                         <SortHeader label="Ticket" field="ticket" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
-                      <div className="col-span-2">
-                        <SortHeader label="Project" field="project" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      </div>
-                      <div className="col-span-1">
+                      <div className="min-w-0">
                         <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
-                      <div className="col-span-1">
-                        <SortHeader label="Type" field="ticketType" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <div className="min-w-0">
+                        <SortHeader label="Project" field="project" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
-                      <div className="col-span-1">
+                      <div className="min-w-0 whitespace-nowrap">
                         <SortHeader label="Amount" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
-                      <div className="col-span-2">
+                      <div className="min-w-0">
                         <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
-                      <div className="col-span-2 flex items-center">
-                        <span className="text-sm font-medium text-foreground">Actions</span>
-                      </div>
+                      <div />
                     </div>
                   </div>
 
@@ -417,41 +413,32 @@ export default function UserReportsPage() {
                           <div className="flex items-center">
                             <Checkbox disabled checked={false} />
                           </div>
-                          <div className="col-span-3 min-w-0">
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono tabular-nums text-sm text-gray-900">{row.ticketShortId}</span>
+                              <span className="text-sm font-medium text-foreground font-mono tabular-nums">{row.ticketShortId}</span>
                               <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                                 Preview
                               </Badge>
                             </div>
                             <div className="text-xs text-muted-foreground truncate">{row.ticketTitle}</div>
                           </div>
-                          <div className="col-span-2 text-sm text-gray-900 truncate">{row.projectName}</div>
-                          <div className="col-span-1 text-sm text-muted-foreground">{row.date}</div>
-                          <div className="col-span-1">
-                            <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                              {row.ticketType}
-                            </Badge>
+                          <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
+                          <div className="min-w-0 text-sm text-gray-900 truncate">{row.projectName}</div>
+                          <div className="min-w-0 text-sm text-gray-900 whitespace-nowrap">{row.amount}</div>
+                          <div className="min-w-0">
+                            <Badge className={statusBadgeClass(row.status)}>{row.status}</Badge>
                           </div>
-                          <div className="col-span-1 text-sm text-gray-900">{row.amount}</div>
-                          <div className="col-span-2">
-                            <Badge variant="secondary" className={PREVIEW_STATUS_CLASS[row.status]}>
-                              {row.status}
-                            </Badge>
-                          </div>
-                          <div className="col-span-2">
-                            <div className="flex items-center gap-2">
-                              <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                                <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                  Open
-                                </Button>
-                              </span>
-                              <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                                <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                  Request PDF
-                                </Button>
-                              </span>
-                            </div>
+                          <div className="flex items-center justify-end gap-2">
+                            <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                Open
+                              </Button>
+                            </span>
+                            <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                Request PDF
+                              </Button>
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -471,50 +458,49 @@ export default function UserReportsPage() {
                                 aria-label={`Select payment for ticket ${row.ticketShortId}`}
                               />
                             </div>
-                            <div className="col-span-3 min-w-0">
-                              <span className="font-mono tabular-nums text-sm text-gray-900">{row.ticketShortId}</span>
+                            <div className="min-w-0">
+                              {href ? (
+                                <Link href={href} className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums">
+                                  {row.ticketShortId}
+                                </Link>
+                              ) : (
+                                <span className="text-sm font-medium text-foreground">—</span>
+                              )}
                               <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
                                 {row.ticketTitle}
                               </div>
                             </div>
-                            <div className="col-span-2 text-sm text-gray-900 truncate" title={row.projectName}>
+                            <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
+                            <div className="min-w-0 text-sm text-gray-900 truncate" title={row.projectName}>
                               {row.projectName}
                             </div>
-                            <div className="col-span-1 text-sm text-muted-foreground">{formatDate(row.date)}</div>
-                            <div className="col-span-1">
-                              <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                                {row.ticketType}
-                              </Badge>
-                            </div>
-                            <div className="col-span-1 text-sm text-gray-900">
+                            <div className="min-w-0 text-sm text-gray-900 whitespace-nowrap">
                               {formatAmount(row.amountSmallestUnit, row.currency)}
                             </div>
-                            <div className="col-span-2">
-                              <Badge variant="secondary" className={STATUS_BADGE_CLASS[row.displayStatus]}>
+                            <div className="min-w-0">
+                              <Badge className={statusBadgeClass(USER_PAYMENT_STATUS_LABELS[row.displayStatus])}>
                                 {USER_PAYMENT_STATUS_LABELS[row.displayStatus]}
                               </Badge>
                             </div>
-                            <div className="col-span-2">
-                              <div className="flex items-center gap-2">
-                                {href ? (
-                                  <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
-                                    <Link href={href}>Open</Link>
-                                  </Button>
-                                ) : (
-                                  <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                    Open
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  type="button"
-                                  className={OUTLINE_BUTTON_CLASS}
-                                  onClick={() => setRequestPdfOpen(true)}
-                                >
-                                  Request PDF
+                            <div className="flex items-center justify-end gap-2">
+                              {href ? (
+                                <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
+                                  <Link href={href}>Open</Link>
                                 </Button>
-                              </div>
+                              ) : (
+                                <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                  Open
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                type="button"
+                                className={OUTLINE_BUTTON_CLASS}
+                                onClick={() => setRequestPdfOpen(true)}
+                              >
+                                Request PDF
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -528,7 +514,16 @@ export default function UserReportsPage() {
               {activeTab === "monthly" && (
                 <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
                   <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                    <div className="grid gap-4 text-sm font-medium text-foreground" style={MONTHLY_GRID}>
+                    <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={MONTHLY_GRID}>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="rounded border-border"
+                          checked={selectedMonthlyRows.length === monthlyReports.length && monthlyReports.length > 0}
+                          onChange={handleMonthlySelectAll}
+                          aria-label="Select all monthly reports"
+                        />
+                      </div>
                       <div className="col-span-3">
                         <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                       </div>
@@ -541,7 +536,7 @@ export default function UserReportsPage() {
                       <div className="col-span-2 flex items-center">
                         <span className="text-sm font-medium text-foreground">Status</span>
                       </div>
-                      <div className="col-span-3 flex items-center">
+                      <div className="col-span-2 flex items-center">
                         <span className="text-sm font-medium text-foreground">Actions</span>
                       </div>
                     </div>
@@ -552,6 +547,9 @@ export default function UserReportsPage() {
                     USER_MONTHLY_PREVIEW_ROWS.map((row) => (
                       <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
                         <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                          <div className="flex items-center">
+                            <Checkbox disabled checked={false} />
+                          </div>
                           <div className="col-span-3 flex items-center gap-2 text-sm text-gray-900">
                             {row.period}
                             <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
@@ -561,11 +559,9 @@ export default function UserReportsPage() {
                           <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
                           <div className="col-span-2 text-sm text-gray-900">{row.amount}</div>
                           <div className="col-span-2">
-                            <Badge variant="secondary" className={STATUS_BADGE_CLASS.paid}>
-                              Paid
-                            </Badge>
+                            <Badge className={statusBadgeClass("Paid")}>Paid</Badge>
                           </div>
-                          <div className="col-span-3">
+                          <div className="col-span-2">
                             <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                               <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                                 Request PDF
@@ -585,17 +581,22 @@ export default function UserReportsPage() {
                     monthlyReports.map((row) => (
                       <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
                         <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                          <div className="flex items-center">
+                            <Checkbox
+                              checked={selectedMonthlyRows.includes(row.id)}
+                              onCheckedChange={() => handleMonthlyRowSelect(row.id)}
+                              aria-label={`Select monthly report for ${row.period}`}
+                            />
+                          </div>
                           <div className="col-span-3 text-sm text-gray-900">{row.period}</div>
                           <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
                           <div className="col-span-2 text-sm text-gray-900">
                             {formatAmount(row.amountSmallestUnit, row.currency)}
                           </div>
                           <div className="col-span-2">
-                            <Badge variant="secondary" className={STATUS_BADGE_CLASS.paid}>
-                              Paid
-                            </Badge>
+                            <Badge className={statusBadgeClass("Paid")}>Paid</Badge>
                           </div>
-                          <div className="col-span-3">
+                          <div className="col-span-2">
                             <Button
                               variant="outline"
                               size="sm"
