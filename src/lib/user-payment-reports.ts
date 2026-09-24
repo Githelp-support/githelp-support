@@ -29,6 +29,8 @@ export interface UserPaymentRecord {
     amount_smallest_unit: number
     authorized_amount_smallest_unit: number | null
     captured_amount_smallest_unit: number | null
+    /** Stripe-hosted receipt page; null until the charge is captured. */
+    stripe_receipt_url?: string | null
     ticket: {
         id: string
         title: string
@@ -62,6 +64,11 @@ export interface UserPaymentRow {
     amountSmallestUnit: number
     currency: string
     displayStatus: UserPaymentDisplayStatus
+    /**
+     * Stripe-hosted receipt for the charge (viewable and downloadable there).
+     * Null while nothing has been captured yet, or for free tickets.
+     */
+    receiptUrl: string | null
 }
 
 export interface UserMonthlyReportRow {
@@ -140,6 +147,7 @@ export function toUserPaymentRow(record: UserPaymentRecord): UserPaymentRow {
         amountSmallestUnit: userFacingAmount(record),
         currency: record.currency || "usd",
         displayStatus: display,
+        receiptUrl: record.stripe_receipt_url || null,
     }
 }
 

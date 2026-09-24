@@ -57,6 +57,92 @@ export function transferTicketType(transfer: Pick<PaymentTransfer, "ticket">): s
     return value ? capitalise(value) : "Support"
 }
 
+/**
+ * Everything the helper's payout statement (their payment proof) shows for one
+ * `payments_transfers` row. Helpers are paid by Stripe transfer to their own
+ * connected account, which has no Stripe-hosted receipt, so the platform
+ * issues this statement instead.
+ */
+export interface PayoutStatement {
+    /** Human-facing reference: the Stripe transfer id, else a short form of the payout id. */
+    reference: string
+    /** ISO timestamp: when the money moved, else when the payout was recorded. */
+    date: string
+    status: PaymentTransfer["status"]
+    statusLabel: string
+    statusNote: string
+    payee: {
+        name: string
+        email: string | null
+        /** Stripe connected account the transfer was sent to (acct_...). */
+        stripeAccountId: string | null
+    }
+    projectName: string
+    ticketId: string | null
+    ticketShortId: string
+    ticketTitle: string
+    ticketType: string
+    slaName: string | null
+    amountSmallestUnit: number
+    currency: string
+    payoutId: string
+    stripeTransferId: string | null
+    /** The customer's `payments` row this payout was split from. */
+    paymentId: string | null
+    failureReason: string | null
+}
+
+const STATEMENT_STATUS: Record<PaymentTransfer["status"], { label: string; note: string }> = {
+    completed: {
+        label: "Paid out",
+        note: "The amount has been transferred to your connected Stripe account. Stripe pays it out to your bank according to your payout schedule.",
+    },
+    pending: {
+        label: "Pending",
+        note: "The transfer has been scheduled and is sent once the customer's payment has settled.",
+    },
+    failed: {
+        label: "Failed",
+        note: "Stripe could not complete this transfer, so nothing has been paid for it. Contact the project admin or Githelp support to have it re-sent.",
+    },
+}
+
+/** Short, uppercase form of a payout row id used when no Stripe transfer id exists yet. */
+export function payoutReference(transfer: Pick<PaymentTransfer, "id" | "transfer_id">): string {
+    if (transfer.transfer_id) return transfer.transfer_id
+    return `GH-${transfer.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`
+}
+
+export function buildPayoutStatement(transfer: PaymentTransfer): PayoutStatement {
+    const user = transfer.helper?.user
+    const status = STATEMENT_STATUS[transfer.status] ?? STATEMENT_STATUS.pending
+    const ticketId = transfer.ticket?.id ?? transfer.ticket_id
+    return {
+        reference: payoutReference(transfer),
+        date: transferDate(transfer),
+        status: transfer.status,
+        statusLabel: status.label,
+        statusNote: status.note,
+        payee: {
+            name: user?.name?.trim() || user?.username?.trim() || user?.email?.trim() || "Helper",
+            email: user?.email?.trim() || null,
+            stripeAccountId: transfer.destination_account_id || null,
+        },
+        projectName: transfer.project?.name?.trim() || "Project",
+        ticketId,
+        ticketShortId: ticketId?.slice(0, 7) || "-",
+        ticketTitle: transfer.ticket?.title?.trim() || (ticketId ? "Untitled ticket" : "Payout"),
+        ticketType: transferTicketType(transfer),
+        slaName: transfer.ticket?.sla?.name?.trim() || transfer.sla?.name?.trim() || null,
+        amountSmallestUnit: transfer.amount_smallest_unit,
+        currency: transfer.currency || "usd",
+        payoutId: transfer.id,
+        stripeTransferId: transfer.transfer_id || null,
+        paymentId: transfer.payment_id || null,
+        failureReason: transfer.status === "failed" ? transfer.failure_reason || null : null,
+    }
+}
+
 export function formatMinutes(minutes: number): string {
     const total = Math.max(0, Math.round(minutes))
     const hours = Math.floor(total / 60)

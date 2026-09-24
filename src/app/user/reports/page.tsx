@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, ExternalLink } from "lucide-react"
 import { useUserPayments, formatAmount } from "@/hooks/usePayments"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -384,7 +384,7 @@ export default function UserReportsPage() {
                           aria-label="Select all payments"
                         />
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <SortHeader label="Ticket" field="ticket" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
                       <div className="col-span-2">
@@ -402,7 +402,7 @@ export default function UserReportsPage() {
                       <div className="col-span-2">
                         <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
-                      <div className="col-span-2 flex items-center">
+                      <div className="col-span-3 flex items-center">
                         <span className="text-sm font-medium text-foreground">Actions</span>
                       </div>
                     </div>
@@ -417,7 +417,7 @@ export default function UserReportsPage() {
                           <div className="flex items-center">
                             <Checkbox disabled checked={false} />
                           </div>
-                          <div className="col-span-3 min-w-0">
+                          <div className="col-span-2 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-mono tabular-nums text-sm text-gray-900">{row.ticketShortId}</span>
                               <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
@@ -439,11 +439,17 @@ export default function UserReportsPage() {
                               {row.status}
                             </Badge>
                           </div>
-                          <div className="col-span-2">
-                            <div className="flex items-center gap-2">
+                          <div className="col-span-3">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                                 <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                                   Open
+                                </Button>
+                              </span>
+                              <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Receipt
                                 </Button>
                               </span>
                               <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
@@ -471,7 +477,7 @@ export default function UserReportsPage() {
                                 aria-label={`Select payment for ticket ${row.ticketShortId}`}
                               />
                             </div>
-                            <div className="col-span-3 min-w-0">
+                            <div className="col-span-2 min-w-0">
                               <span className="font-mono tabular-nums text-sm text-gray-900">{row.ticketShortId}</span>
                               <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
                                 {row.ticketTitle}
@@ -494,8 +500,8 @@ export default function UserReportsPage() {
                                 {USER_PAYMENT_STATUS_LABELS[row.displayStatus]}
                               </Badge>
                             </div>
-                            <div className="col-span-2">
-                              <div className="flex items-center gap-2">
+                            <div className="col-span-3">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 {href ? (
                                   <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
                                     <Link href={href}>Open</Link>
@@ -504,6 +510,33 @@ export default function UserReportsPage() {
                                   <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                                     Open
                                   </Button>
+                                )}
+                                {row.receiptUrl ? (
+                                  <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
+                                    <a
+                                      href={row.receiptUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Open the Stripe receipt for this payment (view, download or print)"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      Receipt
+                                    </a>
+                                  </Button>
+                                ) : (
+                                  <span
+                                    title={
+                                      row.displayStatus === "paid"
+                                        ? "The receipt is still being prepared by Stripe. Check back shortly."
+                                        : "A receipt becomes available once the payment has been captured."
+                                    }
+                                    className="inline-flex"
+                                  >
+                                    <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      Receipt
+                                    </Button>
+                                  </span>
                                 )}
                                 <Button
                                   variant="outline"

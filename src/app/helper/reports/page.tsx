@@ -6,15 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText } from "lucide-react"
 import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
+import { useProject } from "@/hooks/useProject"
+import { useUser } from "@/contexts/user-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useHelperTimeEntries } from "@/hooks/useHelperTimeEntries"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 import {
   HELPER_MONTHLY_PREVIEW_ROWS,
   PAYOUT_PREVIEW_ROWS,
@@ -24,10 +25,13 @@ import {
   aggregateHelperMonthly,
   formatMinutes,
   monthLabel,
+  payoutReference,
   transferDate,
   transferTicketType,
   type HelperMonthlyReportRow,
 } from "@/lib/helper-payout-reports"
+import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
+import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface PayoutData {
@@ -41,6 +45,8 @@ interface PayoutData {
   amountSmallestUnit: number
   currency: string
   status: PaymentTransfer["status"]
+  /** The row itself, for single-payout exports. */
+  transfer: PaymentTransfer
 }
 
 // dd/mm/yyyy
@@ -123,10 +129,10 @@ export default function HelperReportsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
-  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
-
+  const { user } = useUser()
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
+  const { data: project } = useProject(projectId ?? "")
   const { data: helperId, isFetched: helperFetched } = useCurrentHelper(projectId)
 
   const transfersQueryEnabled = !!projectId && helperFetched && !!helperId
@@ -168,6 +174,7 @@ export default function HelperReportsPage() {
         amountSmallestUnit: transfer.amount_smallest_unit,
         currency: transfer.currency || "usd",
         status: transfer.status,
+        transfer,
       })),
     [transfersData],
   )
@@ -265,6 +272,32 @@ export default function HelperReportsPage() {
   const emptyMessage = (what: string) =>
     targetMonth ? `No ${what} found for ${targetMonth}` : `No ${what} found`
 
+  /**
+   * Accounting export for this helper on the selected project: every payout
+   * in `period` (or all time) plus a monthly summary with hours logged. A
+   * single payout can be exported by passing just that transfer.
+   */
+  const buildExport = (period: string | null, single?: PaymentTransfer): ReportDocument =>
+    buildHelperPayoutReport({
+      transfers: single ? [single] : transfersData ?? [],
+      timeEntries: single
+        ? (timeEntries ?? []).filter((entry) => !!single.ticket_id && entry.ticket_id === single.ticket_id)
+        : timeEntries ?? [],
+      period,
+      periodTitle: single ? `Payout ${payoutReference(single)}` : undefined,
+      helper: { name: user.name, email: user.email ?? null },
+      projectName: project?.name || "Project",
+    })
+  const exportPdf = (period: string | null, single?: PaymentTransfer) => {
+    downloadReportPdf(buildExport(period, single)).catch((error) => console.error("PDF export failed", error))
+  }
+  const exportCsv = (period: string | null, single?: PaymentTransfer) => {
+    const report = buildExport(period, single)
+    downloadCsv(report.fileName, reportToCsv(report))
+  }
+  const exportTitle = (kind: "PDF" | "CSV") =>
+    `Download the ${targetMonth ?? "all-time"} payout report as ${kind} for your accounting`
+
   return (
     <div className="h-screen flex overflow-hidden">
       <Sidebar />
@@ -349,6 +382,32 @@ export default function HelperReportsPage() {
             >
               All
             </Button>
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                className={`h-9 ${OUTLINE_BUTTON_CLASS}`}
+                disabled={!hasRealData}
+                title={exportTitle("CSV")}
+                onClick={() => exportCsv(targetMonth)}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                Export CSV
+              </Button>
+              <Button
+                variant="lavender"
+                size="sm"
+                type="button"
+                className="h-9"
+                disabled={!hasRealData}
+                title={exportTitle("PDF")}
+                onClick={() => exportPdf(targetMonth)}
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download PDF
+              </Button>
+            </div>
           </div>
 
           {!projectId && (
@@ -429,7 +488,7 @@ export default function HelperReportsPage() {
                         </Badge>
                       </div>
                       <div className="col-span-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                               Open
@@ -437,7 +496,14 @@ export default function HelperReportsPage() {
                           </span>
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Request PDF
+                              <FileText className="w-3.5 h-3.5" />
+                              Statement
+                            </Button>
+                          </span>
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
                             </Button>
                           </span>
                         </div>
@@ -484,7 +550,7 @@ export default function HelperReportsPage() {
                         </Badge>
                       </div>
                       <div className="col-span-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {payout.ticketId ? (
                             <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
                               <Link href={`/helper/tickets/${payout.ticketId}`}>Open</Link>
@@ -494,14 +560,25 @@ export default function HelperReportsPage() {
                               Open
                             </Button>
                           )}
+                          <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
+                            <Link
+                              href={`/helper/reports/payouts/${payout.id}`}
+                              title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              Statement
+                            </Link>
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             type="button"
                             className={OUTLINE_BUTTON_CLASS}
-                            onClick={() => setRequestPdfOpen(true)}
+                            title="Download this payout as a PDF for your accounting"
+                            onClick={() => exportPdf(null, payout.transfer)}
                           >
-                            Request PDF
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
                           </Button>
                         </div>
                       </div>
@@ -549,10 +626,17 @@ export default function HelperReportsPage() {
                       <div className="col-span-2 text-sm text-gray-900">{row.ticketsClosed}</div>
                       <div className="col-span-2 text-sm text-gray-900">{row.hoursLogged}</div>
                       <div className="col-span-2 text-sm text-gray-900">{row.earnings}</div>
-                      <div className="col-span-3">
+                      <div className="col-span-3 flex items-center gap-2 flex-wrap">
                         <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                           <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                            Request PDF
+                            <Download className="w-3.5 h-3.5" />
+                            Download PDF
+                          </Button>
+                        </span>
+                        <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                          <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                            CSV
                           </Button>
                         </span>
                       </div>
@@ -576,15 +660,28 @@ export default function HelperReportsPage() {
                           </div>
                         )}
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-3 flex items-center gap-2 flex-wrap">
                         <Button
                           variant="outline"
                           size="sm"
                           type="button"
                           className={OUTLINE_BUTTON_CLASS}
-                          onClick={() => setRequestPdfOpen(true)}
+                          title={`Download the ${row.period} payout report as PDF`}
+                          onClick={() => exportPdf(row.period)}
                         >
-                          Request PDF
+                          <Download className="w-3.5 h-3.5" />
+                          Download PDF
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          className={OUTLINE_BUTTON_CLASS}
+                          title={`Export the ${row.period} payout report as CSV`}
+                          onClick={() => exportCsv(row.period)}
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5" />
+                          CSV
                         </Button>
                       </div>
                     </div>
@@ -595,8 +692,6 @@ export default function HelperReportsPage() {
           )}
         </main>
       </div>
-
-      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }

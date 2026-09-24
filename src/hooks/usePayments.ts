@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
-import type { UserPaymentRecord } from "@/lib/user-payment-reports"
+import type { PaymentRowStatus, UserPaymentRecord } from "@/lib/user-payment-reports"
 
 export interface Payment {
   id: string
@@ -8,12 +8,18 @@ export interface Payment {
   ticket_id: string | null
   amount_smallest_unit: number
   currency: string
-  status: "pending" | "completed" | "failed"
+  /** `public.payment_status`; see `PaymentRowStatus`. */
+  status: PaymentRowStatus
   amount_platform_smallest_unit: number
   amount_project_smallest_unit: number
   transaction_id: string | null
   created_at: string
   completed_at: string | null
+  /** What was actually captured from the customer; null until capture. */
+  captured_amount_smallest_unit?: number | null
+  amount_helper_smallest_unit?: number | null
+  stripe_payment_intent_id?: string | null
+  ticket?: { id: string; title: string } | null
   /**
    * Stripe-hosted receipt page for the charge. Ticket charges are plain
    * PaymentIntents (no Stripe Invoice), so this is the document to link the
@@ -34,6 +40,11 @@ export interface PaymentTransfer {
   transfer_id: string | null
   created_at: string
   completed_at: string | null
+  /** Stripe connected account the money was (or will be) sent to. */
+  destination_account_id?: string | null
+  /** The customer `payments` row this payout was split from. */
+  payment_id?: string | null
+  failure_reason?: string | null
   helper?: {
     user_id?: string | null
     user?: {
@@ -49,6 +60,7 @@ export interface PaymentTransfer {
     categories?: Array<{ help_category: { value: string } | null }> | null
   }
   sla?: { name: string }
+  project?: { name: string } | null
 }
 
 export function usePayments(projectId?: string) {
@@ -57,7 +69,7 @@ export function usePayments(projectId?: string) {
     queryFn: async () => {
       let query = supabase
         .from("payments")
-        .select("*")
+        .select("*, ticket:tickets(id, title)")
         .order("created_at", { ascending: false })
 
       if (projectId) {
@@ -146,6 +158,60 @@ export function usePaymentTransfers(filters?: {
   })
 }
 
+/**
+ * One `payments_transfers` row with everything the payout statement needs
+ * (payee, project, ticket). RLS restricts this to the helper the payout
+ * belongs to and admins of its project, so an unknown or foreign id simply
+ * resolves to `null`.
+ */
+export function usePaymentTransfer(transferId?: string) {
+  return useQuery({
+    queryKey: ["payment-transfer", transferId],
+    queryFn: async () => {
+      if (!transferId) return null
+      const { data, error } = await supabase
+        .from("payments_transfers")
+        .select(`
+          *,
+          helper:projects_helpers(
+            user_id,
+            user:users_public(name, username, email)
+          ),
+          project:projects(name),
+          ticket:tickets(
+            id,
+            title,
+            sla:slas(name),
+            categories:tickets_help_categories(
+              help_category:projects_help_categories(value)
+            )
+          )
+        `)
+        .eq("id", transferId)
+        .maybeSingle()
+      if (error) throw error
+      if (!data) return null
+      const row = data as any
+      const rawHelper = row.helper
+      const helper = rawHelper == null ? null : Array.isArray(rawHelper) ? rawHelper[0] ?? null : rawHelper
+      const rawProject = row.project
+      const project = rawProject == null ? null : Array.isArray(rawProject) ? rawProject[0] ?? null : rawProject
+      return {
+        ...row,
+        helper,
+        project,
+        ticket: row.ticket || null,
+        sla: row.ticket?.sla || null,
+      } as PaymentTransfer
+    },
+    enabled: !!transferId,
+    retry: false,
+    staleTime: 1800000,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
 export function getHelperDisplayName(
   helper: PaymentTransfer["helper"],
 ): string {
@@ -183,6 +249,7 @@ export function useUserPayments(userId?: string) {
           amount_smallest_unit,
           authorized_amount_smallest_unit,
           captured_amount_smallest_unit,
+          stripe_receipt_url,
           ticket:tickets!inner(
             id,
             title,

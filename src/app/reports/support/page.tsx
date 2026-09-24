@@ -8,14 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
-import { usePaymentTransfers, formatAmount, getHelperDisplayName } from "@/hooks/usePayments"
+import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
+import { useProject } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
-import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
-import { aggregateProjectMonthly } from "@/lib/helper-payout-reports"
+import { aggregateProjectMonthly, payoutReference } from "@/lib/helper-payout-reports"
+import { buildProjectPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
+import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 
 type MonthlySortField = "period" | "description" | "amount" | "status"
 type TicketsSortField = "ticketId" | "date" | "helper" | "amount" | "status"
@@ -79,15 +81,16 @@ export default function ReportsSupportPage() {
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
   const [ticketsSortField, setTicketsSortField] = useState<TicketsSortField | null>(null)
   const [ticketsSortDirection, setTicketsSortDirection] = useState<SortDirection>("asc")
-  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
-
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
+  const { data: project } = useProject(projectId ?? "")
 
   const { data: transfersData, isLoading } = usePaymentTransfers({
     projectId,
     enabled: !!projectId,
   })
+  // Customer charges for the project: the revenue side of the accounting export.
+  const { data: paymentsData } = usePayments(projectId)
   // Refresh when a ticket closes and its payout rows land / settle.
   useRealtimePaymentTransfers(projectId)
 
@@ -140,6 +143,7 @@ export default function ReportsSupportPage() {
         amountRaw: transfer.amount_smallest_unit,
         status: transfer.status === "completed" ? "Completed" : transfer.status === "failed" ? "Failed" : "Pending",
         statusType: transfer.status,
+        transfer,
       }
     })
 
@@ -272,6 +276,40 @@ export default function ReportsSupportPage() {
   }
 
   const displayReports = activeTab === "monthly" ? filteredMonthlyReports : sortedTickets
+
+  // Period the export buttons in the filter bar refer to (null = all time).
+  // "Current month" only exists (and only filters) on the Tickets tab.
+  const exportPeriod =
+    selectedMonth || (activeTab === "tickets" && selectedFilter === "current" ? getMonthYear(new Date().toISOString()) : null)
+  const hasExportData = !!projectId && !isLoading && ((transfersData?.length ?? 0) > 0 || (paymentsData?.length ?? 0) > 0)
+
+  /**
+   * Accounting export for the project: customer charges with their split,
+   * helper payouts and the project's own share. A single payout row exports
+   * just that transfer and the charge it came from.
+   */
+  const buildExport = (period: string | null, single?: PaymentTransfer): ReportDocument => {
+    // A single payout is exported together with the project's own share
+    // from the same charge, so the document reconciles with itself.
+    const sameCharge = (row: { payment_id?: string | null; ticket_id: string | null }) =>
+      single?.payment_id ? row.payment_id === single.payment_id : row.ticket_id === single?.ticket_id
+    return buildProjectPayoutReport({
+      transfers: single ? (transfersData ?? []).filter((t) => t.id === single.id || sameCharge(t)) : transfersData ?? [],
+      payments: single
+        ? (paymentsData ?? []).filter((p) => (single.payment_id ? p.id === single.payment_id : p.ticket_id === single.ticket_id))
+        : paymentsData ?? [],
+      period,
+      periodTitle: single ? `Payout ${payoutReference(single)}` : undefined,
+      projectName: project?.name || "Project",
+    })
+  }
+  const exportPdf = (period: string | null, single?: PaymentTransfer) => {
+    downloadReportPdf(buildExport(period, single)).catch((error) => console.error("PDF export failed", error))
+  }
+  const exportCsv = (period: string | null, single?: PaymentTransfer) => {
+    const report = buildExport(period, single)
+    downloadCsv(report.fileName, reportToCsv(report))
+  }
   const allSelected =
     activeTab === "monthly"
       ? selectedRows.length === filteredMonthlyReports.length && filteredMonthlyReports.length > 0
@@ -361,6 +399,32 @@ export default function ReportsSupportPage() {
               >
                 All
               </Button>
+              <div className="ml-auto flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  className="h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+                  disabled={!hasExportData}
+                  title={`Export the ${exportPeriod ?? "all-time"} payments report as CSV for accounting`}
+                  onClick={() => exportCsv(exportPeriod)}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Export CSV
+                </Button>
+                <Button
+                  variant="lavender"
+                  size="sm"
+                  type="button"
+                  className="h-9"
+                  disabled={!hasExportData}
+                  title={`Download the ${exportPeriod ?? "all-time"} payments report as PDF for accounting`}
+                  onClick={() => exportPdf(exportPeriod)}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download PDF
+                </Button>
+              </div>
             </div>
 
             <div className="bg-white rounded-lg border border-border overflow-hidden">
@@ -527,9 +591,21 @@ export default function ReportsSupportPage() {
                               variant="outline"
                               size="sm"
                               className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                              onClick={() => setRequestPdfOpen(true)}
+                              title={`Download the ${report.period} payments report as PDF`}
+                              onClick={() => exportPdf(report.period)}
                             >
-                              Request PDF
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                              title={`Export the ${report.period} payments report as CSV`}
+                              onClick={() => exportCsv(report.period)}
+                            >
+                              <FileSpreadsheet className="w-3.5 h-3.5" />
+                              CSV
                             </Button>
                           </div>
                         </div>
@@ -625,9 +701,11 @@ export default function ReportsSupportPage() {
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                            onClick={() => setRequestPdfOpen(true)}
+                            title="Download this payout and its customer charge as a PDF"
+                            onClick={() => exportPdf(null, ticket.transfer)}
                           >
-                            Request PDF
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
                           </Button>
                         </div>
                       </div>
@@ -639,8 +717,6 @@ export default function ReportsSupportPage() {
           </div>
         </main>
       </div>
-
-      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }

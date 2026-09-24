@@ -67,6 +67,14 @@ describe("toUserPaymentRow", () => {
         expect(row.displayStatus).toBe("paid")
     })
 
+    it("exposes the Stripe receipt link only once the backend has stored one", () => {
+        expect(toUserPaymentRow(record()).receiptUrl).toBeNull()
+        expect(toUserPaymentRow(record({ stripe_receipt_url: "" })).receiptUrl).toBeNull()
+        expect(
+            toUserPaymentRow(record({ stripe_receipt_url: "https://pay.stripe.com/receipts/abc" })).receiptUrl,
+        ).toBe("https://pay.stripe.com/receipts/abc")
+    })
+
     it("degrades gracefully without a ticket embed", () => {
         const row = toUserPaymentRow(record({ ticket: null, ticket_id: null, status: "authorized" }))
         expect(row.ticketShortId).toBe("-")
