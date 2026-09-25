@@ -12,6 +12,13 @@ import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
+import {
+  DeclineTimeEntryDialog,
+  TimeEntryReviewActions,
+  TimeEntryReviewBanner,
+  TimeEntryReviewStatusBadge,
+} from "@/components/ticket-chat/time-entry-review"
+import { describeAutoAcceptDeadline, formatTime, type TimeEntryReviewStatus } from "@/lib/time-entries"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
@@ -29,9 +36,26 @@ export type PaymentSystemMessageKind =
 /**
  * `metadata.kind` of persisted system messages. Payment kinds are written by
  * the payments edge functions; `time_logged` is written by the DB trigger on
- * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages).
+ * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages);
+ * `time_entry_accepted` / `time_entry_declined` by the `review_time_entry` RPC
+ * (migration 20260925120000_time_entries_customer_review).
  */
-export type SystemMessageKind = PaymentSystemMessageKind | "time_logged"
+export type SystemMessageKind =
+  | PaymentSystemMessageKind
+  | "time_logged"
+  | "time_entry_accepted"
+  | "time_entry_declined"
+
+/** Current review state of one logged entry, keyed by `tickets_time_entries.id`. */
+export type TicketChatTimeEntryReview = {
+  status: TimeEntryReviewStatus
+  declineReason?: string | null
+  /** Drives the "accepted automatically in about N hours" hint while pending. */
+  reviewRequestedAt?: string | null
+  autoAccepted?: boolean
+}
+
+export type TimeEntryReviewDecision = Exclude<TimeEntryReviewStatus, "pending">
 
 export type TicketChatMessage = {
   id: string
@@ -98,6 +122,18 @@ export interface TicketChatProps {
   endSessionRequestPending?: boolean
 
   /**
+   * Customer-side review of logged time. `timeEntryReviews` maps a time entry
+   * id (from `time_logged` metadata) to its current status; when
+   * `onReviewTimeEntry` is set, pending entries get Accept / Decline actions
+   * in their bubble and a banner above the input counts what is still open.
+   * Declining opens a dialog that requires an explanation. Omit the handler
+   * on the helper side (statuses are still shown).
+   */
+  timeEntryReviews?: Record<string, TicketChatTimeEntryReview>
+  onReviewTimeEntry?: (input: { entryId: string; decision: TimeEntryReviewDecision; reason?: string }) => void | Promise<void>
+  timeEntryReviewPending?: boolean
+
+  /**
    * When provided, enables image attachments (toolbar button, paste, drag & drop).
    * Format: "{projectId}/{ticketId}" — or "{projectId}/{userId}" before the
    * ticket exists — used as the folder inside the ticket-attachments bucket.
@@ -140,6 +176,9 @@ export function TicketChat(props: TicketChatProps) {
     onCancelEndSessionRequest,
     endSessionRequestedAt,
     endSessionRequestPending,
+    timeEntryReviews,
+    onReviewTimeEntry,
+    timeEntryReviewPending,
     attachmentStoragePrefix,
     rightSidebarFooter,
     onPaymentCtaClick,
@@ -149,6 +188,39 @@ export function TicketChat(props: TicketChatProps) {
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false)
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
+
+  // Logged entry the customer is about to decline (opens the reason dialog).
+  const [decliningEntry, setDecliningEntry] = useState<{
+    entryId: string
+    durationLabel: string | null
+    helperName: string | null
+  } | null>(null)
+  const canReviewTimeEntries = !!onReviewTimeEntry && !isEnded
+  const pendingTimeEntryReviewCount = useMemo(() => {
+    if (!canReviewTimeEntries || !timeEntryReviews) return 0
+    return Object.values(timeEntryReviews).filter((r) => r.status === "pending").length
+  }, [canReviewTimeEntries, timeEntryReviews])
+  // The page handlers toast and rethrow; swallow here so a failed review
+  // (e.g. already reviewed in another tab) is not an unhandled rejection.
+  const reviewTimeEntry = async (input: {
+    entryId: string
+    decision: TimeEntryReviewDecision
+    reason?: string
+  }): Promise<boolean> => {
+    if (!onReviewTimeEntry) return false
+    try {
+      await onReviewTimeEntry(input)
+      return true
+    } catch {
+      return false
+    }
+  }
+  const timeEntryReviewFor = (msg: TicketChatMessage): TicketChatTimeEntryReview | null => {
+    if (msg.paymentMetadata?.kind !== "time_logged") return null
+    const entryId = msg.paymentMetadata.time_entry_id
+    if (typeof entryId !== "string") return null
+    return timeEntryReviews?.[entryId] ?? null
+  }
 
   // Uploads finish asynchronously, so append to the latest draft rather than
   // the one captured when the upload started.
@@ -305,12 +377,47 @@ export function TicketChat(props: TicketChatProps) {
                                         ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                         : msg.paymentMetadata?.kind === "payment_failed"
                                           ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                          : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                          : msg.paymentMetadata?.kind === "time_entry_declined"
+                                            ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                            : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent content={msg.content} />
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "time_logged" &&
+                                    (() => {
+                                      const review = timeEntryReviewFor(msg)
+                                      if (!review) return null
+                                      const entryId = msg.paymentMetadata?.time_entry_id as string
+                                      if (review.status === "pending" && canReviewTimeEntries) {
+                                        const ms = msg.paymentMetadata?.time_milliseconds
+                                        return (
+                                          <TimeEntryReviewActions
+                                            pending={timeEntryReviewPending}
+                                            autoAcceptHint={describeAutoAcceptDeadline(review.reviewRequestedAt)}
+                                            onAccept={() => void reviewTimeEntry({ entryId, decision: "accepted" })}
+                                            onDecline={() =>
+                                              setDecliningEntry({
+                                                entryId,
+                                                durationLabel: typeof ms === "number" ? formatTime(ms) : null,
+                                                helperName: (msg.paymentMetadata?.helper_name as string | undefined) ?? null,
+                                              })
+                                            }
+                                          />
+                                        )
+                                      }
+                                      return (
+                                        <div className="mt-2">
+                                          <TimeEntryReviewStatusBadge
+                                            status={review.status}
+                                            auto={review.autoAccepted}
+                                            perspective={onReviewTimeEntry ? "customer" : "helper"}
+                                          />
+                                        </div>
+                                      )
+                                    })()}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button
@@ -366,6 +473,8 @@ export function TicketChat(props: TicketChatProps) {
             </div>
           </div>
 
+          {pendingTimeEntryReviewCount > 0 && <TimeEntryReviewBanner pendingCount={pendingTimeEntryReviewCount} />}
+
           {endSessionRequested && (
             <EndSessionRequestedBanner
               requestedAt={endSessionRequestedAt}
@@ -406,6 +515,25 @@ export function TicketChat(props: TicketChatProps) {
               onConfirm={async () => {
                 await onRequestEndSession()
                 setEndSessionDialogOpen(false)
+              }}
+            />
+          )}
+
+          {onReviewTimeEntry && (
+            <DeclineTimeEntryDialog
+              open={!!decliningEntry}
+              onOpenChange={(open) => {
+                if (!open) setDecliningEntry(null)
+              }}
+              pending={timeEntryReviewPending}
+              durationLabel={decliningEntry?.durationLabel}
+              helperName={decliningEntry?.helperName}
+              onConfirm={async (reason) => {
+                if (!decliningEntry) return
+                // Stays open on failure so the explanation isn't lost.
+                if (await reviewTimeEntry({ entryId: decliningEntry.entryId, decision: "declined", reason })) {
+                  setDecliningEntry(null)
+                }
               }}
             />
           )}

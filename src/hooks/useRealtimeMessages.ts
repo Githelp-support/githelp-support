@@ -15,10 +15,21 @@ interface MessageChangePayload {
 }
 
 /**
- * A `time_logged` system message is written by the DB trigger on
- * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages),
- * so its arrival is a reliable cue that the ticket's time entries changed.
+ * System messages that mean the ticket's time entries changed: `time_logged`
+ * is written by the DB trigger on `tickets_time_entries` (migration
+ * 20260908120000_time_logged_system_messages) and the two review kinds by the
+ * `review_time_entry` RPC (migration 20260925120000_time_entries_customer_review).
  */
+const TIME_ENTRY_MESSAGE_KINDS = new Set(['time_logged', 'time_entry_accepted', 'time_entry_declined'])
+
+/** True for an INSERT of any of the time-entry system messages above. */
+export const isTimeEntryMessage = (payload: unknown): boolean => {
+  const p = payload as MessageChangePayload | null | undefined
+  const kind = p?.new?.metadata?.kind
+  return p?.eventType === 'INSERT' && !!kind && TIME_ENTRY_MESSAGE_KINDS.has(kind)
+}
+
+/** True only for the `time_logged` INSERT (a helper logged new time). */
 export const isTimeLoggedMessage = (payload: unknown): boolean => {
   const p = payload as MessageChangePayload | null | undefined
   return p?.eventType === 'INSERT' && p.new?.metadata?.kind === 'time_logged'
@@ -63,8 +74,9 @@ export function useRealtimeMessages(ticketId?: string) {
           // The customer's "Logged time" sidebar total reads tickets_time_entries.
           // useRealtimeTicket also listens on that table directly, but that only
           // delivers when it is in the realtime publication; the time_logged
-          // bubble always arrives, so refresh the total from it as well.
-          if (isTimeLoggedMessage(payload)) {
+          // bubble always arrives, so refresh the total from it as well. The
+          // accept/decline messages flip an entry's review_status the same way.
+          if (isTimeEntryMessage(payload)) {
             void invalidateTimeEntries()
           }
         }

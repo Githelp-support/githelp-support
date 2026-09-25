@@ -55,7 +55,7 @@ interface TicketRow {
   created_at: string
   status: string
   sla_id: string | null
-  tickets_time_entries: { time_milliseconds: number; helper_id: string }[]
+  tickets_time_entries: { time_milliseconds: number; helper_id: string; review_status?: string | null }[]
   tickets_participants: { participant_id: string; claimed: boolean }[]
 }
 
@@ -86,7 +86,11 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
       if (error) throw error
-      return (data ?? []) as TicketRow[]
+      // Entries the customer declined are not billed and don't consume SLA minutes.
+      return ((data ?? []) as TicketRow[]).map((t) => ({
+        ...t,
+        tickets_time_entries: (t.tickets_time_entries ?? []).filter((e) => e.review_status !== "declined"),
+      }))
     },
     enabled: !!id,
     staleTime: 1800000,

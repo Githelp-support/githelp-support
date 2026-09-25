@@ -10,7 +10,15 @@ import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
-import { useTimeEntries, useCreateTimeEntry, isPaymentNotAuthorizedError, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
+import {
+  useTimeEntries,
+  useCreateTimeEntry,
+  isPaymentNotAuthorizedError,
+  timeMillisecondsToHoursMinutes,
+  getTimeEntryReviewStatus,
+  TIME_ENTRY_AUTO_ACCEPT_HOURS,
+} from "@/hooks/useTimeEntries"
+import { TimeEntryReviewStatusBadge } from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
@@ -71,6 +79,8 @@ interface Message {
   senderId?: string
   senderAvatarUrl?: string | null
   type?: "claimed" | "ended"
+  /** `metadata.kind` of a persisted system message (payment_*, time_logged, time_entry_*). */
+  metadataKind?: string
 }
 
 export default function TicketDetailPage() {
@@ -159,9 +169,18 @@ export default function TicketDetailPage() {
           hours,
           minutes,
           note: entry.note ?? undefined,
+          reviewStatus: getTimeEntryReviewStatus(entry),
+          declineReason: entry.decline_reason ?? null,
+          autoAccepted: entry.auto_accepted ?? false,
         }
       }),
     [timeEntriesFromDb]
+  )
+  // Entries the customer still has to accept or decline; the End ticket
+  // drawer refuses to end while any are left (declined time isn't charged).
+  const pendingReviewCount = useMemo(
+    () => timeEntries.filter((entry) => entry.reviewStatus === "pending").length,
+    [timeEntries]
   )
   
   // Format payment values (convert cents to dollars)
@@ -285,6 +304,7 @@ export default function TicketDetailPage() {
         senderId: msg.sender_id ?? msg.sender?.id,
         senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
+        metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
       }))
     )
   }, [messagesData, isClaimed, claimer])
@@ -523,6 +543,7 @@ export default function TicketDetailPage() {
 
   const getTotalLoggedTime = () => {
     const totalMinutes = timeEntries.reduce((acc, entry) => {
+      if (entry.reviewStatus === "declined") return acc
       return acc + entry.hours * 60 + entry.minutes
     }, 0)
     const hours = Math.floor(totalMinutes / 60)
@@ -786,7 +807,9 @@ export default function TicketDetailPage() {
                             <div
                               className={
                                 msg.sender === "system"
-                                  ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                  ? msg.metadataKind === "time_entry_declined"
+                                    ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                    : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                   : "text-sm"
                               }
                               style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
@@ -1028,12 +1051,27 @@ export default function TicketDetailPage() {
                           </span>
                         </div>
                         {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                        {entry.reviewStatus && (
+                          <div className="mt-1 ml-8">
+                            <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                          </div>
+                        )}
+                        {entry.reviewStatus === "declined" && entry.declineReason && (
+                          <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+                        )}
                       </div>
                     ))}
                     <div className="flex items-center justify-between py-2 font-medium">
                       <span className="text-[13px] text-foreground">Total</span>
                       <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                     </div>
+                    {pendingReviewCount > 0 && (
+                      <p className="text-xs text-amber-800">
+                        {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} waiting for the user to
+                        accept or decline. The session can&apos;t end until they have; entries not reviewed within{" "}
+                        {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted automatically.
+                      </p>
+                    )}
                   </div>
                 )}
                 {!isTicketEnded && (

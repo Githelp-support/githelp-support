@@ -1,16 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { isBillableTimeEntry, type TimeEntry, type TimeEntryReviewStatus } from "@/lib/time-entries";
 
-export interface TimeEntry {
-    id: string;
-    ticket_id: string;
-    helper_id: string;
-    type: "together" | "solo";
-    time_milliseconds: number;
-    note: string | null;
-    date: string;
-    created_at: string;
-}
+// Types and pure helpers live in @/lib/time-entries; re-exported here so existing imports keep working.
+export * from "@/lib/time-entries";
 
 export interface TimeEntryWithDetails extends TimeEntry {
     ticket?: {
@@ -107,29 +100,6 @@ export function useTimeEntries(
     });
 }
 
-// Helper function to format milliseconds to human-readable time
-export function formatTime(milliseconds: number): string {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-    if (hours > 0) {
-        return `${hours}h ${minutes}min`;
-    }
-    return `${minutes}min`;
-}
-
-// Helper function to calculate total time from entries
-export function calculateTotalTime(entries: TimeEntry[]): number {
-    return entries.reduce((total, entry) => total + entry.time_milliseconds, 0);
-}
-
-/** Convert time_milliseconds to { hours, minutes } for display */
-export function timeMillisecondsToHoursMinutes(ms: number): { hours: number; minutes: number } {
-    const totalMinutes = Math.floor(ms / 60000);
-    return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
-}
-
 export interface CreateTimeEntryInput {
     ticketId: string;
     helperId: string;
@@ -185,6 +155,58 @@ export function useCreateTimeEntry() {
                 queryClient.invalidateQueries({ queryKey: ["project-payment-settings"] });
                 queryClient.invalidateQueries({ queryKey: ["ticket-payment-status", input.ticketId] });
             }
+        },
+    });
+}
+
+export interface ReviewTimeEntryInput {
+    entryId: string;
+    ticketId: string;
+    decision: Exclude<TimeEntryReviewStatus, "pending">;
+    /** Required when declining; shared with the helper in the ticket chat. */
+    reason?: string;
+}
+
+/**
+ * `hint` of the error raised by the `review_time_entry` RPC, e.g.
+ * "reason_required", "already_reviewed", "ticket_ended", "not_ticket_creator".
+ */
+export function getReviewTimeEntryErrorHint(error: unknown): string | null {
+    if (typeof error !== "object" || error === null) return null;
+    const hint = (error as { hint?: unknown }).hint;
+    return typeof hint === "string" ? hint : null;
+}
+
+/**
+ * Ticket creator accepts or declines one logged entry via the
+ * `review_time_entry` RPC. The RPC also posts a system message into the chat
+ * (with the decline reason), so both the time entries and the message thread
+ * are refreshed afterwards.
+ */
+export function useReviewTimeEntry() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: ReviewTimeEntryInput) => {
+            const reason = input.reason?.trim() ?? "";
+            if (input.decision === "declined" && !reason) {
+                throw Object.assign(new Error("Please explain why you declined the logged time."), {
+                    hint: "reason_required",
+                });
+            }
+            const { data, error } = await supabase.rpc("review_time_entry", {
+                p_entry_id: input.entryId,
+                p_decision: input.decision,
+                p_reason: input.decision === "declined" ? reason : null,
+            });
+            if (error) throw error;
+            return data as TimeEntry;
+        },
+        onSettled: (_data, _error, input) => {
+            queryClient.invalidateQueries({
+                predicate: (q) => q.queryKey[0] === "time-entries" && q.queryKey[2] === input.ticketId,
+            });
+            queryClient.invalidateQueries({ queryKey: ["ticket-messages", input.ticketId] });
         },
     });
 }

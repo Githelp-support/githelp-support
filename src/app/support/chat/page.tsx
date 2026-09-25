@@ -14,6 +14,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useCreateTicket, useRequestEndSession } from "@/hooks/useTickets"
+import { useReviewTimeEntry, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
@@ -230,12 +231,39 @@ export default function UserSupportChatPage() {
     claimer,
     timeEntriesDisplay,
     totalLoggedFormatted,
+    timeEntryReviews,
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
 
   // Check if user is authenticated (has an id)
   const isAuthenticated = !!user?.id
+
+  // Accept / decline logged time. Only the ticket creator may review (the RPC
+  // enforces it too); a decline needs a reason, which the RPC posts into the
+  // chat so the helper sees it.
+  const reviewTimeEntry = useReviewTimeEntry()
+  const canReviewTimeEntries = !!existingTicket?.id && !!user?.id && existingTicket.created_by === user.id
+  const handleReviewTimeEntry = async (input: { entryId: string; decision: "accepted" | "declined"; reason?: string }) => {
+    if (!existingTicket?.id) return
+    try {
+      await reviewTimeEntry.mutateAsync({ ...input, ticketId: existingTicket.id })
+      toast.success(input.decision === "accepted" ? "Logged time accepted." : "Logged time declined. The helper has been told why.")
+    } catch (error) {
+      console.error("Failed to review time entry:", error)
+      const hint = getReviewTimeEntryErrorHint(error)
+      toast.error(
+        hint === "reason_required"
+          ? "Please explain why you declined the logged time."
+          : hint === "already_reviewed"
+            ? "This entry has already been reviewed."
+            : hint === "ticket_ended"
+              ? "The session has already ended."
+              : "Couldn't save your decision. Please try again.",
+      )
+      throw error
+    }
+  }
 
   // Ensure support users always have an organization and a selected organization
   useEffect(() => {
@@ -575,6 +603,9 @@ export default function UserSupportChatPage() {
         onCancelEndSessionRequest={() => handleRequestEndSession(true)}
         endSessionRequestedAt={endSessionRequestedAt}
         endSessionRequestPending={requestEndSession.isPending}
+        timeEntryReviews={timeEntryReviews}
+        onReviewTimeEntry={canReviewTimeEntries ? handleReviewTimeEntry : undefined}
+        timeEntryReviewPending={reviewTimeEntry.isPending}
         // Before the first message there is no ticket yet: uploads go to the
         // user's own folder (see lib/ticket-attachments).
         attachmentStoragePrefix={user?.id && effectiveProjectId ? `${effectiveProjectId}/${ticketId || user.id}` : undefined}

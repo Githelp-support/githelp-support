@@ -8,38 +8,96 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId } from "@/lib/constants"
 import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
-import { aggregateProjectMonthly, payoutReference } from "@/lib/helper-payout-reports"
+import { payoutReference } from "@/lib/helper-payout-reports"
+import {
+  aggregateProjectIncomeMonthly,
+  PROJECT_INCOME_STATUS_LABELS,
+  toProjectTicketIncomeRow,
+  type ProjectIncomeStatus,
+} from "@/lib/project-income-reports"
 import { buildProjectPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 
-type MonthlySortField = "period" | "description" | "amount" | "status"
-type TicketsSortField = "ticketId" | "date" | "helper" | "amount" | "status"
+type Tab = "monthly" | "tickets" | "helpers"
 type SortDirection = "asc" | "desc"
+type MonthlySortField = "period" | "tickets" | "charged" | "payouts" | "income" | "status"
+type TicketsSortField = "ticket" | "date" | "charged" | "payouts" | "income" | "status"
+type HelpersSortField = "ticketId" | "date" | "helper" | "amount" | "status"
 
-function ReportsSortIcon<T extends string>({
-  field,
-  sortField,
-  sortDirection,
-}: {
-  field: T
-  sortField: T | null
-  sortDirection: SortDirection
-}) {
-  if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "asc" ? (
+/** Ticket ID · Date · Charged · Payouts & fees · Income · Status · Actions (+ checkbox column). */
+const INCOME_GRID = { gridTemplateColumns: "2rem repeat(12, 1fr)" }
+/** The helper payouts table keeps its original 11-column layout. */
+const HELPERS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
+const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
+
+const INCOME_BADGE_CLASS: Record<ProjectIncomeStatus, string> = {
+  received: "bg-green-100 text-green-800 hover:bg-green-100",
+  pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+  no_share: "bg-muted text-muted-foreground hover:bg-muted",
+  on_hold: "bg-blue-100 text-blue-800 hover:bg-blue-100",
+  awaiting_payment: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+  action_required: "bg-orange-100 text-orange-800 hover:bg-orange-100",
+  failed: "bg-red-100 text-red-800 hover:bg-red-100",
+  cancelled: "bg-muted text-muted-foreground hover:bg-muted",
+}
+
+function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
+  if (!active) return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+  return direction === "asc" ? (
     <ChevronUp className="w-4 h-4 text-brand-primary" />
   ) : (
     <ChevronDown className="w-4 h-4 text-brand-primary" />
   )
+}
+
+function SortHeader<T extends string>({
+  label,
+  field,
+  sortField,
+  sortDirection,
+  onSort,
+}: {
+  label: string
+  field: T
+  sortField: T | null
+  sortDirection: SortDirection
+  onSort: (field: T) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+    >
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <SortIcon active={sortField === field} direction={sortDirection} />
+    </button>
+  )
+}
+
+function compare(a: string | number, b: string | number, direction: SortDirection) {
+  if (a < b) return direction === "asc" ? -1 : 1
+  if (a > b) return direction === "asc" ? 1 : -1
+  return 0
+}
+
+/** Three-state sort: asc → desc → off, matching the other Reports pages. */
+function cycleSort<T extends string>(
+  field: T,
+  current: T | null,
+  direction: SortDirection,
+  set: (field: T | null, direction: SortDirection) => void,
+) {
+  if (current !== field) set(field, "asc")
+  else if (direction === "asc") set(field, "desc")
+  else set(null, "asc")
 }
 
 function formatDate(dateString: string) {
@@ -71,28 +129,43 @@ function getHelperInitialAndColor(helperName: string | undefined, helperId: stri
   return { initial, color }
 }
 
+/** Which rows a single-row export should cover. */
+interface SingleExport {
+  paymentId?: string | null
+  ticketId: string | null
+  /** A specific helper payout row; when set, only that transfer (plus the project's own share) is exported. */
+  transfer?: PaymentTransfer
+  title: string
+}
+
 export default function ReportsSupportPage() {
-  const [activeTab, setActiveTab] = useState<"monthly" | "tickets">("monthly")
+  const [activeTab, setActiveTabState] = useState<Tab>("monthly")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
-  const [selectedTicketRows, setSelectedTicketRows] = useState<string[]>([])
-  const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
-  const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
-  const [ticketsSortField, setTicketsSortField] = useState<TicketsSortField | null>(null)
-  const [ticketsSortDirection, setTicketsSortDirection] = useState<SortDirection>("asc")
+  const [monthlySort, setMonthlySort] = useState<{ field: MonthlySortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
+  const [ticketsSort, setTicketsSort] = useState<{ field: TicketsSortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
+  const [helpersSort, setHelpersSort] = useState<{ field: HelpersSortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
+
+  const setActiveTab = (tab: Tab) => {
+    setActiveTabState(tab)
+    setSelectedRows([])
+  }
+
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
   const { data: project } = useProject(projectId ?? "")
 
-  const { data: transfersData, isLoading } = usePaymentTransfers({
+  // Customer charges for the project: the project's income per ticket.
+  const { data: paymentsData, isLoading: paymentsLoading } = usePayments(projectId)
+  // Transfers: the project's own share (received or pending) and helper payouts.
+  const { data: transfersData, isLoading: transfersLoading } = usePaymentTransfers({
     projectId,
     enabled: !!projectId,
   })
-  // Customer charges for the project: the revenue side of the accounting export.
-  const { data: paymentsData } = usePayments(projectId)
   // Refresh when a ticket closes and its payout rows land / settle.
   useRealtimePaymentTransfers(projectId)
+  const isLoading = !!projectId && (paymentsLoading || transfersLoading)
 
   // Generate months for dropdown
   const months = useMemo(() => {
@@ -105,28 +178,72 @@ export default function ReportsSupportPage() {
     return result
   }, [])
 
-  // Monthly reports: helper payouts per month. The project's own share is a
-  // separate transfer row type and is reported alongside, never folded into
-  // the "paid out" figure.
-  const monthlyReports = useMemo(() => {
-    if (!transfersData) return []
-    return aggregateProjectMonthly(transfersData).map((row) => ({
-      id: row.id,
-      period: row.period,
-      periodRaw: row.periodRaw,
-      description: `${row.ticketCount} ticket${row.ticketCount === 1 ? "" : "s"} · Project share ${formatAmount(row.projectShareSmallestUnit, row.currency)}`,
-      amount: formatAmount(row.helperPayoutSmallestUnit, row.currency),
-      amountRaw: row.helperPayoutSmallestUnit,
-      status: row.allPaidOut ? ("Paid out" as const) : ("Pending" as const),
-    }))
-  }, [transfersData])
+  // "Current month" only exists on the per-row tabs; the monthly tab filters by the dropdown alone.
+  const targetMonth =
+    selectedMonth || (activeTab !== "monthly" && selectedFilter === "current" ? getMonthYear(new Date().toISOString()) : null)
 
-  // Tickets: individual payment transfers with ticket + helper info
-  const ticketsData = useMemo(() => {
-    if (!transfersData) return []
+  // Project income per ticket (every payment row, with the project's own transfer status).
+  const incomeRows = useMemo(
+    () => (paymentsData ?? []).map((payment) => toProjectTicketIncomeRow(payment, transfersData ?? [])),
+    [paymentsData, transfersData],
+  )
 
-    // The org's own cut is also a payments_transfers row (transfer_user_type
-    // "project", no helper); the per-ticket table is about helper payouts.
+  const ticketRows = useMemo(() => {
+    let list = targetMonth ? incomeRows.filter((row) => getMonthYear(row.date) === targetMonth) : incomeRows
+    list = [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const { field, direction } = ticketsSort
+    if (!field) return list
+    return list.sort((a, b) => {
+      switch (field) {
+        case "ticket":
+          return compare(a.ticketShortId, b.ticketShortId, direction)
+        case "date":
+          return compare(new Date(a.date).getTime(), new Date(b.date).getTime(), direction)
+        case "charged":
+          return compare(a.chargedSmallestUnit, b.chargedSmallestUnit, direction)
+        case "payouts":
+          return compare(a.helperShareSmallestUnit + a.platformFeeSmallestUnit, b.helperShareSmallestUnit + b.platformFeeSmallestUnit, direction)
+        case "income":
+          return compare(a.projectIncomeSmallestUnit, b.projectIncomeSmallestUnit, direction)
+        case "status":
+          return compare(PROJECT_INCOME_STATUS_LABELS[a.status], PROJECT_INCOME_STATUS_LABELS[b.status], direction)
+        default:
+          return 0
+      }
+    })
+  }, [incomeRows, targetMonth, ticketsSort])
+
+  // Monthly: captured income only, so the figures are bookable.
+  const monthlyRows = useMemo(() => {
+    let list = aggregateProjectIncomeMonthly(incomeRows)
+    if (selectedMonth) list = list.filter((row) => row.period === selectedMonth)
+    const { field, direction } = monthlySort
+    if (!field) return list // already newest first
+    return [...list].sort((a, b) => {
+      switch (field) {
+        case "period":
+          return compare(a.periodRaw, b.periodRaw, direction)
+        case "tickets":
+          return compare(a.ticketCount, b.ticketCount, direction)
+        case "charged":
+          return compare(a.chargedSmallestUnit, b.chargedSmallestUnit, direction)
+        case "payouts":
+          return compare(a.helperShareSmallestUnit + a.platformFeeSmallestUnit, b.helperShareSmallestUnit + b.platformFeeSmallestUnit, direction)
+        case "income":
+          return compare(a.projectIncomeSmallestUnit, b.projectIncomeSmallestUnit, direction)
+        case "status":
+          return compare(a.allReceived ? "Received" : "Pending", b.allReceived ? "Received" : "Pending", direction)
+        default:
+          return 0
+      }
+    })
+  }, [incomeRows, selectedMonth, monthlySort])
+
+  // Helpers: individual helper payouts with ticket + helper info. The
+  // project's own cut is also a payments_transfers row (transfer_user_type
+  // "project", no helper) and is reported on the other tabs instead.
+  const helperRows = useMemo(() => {
+    if (!transfersData) return []
     let list = transfersData.filter((t) => t.transfer_user_type === "helper").map((transfer) => {
       const helperName = getHelperDisplayName(transfer.helper)
       const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper?.user_id ?? transfer.helper_id)
@@ -146,221 +263,115 @@ export default function ReportsSupportPage() {
         transfer,
       }
     })
-
-    // Filter by selected month
-    if (selectedFilter === "current" || selectedMonth) {
-      const targetMonth = selectedMonth || getMonthYear(new Date().toISOString())
-      list = list.filter((t) => getMonthYear(t.dateRaw) === targetMonth)
-    }
-
-    return list.sort((a, b) => new Date(b.dateRaw).getTime() - new Date(a.dateRaw).getTime())
-  }, [transfersData, selectedMonth, selectedFilter])
-
-  // Filter monthly reports by selected month
-  const filteredMonthlyReports = useMemo(() => {
-    const list = !selectedMonth ? monthlyReports : monthlyReports.filter((r) => r.period === selectedMonth)
-    if (!monthlySortField) return list
-    const sorted = [...list]
-    sorted.sort((a, b) => {
-      let aValue: string | number
-      let bValue: string | number
-      switch (monthlySortField) {
-        case "period":
-          aValue = a.periodRaw
-          bValue = b.periodRaw
-          break
-        case "description":
-          aValue = a.description.toLowerCase()
-          bValue = b.description.toLowerCase()
-          break
-        case "amount":
-          aValue = a.amountRaw
-          bValue = b.amountRaw
-          break
-        case "status":
-          aValue = a.status.toLowerCase()
-          bValue = b.status.toLowerCase()
-          break
-        default:
-          return 0
-      }
-      if (aValue < bValue) return monthlySortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return monthlySortDirection === "asc" ? 1 : -1
-      return 0
-    })
-    return sorted
-  }, [monthlyReports, selectedMonth, monthlySortField, monthlySortDirection])
-
-  const sortedTickets = useMemo(() => {
-    if (!ticketsSortField) return ticketsData
-    const sorted = [...ticketsData]
-    sorted.sort((a, b) => {
-      let aValue: string | number
-      let bValue: string | number
-      switch (ticketsSortField) {
+    if (targetMonth) list = list.filter((t) => getMonthYear(t.dateRaw) === targetMonth)
+    list.sort((a, b) => new Date(b.dateRaw).getTime() - new Date(a.dateRaw).getTime())
+    const { field, direction } = helpersSort
+    if (!field) return list
+    return list.sort((a, b) => {
+      switch (field) {
         case "ticketId":
-          aValue = (a.ticketId ?? "").toLowerCase()
-          bValue = (b.ticketId ?? "").toLowerCase()
-          break
+          return compare((a.ticketId ?? "").toLowerCase(), (b.ticketId ?? "").toLowerCase(), direction)
         case "date":
-          aValue = new Date(a.dateRaw).getTime()
-          bValue = new Date(b.dateRaw).getTime()
-          break
+          return compare(new Date(a.dateRaw).getTime(), new Date(b.dateRaw).getTime(), direction)
         case "helper":
-          aValue = a.helper.toLowerCase()
-          bValue = b.helper.toLowerCase()
-          break
+          return compare(a.helper.toLowerCase(), b.helper.toLowerCase(), direction)
         case "amount":
-          aValue = a.amountRaw
-          bValue = b.amountRaw
-          break
+          return compare(a.amountRaw, b.amountRaw, direction)
         case "status":
-          aValue = a.status.toLowerCase()
-          bValue = b.status.toLowerCase()
-          break
+          return compare(a.status.toLowerCase(), b.status.toLowerCase(), direction)
         default:
           return 0
       }
-      if (aValue < bValue) return ticketsSortDirection === "asc" ? -1 : 1
-      if (aValue > bValue) return ticketsSortDirection === "asc" ? 1 : -1
-      return 0
     })
-    return sorted
-  }, [ticketsData, ticketsSortField, ticketsSortDirection])
+  }, [transfersData, targetMonth, helpersSort])
 
-  const handleMonthlySort = (field: MonthlySortField) => {
-    if (monthlySortField === field) {
-      if (monthlySortDirection === "asc") {
-        setMonthlySortDirection("desc")
-      } else {
-        setMonthlySortField(null)
-        setMonthlySortDirection("asc")
-      }
-    } else {
-      setMonthlySortField(field)
-      setMonthlySortDirection("asc")
-    }
-  }
-
-  const handleTicketsSort = (field: TicketsSortField) => {
-    if (ticketsSortField === field) {
-      if (ticketsSortDirection === "asc") {
-        setTicketsSortDirection("desc")
-      } else {
-        setTicketsSortField(null)
-        setTicketsSortDirection("asc")
-      }
-    } else {
-      setTicketsSortField(field)
-      setTicketsSortDirection("asc")
-    }
-  }
-
+  const visibleIds =
+    activeTab === "monthly" ? monthlyRows.map((r) => r.id) : activeTab === "tickets" ? ticketRows.map((r) => r.id) : helperRows.map((r) => r.id)
+  const allSelected = visibleIds.length > 0 && selectedRows.length === visibleIds.length
   const handleRowSelect = (id: string) => {
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]))
   }
-
   const handleSelectAll = () => {
-    const ids = activeTab === "monthly" ? filteredMonthlyReports.map((r) => r.id) : sortedTickets.map((t) => t.id)
-    setSelectedRows((prev) => (prev.length === ids.length ? [] : ids))
+    setSelectedRows((prev) => (prev.length === visibleIds.length ? [] : visibleIds))
   }
 
-  const handleTicketRowSelect = (id: string) => {
-    setSelectedTicketRows((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]))
-  }
-
-  const handleTicketSelectAll = () => {
-    setSelectedTicketRows((prev) =>
-      prev.length === sortedTickets.length ? [] : sortedTickets.map((t) => t.id)
-    )
-  }
-
-  const displayReports = activeTab === "monthly" ? filteredMonthlyReports : sortedTickets
-
-  // Period the export buttons in the filter bar refer to (null = all time).
-  // "Current month" only exists (and only filters) on the Tickets tab.
-  const exportPeriod =
-    selectedMonth || (activeTab === "tickets" && selectedFilter === "current" ? getMonthYear(new Date().toISOString()) : null)
   const hasExportData = !!projectId && !isLoading && ((transfersData?.length ?? 0) > 0 || (paymentsData?.length ?? 0) > 0)
 
   /**
    * Accounting export for the project: customer charges with their split,
-   * helper payouts and the project's own share. A single payout row exports
-   * just that transfer and the charge it came from.
+   * the project's own share and helper payouts. A single row exports just
+   * that charge (or payout) together with the transfers it produced, so the
+   * document reconciles with itself.
    */
-  const buildExport = (period: string | null, single?: PaymentTransfer): ReportDocument => {
-    // A single payout is exported together with the project's own share
-    // from the same charge, so the document reconciles with itself.
+  const buildExport = (period: string | null, single?: SingleExport): ReportDocument => {
     const sameCharge = (row: { payment_id?: string | null; ticket_id: string | null }) =>
-      single?.payment_id ? row.payment_id === single.payment_id : row.ticket_id === single?.ticket_id
+      single?.paymentId ? row.payment_id === single.paymentId : row.ticket_id === single?.ticketId
+    let transfers = transfersData ?? []
+    let payments = paymentsData ?? []
+    if (single) {
+      transfers = transfers.filter((t) =>
+        single.transfer ? t.id === single.transfer.id || (t.transfer_user_type === "project" && sameCharge(t)) : sameCharge(t),
+      )
+      payments = payments.filter((p) => (single.paymentId ? p.id === single.paymentId : p.ticket_id === single.ticketId))
+    }
     return buildProjectPayoutReport({
-      transfers: single ? (transfersData ?? []).filter((t) => t.id === single.id || sameCharge(t)) : transfersData ?? [],
-      payments: single
-        ? (paymentsData ?? []).filter((p) => (single.payment_id ? p.id === single.payment_id : p.ticket_id === single.ticket_id))
-        : paymentsData ?? [],
+      transfers,
+      payments,
       period,
-      periodTitle: single ? `Payout ${payoutReference(single)}` : undefined,
+      periodTitle: single?.title,
       projectName: project?.name || "Project",
     })
   }
-  const exportPdf = (period: string | null, single?: PaymentTransfer) => {
+  const exportPdf = (period: string | null, single?: SingleExport) => {
     downloadReportPdf(buildExport(period, single)).catch((error) => console.error("PDF export failed", error))
   }
-  const exportCsv = (period: string | null, single?: PaymentTransfer) => {
+  const exportCsv = (period: string | null, single?: SingleExport) => {
     const report = buildExport(period, single)
     downloadCsv(report.fileName, reportToCsv(report))
   }
-  const allSelected =
-    activeTab === "monthly"
-      ? selectedRows.length === filteredMonthlyReports.length && filteredMonthlyReports.length > 0
-      : selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0
+  const exportPeriod = activeTab === "monthly" ? selectedMonth || null : targetMonth
+
+  const tabButton = (tab: Tab, label: string) => (
+    <button
+      type="button"
+      onClick={() => setActiveTab(tab)}
+      className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+        activeTab === tab ? "text-brand-primary border-brand-primary" : "text-muted-foreground border-transparent hover:text-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  )
+
+  const emptyMessage = (what: string) => (targetMonth ? `No ${what} found for ${targetMonth}` : `No ${what} found`)
 
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Reports and Payouts" subtitle="Keep track of reports and transactions for support." />
+        <Header title="Reports and Payouts" subtitle="Your project's income per ticket, and what has been paid out to helpers." />
 
         <main className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-6">
             <div className="mb-6">
               <div className="flex gap-1">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("monthly")}
-                  className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                    activeTab === "monthly"
-                      ? "text-brand-primary border-brand-primary"
-                      : "text-muted-foreground border-transparent hover:text-foreground"
-                  }`}
-                >
-                  Monthly reports
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("tickets")}
-                  className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                    activeTab === "tickets"
-                      ? "text-brand-primary border-brand-primary"
-                      : "text-muted-foreground border-transparent hover:text-foreground"
-                  }`}
-                >
-                  Tickets
-                </button>
+                {tabButton("monthly", "Monthly reports")}
+                {tabButton("tickets", "Tickets")}
+                {tabButton("helpers", "Helpers")}
               </div>
               <div className="h-px bg-border -mx-6" />
             </div>
 
             <div className="flex gap-2 mb-6">
-              {activeTab === "tickets" && (
+              {activeTab !== "monthly" && (
                 <Button
                   variant={selectedFilter === "current" ? "default" : "outline"}
                   size="sm"
                   className={
                     selectedFilter === "current"
                       ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                      : "h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+                      : `h-9 ${OUTLINE_BUTTON_CLASS}`
                   }
                   onClick={() => {
                     setSelectedFilter("current")
@@ -389,9 +400,9 @@ export default function ReportsSupportPage() {
                 </SelectContent>
               </Select>
               <Button
-                variant={selectedFilter === "all" ? "default" : "outline"}
+                variant={selectedFilter === "all" && !selectedMonth ? "default" : "outline"}
                 size="sm"
-                className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                className={OUTLINE_BUTTON_CLASS}
                 onClick={() => {
                   setSelectedFilter("all")
                   setSelectedMonth("")
@@ -404,9 +415,9 @@ export default function ReportsSupportPage() {
                   variant="outline"
                   size="sm"
                   type="button"
-                  className="h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
+                  className={`h-9 ${OUTLINE_BUTTON_CLASS}`}
                   disabled={!hasExportData}
-                  title={`Export the ${exportPeriod ?? "all-time"} payments report as CSV for accounting`}
+                  title={`Export the ${exportPeriod ?? "all-time"} project report as CSV for accounting`}
                   onClick={() => exportCsv(exportPeriod)}
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -418,7 +429,7 @@ export default function ReportsSupportPage() {
                   type="button"
                   className="h-9"
                   disabled={!hasExportData}
-                  title={`Download the ${exportPeriod ?? "all-time"} payments report as PDF for accounting`}
+                  title={`Download the ${exportPeriod ?? "all-time"} project report as PDF for accounting`}
                   onClick={() => exportPdf(exportPeriod)}
                 >
                   <Download className="w-3.5 h-3.5" />
@@ -427,172 +438,82 @@ export default function ReportsSupportPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
-              {/* Table Header */}
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                {activeTab === "monthly" ? (
-                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
-                    <div>
-                      <input
-                        type="checkbox"
-                        className="rounded border-border"
-                        checked={allSelected}
-                        onChange={handleSelectAll}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("period")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Period</span>
-                        <ReportsSortIcon field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-3">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("description")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Description</span>
-                        <ReportsSortIcon field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("amount")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Amount</span>
-                        <ReportsSortIcon field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("status")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Status</span>
-                        <ReportsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2"></div>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
-                    <div>
-                      <input
-                        type="checkbox"
-                        className="rounded border-border"
-                        checked={allSelected}
-                        onChange={handleTicketSelectAll}
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("ticketId")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Ticket ID</span>
-                        <ReportsSortIcon field="ticketId" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-1">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("date")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Date</span>
-                        <ReportsSortIcon field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-3">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("helper")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Helper</span>
-                        <ReportsSortIcon field="helper" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("amount")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Amount</span>
-                        <ReportsSortIcon field="amount" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("status")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Status</span>
-                        <ReportsSortIcon field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2"></div>
-                  </div>
-                )}
-              </div>
+            {!projectId && (
+              <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">Select a project to see its reports.</div>
+            )}
 
-              {/* Table Body */}
-              <div className="divide-y divide-border">
-                {isLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
-                ) : activeTab === "monthly" ? (
-                  filteredMonthlyReports.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No reports found</div>
+            {/* Monthly: the project's income per month */}
+            {activeTab === "monthly" && (
+              <div className="bg-white rounded-lg border border-border overflow-hidden">
+                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                  <div className="grid gap-4 items-center" style={INCOME_GRID}>
+                    <div>
+                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all months" />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Period" field="period" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Tickets" field="tickets" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Charged" field="charged" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Payouts & fees" field="payouts" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Project income" field="income" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Status" field="status" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2 flex items-center justify-end">
+                      <span className="text-sm font-medium text-foreground">Actions</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="divide-y divide-border">
+                  {isLoading ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                  ) : monthlyRows.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
+                      {selectedMonth ? `No income found for ${selectedMonth}` : "No income found"}
+                    </div>
                   ) : (
-                    filteredMonthlyReports.map((report) => (
-                      <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                        <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
+                    monthlyRows.map((row) => (
+                      <div key={row.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                        <div className="grid gap-4 items-center" style={INCOME_GRID}>
                           <div>
-                            <Checkbox
-                              checked={selectedRows.includes(report.id)}
-                              onCheckedChange={() => handleRowSelect(report.id)}
-                            />
+                            <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.period}`} />
                           </div>
                           <div className="col-span-2">
-                            <span className="text-sm font-medium text-foreground">{report.period}</span>
+                            <span className="text-sm font-medium text-foreground">{row.period}</span>
                           </div>
-                          <div className="col-span-3">
-                            <span className="text-sm text-muted-foreground">{report.description}</span>
+                          <div className="col-span-1 text-sm text-foreground">{row.ticketCount}</div>
+                          <div className="col-span-2 text-sm text-foreground">{formatAmount(row.chargedSmallestUnit, row.currency)}</div>
+                          <div className="col-span-2 text-sm text-foreground">
+                            <div>{formatAmount(row.helperShareSmallestUnit, row.currency)}</div>
+                            <div className="text-xs text-muted-foreground">{formatAmount(row.platformFeeSmallestUnit, row.currency)} platform fees</div>
                           </div>
-                          <div className="col-span-2">
-                            <span className="text-sm text-foreground">{report.amount}</span>
+                          <div className="col-span-2 text-sm text-foreground">
+                            <div className="font-medium">{formatAmount(row.projectIncomeSmallestUnit, row.currency)}</div>
+                            {row.receivedSmallestUnit !== row.projectIncomeSmallestUnit && (
+                              <div className="text-xs text-muted-foreground">{formatAmount(row.receivedSmallestUnit, row.currency)} received</div>
+                            )}
                           </div>
-                          <div className="col-span-2">
-                            <Badge className={`${getStatusBadgeClass(report.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
-                              {report.status}
+                          <div className="col-span-1">
+                            <Badge className={`${getStatusBadgeClass(row.allReceived ? "paid out" : "pending")} hover:opacity-90 text-[13px] px-3 py-1`}>
+                              {row.allReceived ? "Received" : "Pending"}
                             </Badge>
                           </div>
                           <div className="col-span-2 flex items-center justify-end space-x-2">
                             <Button
-                              title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                               variant="outline"
                               size="sm"
-                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                            >
-                              Open
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                              title={`Download the ${report.period} payments report as PDF`}
-                              onClick={() => exportPdf(report.period)}
+                              className={OUTLINE_BUTTON_CLASS}
+                              title={`Download the ${row.period} project report as PDF`}
+                              onClick={() => exportPdf(row.period)}
                             >
                               <Download className="w-3.5 h-3.5" />
                               PDF
@@ -600,9 +521,9 @@ export default function ReportsSupportPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                              title={`Export the ${report.period} payments report as CSV`}
-                              onClick={() => exportCsv(report.period)}
+                              className={OUTLINE_BUTTON_CLASS}
+                              title={`Export the ${row.period} project report as CSV`}
+                              onClick={() => exportCsv(row.period)}
                             >
                               <FileSpreadsheet className="w-3.5 h-3.5" />
                               CSV
@@ -611,109 +532,245 @@ export default function ReportsSupportPage() {
                         </div>
                       </div>
                     ))
-                  )
-                ) : sortedTickets.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
-                ) : (
-                  sortedTickets.map((ticket) => (
-                    <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
-                        <div>
-                          <Checkbox
-                            checked={selectedTicketRows.includes(ticket.id)}
-                            onCheckedChange={() => handleTicketRowSelect(ticket.id)}
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          {ticket.ticketId ? (
-                            <Link
-                              href={`/helper/tickets/${ticket.ticketId}`}
-                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
-                            >
-                              {getShortTicketId(ticket.ticketId)}
-                            </Link>
-                          ) : (
-                            <span className="text-sm font-medium text-foreground">—</span>
-                          )}
-                        </div>
-                        <div className="col-span-1">
-                          <span className="text-sm text-muted-foreground">{ticket.date}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: ticket.helperColor }}
-                          >
-                            {ticket.helperInitial}
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tickets: the project's income per ticket */}
+            {activeTab === "tickets" && (
+              <div className="bg-white rounded-lg border border-border overflow-hidden">
+                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                  <div className="grid gap-4 items-center" style={INCOME_GRID}>
+                    <div>
+                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Ticket" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Charged" field="charged" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Payouts & fees" field="payouts" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Project income" field="income" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2 flex items-center justify-end">
+                      <span className="text-sm font-medium text-foreground">Actions</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="divide-y divide-border">
+                  {isLoading ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                  ) : ticketRows.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("ticket payments")}</div>
+                  ) : (
+                    ticketRows.map((row) => (
+                      <div key={row.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                        <div className="grid gap-4 items-center" style={INCOME_GRID}>
+                          <div>
+                            <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ticket ${row.ticketShortId}`} />
                           </div>
-                          <span className="text-sm font-medium text-foreground">{ticket.helper}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{ticket.amount}</span>
-                        </div>
-                        <div className="col-span-2">
-                          {ticket.statusType === "pending" ? (
-                            <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-                              <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                                <circle cx="6" cy="6" r="2" fill="currentColor" />
-                              </svg>
-                              {ticket.status}
+                          <div className="col-span-2 min-w-0">
+                            {row.ticketId ? (
+                              <Link href={`/helper/tickets/${row.ticketId}`} className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums">
+                                {getShortTicketId(row.ticketId)}
+                              </Link>
+                            ) : (
+                              <span className="text-sm font-medium text-foreground">—</span>
+                            )}
+                            <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
+                              {row.ticketTitle}
+                            </div>
+                          </div>
+                          <div className="col-span-1 text-sm text-muted-foreground">{formatDate(row.date)}</div>
+                          <div className="col-span-2 text-sm text-foreground">
+                            <div>{formatAmount(row.chargedSmallestUnit, row.currency)}</div>
+                            {!row.captured && <div className="text-xs text-muted-foreground">not captured yet</div>}
+                          </div>
+                          <div className="col-span-2 text-sm text-foreground">
+                            <div>{formatAmount(row.helperShareSmallestUnit, row.currency)}</div>
+                            <div className="text-xs text-muted-foreground">{formatAmount(row.platformFeeSmallestUnit, row.currency)} platform fee</div>
+                          </div>
+                          <div className="col-span-2 text-sm font-medium text-foreground">{formatAmount(row.projectIncomeSmallestUnit, row.currency)}</div>
+                          <div className="col-span-1">
+                            <Badge variant="secondary" className={`${INCOME_BADGE_CLASS[row.status]} text-xs`}>
+                              {PROJECT_INCOME_STATUS_LABELS[row.status]}
                             </Badge>
-                          ) : ticket.statusType === "failed" ? (
-                            <Badge className={`${getStatusBadgeClass("failed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-                              {ticket.status}
-                            </Badge>
-                          ) : (
-                            <Badge className={`${getStatusBadgeClass("completed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-                              <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                                <path
-                                  d="M10 3L4.5 8.5L2 6"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                              {ticket.status}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
-                          {ticket.ticketId ? (
+                          </div>
+                          <div className="col-span-2 flex items-center justify-end space-x-2">
+                            {row.receiptUrl ? (
+                              <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
+                                <a href={row.receiptUrl} target="_blank" rel="noopener noreferrer" title="Open the Stripe receipt for this charge">
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Receipt
+                                </a>
+                              </Button>
+                            ) : (
+                              <span title="A receipt becomes available once the payment has been captured" className="inline-flex">
+                                <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Receipt
+                                </Button>
+                              </span>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                              asChild
+                              className={OUTLINE_BUTTON_CLASS}
+                              title="Download this ticket's charge, payouts and project income as a PDF"
+                              onClick={() => exportPdf(null, { paymentId: row.id, ticketId: row.ticketId, title: `Ticket ${row.ticketShortId}` })}
                             >
-                              <Link href={`/helper/tickets/${ticket.ticketId}`}>Open</Link>
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
                             </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                            >
-                              Open
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                            title="Download this payout and its customer charge as a PDF"
-                            onClick={() => exportPdf(null, ticket.transfer)}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            PDF
-                          </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Helpers: payouts to each helper per ticket */}
+            {activeTab === "helpers" && (
+              <div className="bg-white rounded-lg border border-border overflow-hidden">
+                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                  <div className="grid gap-4 items-center" style={HELPERS_GRID}>
+                    <div>
+                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all payouts" />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Ticket ID" field="ticketId" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-1">
+                      <SortHeader label="Date" field="date" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-3">
+                      <SortHeader label="Helper" field="helper" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Amount" field="amount" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <SortHeader label="Status" field="status" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    </div>
+                    <div className="col-span-2 flex items-center justify-end">
+                      <span className="text-sm font-medium text-foreground">Actions</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="divide-y divide-border">
+                  {isLoading ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                  ) : helperRows.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("helper payouts")}</div>
+                  ) : (
+                    helperRows.map((ticket) => (
+                      <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                        <div className="grid gap-4 items-center" style={HELPERS_GRID}>
+                          <div>
+                            <Checkbox checked={selectedRows.includes(ticket.id)} onCheckedChange={() => handleRowSelect(ticket.id)} aria-label={`Select payout ${ticket.id}`} />
+                          </div>
+                          <div className="col-span-1">
+                            {ticket.ticketId ? (
+                              <Link
+                                href={`/helper/tickets/${ticket.ticketId}`}
+                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              >
+                                {getShortTicketId(ticket.ticketId)}
+                              </Link>
+                            ) : (
+                              <span className="text-sm font-medium text-foreground">—</span>
+                            )}
+                          </div>
+                          <div className="col-span-1">
+                            <span className="text-sm text-muted-foreground">{ticket.date}</span>
+                          </div>
+                          <div className="col-span-3 flex items-center gap-[18px]">
+                            <div
+                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              style={{ backgroundColor: ticket.helperColor }}
+                            >
+                              {ticket.helperInitial}
+                            </div>
+                            <span className="text-sm font-medium text-foreground">{ticket.helper}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-sm text-foreground">{ticket.amount}</span>
+                          </div>
+                          <div className="col-span-2">
+                            {ticket.statusType === "pending" ? (
+                              <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                                  <circle cx="6" cy="6" r="2" fill="currentColor" />
+                                </svg>
+                                {ticket.status}
+                              </Badge>
+                            ) : ticket.statusType === "failed" ? (
+                              <Badge className={`${getStatusBadgeClass("failed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+                                {ticket.status}
+                              </Badge>
+                            ) : (
+                              <Badge className={`${getStatusBadgeClass("completed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                                  <path
+                                    d="M10 3L4.5 8.5L2 6"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                                {ticket.status}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="col-span-2 flex items-center justify-end space-x-2">
+                            {ticket.ticketId ? (
+                              <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
+                                <Link href={`/helper/tickets/${ticket.ticketId}`}>Open</Link>
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
+                                Open
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={OUTLINE_BUTTON_CLASS}
+                              title="Download this payout and its customer charge as a PDF"
+                              onClick={() =>
+                                exportPdf(null, {
+                                  paymentId: ticket.transfer.payment_id,
+                                  ticketId: ticket.ticketId,
+                                  transfer: ticket.transfer,
+                                  title: `Payout ${payoutReference(ticket.transfer)}`,
+                                })
+                              }
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>

@@ -401,7 +401,7 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
         ],
         sections: [summary, charges, payouts, share],
         footerNote:
-            "Customer charges are collected by Githelp through Stripe; helper and project shares are transferred via Stripe Connect. Stripe's processing fees are included in the platform fee. This report is issued for the project's records and is not a tax invoice.",
+            "Customer charges are collected by Githelp through Stripe; helper and project shares are transferred via Stripe Connect. Stripe's processing fees are included in the platform fee. A ticket charged in more than one transaction (hold capture plus overage, weekly captures on long tickets, or a retry after a decline) incurs Stripe's fee on each transaction; each fee is deducted from its own charge before the split. This report is issued for the project's records and is not a tax invoice.",
         fileName: reportFileName("project-payments", input.projectName, period),
     }
 }

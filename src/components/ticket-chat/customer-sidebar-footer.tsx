@@ -5,6 +5,7 @@ import { getAvatarColorHexForId } from "@/lib/constants"
 import type { CustomerTimeEntryDisplay } from "@/hooks/useCustomerTicketSidebar"
 import type { UserActiveTicketSidebarItem } from "@/hooks/useTicketsWithDetails"
 import { SidebarSectionHeading, SidebarDivider } from "./sidebar-section"
+import { TimeEntryReviewStatusBadge } from "./time-entry-review"
 
 export interface CustomerTicketSidebarFooterProps {
   /** Current ticket id, if a ticket exists yet. */
@@ -56,6 +57,12 @@ export function CustomerTicketSidebarFooter({
                       </span>
                     </div>
                     {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                    <div className="mt-1 ml-8">
+                      <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} perspective="customer" />
+                    </div>
+                    {entry.reviewStatus === "declined" && entry.declineReason && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+                    )}
                   </div>
                 ))}
                 <div className="flex items-center justify-between py-2 font-medium">

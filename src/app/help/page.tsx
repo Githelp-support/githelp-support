@@ -28,7 +28,12 @@ const FAQ_ITEMS = [
   {
     question: "I'm a helper — how do I claim and work on tickets?",
     answer:
-      "Go to Tickets in the sidebar to see available tickets. Open a ticket and use the 'Claim' action to assign it to yourself. You can then chat with the user and log time. When done, mark the ticket as completed.",
+      "Go to Tickets in the sidebar to see available tickets. Open a ticket and use the 'Claim' action to assign it to yourself. You can then chat with the user and log time. Each logged entry has to be accepted or declined by the user before you can end the session; if they decline, their reason is posted in the chat so you can log a corrected entry. Entries the user does not review within 24 hours are accepted automatically. Declined time is not charged. When done, end the session and mark the outcome.",
+  },
+  {
+    question: "The helper logged time — what do I need to do?",
+    answer:
+      "Every time a helper logs time on your ticket you get an Accept / Decline prompt in the chat. Please review each entry before the session ends. If you decline, you'll be asked for a short explanation, which is shared with the helper in the chat. Entries you do not review within 24 hours are accepted automatically. Declined time is not charged.",
   },
   {
     question: "My payout or report looks wrong",
