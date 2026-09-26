@@ -413,6 +413,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                         const count = ticket.transfers.length
                         const expanded = count > 1 && isExpanded(ticket.key)
                         const panelId = transactionsPanelId(ticket.key)
+                        // Receipts per payout need each payout linked to its charge;
+                        // older payouts aren't, so keep the per-ticket receipt list then.
+                        const receiptsPerPayout = count > 1 && ticket.transfers.every((t) => !!t.payment_id)
                         return (
                         <Fragment key={ticket.key}>
                         <tr className={cn("border-b border-border last:border-b-0 hover:bg-muted/40 transition-colors", expanded && "border-b-0")}>
@@ -472,13 +475,13 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                   Open
                                 </Button>
                               )}
-                              {count > 1 ? (
+                              {receiptsPerPayout ? (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className={ROW_BUTTON_CLASS}
                                   aria-expanded={expanded}
-                                  aria-controls={panelId}
+                                  aria-controls={expanded ? panelId : undefined}
                                   title="Each payout links to the receipt of the charge it came from"
                                   onClick={() => toggle(ticket.key)}
                                 >
@@ -524,7 +527,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                       amount={formatAmount(transfer.amount_smallest_unit, transfer.currency)}
                                       status={<span className="text-xs text-muted-foreground">{TRANSFER_STATUS_LABEL[transfer.status]}</span>}
                                       actions={
-                                        receipt ? (
+                                        !receiptsPerPayout ? undefined : receipt ? (
                                           <Button variant="outline" size="sm" className={ROW_BUTTON_CLASS} asChild>
                                             <a href={receipt} target="_blank" rel="noopener noreferrer">
                                               <ExternalLink className="w-3.5 h-3.5" />

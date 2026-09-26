@@ -184,13 +184,15 @@ export interface ProjectTicketIncomeGroup extends ProjectTicketIncomeRow {
 const OPEN_INCOME: ProjectIncomeStatus[] = ["action_required", "on_hold", "awaiting_payment"]
 
 /**
- * Status across a ticket's charges: a charge still in flight wins; then,
- * among captured charges, a failed project transfer, then one still
- * pending, then received. Uncaptured failed or cancelled attempts (a
+ * Status across a ticket's charges: a failed project transfer on a captured
+ * charge wins (money is missing and needs action); then a charge still in
+ * flight; then, among captured charges, a transfer still pending, then
+ * received. Uncaptured failed or cancelled attempts (a
  * declined card that was retried, a released hold) only decide the status
  * when nothing was captured.
  */
 export function summarizeProjectIncomeStatus(transactions: ProjectTicketIncomeRow[]): ProjectIncomeStatus {
+    if (transactions.some((t) => t.captured && t.status === "failed")) return "failed"
     for (const status of OPEN_INCOME) {
         if (transactions.some((t) => t.status === status)) return status
     }

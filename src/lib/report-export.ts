@@ -568,6 +568,45 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
     }
 }
 
+/** Characters above U+00FF that the PDF's built-in Helvetica (WinAnsi) can encode. */
+const WIN_ANSI_EXTRAS = new Set("€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ")
+
+/**
+ * Text the PDF renderer can draw. jsPDF's built-in fonts only encode
+ * WinAnsi; a single other character (emoji, CJK, Cyrillic, "→" in a ticket
+ * title) makes it re-encode the whole string, which prints as garbage.
+ * Such characters become "?" so the rest stays readable.
+ */
+export function toPdfText(value: string): string {
+    let out = ""
+    for (const ch of value) {
+        const code = ch.codePointAt(0) ?? 0
+        out += code <= 0xff || WIN_ANSI_EXTRAS.has(ch) ? ch : "?"
+    }
+    return out
+}
+
+/** The whole document passed through `toPdfText`. */
+export function toPdfDocument(document: ReportDocument): ReportDocument {
+    const pair = ([a, b]: [string, string]): [string, string] => [toPdfText(a), toPdfText(b)]
+    return {
+        ...document,
+        title: toPdfText(document.title),
+        period: toPdfText(document.period),
+        meta: document.meta.map(pair),
+        footerNote: toPdfText(document.footerNote),
+        sections: document.sections.map((section) => ({
+            ...section,
+            heading: toPdfText(section.heading),
+            note: section.note === undefined ? undefined : toPdfText(section.note),
+            columns: section.columns.map((column) => ({ ...column, label: toPdfText(column.label) })),
+            rows: section.rows.map((row) => row.map(toPdfText)),
+            totals: section.totals?.map(pair),
+            emptyMessage: section.emptyMessage === undefined ? undefined : toPdfText(section.emptyMessage),
+        })),
+    }
+}
+
 /**
  * One CSV cell. Besides RFC 4180 quoting, cells that a spreadsheet would
  * read as a formula (leading `=`, `+`, `-`, `@`, tab or CR) get a leading
@@ -575,7 +614,8 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
  * when an admin opens the export in Excel or LibreOffice.
  */
 export function csvCell(value: string): string {
-    const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+    // A lone "-" (placeholder for "none") can't run as a formula; leave it readable.
+    const safe = value !== "-" && /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
     return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
@@ -590,7 +630,8 @@ export function sectionToCsv(section: ReportSection): string {
     const lead = (index: number) => (kinds ? [kinds[index] === "transaction" ? "Transaction" : "Ticket"] : [])
     const lines: string[] = [[...(kinds ? ["Line"] : []), ...section.columns.map((c) => c.label)].map(csvCell).join(",")]
     section.rows.forEach((row, index) => lines.push([...lead(index), ...row].map(csvCell).join(",")))
-    for (const [label, value] of section.totals ?? []) lines.push([csvCell(label), csvCell(value)].join(","))
+    // Totals keep the "Line" column empty so labels and values stay under the data columns.
+    for (const [label, value] of section.totals ?? []) lines.push([...(kinds ? [""] : []), label, value].map(csvCell).join(","))
     return lines.join("\r\n")
 }
 

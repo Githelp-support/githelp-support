@@ -24,6 +24,18 @@ export interface HelperMonthlyReportRow {
     currency: string
 }
 
+/**
+ * Collapse the database `transfer_status` enum to the three states the
+ * Reports show. Rows start as `processing` and only turn `completed` when
+ * Stripe's `transfer.created` webhook confirms them, so `processing` is
+ * still pending; `cancelled` was never paid.
+ */
+export function normalizeTransferStatus(status: string | null | undefined): PaymentTransfer["status"] {
+    if (status === "completed") return "completed"
+    if (status === "failed" || status === "cancelled") return "failed"
+    return "pending"
+}
+
 /** "September 2026" — the same label the month filter dropdown uses. */
 export function monthLabel(dateIso: string): string {
     return new Date(dateIso).toLocaleDateString("en-US", { month: "long", year: "numeric" })

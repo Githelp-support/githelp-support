@@ -7,6 +7,7 @@ import {
     buildPayoutStatement,
     formatMinutes,
     groupTransfersByTicket,
+    normalizeTransferStatus,
     payoutReference,
     transferTicketType,
 } from "./helper-payout-reports"
@@ -199,5 +200,15 @@ describe("groupTransfersByTicket", () => {
             ["ticket:ticket-1:helper-1", "pending", 2000],
             ["ticket:ticket-1:helper-2", "completed", 1000],
         ])
+    })
+})
+
+describe("normalizeTransferStatus", () => {
+    it("never shows an unconfirmed or cancelled transfer as paid", () => {
+        expect(normalizeTransferStatus("completed")).toBe("completed")
+        expect(normalizeTransferStatus("processing")).toBe("pending")
+        expect(normalizeTransferStatus("pending")).toBe("pending")
+        expect(normalizeTransferStatus("failed")).toBe("failed")
+        expect(normalizeTransferStatus("cancelled")).toBe("failed")
     })
 })

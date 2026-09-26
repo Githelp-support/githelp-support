@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
 import type { PaymentRowStatus, UserPaymentRecord } from "@/lib/user-payment-reports"
+import { normalizeTransferStatus } from "@/lib/helper-payout-reports"
 
 export interface Payment {
   id: string
@@ -34,6 +35,7 @@ export interface PaymentTransfer {
   helper_id: string | null
   ticket_id: string | null
   transfer_user_type: string
+  /** Normalised from the DB enum by `normalizeTransferStatus` (processing → pending, cancelled → failed). */
   status: "pending" | "completed" | "failed"
   amount_smallest_unit: number
   currency: string
@@ -144,6 +146,7 @@ export function usePaymentTransfers(filters?: {
             : rawHelper
         return {
           ...transfer,
+          status: normalizeTransferStatus(transfer.status),
           helper,
           ticket: transfer.ticket || null,
           sla: transfer.ticket?.sla || null,
@@ -198,6 +201,7 @@ export function usePaymentTransfer(transferId?: string) {
       const project = rawProject == null ? null : Array.isArray(rawProject) ? rawProject[0] ?? null : rawProject
       return {
         ...row,
+        status: normalizeTransferStatus(row.status),
         helper,
         project,
         ticket: row.ticket || null,

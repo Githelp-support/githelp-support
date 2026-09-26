@@ -27,6 +27,7 @@ export type PaymentSystemMessageKind =
   | "payment_required"
   | "payment_authorized"
   | "payment_requires_action"
+  | "payment_hold_declined"
   | "payment_cap_exceeded"
   | "payment_failed"
   | "payment_completed"
@@ -377,7 +378,8 @@ export function TicketChat(props: TicketChatProps) {
                                         ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                         : msg.paymentMetadata?.kind === "payment_failed"
                                           ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                          : msg.paymentMetadata?.kind === "time_entry_declined"
+                                          : msg.paymentMetadata?.kind === "time_entry_declined" ||
+                                              msg.paymentMetadata?.kind === "payment_hold_declined"
                                             ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                             : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
@@ -428,6 +430,14 @@ export function TicketChat(props: TicketChatProps) {
                                       >
                                         {paymentCtaLoading ? "Opening Stripe…" : "Add payment method"}
                                       </button>
+                                      {typeof msg.paymentMetadata?.hold_amount_smallest_unit === "number" &&
+                                        msg.paymentMetadata.hold_amount_smallest_unit > 0 && (
+                                          <p className="mt-1.5 text-xs text-muted-foreground">
+                                            Once your card is saved we place a temporary hold of $
+                                            {(msg.paymentMetadata.hold_amount_smallest_unit / 100).toFixed(2)} on it. This is not a
+                                            charge: you only pay for the time your helper logs.
+                                          </p>
+                                        )}
                                     </div>
                                   )}
                                   {msg.senderType === "system" &&

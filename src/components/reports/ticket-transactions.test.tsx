@@ -13,9 +13,15 @@ describe("TransactionsToggle", () => {
     render(<TransactionsToggle count={2} expanded={false} onToggle={onToggle} panelId="panel-1" noun="payout" />)
     const button = screen.getByRole("button", { name: "2 payouts" })
     expect(button).toHaveAttribute("aria-expanded", "false")
-    expect(button).toHaveAttribute("aria-controls", "panel-1")
+    // The panel isn't rendered while collapsed, so nothing to point at yet.
+    expect(button).not.toHaveAttribute("aria-controls")
     fireEvent.click(button)
     expect(onToggle).toHaveBeenCalledOnce()
+  })
+
+  it("points at the panel once it is open", () => {
+    render(<TransactionsToggle count={3} expanded onToggle={() => {}} panelId="panel-2" />)
+    expect(screen.getByRole("button", { name: "3 transactions" })).toHaveAttribute("aria-controls", "panel-2")
   })
 })
 

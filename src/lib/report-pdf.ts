@@ -3,7 +3,7 @@
  * a downloadable PDF via jsPDF, plus the matching CSV download. jsPDF is
  * imported lazily so the Reports pages don't carry it in their initial bundle.
  */
-import type { ReportDocument, ReportSection } from "@/lib/report-export"
+import { toPdfDocument, type ReportDocument, type ReportSection } from "@/lib/report-export"
 
 const MARGIN = 14
 const BRAND = [59, 91, 219] as const // brand-primary, approximated for print
@@ -29,7 +29,8 @@ export function downloadCsv(fileName: string, csv: string): void {
 }
 
 /** Renders the document with jsPDF and saves it as `<fileName>.pdf`. */
-export async function downloadReportPdf(report: ReportDocument): Promise<void> {
+export async function downloadReportPdf(input: ReportDocument): Promise<void> {
+    const report = toPdfDocument(input)
     const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")])
 
     const wide = report.sections.some((s) => s.columns.length > 7)
@@ -63,7 +64,15 @@ export async function downloadReportPdf(report: ReportDocument): Promise<void> {
         pdf.setTextColor(...MUTED)
         pdf.text(`${label}:`, x, lineY)
         pdf.setTextColor(...TEXT)
-        pdf.text(String(value), x + 26, lineY)
+        // Values are drawn on one line; shorten long ones (e.g. a ticket title)
+        // so they don't run into the second column or off the page.
+        const maxWidth = contentWidth / 2 - 28
+        let text = String(value)
+        if (pdf.getTextWidth(text) > maxWidth) {
+            while (text.length > 1 && pdf.getTextWidth(`${text}…`) > maxWidth) text = text.slice(0, -1)
+            text = `${text.trimEnd()}…`
+        }
+        pdf.text(text, x + 26, lineY)
     })
     y += half * 5 + 4
 

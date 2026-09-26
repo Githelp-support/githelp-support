@@ -268,7 +268,12 @@ export function TimeEntryAwaitingApprovalBanner({
         </p>
         <p className="text-muted-foreground">
           The session can&apos;t be ended until {pendingCount === 1 ? "it has" : "each one has"} been accepted or
-          declined.{autoAcceptHint ? ` Accepted automatically ${autoAcceptHint} otherwise.` : ""}
+          declined.
+          {autoAcceptHint
+            ? pendingCount === 1
+              ? ` Accepted automatically ${autoAcceptHint} otherwise.`
+              : ` If not reviewed, the first is accepted automatically ${autoAcceptHint}.`
+            : ""}
         </p>
       </div>
     </div>

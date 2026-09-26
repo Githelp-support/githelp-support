@@ -167,6 +167,15 @@ describe("groupProjectIncomeByTicket", () => {
         expect(ticket.status).toBe("on_hold")
     })
 
+    it("does not let a newer hold hide a failed transfer of the project's share", () => {
+        const rows = [
+            payment(),
+            payment({ id: "p-2", status: "authorized", captured_amount_smallest_unit: null, amount_smallest_unit: 3000, completed_at: null, created_at: "2026-08-20T10:00:00.000Z" }),
+        ].map((p) => toProjectTicketIncomeRow(p, [transfer({ status: "failed", completed_at: null })]))
+        const [ticket] = groupProjectIncomeByTicket(rows)
+        expect(ticket.status).toBe("failed")
+    })
+
     it("ignores a declined attempt that was retried successfully", () => {
         const rows = [
             payment({ id: "p-0", status: "failed", captured_amount_smallest_unit: null, completed_at: null, created_at: "2026-08-09T10:00:00.000Z" }),

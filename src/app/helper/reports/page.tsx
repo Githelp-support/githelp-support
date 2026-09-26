@@ -322,6 +322,9 @@ export default function HelperReportsPage() {
       projectName: project?.name || "Project",
     })
   }
+  /** Every payout on the payout's ticket, not only those in the filtered month. */
+  const wholeTicket = (payout: PayoutData): PaymentTransfer[] =>
+    payout.ticketId ? (transfersData ?? []).filter((t) => t.ticket_id === payout.ticketId) : payout.transfers
   const exportPdf = (period: string | null, single?: PaymentTransfer[]) => {
     downloadReportPdf(buildExport(period, single)).catch((error) => console.error("PDF export failed", error))
   }
@@ -609,7 +612,7 @@ export default function HelperReportsPage() {
                               type="button"
                               className={OUTLINE_BUTTON_CLASS}
                               aria-expanded={expanded}
-                              aria-controls={panelId}
+                              aria-controls={expanded ? panelId : undefined}
                               title="Each payout has its own statement"
                               onClick={() => toggle(payout.id)}
                             >
@@ -624,12 +627,8 @@ export default function HelperReportsPage() {
                             size="sm"
                             type="button"
                             className={OUTLINE_BUTTON_CLASS}
-                            title={
-                              count > 1
-                                ? "Download this ticket's payouts as a PDF for your accounting"
-                                : "Download this payout as a PDF for your accounting"
-                            }
-                            onClick={() => exportPdf(null, payout.transfers)}
+                            title="Download all your payouts on this ticket as a PDF for your accounting"
+                            onClick={() => exportPdf(null, wholeTicket(payout))}
                           >
                             <Download className="w-3.5 h-3.5" />
                             PDF

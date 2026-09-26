@@ -14,6 +14,8 @@ import {
     reportFileName,
     reportToCsv,
     sectionToCsv,
+    toPdfDocument,
+    toPdfText,
 } from "./report-export"
 
 const GENERATED = new Date(2026, 8, 24, 14, 5)
@@ -292,6 +294,27 @@ describe("buildUserTicketReport", () => {
     })
 })
 
+describe("PDF text", () => {
+    it("keeps WinAnsi text and replaces what the built-in font can't draw, instead of garbling the line", () => {
+        expect(toPdfText("abcdef0 · Login – broken… café €5")).toBe("abcdef0 · Login – broken… café €5")
+        expect(toPdfText("Deploy → prod 🚀 Привет")).toBe("Deploy ? prod ? ??????")
+    })
+
+    it("cleans every string in a document", () => {
+        const doc = toPdfDocument({
+            title: "Report",
+            period: "All time",
+            meta: [["Ticket", "abc · 修正"]],
+            sections: [{ heading: "H", columns: [{ label: "A" }], rows: [["→"]], totals: [["Total", "1"]] }],
+            footerNote: "n",
+            fileName: "x",
+        })
+        expect(doc.meta).toEqual([["Ticket", "abc · ??"]])
+        expect(doc.sections[0].rows).toEqual([["?"]])
+        expect(doc.fileName).toBe("x")
+    })
+})
+
 describe("CSV", () => {
     it("adds a Line column to grouped sections so ticket totals can be summed on their own", () => {
         const csv = sectionToCsv({
@@ -305,6 +328,18 @@ describe("CSV", () => {
             rowKinds: ["ticket", "transaction", "transaction"],
         })
         expect(csv).toBe("Line,Ticket,Amount\r\nTicket,abcdef0,USD 13.00\r\nTransaction,,USD 3.00\r\nTransaction,,USD 10.00")
+    })
+
+    it("keeps totals under the data columns in grouped sections and leaves lone dashes readable", () => {
+        const csv = sectionToCsv({
+            heading: "Payouts",
+            columns: [{ label: "Ticket" }, { label: "Stripe transfer" }],
+            rows: [["abcdef0", "-"], ["", "tr_1"]],
+            rowKinds: ["ticket", "transaction"],
+            totals: [["Paid out", "USD 10.00"]],
+        })
+        expect(csv).toBe("Line,Ticket,Stripe transfer\r\nTicket,abcdef0,-\r\nTransaction,,tr_1\r\n,Paid out,USD 10.00")
+        expect(csvCell("-2")).toBe("'-2")
     })
 
     it("neutralises cells a spreadsheet would run as a formula", () => {

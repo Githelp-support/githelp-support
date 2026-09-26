@@ -699,7 +699,7 @@ export default function ReportsSupportPage() {
                                 size="sm"
                                 className={OUTLINE_BUTTON_CLASS}
                                 aria-expanded={expanded}
-                                aria-controls={panelId}
+                                aria-controls={expanded ? panelId : undefined}
                                 title="Each charge has its own Stripe receipt"
                                 onClick={() => toggle(row.id)}
                               >
@@ -793,7 +793,17 @@ export default function ReportsSupportPage() {
                       const count = ticket.transfers.length
                       const expanded = count > 1 && isExpanded(ticket.id)
                       const panelId = transactionsPanelId(ticket.id)
-                      const paymentIds = ticket.transfers.map((t) => t.payment_id).filter((id): id is string => !!id)
+                      // The PDF covers all of this helper's payouts on the ticket, not only the filtered month's.
+                      const allTransfers = ticket.ticketId
+                        ? (transfersData ?? []).filter(
+                            (t) =>
+                              t.transfer_user_type === "helper" &&
+                              t.ticket_id === ticket.ticketId &&
+                              (t.helper_id ?? t.helper?.user_id ?? "unknown") ===
+                                (ticket.transfers[0].helper_id ?? ticket.transfers[0].helper?.user_id ?? "unknown"),
+                          )
+                        : ticket.transfers
+                      const paymentIds = allTransfers.map((t) => t.payment_id).filter((id): id is string => !!id)
                       return (
                       <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                         <div className="grid gap-4 items-center" style={HELPERS_GRID}>
@@ -859,12 +869,12 @@ export default function ReportsSupportPage() {
                                 exportPdf(null, {
                                   ticketId: ticket.ticketId,
                                   // Legacy payouts without payment_id fall back to the whole ticket.
-                                  paymentIds: paymentIds.length === count ? paymentIds : undefined,
-                                  transfers: ticket.transfers,
+                                  paymentIds: paymentIds.length === allTransfers.length ? paymentIds : undefined,
+                                  transfers: allTransfers,
                                   title:
-                                    count > 1
+                                    allTransfers.length > 1
                                       ? `Ticket ${getShortTicketId(ticket.ticketId)} · ${ticket.helper}`
-                                      : `Payout ${payoutReference(ticket.transfers[0])}`,
+                                      : `Payout ${payoutReference(allTransfers[0])}`,
                                 })
                               }
                             >

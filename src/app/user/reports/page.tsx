@@ -289,7 +289,13 @@ export default function UserReportsPage() {
     setSelectedRows(selectedRows.length === payments.length ? [] : payments.map((payment) => payment.id))
   }
 
-  const downloadTicketPdf = (ticket: UserTicketPaymentGroup) => {
+  // The PDF covers the whole ticket, even when the list is filtered to a
+  // month and shows only that month's transactions.
+  const downloadTicketPdf = (row: UserTicketPaymentGroup) => {
+    const ticket =
+      (row.ticketId
+        ? groupUserPaymentsByTicket(allPayments.filter((p) => p.ticketId === row.ticketId))[0]
+        : undefined) ?? row
     const report = buildUserTicketReport({
       ticket,
       customer: { name: user?.name || "Customer", email: user?.email ?? null },
@@ -591,7 +597,7 @@ export default function UserReportsPage() {
                                     type="button"
                                     className={OUTLINE_BUTTON_CLASS}
                                     aria-expanded={expanded}
-                                    aria-controls={panelId}
+                                    aria-controls={expanded ? panelId : undefined}
                                     title="Each transaction has its own Stripe receipt"
                                     onClick={() => toggle(row.id)}
                                   >

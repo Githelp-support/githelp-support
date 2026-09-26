@@ -52,7 +52,7 @@ export function TransactionsToggle({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      aria-controls={panelId}
+      aria-controls={expanded ? panelId : undefined}
       className={cn(
         "mt-1 inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2 py-0.5 text-[11px] font-medium text-brand-primary hover:bg-brand-primary/15 cursor-pointer",
         className,
@@ -77,7 +77,7 @@ export function TransactionsPanel({
     <div
       id={id}
       role="list"
-      className={cn("mt-3 ml-8 rounded-md border border-border bg-muted/30 divide-y divide-border", className)}
+      className={cn("mt-3 ml-8 overflow-x-auto rounded-md border border-border bg-muted/30 divide-y divide-border", className)}
     >
       {children}
     </div>
@@ -105,7 +105,7 @@ export function TransactionLine({
   return (
     <div
       role="listitem"
-      className="grid items-center gap-4 px-4 py-2 text-sm"
+      className="grid min-w-[36rem] items-center gap-4 px-4 py-2 text-sm"
       style={{ gridTemplateColumns: "3.5rem 6rem minmax(0, 1fr) 8rem 9rem minmax(0, auto)" }}
     >
       <span className="text-xs text-muted-foreground tabular-nums">
