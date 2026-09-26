@@ -159,6 +159,44 @@ export function useCreateTimeEntry() {
     });
 }
 
+export interface DeleteTimeEntryInput {
+    entryId: string;
+    ticketId: string;
+}
+
+/**
+ * Helper deletes one of their own entries. RLS (tickets_time_entries_delete_own)
+ * limits this to the helper's own rows; a trigger rejects it on an ended
+ * ticket (hint "ticket_ended") or for an accepted entry ("accepted_entry_locked"),
+ * and otherwise posts a `time_entry_deleted` system message into the chat.
+ */
+export function useDeleteTimeEntry() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: DeleteTimeEntryInput) => {
+            const { data, error } = await supabase
+                .from("tickets_time_entries")
+                .delete()
+                .eq("id", input.entryId)
+                .select("id");
+            if (error) throw error;
+            // RLS filters rows silently: nothing deleted means it wasn't ours.
+            if (!data || data.length === 0) {
+                throw Object.assign(new Error("You can only delete time you logged yourself."), {
+                    hint: "not_entry_owner",
+                });
+            }
+        },
+        onSettled: (_data, _error, input) => {
+            queryClient.invalidateQueries({
+                predicate: (q) => q.queryKey[0] === "time-entries" && q.queryKey[2] === input.ticketId,
+            });
+            queryClient.invalidateQueries({ queryKey: ["ticket-messages", input.ticketId] });
+        },
+    });
+}
+
 export interface ReviewTimeEntryInput {
     entryId: string;
     ticketId: string;

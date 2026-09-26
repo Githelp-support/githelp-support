@@ -26,6 +26,8 @@ export interface TimeEntry {
   reviewStatus?: TimeEntryReviewStatus
   declineReason?: string | null
   autoAccepted?: boolean
+  /** `projects_helpers.helper_id` of whoever logged a persisted entry. */
+  helperId?: string
 }
 
 export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps) {

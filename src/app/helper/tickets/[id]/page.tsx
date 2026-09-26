@@ -13,13 +13,17 @@ import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-dra
 import {
   useTimeEntries,
   useCreateTimeEntry,
+  useDeleteTimeEntry,
   isPaymentNotAuthorizedError,
+  getReviewTimeEntryErrorHint,
   timeMillisecondsToHoursMinutes,
   getTimeEntryReviewStatus,
   TIME_ENTRY_AUTO_ACCEPT_HOURS,
   describeAutoAcceptDeadline,
+  formatTime,
 } from "@/hooks/useTimeEntries"
 import {
+  DeleteTimeEntryDialog,
   TimeEntryAwaitingApprovalBanner,
   TimeEntryReviewStatusBadge,
 } from "@/components/ticket-chat/time-entry-review"
@@ -37,6 +41,7 @@ import {
   AtSign,
   Mic,
   Video,
+  Trash2,
 } from "lucide-react"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
@@ -129,6 +134,8 @@ export default function TicketDetailPage() {
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
   const currentHelperId = useCurrentHelper(ticket?.project_id ?? undefined).data ?? null
   const createTimeEntry = useCreateTimeEntry()
+  const deleteTimeEntry = useDeleteTimeEntry()
+  const [deletingEntry, setDeletingEntry] = useState<TimeEntry | null>(null)
 
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
@@ -178,6 +185,7 @@ export default function TicketDetailPage() {
           reviewStatus: getTimeEntryReviewStatus(entry),
           declineReason: entry.decline_reason ?? null,
           autoAccepted: entry.auto_accepted ?? false,
+          helperId: entry.helper_id,
         }
       }),
     [timeEntriesFromDb]
@@ -557,6 +565,32 @@ export default function TicketDetailPage() {
             : toast.error("Failed to log time. Please try again."),
       }
     )
+  }
+
+  // Own entries on an open ticket, unless the customer already accepted them
+  // (may be captured by a re-hold; the DB guard rejects those too).
+  const canDeleteTimeEntry = (entry: TimeEntry) =>
+    !isTicketEnded && !!currentHelperId && entry.helperId === currentHelperId && entry.reviewStatus !== "accepted"
+
+  const handleDeleteTimeEntry = async () => {
+    if (!deletingEntry || !ticketId) return
+    try {
+      await deleteTimeEntry.mutateAsync({ entryId: deletingEntry.id, ticketId })
+      setDeletingEntry(null)
+      toast.success("Logged time deleted")
+    } catch (error) {
+      const hint = getReviewTimeEntryErrorHint(error)
+      setDeletingEntry(null)
+      toast.error(
+        hint === "accepted_entry_locked"
+          ? "The user already accepted this time, so it can't be deleted."
+          : hint === "ticket_ended"
+            ? "The session has ended, so logged time can't be changed."
+            : hint === "not_entry_owner"
+              ? "You can only delete time you logged yourself."
+              : "Failed to delete logged time. Please try again."
+      )
+    }
   }
 
   const getTotalLoggedTime = () => {
@@ -1083,9 +1117,22 @@ export default function TicketDetailPage() {
                             </div>
                             <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                           </div>
-                          <span className="text-[13px] text-muted-foreground tabular-nums">
-                            {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[13px] text-muted-foreground tabular-nums">
+                              {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                            </span>
+                            {canDeleteTimeEntry(entry) && (
+                              <button
+                                type="button"
+                                onClick={() => setDeletingEntry(entry)}
+                                aria-label="Delete logged time"
+                                title="Delete logged time"
+                                className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-muted"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
                         {entry.reviewStatus && (
@@ -1201,6 +1248,16 @@ export default function TicketDetailPage() {
         isOpen={isLogTimeDrawerOpen}
         onClose={() => setIsLogTimeDrawerOpen(false)}
         onLogTime={handleLogTime}
+      />
+
+      <DeleteTimeEntryDialog
+        open={!!deletingEntry}
+        onOpenChange={(open) => !open && setDeletingEntry(null)}
+        onConfirm={handleDeleteTimeEntry}
+        pending={deleteTimeEntry.isPending}
+        durationLabel={
+          deletingEntry ? formatTime((deletingEntry.hours * 3600 + deletingEntry.minutes * 60) * 1000) : null
+        }
       />
 
       {/* Add myself as helper - required for admin before claiming or logging time */}

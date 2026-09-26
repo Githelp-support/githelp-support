@@ -105,6 +105,46 @@ function DeclineReasonForm({
 }
 
 /**
+ * Helper-side confirmation before deleting one of their own logged entries.
+ * The customer sees a "removed" message in the chat afterwards.
+ */
+export function DeleteTimeEntryDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  pending,
+  durationLabel,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void | Promise<void>
+  pending?: boolean
+  /** e.g. "1h 30min" — shown in the title so it's clear which entry is deleted. */
+  durationLabel?: string | null
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete {durationLabel ? `${durationLabel} of ` : ""}logged time?</DialogTitle>
+          <DialogDescription className="leading-relaxed">
+            The entry is removed and won&apos;t be charged. The user will see a message in the chat that you removed it.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
+            Keep it
+          </Button>
+          <Button variant="destructive" onClick={() => void onConfirm()} disabled={pending}>
+            {pending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
  * Accept / Decline actions rendered inside a pending `time_logged` bubble
  * for the ticket creator.
  */

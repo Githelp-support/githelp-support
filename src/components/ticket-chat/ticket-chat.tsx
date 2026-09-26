@@ -39,13 +39,15 @@ export type PaymentSystemMessageKind =
  * the payments edge functions; `time_logged` is written by the DB trigger on
  * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages);
  * `time_entry_accepted` / `time_entry_declined` by the `review_time_entry` RPC
- * (migration 20260925120000_time_entries_customer_review).
+ * (migration 20260925120000_time_entries_customer_review); `time_entry_deleted`
+ * by the delete trigger (migration 20260927120000_time_entries_helper_delete_own).
  */
 export type SystemMessageKind =
   | PaymentSystemMessageKind
   | "time_logged"
   | "time_entry_accepted"
   | "time_entry_declined"
+  | "time_entry_deleted"
 
 /** Current review state of one logged entry, keyed by `tickets_time_entries.id`. */
 export type TicketChatTimeEntryReview = {
