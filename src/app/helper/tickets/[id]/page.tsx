@@ -17,8 +17,12 @@ import {
   timeMillisecondsToHoursMinutes,
   getTimeEntryReviewStatus,
   TIME_ENTRY_AUTO_ACCEPT_HOURS,
+  describeAutoAcceptDeadline,
 } from "@/hooks/useTimeEntries"
-import { TimeEntryReviewStatusBadge } from "@/components/ticket-chat/time-entry-review"
+import {
+  TimeEntryAwaitingApprovalBanner,
+  TimeEntryReviewStatusBadge,
+} from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
@@ -81,6 +85,8 @@ interface Message {
   type?: "claimed" | "ended"
   /** `metadata.kind` of a persisted system message (payment_*, time_logged, time_entry_*). */
   metadataKind?: string
+  /** `metadata.time_entry_id` of a `time_logged` system message. */
+  timeEntryId?: string
 }
 
 export default function TicketDetailPage() {
@@ -181,6 +187,17 @@ export default function TicketDetailPage() {
   const pendingReviewCount = useMemo(
     () => timeEntries.filter((entry) => entry.reviewStatus === "pending").length,
     [timeEntries]
+  )
+  const timeEntriesById = useMemo(() => new Map(timeEntries.map((entry) => [entry.id, entry])), [timeEntries])
+  // Oldest pending entry is the next one the 24h job will auto-accept.
+  const pendingReviewRequestedAt = useMemo(
+    () =>
+      timeEntriesFromDb
+        .filter((entry) => getTimeEntryReviewStatus(entry) === "pending")
+        .map((entry) => entry.review_requested_at)
+        .filter((at): at is string => !!at)
+        .sort()[0] ?? null,
+    [timeEntriesFromDb]
   )
   
   // Format payment values (convert cents to dollars)
@@ -305,6 +322,7 @@ export default function TicketDetailPage() {
         senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
         metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
+        timeEntryId: (msg.metadata as { time_entry_id?: string } | null | undefined)?.time_entry_id,
       }))
     )
   }, [messagesData, isClaimed, claimer])
@@ -815,6 +833,17 @@ export default function TicketDetailPage() {
                               style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
+                              {msg.metadataKind === "time_logged" &&
+                                msg.timeEntryId &&
+                                (() => {
+                                  const entry = timeEntriesById.get(msg.timeEntryId)
+                                  if (!entry?.reviewStatus) return null
+                                  return (
+                                    <div className="mt-2">
+                                      <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                                    </div>
+                                  )
+                                })()}
                             </div>
                           </div>
                         </>
@@ -918,6 +947,14 @@ export default function TicketDetailPage() {
               </div>
             </div>
             </div>
+
+            {!isTicketEnded && (
+              <TimeEntryAwaitingApprovalBanner
+                pendingCount={pendingReviewCount}
+                customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+                autoAcceptHint={describeAutoAcceptDeadline(pendingReviewRequestedAt)}
+              />
+            )}
 
             {endRequested && (
               <EndSessionRequestedHelperBanner

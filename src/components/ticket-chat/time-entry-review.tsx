@@ -176,7 +176,7 @@ export function TimeEntryReviewStatusBadge({
     status === "pending"
       ? perspective === "customer"
         ? "Awaiting your review"
-        : "Awaiting user review"
+        : "Waiting for approval"
       : status === "accepted" && auto
         ? "Accepted automatically"
         : STATUS_LABEL[status]
@@ -227,6 +227,48 @@ export function TimeEntryReviewBanner({ pendingCount, className }: { pendingCoun
           Accept or decline {pendingCount === 1 ? "it" : "each one"} in the chat above. The session can&apos;t be ended
           until you have. If you decline, you&apos;ll be asked for a short explanation that is shared with the helper.
           Entries you don&apos;t review within {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted automatically.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Helper-side strip above the chat input while the customer still has to
+ * accept or decline logged time. Mirrors `TimeEntryReviewBanner`.
+ */
+export function TimeEntryAwaitingApprovalBanner({
+  pendingCount,
+  customerName,
+  autoAcceptHint,
+  className,
+}: {
+  pendingCount: number
+  customerName?: string | null
+  /** e.g. "in about 5 hours" — for the oldest pending entry. */
+  autoAcceptHint?: string | null
+  className?: string
+}) {
+  if (pendingCount <= 0) return null
+  const who = customerName || "the user"
+  return (
+    <div
+      role="status"
+      className={cn(
+        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        className,
+      )}
+    >
+      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+      <div className="flex-1 text-sm leading-relaxed text-foreground">
+        <p className="font-medium">
+          {pendingCount === 1
+            ? `Waiting for ${who} to approve your logged time`
+            : `Waiting for ${who} to approve ${pendingCount} logged time entries`}
+        </p>
+        <p className="text-muted-foreground">
+          The session can&apos;t be ended until {pendingCount === 1 ? "it has" : "each one has"} been accepted or
+          declined.{autoAcceptHint ? ` Accepted automatically ${autoAcceptHint} otherwise.` : ""}
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import {
   DeclineTimeEntryDialog,
   DECLINE_TIME_ENTRY_PROMPT,
+  TimeEntryAwaitingApprovalBanner,
   TimeEntryReviewActions,
   TimeEntryReviewBanner,
   TimeEntryReviewStatusBadge,
@@ -76,10 +77,22 @@ describe("TimeEntryReviewStatusBadge", () => {
     const { rerender } = render(<TimeEntryReviewStatusBadge status="pending" perspective="customer" />)
     expect(screen.getByText("Awaiting your review")).toBeInTheDocument()
     rerender(<TimeEntryReviewStatusBadge status="pending" />)
-    expect(screen.getByText("Awaiting user review")).toBeInTheDocument()
+    expect(screen.getByText("Waiting for approval")).toBeInTheDocument()
     rerender(<TimeEntryReviewStatusBadge status="declined" />)
     expect(screen.getByText("Declined")).toBeInTheDocument()
     rerender(<TimeEntryReviewStatusBadge status="accepted" auto />)
     expect(screen.getByText("Accepted automatically")).toBeInTheDocument()
+  })
+})
+
+describe("TimeEntryAwaitingApprovalBanner", () => {
+  it("tells the helper their logged time is waiting for approval", () => {
+    const { container, rerender } = render(<TimeEntryAwaitingApprovalBanner pendingCount={0} />)
+    expect(container).toBeEmptyDOMElement()
+    rerender(<TimeEntryAwaitingApprovalBanner pendingCount={1} customerName="Grace" autoAcceptHint="in about 5 hours" />)
+    expect(screen.getByRole("status")).toHaveTextContent("Waiting for Grace to approve your logged time")
+    expect(screen.getByRole("status")).toHaveTextContent("Accepted automatically in about 5 hours otherwise.")
+    rerender(<TimeEntryAwaitingApprovalBanner pendingCount={3} />)
+    expect(screen.getByRole("status")).toHaveTextContent("Waiting for the user to approve 3 logged time entries")
   })
 })
