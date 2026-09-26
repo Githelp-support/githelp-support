@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -154,7 +155,10 @@ export default function ProjectLandingPage() {
                                     />
                                 ) : (
                                     <Avatar className="w-24 h-24">
-                                        <AvatarFallback className="bg-[#3c2ec5] text-white text-3xl">
+                                        <AvatarFallback
+                                            className={cn("text-white text-3xl", !branding?.primary_color && "bg-[#3c2ec5]")}
+                                            style={branding?.primary_color ? { backgroundColor: branding.primary_color } : undefined}
+                                        >
                                             {projectName?.[0]?.toUpperCase() || "?"}
                                         </AvatarFallback>
                                     </Avatar>

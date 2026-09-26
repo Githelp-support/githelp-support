@@ -152,6 +152,7 @@ export function describeChargedLine(opts: {
 }): string {
     if (opts.cancelled) return "No charge";
     if (opts.slaCovered) return "Covered by your SLA";
+    if (opts.paymentStatus === "free") return "Free support — no charge";
     if (opts.paymentStatus === "distributing" || opts.paymentStatus === "completed") {
         return opts.capturedAmountSmallestUnit != null
             ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}`
@@ -196,13 +197,24 @@ export function buildSessionEndedMessage(opts: {
     };
 }
 
-/** The pending SCA prompt carried by a `payment_requires_action` system message, if any. */
+/**
+ * The pending SCA prompt carried by the latest `payment_requires_action` system
+ * message, if any. Only the latest counts: an earlier prompt belongs to a hold
+ * that a newer card replaced (and that was cancelled). A prompt followed by
+ * `payment_authorized` (confirmed, possibly in an earlier visit) is resolved,
+ * so it never reopens the modal after a reload.
+ */
 export function findPendingSca(
     messages: TicketChatMessage[],
     handledMessageId: string | null
 ): { messageId: string; clientSecret: string; ticketId?: string } | null {
-    const scaMsg = messages.find((m) => m.paymentMetadata?.kind === "payment_requires_action");
+    let scaIndex = -1;
+    messages.forEach((m, index) => {
+        if (m.paymentMetadata?.kind === "payment_requires_action") scaIndex = index;
+    });
+    const scaMsg = scaIndex === -1 ? undefined : messages[scaIndex];
     if (!scaMsg || scaMsg.id === handledMessageId) return null;
+    if (messages.slice(scaIndex + 1).some((m) => m.paymentMetadata?.kind === "payment_authorized")) return null;
     const clientSecret = scaMsg.paymentMetadata?.client_secret as string | undefined;
     if (!clientSecret) return null;
     return {

@@ -1,5 +1,9 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
+
+// MarkdownContent → ChatImage → useTicketAttachments pulls in the client, which throws without env vars.
+vi.mock("@/lib/supabase/client", () => ({ supabase: {} }))
+
 import { MarkdownContent } from "./markdown-content"
 
 describe("MarkdownContent code rendering", () => {

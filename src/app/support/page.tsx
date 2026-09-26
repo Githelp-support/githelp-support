@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Search, Clock, Target, HelpCircle, Check } from "lucide-react"
+import { Search, Clock, Target, HelpCircle } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
+import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
+import { formatDuration } from "@/lib/format"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, useSearchParams } from "next/navigation"
@@ -25,6 +28,7 @@ import {
   formatChatTimestamp,
 } from "@/lib/customer-chat-messages"
 import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
+import { useReviewTimeEntry, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
@@ -35,8 +39,9 @@ import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
 import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { prepareOutgoingMessage } from "@/lib/code-format"
+import { stripTicketAttachments } from "@/lib/ticket-attachments"
 
 type TabKey = "get-support" | "rates" | "resources" | "about"
 
@@ -86,15 +91,14 @@ export default function SupportPage() {
   const { data: resourcesData, isLoading: resourcesLoading } = useProjectResources(projectId || "")
   const { data: brandingData } = useProjectBranding(projectId || "")
   const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
+  const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(projectId || "")
 
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
 
   // Format payment values (convert cents to dollars)
-  const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
-  const first60Price = paymentSettings?.ticket_price_minute_first_60 ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) : "1.50"
-  const after60Price = paymentSettings?.ticket_price_minute_after_60 ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2) : "1.00"
+  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
 
   // Transform resources data
   const resources = resourcesData || []
@@ -127,10 +131,35 @@ export default function SupportPage() {
     claimer,
     timeEntriesDisplay,
     totalLoggedFormatted,
+    timeEntryReviews,
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
   const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, user?.id)
+
+  // Accept / decline logged time — same flow as /support/chat.
+  const reviewTimeEntry = useReviewTimeEntry()
+  const canReviewTimeEntries = !!ticketId && !!user?.id && liveTicket?.created_by === user.id
+  const handleReviewTimeEntry = async (input: { entryId: string; decision: "accepted" | "declined"; reason?: string }) => {
+    if (!ticketId) return
+    try {
+      await reviewTimeEntry.mutateAsync({ ...input, ticketId })
+      toast.success(input.decision === "accepted" ? "Logged time accepted." : "Logged time declined. The helper has been told why.")
+    } catch (error) {
+      console.error("Failed to review time entry:", error)
+      const hint = getReviewTimeEntryErrorHint(error)
+      toast.error(
+        hint === "reason_required"
+          ? "Please explain why you declined the logged time."
+          : hint === "already_reviewed"
+            ? "This entry has already been reviewed."
+            : hint === "ticket_ended"
+              ? "The session has already ended."
+              : "Couldn't save your decision. Please try again.",
+      )
+      throw error
+    }
+  }
 
   // Customer "End session" = ask the helper to finalise (see useRequestEndSession).
   const requestEndSession = useRequestEndSession()
@@ -145,7 +174,7 @@ export default function SupportPage() {
     }
   }
   const ticketEnded = liveTicket?.status === "completed" || liveTicket?.status === "cancelled"
-  const paymentStatus = useTicketPaymentStatus(ticketId || null)
+  const paymentStatus = useTicketPaymentStatus(ticketId || null, { isFree: isFreeSupport(paymentSettings) })
 
   // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
@@ -253,7 +282,7 @@ export default function SupportPage() {
       try {
         const ticket = await createTicket.mutateAsync({
           project_id: projectId,
-          title: message.substring(0, 100) || "Support Request",
+          title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
           description: message,
           created_by: user?.id || null,
           status: "available",
@@ -385,9 +414,11 @@ export default function SupportPage() {
       projectId={projectId ?? ""}
       projectName={projectName}
       projectLogo={projectLogo}
+      primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
       timestamp={nowFormatted}
       rates={{ startPrice, first60Price, after60Price }}
+      isFree={isFreeSupport(paymentSettings)}
       isAuthenticated={isAuthenticated}
       ticketCreated={ticketCreated}
       userName={user?.name}
@@ -438,7 +469,7 @@ export default function SupportPage() {
                 ) : (
                   <div
                     className="w-20 h-20 rounded-[12px] flex items-center justify-center text-2xl font-medium text-foreground border border-[#E1E4EA]"
-                    style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                    style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                   >
                     {projectName?.[0]?.toUpperCase() || "A"}
                   </div>
@@ -457,6 +488,7 @@ export default function SupportPage() {
                     Get support
                   </Button>
                   <Button
+                    title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                     variant="outline"
                     className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
                   >
@@ -491,7 +523,7 @@ export default function SupportPage() {
                   // header — only on this icon, not on any other avatar icon in
                   // the chat.
                   className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground border border-[#E1E4EA]"
-                  style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+                  style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                 >
                   {projectName?.[0]?.toUpperCase() || "A"}
                 </div>
@@ -505,16 +537,18 @@ export default function SupportPage() {
             message={message}
             onMessageChange={setMessage}
             onSend={handleSendMessage}
-            sendDisabled={!message.trim() || createTicket.isPending || ticketEnded}
+            sendDisabled={!message.trim() || createTicket.isPending}
             isEnded={ticketEnded}
             onRequestEndSession={ticketId && user?.id ? () => handleRequestEndSession(false) : undefined}
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}
             endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
             endSessionRequestPending={requestEndSession.isPending}
-            attachmentStoragePrefix={ticketId && projectId ? `${projectId}/${ticketId}` : undefined}
-            onImageUploaded={(url) => {
-              setMessage((prev) => prev + `\n![attachment](${url})\n`)
-            }}
+            timeEntryReviews={timeEntryReviews}
+            onReviewTimeEntry={canReviewTimeEntries ? handleReviewTimeEntry : undefined}
+            timeEntryReviewPending={reviewTimeEntry.isPending}
+            // Before the first message there is no ticket yet: uploads go to the
+            // user's own folder (see lib/ticket-attachments).
+            attachmentStoragePrefix={user?.id && projectId ? `${projectId}/${ticketId || user.id}` : undefined}
             onPaymentCtaClick={handlePaymentCta}
             paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}
             rightSidebarFooter={
@@ -549,6 +583,12 @@ export default function SupportPage() {
                   {/* Rates section */}
                   <div>
                     <h2 className="text-[22px] font-normal text-[#444444] mb-8">{projectName}&apos;s rates</h2>
+
+                    {isFreeSupport(paymentSettings) && (
+                      <p className="text-sm text-[#444444] mb-6">
+                        {projectName} offers support for free — you won&apos;t be charged and no payment method is needed.
+                      </p>
+                    )}
 
                     {/* Pricing cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-[18px] mb-12">
@@ -599,9 +639,17 @@ export default function SupportPage() {
                         <Clock className="h-5 w-5 text-[#444444] mb-2" />
                         <div className="flex items-center gap-2 mb-4">
                           <h3 className="text-[14px] font-semibold text-[#444444]">Average response time</h3>
-                          <HelpCircle className="h-4 w-4 text-[#868c98]" />
+                          <span title="Average time from a ticket being created until a helper claims it or replies, whichever comes first.">
+                            <HelpCircle className="h-4 w-4 text-[#868c98]" />
+                          </span>
                         </div>
-                        <p className="text-lg font-semibold text-[#2d2a49]">6 minutes</p>
+                        <p className="text-lg font-semibold text-[#2d2a49]">
+                          {avgResponseLoading
+                            ? "…"
+                            : avgResponseSeconds == null
+                              ? "~"
+                              : formatDuration(avgResponseSeconds)}
+                        </p>
                       </div>
 
                       {/* Core team support */}
@@ -618,6 +666,7 @@ export default function SupportPage() {
                     {/* Get an SLA button */}
                     <div className="flex items-start gap-2">
                       <Button
+                        title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                         variant="outline"
                         className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
                       >

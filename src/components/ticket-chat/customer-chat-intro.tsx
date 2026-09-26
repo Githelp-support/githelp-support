@@ -9,10 +9,14 @@ export interface CustomerChatIntroProps {
   projectId: string
   projectName: string
   projectLogo: string | null
+  /** Branding primary color for the fallback avatar (falls back to a deterministic color). */
+  primaryColor?: string | null
   /** Welcome copy shown as the project team's opening line. */
   welcomeText: string
   timestamp: string
   rates: { startPrice: string; first60Price: string; after60Price: string }
+  /** The project offers support for free (all three rates are zero): say so instead of listing $0 rates. */
+  isFree?: boolean
   isAuthenticated: boolean
   ticketCreated: boolean
   userName?: string | null
@@ -33,9 +37,11 @@ export function CustomerChatIntro({
   projectId,
   projectName,
   projectLogo,
+  primaryColor,
   welcomeText,
   timestamp,
   rates,
+  isFree = false,
   isAuthenticated,
   ticketCreated,
   userName,
@@ -55,7 +61,7 @@ export function CustomerChatIntro({
       ) : (
         <div
           className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-          style={{ backgroundColor: getAvatarColorHexForId(projectId) }}
+          style={{ backgroundColor: primaryColor || getAvatarColorHexForId(projectId) }}
         >
           {projectName?.[0]?.toUpperCase() || "A"}
         </div>
@@ -84,6 +90,14 @@ export function CustomerChatIntro({
 
         <div>
           <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+          {isFree ? (
+            <div className="bg-card border border-border rounded-lg p-3">
+              <p className="text-sm font-medium text-foreground">Free support</p>
+              <p className="text-sm text-muted-foreground">
+                {projectName} offers support for free — no payment method needed.
+              </p>
+            </div>
+          ) : (
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-card border border-border rounded-lg p-3">
               <p className="text-sm text-muted-foreground mb-1">Start price</p>
@@ -98,6 +112,7 @@ export function CustomerChatIntro({
               <p className="text-sm font-medium text-foreground">USD {rates.after60Price}/min</p>
             </div>
           </div>
+          )}
         </div>
 
         {isAuthenticated && !ticketCreated && (

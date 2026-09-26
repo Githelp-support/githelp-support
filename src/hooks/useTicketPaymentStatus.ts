@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase/client"
 
 export type TicketPaymentStatus =
   | "sla_covered"
+  | "free"
   | "authorized"
   | "requires_action"
   | "pending"
@@ -38,6 +39,13 @@ interface PaymentRow {
 interface Opts {
   /** When non-null, the ticket is SLA-covered and the gate auto-opens. */
   slaId?: string | null
+  /**
+   * True when the project offers free support (all three ticket prices are
+   * zero — see `isFreeSupport`). Free tickets never get a payments row, so the
+   * gate opens without one. An existing payments row still takes precedence
+   * (e.g. a hold placed before the project switched to free).
+   */
+  isFree?: boolean
 }
 
 /**
@@ -46,7 +54,8 @@ interface Opts {
  * inserts/updates so the helper UI auto-unlocks when the customer
  * completes Stripe Checkout. SLA-covered tickets short-circuit to
  * isReady=true; the existing minutes-based metering takes over from
- * payments-complete-sla-ticket.
+ * payments-complete-sla-ticket. Free-support tickets (opts.isFree) are ready
+ * as long as no payments row exists.
  */
 export function useTicketPaymentStatus(
   ticketId: string | null | undefined,
@@ -74,7 +83,8 @@ export function useTicketPaymentStatus(
     refetchInterval: (query) => {
       const rows = query.state.data
       const latest = rows?.[0]
-      if (!latest) return 5_000
+      // Free support: no payments row is ever expected, so don't poll for one.
+      if (!latest) return opts.isFree ? false : 5_000
       return latest.status === "completed" || latest.status === "failed" || latest.status === "cancelled"
         ? false
         : 5_000
@@ -102,7 +112,13 @@ export function useTicketPaymentStatus(
     return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null, failureReason: null }
   }
   const latest = data?.[0]
-  if (!latest) return { status: "none", isReady: false, capturedAmountSmallestUnit: null, failureReason: null }
+  if (!latest) {
+    // `data === undefined` means the rows haven't loaded yet: stay closed until
+    // we know there is no payments row, so an existing row always wins.
+    return opts.isFree && data !== undefined
+      ? { status: "free", isReady: true, capturedAmountSmallestUnit: null, failureReason: null }
+      : { status: "none", isReady: false, capturedAmountSmallestUnit: null, failureReason: null }
+  }
   const capturedRows = (data ?? []).filter(
     (r) => (r.status === "distributing" || r.status === "completed") && r.captured_amount_smallest_unit != null,
   )

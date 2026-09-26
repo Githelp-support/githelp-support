@@ -128,7 +128,7 @@ export default function ProfileSettingsPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile for the selected project" />
           <main className="flex-1 overflow-auto px-8 py-6">
-            <p className="text-muted-foreground">You are not registered as a helper in this project.</p>
+            <p className="text-sm text-muted-foreground">You are not registered as a helper in this project.</p>
           </main>
         </div>
       </div>
