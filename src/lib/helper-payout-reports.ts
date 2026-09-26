@@ -5,6 +5,7 @@
  */
 import type { PaymentTransfer } from "@/hooks/usePayments"
 import type { HelperTimeEntry } from "@/hooks/useHelperTimeEntries"
+import { groupByTicket, sortByDateAsc, sumOf, type TicketGroup } from "@/lib/ticket-groups"
 
 export interface HelperMonthlyReportRow {
     /** Stable key, e.g. "2026-09". */
@@ -261,4 +262,58 @@ export function aggregateProjectMonthly(transfers: PaymentTransfer[]): ProjectMo
     return Array.from(groups.values())
         .map(({ tickets: _tickets, pending, ...rest }) => ({ ...rest, allPaidOut: pending === 0 }))
         .sort((a, b) => b.periodRaw - a.periodRaw)
+}
+
+/** A ticket's payouts (to one payee) summarised as one record. */
+export interface TransferGroupSummary {
+    /** Everything owed on the ticket: failed transfers are left out unless every transfer failed. */
+    amountSmallestUnit: number
+    /** Transfers Stripe could not complete (nothing was paid for these). */
+    failedSmallestUnit: number
+    /** A failed transfer wins (money is missing), then pending, then completed. */
+    status: PaymentTransfer["status"]
+    /** Latest transfer date. */
+    date: string
+    currency: string
+}
+
+export function summarizeTransfers(transfers: PaymentTransfer[]): TransferGroupSummary {
+    const failed = transfers.filter((t) => t.status === "failed")
+    const counting = transfers.filter((t) => t.status !== "failed")
+    const status: PaymentTransfer["status"] = failed.length > 0
+        ? "failed"
+        : transfers.some((t) => t.status === "pending")
+          ? "pending"
+          : "completed"
+    const dates = transfers.map(transferDate).sort()
+    return {
+        amountSmallestUnit: sumOf(counting.length > 0 ? counting : transfers, (t) => t.amount_smallest_unit),
+        failedSmallestUnit: counting.length > 0 ? sumOf(failed, (t) => t.amount_smallest_unit) : 0,
+        status,
+        date: dates[dates.length - 1] ?? "",
+        currency: transfers.find((t) => t.currency)?.currency || "usd",
+    }
+}
+
+export interface TransferTicketGroup extends TicketGroup<PaymentTransfer>, TransferGroupSummary {}
+
+/**
+ * One record per ticket (and per helper when `byHelper`), transfers oldest
+ * first inside each, groups newest activity first.
+ */
+export function groupTransfersByTicket(
+    transfers: PaymentTransfer[],
+    options: { byHelper?: boolean } = {},
+): TransferTicketGroup[] {
+    return groupByTicket(
+        transfers,
+        (t) => t.ticket_id ?? t.ticket?.id,
+        (t) => t.id,
+        options.byHelper ? (t) => t.helper_id ?? t.helper?.user_id ?? "unknown" : undefined,
+    )
+        .map((group) => {
+            const items = sortByDateAsc(group.items, transferDate)
+            return { ...group, items, ...summarizeTransfers(items) }
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 }

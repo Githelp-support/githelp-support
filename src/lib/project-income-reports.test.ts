@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { Payment, PaymentTransfer } from "@/hooks/usePayments"
 import {
     aggregateProjectIncomeMonthly,
+    groupProjectIncomeByTicket,
     projectTransferFor,
     toProjectTicketIncomeRow,
 } from "./project-income-reports"
@@ -123,5 +124,56 @@ describe("aggregateProjectIncomeMonthly", () => {
         const rows = [toProjectTicketIncomeRow(payment({ amount_project_smallest_unit: 0 }), [])]
         expect(aggregateProjectIncomeMonthly(rows)[0].allReceived).toBe(true)
         expect(aggregateProjectIncomeMonthly([])).toEqual([])
+    })
+})
+
+describe("groupProjectIncomeByTicket", () => {
+    it("sums a ticket's captured charges into one record", () => {
+        const transfers = [transfer(), transfer({ id: "t-2", payment_id: "p-2", amount_smallest_unit: 400, status: "pending", completed_at: null })]
+        const rows = [
+            payment(),
+            payment({
+                id: "p-2",
+                captured_amount_smallest_unit: 1200,
+                amount_platform_smallest_unit: 200,
+                amount_helper_smallest_unit: 600,
+                amount_project_smallest_unit: 400,
+                completed_at: "2026-08-19T10:00:00.000Z",
+                stripe_receipt_url: "https://pay.stripe.com/r/2",
+            }),
+        ].map((p) => toProjectTicketIncomeRow(p, transfers))
+        const [ticket] = groupProjectIncomeByTicket(rows)
+        expect(ticket.id).toBe("ticket:abcdef0-ticket")
+        expect(ticket.transactions.map((t) => t.id)).toEqual(["p-1", "p-2"])
+        expect(ticket.chargedSmallestUnit).toBe(5400)
+        expect(ticket.platformFeeSmallestUnit).toBe(900)
+        expect(ticket.helperShareSmallestUnit).toBe(2600)
+        expect(ticket.projectIncomeSmallestUnit).toBe(1900)
+        // One share received, one still pending.
+        expect(ticket.status).toBe("pending")
+        expect(ticket.receiptUrl).toBeNull()
+        expect(ticket.uncapturedSmallestUnit).toBe(0)
+    })
+
+    it("shows a new hold on top of what was captured without counting it as charged", () => {
+        const rows = [
+            payment(),
+            payment({ id: "p-2", status: "authorized", captured_amount_smallest_unit: null, amount_smallest_unit: 3000, completed_at: null, created_at: "2026-08-20T10:00:00.000Z" }),
+        ].map((p) => toProjectTicketIncomeRow(p, [transfer()]))
+        const [ticket] = groupProjectIncomeByTicket(rows)
+        expect(ticket.captured).toBe(true)
+        expect(ticket.chargedSmallestUnit).toBe(4200)
+        expect(ticket.uncapturedSmallestUnit).toBe(3000)
+        expect(ticket.status).toBe("on_hold")
+    })
+
+    it("ignores a declined attempt that was retried successfully", () => {
+        const rows = [
+            payment({ id: "p-0", status: "failed", captured_amount_smallest_unit: null, completed_at: null, created_at: "2026-08-09T10:00:00.000Z" }),
+            payment(),
+        ].map((p) => toProjectTicketIncomeRow(p, [transfer()]))
+        const [ticket] = groupProjectIncomeByTicket(rows)
+        expect(ticket.status).toBe("received")
+        expect(ticket.chargedSmallestUnit).toBe(4200)
     })
 })

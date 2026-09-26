@@ -9,6 +9,7 @@ const MARGIN = 14
 const BRAND = [59, 91, 219] as const // brand-primary, approximated for print
 const TEXT = [17, 24, 39] as const
 const MUTED = [107, 114, 128] as const
+const TICKET_FILL = [238, 242, 255] as const
 
 function triggerDownload(blob: Blob, fileName: string) {
     const url = URL.createObjectURL(blob)
@@ -107,6 +108,22 @@ export async function downloadReportPdf(report: ReportDocument): Promise<void> {
                 columnStyles,
                 didParseCell: (data) => {
                     if (data.section === "head" && columnStyles[data.column.index]) data.cell.styles.halign = "right"
+                    const kinds = section.rowKinds
+                    if (data.section !== "body" || !kinds) return
+                    // Tickets with several transactions: bold totals line, then
+                    // lighter, indented transaction lines under it.
+                    const kind = kinds[data.row.index]
+                    if (kind === "transaction") {
+                        data.cell.styles.fillColor = 255
+                        data.cell.styles.textColor = [...MUTED]
+                        data.cell.styles.fontSize = 7.5
+                        if (data.column.index === 0) data.cell.styles.cellPadding = { top: 1.8, bottom: 1.8, right: 1.8, left: 5 }
+                    } else if (kinds[data.row.index + 1] === "transaction") {
+                        data.cell.styles.fillColor = [...TICKET_FILL]
+                        data.cell.styles.fontStyle = "bold"
+                    } else {
+                        data.cell.styles.fillColor = 255
+                    }
                 },
             })
             y = (pdf as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 3

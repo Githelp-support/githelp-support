@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest"
 import {
     aggregateMonthly,
+    groupUserPaymentsByTicket,
+    summarizeUserPaymentStatus,
     toDisplayStatus,
     toUserPaymentRow,
     userFacingAmount,
     type UserPaymentRecord,
+    type UserPaymentRow,
 } from "./user-payment-reports"
 
 function record(overrides: Partial<UserPaymentRecord> = {}): UserPaymentRecord {
@@ -103,5 +106,61 @@ describe("aggregateMonthly", () => {
         expect(monthly).toHaveLength(2)
         expect(monthly[0]).toMatchObject({ id: "2026-09", ticketCount: 1, amountSmallestUnit: 300 })
         expect(monthly[1]).toMatchObject({ id: "2026-08", ticketCount: 1, amountSmallestUnit: 1500 })
+    })
+})
+
+describe("groupUserPaymentsByTicket", () => {
+    const rows = (...overrides: Array<Partial<UserPaymentRecord>>): UserPaymentRow[] =>
+        overrides.map((o) => toUserPaymentRow(record(o)))
+
+    it("shows a ticket charged twice as one record with both transactions, oldest first", () => {
+        const groups = groupUserPaymentsByTicket(
+            rows(
+                { id: "pay-2", captured_amount_smallest_unit: 1000, completed_at: "2026-09-10T10:00:00.000Z", stripe_receipt_url: "r2" },
+                { id: "pay-1", stripe_receipt_url: "r1" },
+                { id: "other", ticket_id: "other", ticket: null, completed_at: "2026-09-05T10:00:00.000Z" },
+            ),
+        )
+        expect(groups.map((g) => g.id)).toEqual(["ticket:abcdef0-1234", "ticket:other"])
+        const [ticket] = groups
+        expect(ticket.transactions.map((t) => t.id)).toEqual(["pay-1", "pay-2"])
+        expect(ticket.amountSmallestUnit).toBe(5200)
+        expect(ticket.paidSmallestUnit).toBe(5200)
+        expect(ticket.displayStatus).toBe("paid")
+        expect(ticket.date).toBe("2026-09-10T10:00:00.000Z")
+        // Each charge has its own receipt, so the record itself has none.
+        expect(ticket.receiptUrl).toBeNull()
+        expect(groups[1].transactions).toHaveLength(1)
+    })
+
+    it("leaves failed and cancelled attempts out of the amount", () => {
+        const [ticket] = groupUserPaymentsByTicket(
+            rows(
+                { id: "declined", status: "failed", completed_at: null, created_at: "2026-09-01T10:00:00.000Z" },
+                { id: "released", status: "cancelled", completed_at: null, created_at: "2026-09-02T10:00:00.000Z" },
+                { id: "paid" },
+            ),
+        )
+        expect(ticket.amountSmallestUnit).toBe(4200)
+        expect(ticket.displayStatus).toBe("paid")
+    })
+
+    it("keeps a lone failed charge's amount instead of showing zero", () => {
+        const [ticket] = groupUserPaymentsByTicket(rows({ status: "failed", completed_at: null }))
+        expect(ticket.amountSmallestUnit).toBe(6000)
+        expect(ticket.displayStatus).toBe("failed")
+    })
+})
+
+describe("summarizeUserPaymentStatus", () => {
+    const tx = (displayStatus: UserPaymentRow["displayStatus"]) => ({ displayStatus }) as UserPaymentRow
+
+    it("lets anything still open win, then a failed latest charge, then paid", () => {
+        expect(summarizeUserPaymentStatus([tx("paid"), tx("on_hold")])).toBe("on_hold")
+        expect(summarizeUserPaymentStatus([tx("paid"), tx("action_required"), tx("on_hold")])).toBe("action_required")
+        expect(summarizeUserPaymentStatus([tx("paid"), tx("failed")])).toBe("failed")
+        expect(summarizeUserPaymentStatus([tx("failed"), tx("paid")])).toBe("paid")
+        expect(summarizeUserPaymentStatus([tx("paid"), tx("cancelled")])).toBe("paid")
+        expect(summarizeUserPaymentStatus([tx("cancelled")])).toBe("cancelled")
     })
 })

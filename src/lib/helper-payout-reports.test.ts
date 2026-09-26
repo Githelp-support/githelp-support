@@ -6,6 +6,7 @@ import {
     aggregateProjectMonthly,
     buildPayoutStatement,
     formatMinutes,
+    groupTransfersByTicket,
     payoutReference,
     transferTicketType,
 } from "./helper-payout-reports"
@@ -165,5 +166,38 @@ describe("aggregateProjectMonthly", () => {
             projectShareSmallestUnit: 150,
             allPaidOut: false,
         })
+    })
+})
+
+describe("groupTransfersByTicket", () => {
+    it("adds up a ticket's payouts, oldest transfer first, and flags failed ones", () => {
+        const groups = groupTransfersByTicket([
+            transfer({ id: "late", completed_at: "2026-08-20T12:00:00.000Z", amount_smallest_unit: 500 }),
+            transfer({ id: "early" }),
+            transfer({ id: "failed", status: "failed", completed_at: null, amount_smallest_unit: 250 }),
+            transfer({ id: "solo", ticket_id: "ticket-2", completed_at: "2026-08-15T12:00:00.000Z" }),
+        ])
+        expect(groups.map((g) => g.key)).toEqual(["ticket:ticket-1", "ticket:ticket-2"])
+        const [ticket] = groups
+        expect(ticket.items.map((t) => t.id)).toEqual(["failed", "early", "late"])
+        expect(ticket.amountSmallestUnit).toBe(1500)
+        expect(ticket.failedSmallestUnit).toBe(250)
+        expect(ticket.status).toBe("failed")
+        expect(ticket.date).toBe("2026-08-20T12:00:00.000Z")
+    })
+
+    it("keeps pending ahead of completed and can split per helper", () => {
+        const groups = groupTransfersByTicket(
+            [
+                transfer({ id: "a" }),
+                transfer({ id: "b", status: "pending", completed_at: null }),
+                transfer({ id: "c", helper_id: "helper-2" }),
+            ],
+            { byHelper: true },
+        )
+        expect(groups.map((g) => [g.key, g.status, g.amountSmallestUnit])).toEqual([
+            ["ticket:ticket-1:helper-1", "pending", 2000],
+            ["ticket:ticket-1:helper-2", "completed", 1000],
+        ])
     })
 })

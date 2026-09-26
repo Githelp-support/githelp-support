@@ -5,6 +5,7 @@
  * charged for each ticket they created), not from `payments_transfers`
  * (helper payouts), which RLS hides from customers.
  */
+import { groupByTicket, sortByDateAsc, sumOf } from "@/lib/ticket-groups"
 
 /** `public.payment_status` enum values. */
 export type PaymentRowStatus =
@@ -89,6 +90,16 @@ export const USER_PAYMENT_STATUS_LABELS: Record<UserPaymentDisplayStatus, string
     action_required: "Action required",
     failed: "Failed",
     cancelled: "Cancelled",
+}
+
+/** What each transaction on a ticket was, in the customer's words (Payments tab and ticket PDF). */
+export const USER_TRANSACTION_DESCRIPTIONS: Record<UserPaymentDisplayStatus, string> = {
+    paid: "Charge",
+    on_hold: "Card hold",
+    pending: "Pending charge",
+    action_required: "Charge awaiting your confirmation",
+    failed: "Declined charge",
+    cancelled: "Released hold",
 }
 
 export function toDisplayStatus(status: PaymentRowStatus): UserPaymentDisplayStatus {
@@ -191,4 +202,75 @@ export function aggregateMonthly(rows: UserPaymentRow[]): UserMonthlyReportRow[]
     return Array.from(grouped.values())
         .map(({ tickets: _tickets, ...rest }) => rest)
         .sort((a, b) => b.periodRaw - a.periodRaw)
+}
+
+/**
+ * One ticket on the customer's Payments tab: the ticket's totals plus every
+ * transaction (charge or hold) behind it, oldest first. The group carries
+ * the `UserPaymentRow` shape so sorting and filtering treat it like a row.
+ */
+export interface UserTicketPaymentGroup extends UserPaymentRow {
+    transactions: UserPaymentRow[]
+    /** Captured so far. */
+    paidSmallestUnit: number
+    /** Reserved on the card or awaiting the customer, not charged yet. */
+    openSmallestUnit: number
+}
+
+const OPEN_STATUSES: UserPaymentDisplayStatus[] = ["action_required", "on_hold", "pending"]
+
+/**
+ * Status of a ticket with several transactions: anything still waiting on
+ * the customer or the card wins; otherwise a failed latest transaction (a
+ * later capture that did not go through) shows as failed; otherwise the
+ * ticket is paid if anything was captured. Cancelled holds and failed
+ * attempts that were retried successfully don't override a capture.
+ */
+export function summarizeUserPaymentStatus(transactions: UserPaymentRow[]): UserPaymentDisplayStatus {
+    for (const status of OPEN_STATUSES) {
+        if (transactions.some((t) => t.displayStatus === status)) return status
+    }
+    const latest = transactions[transactions.length - 1]
+    if (!latest) return "pending"
+    if (latest.displayStatus === "failed") return "failed"
+    if (transactions.some((t) => t.displayStatus === "paid")) return "paid"
+    return latest.displayStatus
+}
+
+/** Rows that count towards what the ticket costs the customer (not failed or cancelled attempts). */
+function counts(row: UserPaymentRow): boolean {
+    return row.displayStatus !== "failed" && row.displayStatus !== "cancelled"
+}
+
+/**
+ * Groups payment rows into one record per ticket. The record's amount is
+ * what was captured plus what is still held; failed and cancelled
+ * attempts are listed but not added (unless nothing else exists, so the
+ * record never reads USD 0.00 for a lone failed charge). Groups come out
+ * newest activity first.
+ */
+export function groupUserPaymentsByTicket(rows: UserPaymentRow[]): UserTicketPaymentGroup[] {
+    const groups = groupByTicket(rows, (row) => row.ticketId, (row) => row.id)
+    return groups
+        .map((group) => {
+            const transactions = sortByDateAsc(group.items, (row) => row.date)
+            const latest = transactions[transactions.length - 1]
+            const counting = transactions.filter(counts)
+            const paid = sumOf(transactions.filter((t) => t.displayStatus === "paid"), (t) => t.amountSmallestUnit)
+            const open = sumOf(
+                transactions.filter((t) => OPEN_STATUSES.includes(t.displayStatus)),
+                (t) => t.amountSmallestUnit,
+            )
+            return {
+                ...latest,
+                id: group.key,
+                amountSmallestUnit: counting.length > 0 ? sumOf(counting, (t) => t.amountSmallestUnit) : latest.amountSmallestUnit,
+                displayStatus: summarizeUserPaymentStatus(transactions),
+                receiptUrl: transactions.length === 1 ? latest.receiptUrl : null,
+                transactions,
+                paidSmallestUnit: paid,
+                openSmallestUnit: open,
+            }
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 }

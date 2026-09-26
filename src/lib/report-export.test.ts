@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest"
 import type { Payment, PaymentTransfer } from "@/hooks/usePayments"
 import type { HelperTimeEntry } from "@/hooks/useHelperTimeEntries"
+import { groupUserPaymentsByTicket, type UserPaymentRow } from "@/lib/user-payment-reports"
 import {
     buildHelperPayoutReport,
     buildProjectPayoutReport,
+    buildUserTicketReport,
     chargedAmount,
     csvCell,
     dayInPeriod,
@@ -106,7 +108,7 @@ describe("buildHelperPayoutReport", () => {
         generatedAt: GENERATED,
     })
 
-    it("lists only the helper's payouts in the period, oldest first, with totals", () => {
+    it("lists the helper's payouts in the period as one ticket line with its transfers underneath", () => {
         const report = buildHelperPayoutReport(input())
         expect(report.title).toBe("Helper payout report")
         expect(report.period).toBe("August 2026")
@@ -121,11 +123,15 @@ describe("buildHelperPayoutReport", () => {
         expect(report.fileName).toBe("githelp-helper-payouts-acme-august-2026")
 
         const [payouts, summary] = report.sections
+        // Three transfers on one ticket: the ticket's total (failed transfer
+        // left out of it, but flagged in the status) and each transfer below.
         expect(payouts.rows).toEqual([
-            ["10/08/2026", "abcdef0", "Login broken", "Bug", "Pending", "-", "USD 3.00"],
-            ["10/08/2026", "abcdef0", "Login broken", "Bug", "Failed", "tr_1", "USD 2.50"],
-            ["12/08/2026", "abcdef0", "Login broken", "Bug", "Paid out", "tr_1", "USD 10.00"],
+            ["12/08/2026", "abcdef0", "Login broken", "Bug", "Failed", "3 transfers", "USD 13.00"],
+            ["10/08/2026", "", "Transfer 1 of 3", "", "Pending", "-", "USD 3.00"],
+            ["10/08/2026", "", "Transfer 2 of 3", "", "Failed", "tr_1", "USD 2.50"],
+            ["12/08/2026", "", "Transfer 3 of 3", "", "Paid out", "tr_1", "USD 10.00"],
         ])
+        expect(payouts.rowKinds).toEqual(["ticket", "transaction", "transaction", "transaction"])
         expect(payouts.totals).toEqual([
             ["Paid out", "USD 10.00"],
             ["Pending", "USD 3.00"],
@@ -139,7 +145,8 @@ describe("buildHelperPayoutReport", () => {
     it("covers all months when no period is given and allows a custom period title", () => {
         const report = buildHelperPayoutReport({ ...input(), period: null, periodTitle: "Payout tr_1" })
         expect(report.period).toBe("Payout tr_1")
-        expect(report.sections[0].rows).toHaveLength(4)
+        // One ticket line plus its four transfers.
+        expect(report.sections[0].rows).toHaveLength(5)
         expect(report.sections[1].rows.map((r) => r[0])).toEqual(["September 2026", "August 2026"])
         expect(report.fileName).toBe("githelp-helper-payouts-acme-payout-tr-1")
     })
@@ -194,10 +201,112 @@ describe("buildProjectPayoutReport", () => {
             ["12/08/2026", "abcdef0", "Login broken", "Ada", "Paid out", "tr_1", "USD 10.00"],
         ])
         expect(share.rows).toEqual([["12/08/2026", "abcdef0", "Login broken", "Paid out", "tr_2", "USD 15.00"]])
+        // Every ticket here has a single transaction, so the plain layout is kept.
+        expect(charges.rowKinds).toBeUndefined()
+    })
+
+    it("groups a ticket charged twice into one record with its charges and payouts underneath", () => {
+        const report = buildProjectPayoutReport({
+            transfers: [
+                transfer({ id: "t-1", payment_id: "p-1", amount_smallest_unit: 2000, transfer_id: "tr_1" }),
+                transfer({ id: "t-2", payment_id: "p-2", amount_smallest_unit: 600, transfer_id: "tr_2", completed_at: "2026-08-20T12:00:00.000Z" }),
+            ],
+            payments: [
+                payment({ id: "p-1" }),
+                payment({
+                    id: "p-2",
+                    stripe_payment_intent_id: "pi_2",
+                    captured_amount_smallest_unit: 1200,
+                    amount_platform_smallest_unit: 200,
+                    amount_helper_smallest_unit: 600,
+                    amount_project_smallest_unit: 400,
+                    created_at: "2026-08-18T10:00:00.000Z",
+                    completed_at: "2026-08-19T10:00:00.000Z",
+                }),
+            ],
+            period: "August 2026",
+            projectName: "Acme",
+            generatedAt: GENERATED,
+        })
+        const [, charges, payouts] = report.sections
+        expect(charges.rows).toEqual([
+            ["19/08/2026", "abcdef0", "Login broken", "Captured", "2 charges", "USD 54.00", "USD 9.00", "USD 26.00", "USD 19.00"],
+            ["11/08/2026", "", "Charge 1 of 2", "Captured", "pi_1", "USD 42.00", "USD 7.00", "USD 20.00", "USD 15.00"],
+            ["19/08/2026", "", "Charge 2 of 2", "Captured", "pi_2", "USD 12.00", "USD 2.00", "USD 6.00", "USD 4.00"],
+        ])
+        expect(charges.rowKinds).toEqual(["ticket", "transaction", "transaction"])
+        expect(payouts.rows).toEqual([
+            ["20/08/2026", "abcdef0", "Login broken", "Ada", "Paid out", "2 transfers", "USD 26.00"],
+            ["12/08/2026", "", "Transfer 1 of 2", "", "Paid out", "tr_1", "USD 20.00"],
+            ["20/08/2026", "", "Transfer 2 of 2", "", "Paid out", "tr_2", "USD 6.00"],
+        ])
+        // Totals still add up the transactions once.
+        expect(charges.totals?.[0]).toEqual(["Captured", "USD 54.00"])
+    })
+})
+
+describe("buildUserTicketReport", () => {
+    const row = (overrides: Partial<UserPaymentRow>): UserPaymentRow => ({
+        id: "p-1",
+        ticketId: "abcdef0-ticket",
+        ticketShortId: "abcdef0",
+        ticketTitle: "Login broken",
+        projectId: "proj-1",
+        projectName: "Acme",
+        ticketType: "Bug",
+        date: "2026-08-11T10:00:00.000Z",
+        amountSmallestUnit: 4200,
+        currency: "usd",
+        displayStatus: "paid",
+        receiptUrl: "https://pay.stripe.com/r/1",
+        ...overrides,
+    })
+
+    it("reports one ticket with every transaction and the ticket's totals", () => {
+        const [ticket] = groupUserPaymentsByTicket([
+            row({}),
+            row({ id: "p-2", date: "2026-08-05T10:00:00.000Z", amountSmallestUnit: 900, displayStatus: "failed", receiptUrl: null }),
+            row({ id: "p-3", date: "2026-08-19T10:00:00.000Z", amountSmallestUnit: 1200 }),
+            row({ id: "p-4", date: "2026-08-20T10:00:00.000Z", amountSmallestUnit: 3000, displayStatus: "on_hold", receiptUrl: null }),
+        ])
+        const report = buildUserTicketReport({ ticket, customer: { name: "Grace", email: "grace@example.com" }, generatedAt: GENERATED })
+        expect(report.title).toBe("Ticket payment report")
+        expect(report.period).toBe("Ticket abcdef0")
+        expect(report.meta).toContainEqual(["Ticket", "abcdef0 · Login broken"])
+        expect(report.meta).toContainEqual(["Transactions", "4"])
+        expect(report.fileName).toBe("githelp-ticket-abcdef0-acme")
+        const [transactions] = report.sections
+        expect(transactions.rows).toEqual([
+            ["1", "05/08/2026", "Declined charge", "Failed", "USD 9.00"],
+            ["2", "11/08/2026", "Charge", "Paid", "USD 42.00"],
+            ["3", "19/08/2026", "Charge", "Paid", "USD 12.00"],
+            ["4", "20/08/2026", "Card hold", "On hold", "USD 30.00"],
+        ])
+        expect(transactions.totals).toEqual([
+            ["Paid", "USD 54.00"],
+            ["Held, not charged yet", "USD 30.00"],
+            ["Declined (not charged)", "USD 9.00"],
+            ["Ticket total", "USD 84.00"],
+        ])
+        expect(transactions.note).toMatch(/more than one transaction/)
     })
 })
 
 describe("CSV", () => {
+    it("adds a Line column to grouped sections so ticket totals can be summed on their own", () => {
+        const csv = sectionToCsv({
+            heading: "Payouts",
+            columns: [{ label: "Ticket" }, { label: "Amount" }],
+            rows: [
+                ["abcdef0", "USD 13.00"],
+                ["", "USD 3.00"],
+                ["", "USD 10.00"],
+            ],
+            rowKinds: ["ticket", "transaction", "transaction"],
+        })
+        expect(csv).toBe("Line,Ticket,Amount\r\nTicket,abcdef0,USD 13.00\r\nTransaction,,USD 3.00\r\nTransaction,,USD 10.00")
+    })
+
     it("neutralises cells a spreadsheet would run as a formula", () => {
         expect(csvCell('=HYPERLINK("http://evil")')).toBe("\"'=HYPERLINK(\"\"http://evil\"\")\"")
         expect(csvCell("+1")).toBe("'+1")

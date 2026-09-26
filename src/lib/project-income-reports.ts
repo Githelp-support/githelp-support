@@ -8,6 +8,7 @@
 import type { Payment, PaymentTransfer } from "@/hooks/usePayments"
 import { monthLabel } from "@/lib/helper-payout-reports"
 import { toDisplayStatus } from "@/lib/user-payment-reports"
+import { groupByTicket, sortByDateAsc, sumOf } from "@/lib/ticket-groups"
 
 export type ProjectIncomeStatus =
     /** Project share transferred to the project's Stripe account. */
@@ -163,4 +164,73 @@ export function aggregateProjectIncomeMonthly(rows: ProjectTicketIncomeRow[]): P
     return Array.from(groups.values())
         .map(({ tickets: _tickets, outstanding, ...rest }) => ({ ...rest, allReceived: outstanding === 0 }))
         .sort((a, b) => b.periodRaw - a.periodRaw)
+}
+
+/**
+ * One ticket on the project's Tickets tab: totals across every charge on
+ * the ticket plus the charges themselves, oldest first. Carries the
+ * `ProjectTicketIncomeRow` shape so sorting treats it like a row.
+ */
+export interface ProjectTicketIncomeGroup extends ProjectTicketIncomeRow {
+    transactions: ProjectTicketIncomeRow[]
+    /**
+     * Held or awaiting payment on top of what was captured. Only set when
+     * part of the ticket is captured; otherwise `chargedSmallestUnit`
+     * already shows the uncaptured amount.
+     */
+    uncapturedSmallestUnit: number
+}
+
+const OPEN_INCOME: ProjectIncomeStatus[] = ["action_required", "on_hold", "awaiting_payment"]
+
+/**
+ * Status across a ticket's charges: a charge still in flight wins; then,
+ * among captured charges, a failed project transfer, then one still
+ * pending, then received. Uncaptured failed or cancelled attempts (a
+ * declined card that was retried, a released hold) only decide the status
+ * when nothing was captured.
+ */
+export function summarizeProjectIncomeStatus(transactions: ProjectTicketIncomeRow[]): ProjectIncomeStatus {
+    for (const status of OPEN_INCOME) {
+        if (transactions.some((t) => t.status === status)) return status
+    }
+    const captured = transactions.filter((t) => t.captured)
+    if (captured.length > 0) {
+        for (const status of ["failed", "pending", "received"] as const) {
+            if (captured.some((t) => t.status === status)) return status
+        }
+        return "no_share"
+    }
+    return transactions[transactions.length - 1]?.status ?? "awaiting_payment"
+}
+
+export function groupProjectIncomeByTicket(rows: ProjectTicketIncomeRow[]): ProjectTicketIncomeGroup[] {
+    return groupByTicket(rows, (row) => row.ticketId, (row) => row.id)
+        .map((group) => {
+            const transactions = sortByDateAsc(group.items, (row) => row.date)
+            const latest = transactions[transactions.length - 1]
+            const captured = transactions.filter((t) => t.captured)
+            const open = transactions.filter((t) => !t.captured && OPEN_INCOME.includes(t.status))
+            const charged =
+                captured.length > 0
+                    ? sumOf(captured, (t) => t.chargedSmallestUnit)
+                    : open.length > 0
+                      ? sumOf(open, (t) => t.chargedSmallestUnit)
+                      : latest.chargedSmallestUnit
+            return {
+                ...latest,
+                id: group.key,
+                captured: captured.length > 0,
+                chargedSmallestUnit: charged,
+                platformFeeSmallestUnit: sumOf(transactions, (t) => t.platformFeeSmallestUnit),
+                helperShareSmallestUnit: sumOf(transactions, (t) => t.helperShareSmallestUnit),
+                projectIncomeSmallestUnit: sumOf(transactions, (t) => t.projectIncomeSmallestUnit),
+                status: summarizeProjectIncomeStatus(transactions),
+                stripeTransferId: transactions.length === 1 ? latest.stripeTransferId : null,
+                receiptUrl: transactions.length === 1 ? latest.receiptUrl : null,
+                transactions,
+                uncapturedSmallestUnit: captured.length > 0 ? sumOf(open, (t) => t.chargedSmallestUnit) : 0,
+            }
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 }

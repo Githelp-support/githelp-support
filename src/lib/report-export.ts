@@ -16,16 +16,31 @@ import type { HelperTimeEntry } from "@/hooks/useHelperTimeEntries"
 import {
     aggregateHelperMonthly,
     formatMinutes,
+    groupTransfersByTicket,
     monthLabel,
     parseCalendarDay,
     transferDate,
     transferTicketType,
 } from "@/lib/helper-payout-reports"
+import { groupByTicket, sortByDateAsc, sumOf, transactionCountLabel } from "@/lib/ticket-groups"
+import {
+    USER_PAYMENT_STATUS_LABELS,
+    USER_TRANSACTION_DESCRIPTIONS,
+    type UserPaymentRow,
+    type UserTicketPaymentGroup,
+} from "@/lib/user-payment-reports"
 
 export interface ReportColumn {
     label: string
     align?: "left" | "right"
 }
+
+/**
+ * `ticket`: one line per ticket (its only transaction, or the totals of
+ * several). `transaction`: one of a ticket's transactions, printed indented
+ * under its ticket line and not to be added to the totals again.
+ */
+export type ReportRowKind = "ticket" | "transaction"
 
 export interface ReportSection {
     heading: string
@@ -33,6 +48,8 @@ export interface ReportSection {
     note?: string
     columns: ReportColumn[]
     rows: string[][]
+    /** Parallel to `rows`; omitted when every row is a plain line. */
+    rowKinds?: ReportRowKind[]
     /** Label/value pairs printed under the table, e.g. ["Paid out", "USD 120.00"]. */
     totals?: Array<[string, string]>
     emptyMessage?: string
@@ -124,6 +141,48 @@ const PAYMENT_STATUS: Record<string, string> = {
 /** Only these payment statuses represent money the customer has actually been charged. */
 const CAPTURED_STATUSES = new Set(["completed", "distributing"])
 
+/** Charges still in flight; one of these decides a multi-charge ticket's status. */
+const OPEN_PAYMENT_STATUSES = new Set(["requires_action", "authorized", "processing", "pending"])
+
+/**
+ * Totals line for a ticket paid out in several transfers. `middle` fills the
+ * columns between description and status (type, helper, or nothing).
+ */
+function transferTicketLine(
+    items: PaymentTransfer[],
+    currency: string,
+    middle: (first: PaymentTransfer) => string[],
+    titleOf?: (ticketId: string | null) => string,
+): string[] {
+    const first = items[0]
+    const ticketId = first.ticket?.id ?? first.ticket_id
+    const failed = items.filter((t) => t.status === "failed")
+    const counting = items.filter((t) => t.status !== "failed")
+    const status = failed.length > 0 ? "failed" : items.some((t) => t.status === "pending") ? "pending" : "completed"
+    return [
+        formatReportDate(latestDate(items, transferDate)),
+        shortId(ticketId),
+        titleOf ? titleOf(ticketId) : first.ticket?.title?.trim() || "Untitled ticket",
+        ...middle(first),
+        TRANSFER_STATUS[status],
+        transactionCountLabel(items.length, "transfer"),
+        formatMoney(sumOf(counting.length > 0 ? counting : items, (t) => t.amount_smallest_unit), first.currency || currency),
+    ]
+}
+
+/** One transfer under its ticket line; `blanks` pads the type/helper columns. */
+function transferTransactionLine(t: PaymentTransfer, index: number, count: number, currency: string, blanks: number): string[] {
+    return [
+        formatReportDate(transferDate(t)),
+        "",
+        `Transfer ${index + 1} of ${count}`,
+        ...Array.from({ length: blanks }, () => ""),
+        TRANSFER_STATUS[t.status] ?? t.status,
+        t.transfer_id || "-",
+        formatMoney(t.amount_smallest_unit, t.currency || currency),
+    ]
+}
+
 function sumBy<T>(items: T[], pick: (item: T) => number): number {
     return items.reduce((total, item) => total + pick(item), 0)
 }
@@ -134,6 +193,54 @@ function byDateAsc<T>(date: (item: T) => string) {
 
 function currencyOf(transfers: Array<{ currency: string }>, fallback = "usd"): string {
     return transfers.find((t) => t.currency)?.currency || fallback
+}
+
+interface GroupedRows {
+    rows: string[][]
+    rowKinds?: ReportRowKind[]
+}
+
+/**
+ * Rows for records grouped per ticket. A ticket with one transaction stays
+ * a single line (`single`); with several it gets a totals line (`ticket`)
+ * followed by one line per transaction (`transaction`), oldest first.
+ * `rowKinds` is only returned when some ticket has several transactions,
+ * so documents without any keep their plain layout.
+ */
+function groupedRows<T>(
+    groups: Array<{ items: T[] }>,
+    single: (item: T) => string[],
+    ticket: (items: T[]) => string[],
+    transaction: (item: T, index: number, count: number) => string[],
+): GroupedRows {
+    const rows: string[][] = []
+    const kinds: ReportRowKind[] = []
+    for (const { items } of groups) {
+        if (items.length === 1) {
+            rows.push(single(items[0]))
+            kinds.push("ticket")
+            continue
+        }
+        rows.push(ticket(items))
+        kinds.push("ticket")
+        items.forEach((item, index) => {
+            rows.push(transaction(item, index, items.length))
+            kinds.push("transaction")
+        })
+    }
+    return kinds.includes("transaction") ? { rows, rowKinds: kinds } : { rows }
+}
+
+/** Groups oldest ticket first (by each ticket's first record), records oldest first inside each. */
+function chronologicalGroups<T>(groups: Array<{ items: T[] }>, dateOf: (item: T) => string) {
+    return groups
+        .map((group) => ({ ...group, items: sortByDateAsc(group.items, dateOf) }))
+        .sort((a, b) => new Date(dateOf(a.items[0])).getTime() - new Date(dateOf(b.items[0])).getTime())
+}
+
+function latestDate<T>(items: T[], dateOf: (item: T) => string): string {
+    const dates = items.map(dateOf).sort()
+    return dates[dates.length - 1] ?? ""
 }
 
 function helperName(transfer: PaymentTransfer): string {
@@ -170,9 +277,25 @@ export function buildHelperPayoutReport(input: HelperPayoutReportInput): ReportD
     const pending = sumBy(transfers.filter((t) => t.status === "pending"), (t) => t.amount_smallest_unit)
     const failed = sumBy(transfers.filter((t) => t.status === "failed"), (t) => t.amount_smallest_unit)
 
+    const payoutLine = (t: PaymentTransfer) => [
+        formatReportDate(transferDate(t)),
+        shortId(t.ticket?.id ?? t.ticket_id),
+        t.ticket?.title?.trim() || "Untitled ticket",
+        transferTicketType(t),
+        TRANSFER_STATUS[t.status] ?? t.status,
+        t.transfer_id || "-",
+        formatMoney(t.amount_smallest_unit, t.currency || currency),
+    ]
+    const payoutRows = groupedRows(
+        chronologicalGroups(groupTransfersByTicket(transfers), transferDate),
+        payoutLine,
+        (items) => transferTicketLine(items, currency, (t) => [transferTicketType(t)]),
+        (t, index, count) => transferTransactionLine(t, index, count, currency, 1),
+    )
+
     const payouts: ReportSection = {
         heading: "Payouts",
-        note: "One line per payout transferred (or scheduled) to your connected Stripe account.",
+        note: "One line per ticket. A ticket paid out in more than one transfer shows its total first, with each transfer listed underneath.",
         columns: [
             { label: "Date" },
             { label: "Ticket" },
@@ -182,15 +305,7 @@ export function buildHelperPayoutReport(input: HelperPayoutReportInput): ReportD
             { label: "Stripe transfer" },
             { label: "Amount", align: "right" },
         ],
-        rows: transfers.map((t) => [
-            formatReportDate(transferDate(t)),
-            shortId(t.ticket?.id ?? t.ticket_id),
-            t.ticket?.title?.trim() || "Untitled ticket",
-            transferTicketType(t),
-            TRANSFER_STATUS[t.status] ?? t.status,
-            t.transfer_id || "-",
-            formatMoney(t.amount_smallest_unit, t.currency || currency),
-        ]),
+        ...payoutRows,
         totals: [
             ["Paid out", formatMoney(paidOut, currency)],
             ["Pending", formatMoney(pending, currency)],
@@ -299,9 +414,57 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
         ],
     }
 
+    const chargeLine = (p: Payment, date: string, ticketCell: string, description: string, reference: string) => {
+        const isCaptured = CAPTURED_STATUSES.has(p.status)
+        const money = (value: number | null | undefined) => (isCaptured ? formatMoney(value || 0, p.currency || currency) : "-")
+        return [
+            date,
+            ticketCell,
+            description,
+            PAYMENT_STATUS[p.status] ?? p.status,
+            reference,
+            formatMoney(chargedAmount(p), p.currency || currency),
+            money(p.amount_platform_smallest_unit),
+            money(p.amount_helper_smallest_unit),
+            money(p.amount_project_smallest_unit),
+        ]
+    }
+    const chargeRows = groupedRows(
+        chronologicalGroups(
+            groupByTicket(payments, (p) => p.ticket_id, (p) => p.id),
+            paymentDate,
+        ),
+        (p) => chargeLine(p, formatReportDate(paymentDate(p)), shortId(p.ticket_id), titleOf(p.ticket_id), p.stripe_payment_intent_id || p.transaction_id || "-"),
+        (items) => {
+            const first = items[0]
+            const capturedItems = items.filter((p) => CAPTURED_STATUSES.has(p.status))
+            const open = items.find((p) => OPEN_PAYMENT_STATUSES.has(p.status))
+            const cur = first.currency || currency
+            const split = (pick: (p: Payment) => number | null | undefined) =>
+                capturedItems.length > 0 ? formatMoney(sumOf(capturedItems, (p) => pick(p) || 0), cur) : "-"
+            const amount =
+                capturedItems.length > 0
+                    ? sumOf(capturedItems, chargedAmount)
+                    : chargedAmount(items[items.length - 1])
+            return [
+                formatReportDate(latestDate(items, paymentDate)),
+                shortId(first.ticket_id),
+                titleOf(first.ticket_id),
+                open ? PAYMENT_STATUS[open.status] ?? open.status : capturedItems.length > 0 ? "Captured" : PAYMENT_STATUS[items[items.length - 1].status] ?? "-",
+                transactionCountLabel(items.length, "charge"),
+                formatMoney(amount, cur),
+                split((p) => p.amount_platform_smallest_unit),
+                split((p) => p.amount_helper_smallest_unit),
+                split((p) => p.amount_project_smallest_unit),
+            ]
+        },
+        (p, index, count) =>
+            chargeLine(p, formatReportDate(paymentDate(p)), "", `Charge ${index + 1} of ${count}`, p.stripe_payment_intent_id || p.transaction_id || "-"),
+    )
+
     const charges: ReportSection = {
         heading: "Customer payments",
-        note: "Ticket charges for this project. Only captured payments count towards the totals; the split is shown for captured payments only.",
+        note: "Ticket charges for this project, one line per ticket; a ticket charged in more than one transaction shows its captured total first, with each charge underneath. Only captured payments count towards the totals; the split is shown for captured payments only.",
         columns: [
             { label: "Date" },
             { label: "Ticket" },
@@ -313,21 +476,7 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
             { label: "Helper share", align: "right" },
             { label: "Project share", align: "right" },
         ],
-        rows: payments.map((p) => {
-            const isCaptured = CAPTURED_STATUSES.has(p.status)
-            const money = (value: number | null | undefined) => (isCaptured ? formatMoney(value || 0, p.currency || currency) : "-")
-            return [
-                formatReportDate(paymentDate(p)),
-                shortId(p.ticket_id),
-                titleOf(p.ticket_id),
-                PAYMENT_STATUS[p.status] ?? p.status,
-                p.stripe_payment_intent_id || p.transaction_id || "-",
-                formatMoney(chargedAmount(p), p.currency || currency),
-                money(p.amount_platform_smallest_unit),
-                money(p.amount_helper_smallest_unit),
-                money(p.amount_project_smallest_unit),
-            ]
-        }),
+        ...chargeRows,
         totals: [
             ["Captured", formatMoney(gross, currency)],
             ["Platform fees", formatMoney(platformFees, currency)],
@@ -335,9 +484,37 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
         emptyMessage: "No customer payments in this period.",
     }
 
+    const helperPayoutRows = groupedRows(
+        chronologicalGroups(groupTransfersByTicket(helperTransfers, { byHelper: true }), transferDate),
+        (t) => [
+            formatReportDate(transferDate(t)),
+            shortId(t.ticket?.id ?? t.ticket_id),
+            titleOf(t.ticket?.id ?? t.ticket_id),
+            helperName(t),
+            TRANSFER_STATUS[t.status] ?? t.status,
+            t.transfer_id || "-",
+            formatMoney(t.amount_smallest_unit, t.currency || currency),
+        ],
+        (items) => transferTicketLine(items, currency, (t) => [helperName(t)], titleOf),
+        (t, index, count) => transferTransactionLine(t, index, count, currency, 1),
+    )
+    const shareRows = groupedRows(
+        chronologicalGroups(groupTransfersByTicket(projectTransfers), transferDate),
+        (t) => [
+            formatReportDate(transferDate(t)),
+            shortId(t.ticket?.id ?? t.ticket_id),
+            titleOf(t.ticket?.id ?? t.ticket_id),
+            TRANSFER_STATUS[t.status] ?? t.status,
+            t.transfer_id || "-",
+            formatMoney(t.amount_smallest_unit, t.currency || currency),
+        ],
+        (items) => transferTicketLine(items, currency, () => [], titleOf),
+        (t, index, count) => transferTransactionLine(t, index, count, currency, 0),
+    )
+
     const payouts: ReportSection = {
         heading: "Helper payouts",
-        note: "Transfers from Githelp to each helper's connected Stripe account.",
+        note: "Transfers from Githelp to each helper's connected Stripe account, one line per ticket and helper.",
         columns: [
             { label: "Date" },
             { label: "Ticket" },
@@ -347,15 +524,7 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
             { label: "Stripe transfer" },
             { label: "Amount", align: "right" },
         ],
-        rows: helperTransfers.map((t) => [
-            formatReportDate(transferDate(t)),
-            shortId(t.ticket?.id ?? t.ticket_id),
-            titleOf(t.ticket?.id ?? t.ticket_id),
-            helperName(t),
-            TRANSFER_STATUS[t.status] ?? t.status,
-            t.transfer_id || "-",
-            formatMoney(t.amount_smallest_unit, t.currency || currency),
-        ]),
+        ...helperPayoutRows,
         totals: [
             ["Paid out", formatMoney(paidToHelpers, currency)],
             ["Pending", formatMoney(pendingToHelpers, currency)],
@@ -374,14 +543,7 @@ export function buildProjectPayoutReport(input: ProjectPayoutReportInput): Repor
             { label: "Stripe transfer" },
             { label: "Amount", align: "right" },
         ],
-        rows: projectTransfers.map((t) => [
-            formatReportDate(transferDate(t)),
-            shortId(t.ticket?.id ?? t.ticket_id),
-            titleOf(t.ticket?.id ?? t.ticket_id),
-            TRANSFER_STATUS[t.status] ?? t.status,
-            t.transfer_id || "-",
-            formatMoney(t.amount_smallest_unit, t.currency || currency),
-        ]),
+        ...shareRows,
         totals: [
             ["Received", formatMoney(projectReceived, currency)],
             ["Pending", formatMoney(projectPending, currency)],
@@ -417,10 +579,17 @@ export function csvCell(value: string): string {
     return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
-/** RFC 4180 CSV (CRLF line endings) of one section: header row, data rows, then totals as label/value rows. */
+/**
+ * RFC 4180 CSV (CRLF line endings) of one section: header row, data rows,
+ * then totals as label/value rows. Sections with per-ticket groups get a
+ * leading "Line" column ("Ticket" / "Transaction") so a spreadsheet can
+ * filter on ticket lines and sum them without counting transactions twice.
+ */
 export function sectionToCsv(section: ReportSection): string {
-    const lines: string[] = [section.columns.map((c) => csvCell(c.label)).join(",")]
-    for (const row of section.rows) lines.push(row.map(csvCell).join(","))
+    const kinds = section.rowKinds
+    const lead = (index: number) => (kinds ? [kinds[index] === "transaction" ? "Transaction" : "Ticket"] : [])
+    const lines: string[] = [[...(kinds ? ["Line"] : []), ...section.columns.map((c) => c.label)].map(csvCell).join(",")]
+    section.rows.forEach((row, index) => lines.push([...lead(index), ...row].map(csvCell).join(",")))
     for (const [label, value] of section.totals ?? []) lines.push([csvCell(label), csvCell(value)].join(","))
     return lines.join("\r\n")
 }
@@ -441,4 +610,74 @@ export function reportToCsv(document: ReportDocument): string {
         blocks.push([csvCell(section.heading), sectionToCsv(section)].join("\r\n"))
     }
     return blocks.join("\r\n\r\n") + "\r\n"
+}
+
+export interface UserTicketReportInput {
+    ticket: UserTicketPaymentGroup
+    customer: { name: string; email?: string | null }
+    generatedAt?: Date
+}
+
+/**
+ * The customer's report for one ticket: every transaction behind it (hold
+ * captures, overage, weekly captures, retried charges) with the ticket's
+ * totals, so a ticket charged more than once reads as one support case.
+ */
+export function buildUserTicketReport(input: UserTicketReportInput): ReportDocument {
+    const generatedAt = input.generatedAt ?? new Date()
+    const { ticket } = input
+    const currency = ticket.currency || "usd"
+    const transactions: UserPaymentRow[] = ticket.transactions
+    const failed = sumOf(transactions.filter((t) => t.displayStatus === "failed"), (t) => t.amountSmallestUnit)
+
+    const section: ReportSection = {
+        heading: "Transactions",
+        note:
+            transactions.length > 1
+                ? "This ticket was charged in more than one transaction, e.g. a card hold captured at the end plus extra time, weekly captures on a long ticket, or a charge retried after a decline."
+                : undefined,
+        columns: [
+            { label: "#" },
+            { label: "Date" },
+            { label: "Description" },
+            { label: "Status" },
+            { label: "Amount", align: "right" },
+        ],
+        rows: transactions.map((t, index) => [
+            String(index + 1),
+            formatReportDate(t.date),
+            USER_TRANSACTION_DESCRIPTIONS[t.displayStatus],
+            USER_PAYMENT_STATUS_LABELS[t.displayStatus],
+            formatMoney(t.amountSmallestUnit, t.currency || currency),
+        ]),
+        totals: [
+            ["Paid", formatMoney(ticket.paidSmallestUnit, currency)],
+            ...(ticket.openSmallestUnit > 0
+                ? [["Held, not charged yet", formatMoney(ticket.openSmallestUnit, currency)] as [string, string]]
+                : []),
+            ...(failed > 0 ? [["Declined (not charged)", formatMoney(failed, currency)] as [string, string]] : []),
+            ["Ticket total", formatMoney(ticket.paidSmallestUnit + ticket.openSmallestUnit, currency)],
+        ],
+        emptyMessage: "No transactions for this ticket.",
+    }
+
+    const period = `Ticket ${ticket.ticketShortId}`
+    return {
+        title: "Ticket payment report",
+        period,
+        meta: [
+            ["Ticket", `${ticket.ticketShortId} · ${ticket.ticketTitle}`],
+            ["Project", ticket.projectName],
+            ["Type", ticket.ticketType],
+            ["Customer", input.customer.name],
+            ...(input.customer.email ? [["Email", input.customer.email] as [string, string]] : []),
+            ["Transactions", String(transactions.length)],
+            ["Currency", currency.toUpperCase()],
+            ["Generated", formatGeneratedAt(generatedAt)],
+        ],
+        sections: [section],
+        footerNote:
+            "Charges are collected by Githelp through Stripe. Card holds reserve an amount on your card and are released or captured when the ticket ends; only captured charges are billed. Stripe's receipt for each charge is available from the Reports page. This report is issued for your records and is not a tax invoice.",
+        fileName: reportFileName("ticket", ticket.ticketShortId, ticket.projectName),
+    }
 }

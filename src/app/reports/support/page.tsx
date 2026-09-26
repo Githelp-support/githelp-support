@@ -15,13 +15,22 @@ import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, t
 import { useProject } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
-import { payoutReference } from "@/lib/helper-payout-reports"
+import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import {
   aggregateProjectIncomeMonthly,
+  groupProjectIncomeByTicket,
   PROJECT_INCOME_STATUS_LABELS,
   toProjectTicketIncomeRow,
   type ProjectIncomeStatus,
+  type ProjectTicketIncomeRow,
 } from "@/lib/project-income-reports"
+import {
+  TransactionLine,
+  TransactionsPanel,
+  TransactionsToggle,
+  transactionsPanelId,
+  useExpandedRows,
+} from "@/components/reports/ticket-transactions"
 import { buildProjectPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 
@@ -129,13 +138,72 @@ function getHelperInitialAndColor(helperName: string | undefined, helperId: stri
   return { initial, color }
 }
 
-/** Which rows a single-row export should cover. */
+/** Which rows a single-record export should cover. */
 interface SingleExport {
-  paymentId?: string | null
   ticketId: string | null
-  /** A specific helper payout row; when set, only that transfer (plus the project's own share) is exported. */
-  transfer?: PaymentTransfer
+  /** Specific customer charges; when empty the whole ticket is exported. */
+  paymentIds?: string[]
+  /** Specific helper payouts; when set, only these (plus the project's own share of the same charges) are exported. */
+  transfers?: PaymentTransfer[]
   title: string
+}
+
+const TRANSFER_STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
+  completed: "Completed",
+  pending: "Pending",
+  failed: "Failed",
+}
+
+function ReceiptButton({ url }: { url: string | null }) {
+  if (url) {
+    return (
+      <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
+        <a href={url} target="_blank" rel="noopener noreferrer" title="Open the Stripe receipt for this charge">
+          <ExternalLink className="w-3.5 h-3.5" />
+          Receipt
+        </a>
+      </Button>
+    )
+  }
+  return (
+    <span title="A receipt becomes available once the payment has been captured" className="inline-flex">
+      <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
+        <ExternalLink className="w-3.5 h-3.5" />
+        Receipt
+      </Button>
+    </span>
+  )
+}
+
+function TransferStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
+  const label = TRANSFER_STATUS_LABEL[status]
+  if (status === "pending") {
+    return (
+      <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+        <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+          <circle cx="6" cy="6" r="2" fill="currentColor" />
+        </svg>
+        {label}
+      </Badge>
+    )
+  }
+  if (status === "failed") {
+    return <Badge className={`${getStatusBadgeClass("failed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>{label}</Badge>
+  }
+  return (
+    <Badge className={`${getStatusBadgeClass("completed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+      <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+        <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {label}
+    </Badge>
+  )
+}
+
+/** "USD 12.00 project · USD 30.00 helper · USD 3.00 fee" for one captured charge. */
+function chargeSplitLabel(row: ProjectTicketIncomeRow): string {
+  if (!row.captured) return "Not captured yet"
+  return `${formatAmount(row.projectIncomeSmallestUnit, row.currency)} project · ${formatAmount(row.helperShareSmallestUnit, row.currency)} helper · ${formatAmount(row.platformFeeSmallestUnit, row.currency)} fee`
 }
 
 export default function ReportsSupportPage() {
@@ -146,6 +214,8 @@ export default function ReportsSupportPage() {
   const [monthlySort, setMonthlySort] = useState<{ field: MonthlySortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
   const [ticketsSort, setTicketsSort] = useState<{ field: TicketsSortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
   const [helpersSort, setHelpersSort] = useState<{ field: HelpersSortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
+
+  const { isExpanded, toggle } = useExpandedRows()
 
   const setActiveTab = (tab: Tab) => {
     setActiveTabState(tab)
@@ -189,8 +259,10 @@ export default function ReportsSupportPage() {
   )
 
   const ticketRows = useMemo(() => {
-    let list = targetMonth ? incomeRows.filter((row) => getMonthYear(row.date) === targetMonth) : incomeRows
-    list = [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    // One record per ticket; the month filter applies to the individual charges.
+    const list = groupProjectIncomeByTicket(
+      targetMonth ? incomeRows.filter((row) => getMonthYear(row.date) === targetMonth) : incomeRows,
+    )
     const { field, direction } = ticketsSort
     if (!field) return list
     return list.sort((a, b) => {
@@ -239,32 +311,35 @@ export default function ReportsSupportPage() {
     })
   }, [incomeRows, selectedMonth, monthlySort])
 
-  // Helpers: individual helper payouts with ticket + helper info. The
-  // project's own cut is also a payments_transfers row (transfer_user_type
-  // "project", no helper) and is reported on the other tabs instead.
+  // Helpers: payouts per ticket and helper, with each transfer underneath
+  // when a ticket was paid out more than once. The project's own cut is also
+  // a payments_transfers row (transfer_user_type "project", no helper) and
+  // is reported on the other tabs instead.
   const helperRows = useMemo(() => {
     if (!transfersData) return []
-    let list = transfersData.filter((t) => t.transfer_user_type === "helper").map((transfer) => {
-      const helperName = getHelperDisplayName(transfer.helper)
-      const { initial, color } = getHelperInitialAndColor(helperName, transfer.helper?.user_id ?? transfer.helper_id)
-      const dateStr = transfer.completed_at || transfer.created_at
+    let transfers = transfersData.filter((t) => t.transfer_user_type === "helper")
+    if (targetMonth) transfers = transfers.filter((t) => getMonthYear(transferDate(t)) === targetMonth)
+    const list = groupTransfersByTicket(transfers, { byHelper: true }).map((group) => {
+      const first = group.items[0]
+      const helperName = getHelperDisplayName(first.helper)
+      const { initial, color } = getHelperInitialAndColor(helperName, first.helper?.user_id ?? first.helper_id)
       return {
-        id: transfer.id,
-        ticketId: transfer.ticket_id,
-        date: formatDate(dateStr),
-        dateRaw: dateStr,
+        id: group.key,
+        ticketId: group.ticketId,
+        date: formatDate(group.date),
+        dateRaw: group.date,
         helper: helperName,
         helperInitial: initial,
         helperColor: color,
-        amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
-        amountRaw: transfer.amount_smallest_unit,
-        status: transfer.status === "completed" ? "Completed" : transfer.status === "failed" ? "Failed" : "Pending",
-        statusType: transfer.status,
-        transfer,
+        amount: formatAmount(group.amountSmallestUnit, group.currency),
+        amountRaw: group.amountSmallestUnit,
+        failedSmallestUnit: group.failedSmallestUnit,
+        currency: group.currency,
+        status: TRANSFER_STATUS_LABEL[group.status],
+        statusType: group.status,
+        transfers: group.items,
       }
     })
-    if (targetMonth) list = list.filter((t) => getMonthYear(t.dateRaw) === targetMonth)
-    list.sort((a, b) => new Date(b.dateRaw).getTime() - new Date(a.dateRaw).getTime())
     const { field, direction } = helpersSort
     if (!field) return list
     return list.sort((a, b) => {
@@ -299,20 +374,22 @@ export default function ReportsSupportPage() {
 
   /**
    * Accounting export for the project: customer charges with their split,
-   * the project's own share and helper payouts. A single row exports just
-   * that charge (or payout) together with the transfers it produced, so the
-   * document reconciles with itself.
+   * the project's own share and helper payouts. A single ticket (or a
+   * helper's payouts on it) exports every charge and transfer involved, so
+   * the document reconciles with itself and shows the ticket as one record.
    */
   const buildExport = (period: string | null, single?: SingleExport): ReportDocument => {
+    const paymentIds = single?.paymentIds ?? []
     const sameCharge = (row: { payment_id?: string | null; ticket_id: string | null }) =>
-      single?.paymentId ? row.payment_id === single.paymentId : row.ticket_id === single?.ticketId
+      paymentIds.length > 0 ? !!row.payment_id && paymentIds.includes(row.payment_id) : row.ticket_id === single?.ticketId
     let transfers = transfersData ?? []
     let payments = paymentsData ?? []
     if (single) {
+      const transferIds = new Set(single.transfers?.map((t) => t.id))
       transfers = transfers.filter((t) =>
-        single.transfer ? t.id === single.transfer.id || (t.transfer_user_type === "project" && sameCharge(t)) : sameCharge(t),
+        single.transfers ? transferIds.has(t.id) || (t.transfer_user_type === "project" && sameCharge(t)) : sameCharge(t),
       )
-      payments = payments.filter((p) => (single.paymentId ? p.id === single.paymentId : p.ticket_id === single.ticketId))
+      payments = payments.filter((p) => (paymentIds.length > 0 ? paymentIds.includes(p.id) : p.ticket_id === single.ticketId))
     }
     return buildProjectPayoutReport({
       transfers,
@@ -574,7 +651,11 @@ export default function ReportsSupportPage() {
                   ) : ticketRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("ticket payments")}</div>
                   ) : (
-                    ticketRows.map((row) => (
+                    ticketRows.map((row) => {
+                      const count = row.transactions.length
+                      const expanded = count > 1 && isExpanded(row.id)
+                      const panelId = transactionsPanelId(row.id)
+                      return (
                       <div key={row.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                         <div className="grid gap-4 items-center" style={INCOME_GRID}>
                           <div>
@@ -591,15 +672,19 @@ export default function ReportsSupportPage() {
                             <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
                               {row.ticketTitle}
                             </div>
+                            <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(row.id)} panelId={panelId} noun="charge" />
                           </div>
                           <div className="col-span-1 text-sm text-muted-foreground">{formatDate(row.date)}</div>
                           <div className="col-span-2 text-sm text-foreground">
                             <div>{formatAmount(row.chargedSmallestUnit, row.currency)}</div>
                             {!row.captured && <div className="text-xs text-muted-foreground">not captured yet</div>}
+                            {row.uncapturedSmallestUnit > 0 && (
+                              <div className="text-xs text-muted-foreground">+ {formatAmount(row.uncapturedSmallestUnit, row.currency)} not captured yet</div>
+                            )}
                           </div>
                           <div className="col-span-2 text-sm text-foreground">
                             <div>{formatAmount(row.helperShareSmallestUnit, row.currency)}</div>
-                            <div className="text-xs text-muted-foreground">{formatAmount(row.platformFeeSmallestUnit, row.currency)} platform fee</div>
+                            <div className="text-xs text-muted-foreground">{formatAmount(row.platformFeeSmallestUnit, row.currency)} platform {count > 1 ? "fees" : "fee"}</div>
                           </div>
                           <div className="col-span-2 text-sm font-medium text-foreground">{formatAmount(row.projectIncomeSmallestUnit, row.currency)}</div>
                           <div className="col-span-1">
@@ -608,35 +693,63 @@ export default function ReportsSupportPage() {
                             </Badge>
                           </div>
                           <div className="col-span-2 flex items-center justify-end space-x-2">
-                            {row.receiptUrl ? (
-                              <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
-                                <a href={row.receiptUrl} target="_blank" rel="noopener noreferrer" title="Open the Stripe receipt for this charge">
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  Receipt
-                                </a>
+                            {count > 1 ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className={OUTLINE_BUTTON_CLASS}
+                                aria-expanded={expanded}
+                                aria-controls={panelId}
+                                title="Each charge has its own Stripe receipt"
+                                onClick={() => toggle(row.id)}
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Receipts
                               </Button>
                             ) : (
-                              <span title="A receipt becomes available once the payment has been captured" className="inline-flex">
-                                <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  Receipt
-                                </Button>
-                              </span>
+                              <ReceiptButton url={row.receiptUrl} />
                             )}
                             <Button
                               variant="outline"
                               size="sm"
                               className={OUTLINE_BUTTON_CLASS}
-                              title="Download this ticket's charge, payouts and project income as a PDF"
-                              onClick={() => exportPdf(null, { paymentId: row.id, ticketId: row.ticketId, title: `Ticket ${row.ticketShortId}` })}
+                              title="Download this ticket's charges, payouts and project income as a PDF"
+                              onClick={() =>
+                                exportPdf(null, {
+                                  ticketId: row.ticketId,
+                                  paymentIds: row.ticketId ? undefined : row.transactions.map((t) => t.id),
+                                  title: `Ticket ${row.ticketShortId}`,
+                                })
+                              }
                             >
                               <Download className="w-3.5 h-3.5" />
                               PDF
                             </Button>
                           </div>
                         </div>
+                        {expanded && (
+                          <TransactionsPanel id={panelId}>
+                            {row.transactions.map((charge, index) => (
+                              <TransactionLine
+                                key={charge.id}
+                                index={index}
+                                count={count}
+                                date={formatDate(charge.date)}
+                                description={<span title={charge.stripeTransferId ?? undefined}>{chargeSplitLabel(charge)}</span>}
+                                amount={formatAmount(charge.chargedSmallestUnit, charge.currency)}
+                                status={
+                                  <Badge variant="secondary" className={`${INCOME_BADGE_CLASS[charge.status]} text-xs`}>
+                                    {PROJECT_INCOME_STATUS_LABELS[charge.status]}
+                                  </Badge>
+                                }
+                                actions={<ReceiptButton url={charge.receiptUrl} />}
+                              />
+                            ))}
+                          </TransactionsPanel>
+                        )}
                       </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
               </div>
@@ -676,13 +789,18 @@ export default function ReportsSupportPage() {
                   ) : helperRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("helper payouts")}</div>
                   ) : (
-                    helperRows.map((ticket) => (
+                    helperRows.map((ticket) => {
+                      const count = ticket.transfers.length
+                      const expanded = count > 1 && isExpanded(ticket.id)
+                      const panelId = transactionsPanelId(ticket.id)
+                      const paymentIds = ticket.transfers.map((t) => t.payment_id).filter((id): id is string => !!id)
+                      return (
                       <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                         <div className="grid gap-4 items-center" style={HELPERS_GRID}>
                           <div>
                             <Checkbox checked={selectedRows.includes(ticket.id)} onCheckedChange={() => handleRowSelect(ticket.id)} aria-label={`Select payout ${ticket.id}`} />
                           </div>
-                          <div className="col-span-1">
+                          <div className="col-span-1 min-w-0">
                             {ticket.ticketId ? (
                               <Link
                                 href={`/helper/tickets/${ticket.ticketId}`}
@@ -693,6 +811,9 @@ export default function ReportsSupportPage() {
                             ) : (
                               <span className="text-sm font-medium text-foreground">—</span>
                             )}
+                            <div>
+                              <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(ticket.id)} panelId={panelId} noun="payout" />
+                            </div>
                           </div>
                           <div className="col-span-1">
                             <span className="text-sm text-muted-foreground">{ticket.date}</span>
@@ -708,33 +829,12 @@ export default function ReportsSupportPage() {
                           </div>
                           <div className="col-span-2">
                             <span className="text-sm text-foreground">{ticket.amount}</span>
+                            {ticket.failedSmallestUnit > 0 && (
+                              <div className="text-xs text-red-700">{formatAmount(ticket.failedSmallestUnit, ticket.currency)} failed</div>
+                            )}
                           </div>
                           <div className="col-span-2">
-                            {ticket.statusType === "pending" ? (
-                              <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                                  <circle cx="6" cy="6" r="2" fill="currentColor" />
-                                </svg>
-                                {ticket.status}
-                              </Badge>
-                            ) : ticket.statusType === "failed" ? (
-                              <Badge className={`${getStatusBadgeClass("failed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-                                {ticket.status}
-                              </Badge>
-                            ) : (
-                              <Badge className={`${getStatusBadgeClass("completed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                                  <path
-                                    d="M10 3L4.5 8.5L2 6"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                                {ticket.status}
-                              </Badge>
-                            )}
+                            <TransferStatusBadge status={ticket.statusType} />
                           </div>
                           <div className="col-span-2 flex items-center justify-end space-x-2">
                             {ticket.ticketId ? (
@@ -750,13 +850,21 @@ export default function ReportsSupportPage() {
                               variant="outline"
                               size="sm"
                               className={OUTLINE_BUTTON_CLASS}
-                              title="Download this payout and its customer charge as a PDF"
+                              title={
+                                count > 1
+                                  ? "Download these payouts and their customer charges as a PDF"
+                                  : "Download this payout and its customer charge as a PDF"
+                              }
                               onClick={() =>
                                 exportPdf(null, {
-                                  paymentId: ticket.transfer.payment_id,
                                   ticketId: ticket.ticketId,
-                                  transfer: ticket.transfer,
-                                  title: `Payout ${payoutReference(ticket.transfer)}`,
+                                  // Legacy payouts without payment_id fall back to the whole ticket.
+                                  paymentIds: paymentIds.length === count ? paymentIds : undefined,
+                                  transfers: ticket.transfers,
+                                  title:
+                                    count > 1
+                                      ? `Ticket ${getShortTicketId(ticket.ticketId)} · ${ticket.helper}`
+                                      : `Payout ${payoutReference(ticket.transfers[0])}`,
                                 })
                               }
                             >
@@ -765,8 +873,24 @@ export default function ReportsSupportPage() {
                             </Button>
                           </div>
                         </div>
+                        {expanded && (
+                          <TransactionsPanel id={panelId}>
+                            {ticket.transfers.map((transfer, index) => (
+                              <TransactionLine
+                                key={transfer.id}
+                                index={index}
+                                count={count}
+                                date={formatDate(transferDate(transfer))}
+                                description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
+                                amount={formatAmount(transfer.amount_smallest_unit, transfer.currency)}
+                                status={<TransferStatusBadge status={transfer.status} />}
+                              />
+                            ))}
+                          </TransactionsPanel>
+                        )}
                       </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
               </div>
