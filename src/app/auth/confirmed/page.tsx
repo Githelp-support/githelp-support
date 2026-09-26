@@ -1,10 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus"
+import { useAcceptProjectInvite } from "@/hooks/useProject"
+import { useEnterProject } from "@/hooks/useEnterProject"
+import { homeRouteForRole } from "@/lib/roles"
 import { ensureUserOrganization } from "@/lib/organizations"
 
 export default function AuthConfirmedPage() {
@@ -12,8 +16,18 @@ export default function AuthConfirmedPage() {
   const searchParams = useSearchParams()
   const [isProcessing, setIsProcessing] = useState(true)
   const { data: onboardingStatus, isLoading: onboardingLoading } = useOnboardingStatus()
+  const queryClient = useQueryClient()
+  // mutateAsync is referentially stable across renders (unlike the mutation object).
+  const { mutateAsync: acceptInviteAsync } = useAcceptProjectInvite()
+  const enterProject = useEnterProject()
+  // The callback below accepts an invite, so it must run once per mount even
+  // if a dependency changes identity while it is in flight.
+  const hasHandledCallback = useRef(false)
 
   useEffect(() => {
+    if (hasHandledCallback.current) return
+    hasHandledCallback.current = true
+
     const handleAuthCallback = async () => {
       // Wait a bit for Supabase to process the OAuth callback
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -32,11 +46,12 @@ export default function AuthConfirmedPage() {
       const providers = (session.user.app_metadata?.providers as string[] | undefined) ?? []
       if (providers.includes("github")) {
         try {
-          // Check if user is already a member of any project
+          // Check if user is already an active member of any project
           const { data: existingMemberships } = await supabase
             .from("projects_members")
-            .select("id")
+            .select("project_id")
             .eq("user_id", session.user.id)
+            .is("deleted_at", null)
             .limit(1)
 
           const isAlreadyMember = existingMemberships && existingMemberships.length > 0
@@ -44,15 +59,35 @@ export default function AuthConfirmedPage() {
           if (!isAlreadyMember) {
             const { data } = await supabase.functions.invoke("get-pending-invite-by-github")
             if (data?.success && data?.invite?.token) {
-              const { data: acceptData } = await supabase.functions.invoke("accept-project-invite", {
-                body: { token: data.invite.token },
-              })
-              if (acceptData?.success && acceptData?.project_id) {
-                router.push(`/projects/${acceptData.project_id}`)
+              const inviteToken = data.invite.token as string
+
+              // Accept through the mutation hook (not a raw invoke) so the
+              // cached project list, onboarding status and role queries are
+              // invalidated. ProjectProvider already fetched the (empty)
+              // project list when this page mounted and would otherwise
+              // keep serving it for 30 minutes.
+              let joinedProjectId: string | null = null
+              try {
+                const acceptData = await acceptInviteAsync(inviteToken)
+                joinedProjectId = acceptData?.project_id ?? null
+              } catch {
+                joinedProjectId = null
+              }
+
+              if (joinedProjectId) {
+                // AuthGuard redirects completed-but-not-a-member users to
+                // /onboarding/waiting, so make sure it sees fresh membership
+                // before landing on a protected route.
+                await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
+                // Select the joined project and switch to the highest role
+                // held there (helper for helper invites), same as the
+                // /invite/[token] page.
+                const role = await enterProject(joinedProjectId)
+                router.push(homeRouteForRole(role))
                 return
               }
               // If accept failed (e.g. needs profile), redirect to invite page
-              router.push(`/invite/${data.invite.token}`)
+              router.push(`/invite/${inviteToken}`)
               return
             }
           }
@@ -65,7 +100,7 @@ export default function AuthConfirmedPage() {
     }
 
     handleAuthCallback()
-  }, [router])
+  }, [router, queryClient, acceptInviteAsync, enterProject])
 
   // Handle redirect after onboarding status is loaded
   useEffect(() => {
