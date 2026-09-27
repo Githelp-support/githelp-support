@@ -24,15 +24,33 @@ export interface TicketPaymentResult {
    */
   capturedAmountSmallestUnit: number | null
   /**
+   * How the captured total was split, summed across the captured rows. Null
+   * until something has been captured.
+   */
+  capturedSplits: CapturedSplits | null
+  /**
    * Stripe's human-readable reason for the most recent payment row when it is
    * `failed` (declined, expired authorization, …). Null otherwise.
    */
   failureReason: string | null
 }
 
+export interface CapturedSplits {
+  helperSmallestUnit: number
+  projectSmallestUnit: number
+  /**
+   * The platform slice of each captured row. The platform fee is 0%, so this
+   * is exactly Stripe's processing fee for the charges (see `computeSplits`).
+   */
+  stripeFeeSmallestUnit: number
+}
+
 interface PaymentRow {
   status: TicketPaymentStatus
   captured_amount_smallest_unit: number | null
+  amount_platform_smallest_unit?: number | null
+  amount_project_smallest_unit?: number | null
+  amount_helper_smallest_unit?: number | null
   failure_reason?: string | null
 }
 
@@ -70,7 +88,9 @@ export function useTicketPaymentStatus(
     queryFn: async () => {
       const resp = await supabase
         .from("payments")
-        .select("status, captured_amount_smallest_unit, failure_reason")
+        .select(
+          "status, captured_amount_smallest_unit, amount_platform_smallest_unit, amount_project_smallest_unit, amount_helper_smallest_unit, failure_reason",
+        )
         .eq("ticket_id", ticketId as string)
         .order("created_at", { ascending: false })
       if (resp.error) throw resp.error
@@ -109,15 +129,15 @@ export function useTicketPaymentStatus(
   }, [ticketId, opts.slaId, queryClient])
 
   if (opts.slaId) {
-    return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null, failureReason: null }
+    return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null, capturedSplits: null, failureReason: null }
   }
   const latest = data?.[0]
   if (!latest) {
     // `data === undefined` means the rows haven't loaded yet: stay closed until
     // we know there is no payments row, so an existing row always wins.
     return opts.isFree && data !== undefined
-      ? { status: "free", isReady: true, capturedAmountSmallestUnit: null, failureReason: null }
-      : { status: "none", isReady: false, capturedAmountSmallestUnit: null, failureReason: null }
+      ? { status: "free", isReady: true, capturedAmountSmallestUnit: null, capturedSplits: null, failureReason: null }
+      : { status: "none", isReady: false, capturedAmountSmallestUnit: null, capturedSplits: null, failureReason: null }
   }
   const capturedRows = (data ?? []).filter(
     (r) => (r.status === "distributing" || r.status === "completed") && r.captured_amount_smallest_unit != null,
@@ -125,10 +145,20 @@ export function useTicketPaymentStatus(
   const capturedTotal = capturedRows.length
     ? capturedRows.reduce((sum, r) => sum + (r.captured_amount_smallest_unit ?? 0), 0)
     : null
+  const sum = (pick: (r: PaymentRow) => number | null | undefined) =>
+    capturedRows.reduce((acc, r) => acc + (pick(r) ?? 0), 0)
+  const capturedSplits = capturedRows.length
+    ? {
+        helperSmallestUnit: sum((r) => r.amount_helper_smallest_unit),
+        projectSmallestUnit: sum((r) => r.amount_project_smallest_unit),
+        stripeFeeSmallestUnit: sum((r) => r.amount_platform_smallest_unit),
+      }
+    : null
   return {
     status: latest.status,
     isReady: latest.status === "authorized",
     capturedAmountSmallestUnit: capturedTotal,
+    capturedSplits,
     failureReason: latest.status === "failed" ? latest.failure_reason?.trim() || null : null,
   }
 }

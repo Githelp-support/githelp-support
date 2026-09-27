@@ -637,6 +637,13 @@ export default function TicketDetailPage() {
         : paymentFailed
           ? "Failed"
           : "—"
+  // Who got what out of the charge. Shown once the capture has settled.
+  const formatUsd = (smallestUnit: number) => `$${(smallestUnit / 100).toFixed(2)}`
+  const chargeSplits =
+    !isCancelledEnd && paymentSettled && chargedSmallestUnit != null ? paymentGate.capturedSplits : null
+  const billedHelperCount = new Set(
+    timeEntries.filter((e) => e.reviewStatus !== "declined").map((e) => e.helperId),
+  ).size
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
@@ -927,6 +934,30 @@ export default function TicketDetailPage() {
                                   <span className="text-muted-foreground">Charged</span>
                                   <span className="font-medium text-foreground tabular-nums">{chargedLabel}</span>
                                 </div>
+                                {chargeSplits && (
+                                  <div className="mt-2 pt-2 border-t border-border space-y-1.5">
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">
+                                        {billedHelperCount > 1 ? "Helpers" : "Helper"}
+                                      </span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.helperSmallestUnit)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground truncate">{project?.name || "Project"}</span>
+                                      <span className="font-medium text-foreground tabular-nums shrink-0">
+                                        {formatUsd(chargeSplits.projectSmallestUnit)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">Stripe fee</span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.stripeFeeSmallestUnit)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {paymentFailed && paymentFailureReason && (
