@@ -952,169 +952,169 @@ export default function TicketDetailPage() {
               />
             )}
           </div>
+        </main>
+      </div>
 
-          {/* Right Sidebar */}
-          <div
-            suppressHydrationWarning
-            className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
-          >
-            <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
+      {/* Right Sidebar — sibling of the header column so it spans the full height, like the left sidebar */}
+      <div
+        suppressHydrationWarning
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+      >
+        <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
-            {!isCollapsed && (
-            <div className="flex-1 overflow-y-auto px-3 pb-6">
-              {/* People in Chat */}
-              <div>
-                <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
-                {participantsLoading ? (
-                  <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
-                ) : allParticipants.length > 0 ? (
-                  <div className="space-y-2 mb-3">
-                    {allParticipants.map((participant) => {
-                      const isCurrentUser = participant.participant_id === currentUser?.id
-                      return (
-                        <div key={participant.id} className="flex items-center gap-2">
-                          <ProfileAvatar
-                            id={participant.user.id}
-                            name={participant.user.name}
-                            avatarUrl={participant.user.avatar_url ?? null}
-                            size="md"
-                          />
-                          <span className="text-[13px] text-muted-foreground">
-                            {isCurrentUser ? "You" : participant.user.name}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
-                )}
-                {!isTicketEnded && (
-                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                    <Plus className="w-4 h-4" />
-                    Invite other helper
-                  </Button>
-                )}
-              </div>
-
-              {/* Divider */}
-              <SidebarDivider />
-
-              {/* Other Topics — from ticket keywords */}
-              <div>
-                <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
-                {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
-                  <div className="flex gap-2 flex-wrap">
-                    {ticketDetails.keywords.map((k) => (
-                      <Badge key={k.value} variant="secondary" className="bg-muted text-muted-foreground">
-                        {k.value}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[13px] text-muted-foreground">—</p>
-                )}
-              </div>
-
-              {/* Divider */}
-              <SidebarDivider />
-
-              {/* Logged Time */}
-              <div>
-                <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
-                {timeEntries.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {timeEntries.map((entry) => (
-                      <div key={entry.id} className="py-2 border-b border-border">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                            </div>
-                            <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
-                          </div>
-                          <span className="text-[13px] text-muted-foreground tabular-nums">
-                            {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                          </span>
-                        </div>
-                        {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between py-2 font-medium">
-                      <span className="text-[13px] text-foreground">Total</span>
-                      <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
+        {!isCollapsed && (
+        <div className="flex-1 overflow-y-auto px-3 pb-6">
+          {/* People in Chat */}
+          <div>
+            <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
+            {participantsLoading ? (
+              <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
+            ) : allParticipants.length > 0 ? (
+              <div className="space-y-2 mb-3">
+                {allParticipants.map((participant) => {
+                  const isCurrentUser = participant.participant_id === currentUser?.id
+                  return (
+                    <div key={participant.id} className="flex items-center gap-2">
+                      <ProfileAvatar
+                        id={participant.user.id}
+                        name={participant.user.name}
+                        avatarUrl={participant.user.avatar_url ?? null}
+                        size="md"
+                      />
+                      <span className="text-[13px] text-muted-foreground">
+                        {isCurrentUser ? "You" : participant.user.name}
+                      </span>
                     </div>
-                  </div>
-                )}
-                {!isTicketEnded && (
-                  <Button
-                    variant="outline"
-                    disabled={!paymentGate.isReady}
-                    title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
-                    className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={() => {
-                      if (isAdminButNotHelper) {
-                        setPendingAction("logTime")
-                        setIsAddSelfAsHelperDialogOpen(true)
-                      } else {
-                        setIsLogTimeDrawerOpen(true)
-                      }
-                    }}
-                  >
-                    {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
-                  </Button>
-                )}
+                  )
+                })}
               </div>
-
-              {/* Divider */}
-              <SidebarDivider />
-
-              {/* Active Tickets — 3 latest claimed by this helper */}
-              <div>
-                <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-                <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
-                  {activeTicketsSidebar.length === 0 ? (
-                    <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
-                  ) : (
-                    activeTicketsSidebar.map((item) => (
-                      <NextLink
-                        key={item.id}
-                        href={`/helper/tickets/${item.id}`}
-                        className={`block w-full border cursor-pointer transition-colors ${
-                          item.current
-                            ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                            : "bg-white border-border hover:bg-muted"
-                        }`}
-                      >
-                        <div className="p-3">
-                          <div className="flex items-start gap-3">
-                            <ProfileAvatar
-                              id={item.creatorId}
-                              name={item.avatarInitial}
-                              avatarUrl={item.avatarUrl}
-                              size="md"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
-                                {item.hasNotification && (
-                                  <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                              <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </NextLink>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
+            ) : (
+              <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+            )}
+            {!isTicketEnded && (
+              <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+                <Plus className="w-4 h-4" />
+                Invite other helper
+              </Button>
             )}
           </div>
-        </main>
+
+          {/* Divider */}
+          <SidebarDivider />
+
+          {/* Other Topics — from ticket keywords */}
+          <div>
+            <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
+            {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
+              <div className="flex gap-2 flex-wrap">
+                {ticketDetails.keywords.map((k) => (
+                  <Badge key={k.value} variant="secondary" className="bg-muted text-muted-foreground">
+                    {k.value}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-muted-foreground">—</p>
+            )}
+          </div>
+
+          {/* Divider */}
+          <SidebarDivider />
+
+          {/* Logged Time */}
+          <div>
+            <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
+            {timeEntries.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {timeEntries.map((entry) => (
+                  <div key={entry.id} className="py-2 border-b border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
+                        </div>
+                        <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                      </div>
+                      <span className="text-[13px] text-muted-foreground tabular-nums">
+                        {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                      </span>
+                    </div>
+                    {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                  </div>
+                ))}
+                <div className="flex items-center justify-between py-2 font-medium">
+                  <span className="text-[13px] text-foreground">Total</span>
+                  <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
+                </div>
+              </div>
+            )}
+            {!isTicketEnded && (
+              <Button
+                variant="outline"
+                disabled={!paymentGate.isReady}
+                title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
+                className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => {
+                  if (isAdminButNotHelper) {
+                    setPendingAction("logTime")
+                    setIsAddSelfAsHelperDialogOpen(true)
+                  } else {
+                    setIsLogTimeDrawerOpen(true)
+                  }
+                }}
+              >
+                {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
+              </Button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <SidebarDivider />
+
+          {/* Active Tickets — 3 latest claimed by this helper */}
+          <div>
+            <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
+            <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+              {activeTicketsSidebar.length === 0 ? (
+                <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+              ) : (
+                activeTicketsSidebar.map((item) => (
+                  <NextLink
+                    key={item.id}
+                    href={`/helper/tickets/${item.id}`}
+                    className={`block w-full border cursor-pointer transition-colors ${
+                      item.current
+                        ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
+                        : "bg-white border-border hover:bg-muted"
+                    }`}
+                  >
+                    <div className="p-3">
+                      <div className="flex items-start gap-3">
+                        <ProfileAvatar
+                          id={item.creatorId}
+                          name={item.avatarInitial}
+                          avatarUrl={item.avatarUrl}
+                          size="md"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                            {item.hasNotification && (
+                              <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
+                          <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </NextLink>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+        )}
       </div>
 
       {/* AI Rephrase Modal */}
