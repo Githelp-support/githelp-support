@@ -17,6 +17,7 @@ const PROTECTED_ROUTES = [
   "/landing-page",
   "/settings",
   "/helper",
+  "/notifications",
 ]
 
 // Routes that should NOT be protected (support pages, onboarding, public project pages)

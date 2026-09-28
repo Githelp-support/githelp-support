@@ -97,6 +97,19 @@ export function useCreateHelper() {
             queryClient.invalidateQueries({
                 queryKey: ["helpers", data.project_id],
             });
+            // invite-user also adds the helper as a project member. If the
+            // acting user added themselves, their cached helper status, roles
+            // and project list are now stale.
+            queryClient.invalidateQueries({
+                queryKey: ["current-helper", data.project_id],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["project-available-roles", data.project_id],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["project-role", data.project_id],
+            });
+            queryClient.invalidateQueries({ queryKey: ["user-projects"] });
         },
     });
 }

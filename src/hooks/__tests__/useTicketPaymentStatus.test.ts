@@ -104,6 +104,55 @@ describe("useTicketPaymentStatus", () => {
         await waitFor(() => expect(result.current.status).toBe("distributing"));
         expect(result.current.capturedAmountSmallestUnit).toBe(13000);
     });
+
+    it("sums the helper/project/Stripe-fee split across captured rows only", async () => {
+        selectMock.mockResolvedValue({
+            data: [
+                {
+                    status: "distributing",
+                    captured_amount_smallest_unit: 3000,
+                    amount_platform_smallest_unit: 117,
+                    amount_project_smallest_unit: 0,
+                    amount_helper_smallest_unit: 2883,
+                },
+                {
+                    status: "failed",
+                    captured_amount_smallest_unit: null,
+                    amount_platform_smallest_unit: 999,
+                    amount_project_smallest_unit: 999,
+                    amount_helper_smallest_unit: 999,
+                },
+                {
+                    status: "completed",
+                    captured_amount_smallest_unit: 10000,
+                    amount_platform_smallest_unit: 320,
+                    amount_project_smallest_unit: 968,
+                    amount_helper_smallest_unit: null,
+                },
+            ],
+            error: null,
+        });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-splits", { slaId: null }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("distributing"));
+        expect(result.current.capturedSplits).toEqual({
+            helperSmallestUnit: 2883,
+            projectSmallestUnit: 968,
+            stripeFeeSmallestUnit: 437,
+        });
+    });
+
+    it("has no split before anything is captured", async () => {
+        selectMock.mockResolvedValue({ data: [{ status: "authorized" }], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-uncaptured", { slaId: null }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("authorized"));
+        expect(result.current.capturedSplits).toBeNull();
+    });
 });
 
 describe("useTicketPaymentStatus failure reason", () => {

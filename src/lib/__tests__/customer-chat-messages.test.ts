@@ -3,9 +3,11 @@ import {
     AUTO_REPLY,
     buildCustomerThreadMessages,
     describeChargedLine,
+    findPendingSca,
     type CustomerThreadOptions,
     type PersistedTicketMessage,
 } from "../customer-chat-messages";
+import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
 
 describe("buildCustomerThreadMessages auto-reply", () => {
     const baseOpts = (overrides: Partial<CustomerThreadOptions> = {}): CustomerThreadOptions => ({
@@ -114,5 +116,37 @@ describe("describeChargedLine", () => {
                 capturedAmountSmallestUnit: null,
             }),
         ).toBe("Free support — no charge");
+    });
+});
+
+describe("findPendingSca", () => {
+    const msg = (id: string, kind: string, extra: Record<string, unknown> = {}) =>
+        ({ id, senderType: "system", content: "", paymentMetadata: { kind, ...extra } }) as unknown as TicketChatMessage;
+
+    it("returns the confirmation a bank asked for", () => {
+        const messages = [msg("m1", "payment_required"), msg("m2", "payment_requires_action", { client_secret: "pi_secret" })];
+        expect(findPendingSca(messages, null)).toEqual({ messageId: "m2", clientSecret: "pi_secret", ticketId: undefined });
+    });
+
+    it("stays closed once handled in this visit", () => {
+        const messages = [msg("m2", "payment_requires_action", { client_secret: "pi_secret" })];
+        expect(findPendingSca(messages, "m2")).toBeNull();
+    });
+
+    it("uses the latest prompt, not one for a hold a newer card replaced", () => {
+        const messages = [
+            msg("m2", "payment_requires_action", { client_secret: "pi_old_secret" }),
+            msg("m4", "payment_requires_action", { client_secret: "pi_new_secret" }),
+        ];
+        expect(findPendingSca(messages, null)?.clientSecret).toBe("pi_new_secret");
+        expect(findPendingSca(messages, "m4")).toBeNull();
+    });
+
+    it("stays closed after the hold was confirmed, e.g. on a later visit", () => {
+        const messages = [
+            msg("m2", "payment_requires_action", { client_secret: "pi_secret" }),
+            msg("m3", "payment_authorized"),
+        ];
+        expect(findPendingSca(messages, null)).toBeNull();
     });
 });
