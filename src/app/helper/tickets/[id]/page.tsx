@@ -938,15 +938,15 @@ export default function TicketDetailPage() {
                                   <div className="mt-2 pt-2 border-t border-border space-y-1.5">
                                     <div className="flex items-center justify-between gap-6">
                                       <span className="text-muted-foreground">
-                                        {billedHelperCount > 1 ? "Helpers" : "Helper"}
+                                        {billedHelperCount > 1 ? `Share helpers (${billedHelperCount})` : "Share helper"}
                                       </span>
                                       <span className="font-medium text-foreground tabular-nums">
                                         {formatUsd(chargeSplits.helperSmallestUnit)}
                                       </span>
                                     </div>
                                     <div className="flex items-center justify-between gap-6">
-                                      <span className="text-muted-foreground truncate">{project?.name || "Project"}</span>
-                                      <span className="font-medium text-foreground tabular-nums shrink-0">
+                                      <span className="text-muted-foreground">Share project</span>
+                                      <span className="font-medium text-foreground tabular-nums">
                                         {formatUsd(chargeSplits.projectSmallestUnit)}
                                       </span>
                                     </div>
