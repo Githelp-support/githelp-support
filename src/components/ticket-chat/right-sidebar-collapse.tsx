@@ -52,11 +52,13 @@ export function RightSidebarCollapseToggle({
   onToggle: (collapsed: boolean) => void
 }) {
   return (
-    <div className={`${isCollapsed ? "justify-center px-0" : "justify-start px-4"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
+    <div className={`${isCollapsed ? "justify-center px-0" : "justify-start px-3"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+        // Expanded: pull the 32px button left by its 6px icon inset so the
+        // 20px glyph lines up with the sidebar content's px-3 edge.
+        className={`${isCollapsed ? "" : "-ml-1.5 "}h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30`}
         onClick={() => onToggle(!isCollapsed)}
       >
         {isCollapsed ? <ChevronLeft className="w-5 h-5" /> : <ChevronsRight className="w-5 h-5" />}
