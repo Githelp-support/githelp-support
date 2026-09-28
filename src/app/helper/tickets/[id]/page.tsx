@@ -95,6 +95,8 @@ interface Message {
   timeEntryId?: string
 }
 
+const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
+
 export default function TicketDetailPage() {
   const params = useParams()
   const ticketId = params.id as string
@@ -320,7 +322,11 @@ export default function TicketDetailPage() {
       messagesData.map((msg): Message => ({
         id: msg.id,
         sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
-        content: msg.content,
+        // The stored payment_authorized text is worded for the customer; helpers/admins get their own.
+        content:
+          msg.sender_type === "system" && (msg.metadata as { kind?: string } | null | undefined)?.kind === "payment_authorized"
+            ? HELPER_PAYMENT_AUTHORIZED_MESSAGE
+            : msg.content,
         timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
           day: "2-digit",
           month: "2-digit",
