@@ -62,3 +62,9 @@ export function getAvatarColorHexForId(id: string | null | undefined): string {
 
 /** Tooltip (native `title`) for buttons that are not wired to any functionality yet. */
 export const ILLUSTRATIVE_BUTTON_TOOLTIP = "This button is currently just illustrative"
+
+/** Slug of Githelp's own project — its public support landing page lives at /support/[slug] */
+export const GITHELP_SUPPORT_SLUG = "githelp"
+
+/** Path to Githelp's own public support landing page */
+export const GITHELP_SUPPORT_URL = `/support/${GITHELP_SUPPORT_SLUG}`
