@@ -927,12 +927,7 @@ export default function TicketDetailPage() {
               imagesUploading={imagesUploading}
               toolbarEndContent={
                 !isClaimed ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void handleClaimTicket()}
-                    className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
-                  >
+                  <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
                     Claim ticket
                   </Button>
                 ) : !isTicketEnded ? (
