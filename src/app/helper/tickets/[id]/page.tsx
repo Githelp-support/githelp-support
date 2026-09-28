@@ -9,6 +9,8 @@ import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
+import { CompletionBanner } from "@/components/ticket-chat/completion-banner"
+import { apiSenderBadge } from "@/components/ticket-chat/ticket-chat"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
 import {
   useTimeEntries,
@@ -92,6 +94,8 @@ interface Message {
   metadataKind?: string
   /** `metadata.time_entry_id` of a `time_logged` system message. */
   timeEntryId?: string
+  /** "AI agent" / "via AI assistant" for messages posted through the GitHelp API. */
+  apiBadge?: string | null
 }
 
 export default function TicketDetailPage() {
@@ -268,12 +272,17 @@ export default function TicketDetailPage() {
   // request until then, so this is derived from the live row, not local state.
   const endRequestedAt = ticket?.end_requested_at ?? null
   const endRequested = !!endRequestedAt && !isTicketEnded
+  // Answered by a project AI agent at a fixed price: finished through the
+  // completion handshake (customer accepts), never through End ticket.
+  const isFixedAnswer = ticket?.pricing_mode === "fixed_answer"
   const prevEndRequestedAtRef = useRef<string | null | undefined>(undefined)
   useEffect(() => {
     const prev = prevEndRequestedAtRef.current
     prevEndRequestedAtRef.current = endRequestedAt
     // Skip the initial hydration; only toast on a live transition.
     if (prev === undefined || isTicketEnded) return
+    // Agent tickets: the customer's proposal goes to the agent, not to End.
+    if (isFixedAnswer) return
     if (!prev && endRequestedAt) {
       toast.info("The user has asked to end the session.", {
         description: "Log any remaining time, then end the session to finalise the ticket.",
@@ -281,7 +290,7 @@ export default function TicketDetailPage() {
     } else if (prev && !endRequestedAt) {
       toast.info("The user withdrew their request to end the session.")
     }
-  }, [endRequestedAt, isTicketEnded])
+  }, [endRequestedAt, isTicketEnded, isFixedAnswer])
 
   const isClaimed =
     justClaimedLocal ||
@@ -331,6 +340,10 @@ export default function TicketDetailPage() {
         type: undefined,
         metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
         timeEntryId: (msg.metadata as { time_entry_id?: string } | null | undefined)?.time_entry_id,
+        apiBadge: apiSenderBadge({
+          senderType: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
+          paymentMetadata: (msg.metadata as Record<string, unknown> | null | undefined) ?? null,
+        }),
       }))
     )
   }, [messagesData, isClaimed, claimer])
@@ -488,21 +501,32 @@ export default function TicketDetailPage() {
     setIsRephraseModalOpen(true)
   }
 
-  const handleEndTicket = (outcome: string) => {
-    setJustEndedLocal(true)
-    setEndOutcome(outcome)
+  const handleEndTicket = async (outcome: string) => {
     setIsEndTicketDrawerOpen(false)
-
     if (!ticketId) return
+    // The customer may have completed the ticket meanwhile (completion
+    // handshake), or it is an AI agent's ticket: never overwrite or re-capture.
+    if (isFixedAnswer || (ticket?.status !== "claimed" && ticket?.status !== "in-progress")) {
+      toast.info("This ticket is already closed.")
+      return
+    }
 
     const status = outcome === "not-able-to-help" ? "cancelled" : "completed"
     const completedAt = new Date().toISOString()
 
-    void updateTicket.mutateAsync({
-      id: ticketId,
-      // Ending also resolves any outstanding customer "end session" request.
-      updates: { status, completed_at: completedAt, end_requested_at: null, end_requested_by: null },
-    })
+    try {
+      await updateTicket.mutateAsync({
+        id: ticketId,
+        // Ending also resolves any outstanding customer "end session" request.
+        updates: { status, completed_at: completedAt, end_requested_at: null, end_requested_by: null },
+        onlyIfStatusIn: ["claimed", "in-progress"],
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not end the ticket")
+      return
+    }
+    setJustEndedLocal(true)
+    setEndOutcome(outcome)
 
     // Log ended event
     void supabase.from("tickets_events").insert({
@@ -795,9 +819,11 @@ export default function TicketDetailPage() {
                           <Sparkles className="w-4 h-4" />
                           Rephrase with AI
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => setIsEndTicketDrawerOpen(true)} className="cursor-pointer">
-                          End ticket
-                        </Button>
+                        {!isFixedAnswer && (
+                          <Button variant="outline" size="sm" onClick={() => setIsEndTicketDrawerOpen(true)} className="cursor-pointer">
+                            End ticket
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -851,6 +877,11 @@ export default function TicketDetailPage() {
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                                {msg.apiBadge && (
+                                  <Badge variant="secondary" className="text-[11px] font-normal px-1.5 py-0">
+                                    {msg.apiBadge}
+                                  </Badge>
+                                )}
                                 <span
                                   className="text-xs"
                                   style={{
@@ -866,7 +897,7 @@ export default function TicketDetailPage() {
                             <div
                               className={
                                 msg.sender === "system"
-                                  ? msg.metadataKind === "time_entry_declined"
+                                  ? msg.metadataKind === "time_entry_declined" || msg.metadataKind === "completion_declined"
                                     ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                     : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                   : "text-sm"
@@ -1021,7 +1052,18 @@ export default function TicketDetailPage() {
               />
             )}
 
-            {endRequested && (
+            {ticket && !isTicketEnded && (
+              <CompletionBanner ticket={ticket} currentUserId={currentUser?.id} role="helper" />
+            )}
+
+            {isFixedAnswer && !isTicketEnded && (
+              <p className="mx-4 mb-2 text-xs text-muted-foreground">
+                The project&apos;s AI agent is answering this ticket at a fixed price. It is completed when the customer
+                accepts the answer, so End session is not available here.
+              </p>
+            )}
+
+            {endRequested && !isFixedAnswer && (
               <EndSessionRequestedHelperBanner
                 requesterName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
                 requestedAt={endRequestedAt}
@@ -1051,7 +1093,7 @@ export default function TicketDetailPage() {
               onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
               imagesUploading={imagesUploading}
               toolbarEndContent={
-                !isTicketEnded ? (
+                !isTicketEnded && !isFixedAnswer ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1268,7 +1310,7 @@ export default function TicketDetailPage() {
 
       {/* End Ticket Drawer */}
       <EndTicketDrawer
-        isOpen={isEndTicketDrawerOpen}
+        isOpen={isEndTicketDrawerOpen && !isTicketEnded}
         onClose={() => setIsEndTicketDrawerOpen(false)}
         onEndTicket={handleEndTicket}
         userRequestedEnd={endRequested}

@@ -175,7 +175,29 @@ export function buildSessionEndedMessage(opts: {
     cancelled: boolean;
     totalLoggedFormatted: string;
     chargedLine: string;
+    /** Answered by a project AI agent at a fixed price (tickets.pricing_mode = fixed_answer). */
+    agentAnswer?: boolean;
 }): TicketChatMessage {
+    if (opts.agentAnswer && !opts.cancelled) {
+        return {
+            id: "session-summary",
+            senderType: "system",
+            senderName: null,
+            senderAvatarInitial: null,
+            senderId: null,
+            timestamp: "",
+            content: [
+                "**Ticket completed**",
+                "",
+                "You accepted the AI agent's answer.",
+                "",
+                "- **Outcome:** Resolved",
+                `- **Amount charged:** ${opts.chargedLine}`,
+            ].join("\n"),
+            kind: undefined,
+            paymentMetadata: null,
+        };
+    }
     return {
         id: "session-summary",
         senderType: "system",

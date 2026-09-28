@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { CompletionBanner } from "@/components/ticket-chat/completion-banner"
 import { Input } from "@/components/ui/input"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
@@ -355,6 +356,7 @@ export default function UserSupportChatPage() {
       list.push(
         buildSessionEndedMessage({
           cancelled,
+          agentAnswer: existingTicket?.pricing_mode === "fixed_answer",
           totalLoggedFormatted,
           chargedLine: describeChargedLine({
             cancelled,
@@ -368,6 +370,7 @@ export default function UserSupportChatPage() {
     }
     return list
   }, [
+    existingTicket?.pricing_mode,
     projectName,
     projectLogo,
     nowFormatted,
@@ -661,11 +664,16 @@ export default function UserSupportChatPage() {
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
         isEnded={ticketEnded}
+        // A ticket an AI agent answers is finished through the completion
+        // banner (accept its answer), not the helper-side End session.
         onRequestEndSession={
-          existingTicket?.id && user?.id ? () => handleRequestEndSession(false) : undefined
+          existingTicket?.id && user?.id && existingTicket.pricing_mode !== "fixed_answer"
+            ? () => handleRequestEndSession(false)
+            : undefined
         }
         onCancelEndSessionRequest={() => handleRequestEndSession(true)}
-        endSessionRequestedAt={endSessionRequestedAt}
+        // Agent tickets finish through the completion banner, not the end request.
+        endSessionRequestedAt={existingTicket?.pricing_mode === "fixed_answer" ? null : endSessionRequestedAt}
         endSessionRequestPending={requestEndSession.isPending}
         timeEntryReviews={timeEntryReviews}
         onReviewTimeEntry={canReviewTimeEntries ? handleReviewTimeEntry : undefined}
@@ -697,6 +705,19 @@ export default function UserSupportChatPage() {
           }
         }}
         paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}
+        agentAnswerPriceSmallestUnit={
+          existingTicket?.pricing_mode === "fixed_answer" ? existingTicket.fixed_price_smallest_unit ?? 0 : null
+        }
+        aboveInput={
+          existingTicket?.id && user?.id && existingTicket.created_by === user.id ? (
+            <CompletionBanner
+              ticket={existingTicket}
+              currentUserId={user.id}
+              role="customer"
+              paymentStatus={paymentStatus.status}
+            />
+          ) : undefined
+        }
         rightSidebarFooter={
           isAuthenticated ? (
             <CustomerTicketSidebarFooter

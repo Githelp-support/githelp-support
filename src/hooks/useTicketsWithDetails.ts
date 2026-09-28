@@ -13,6 +13,12 @@ export interface TicketWithDetails {
     /** Customer asked to end the session (see useRequestEndSession); null once the helper ends or they withdraw. */
     end_requested_at?: string | null;
     end_requested_by?: string | null;
+    /** "fixed_answer" when a project AI agent answers at a fixed price (see completion handshake). */
+    pricing_mode?: "time" | "fixed_answer" | null;
+    fixed_price_smallest_unit?: number | null;
+    completion_proposed_by?: string | null;
+    completion_proposed_at?: string | null;
+    completion_summary?: string | null;
     keywords?: Array<{ value: string }>;
     help_categories?: Array<{ value: string; type: string }>;
     user?: {

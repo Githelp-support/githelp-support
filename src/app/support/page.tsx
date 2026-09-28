@@ -19,6 +19,7 @@ import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { CompletionBanner } from "@/components/ticket-chat/completion-banner"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
   buildCustomerThreadMessages,
@@ -205,6 +206,7 @@ export default function SupportPage() {
       list.push(
         buildSessionEndedMessage({
           cancelled,
+          agentAnswer: liveTicket?.pricing_mode === "fixed_answer",
           totalLoggedFormatted,
           chargedLine: describeChargedLine({
             cancelled,
@@ -218,6 +220,7 @@ export default function SupportPage() {
     }
     return list
   }, [
+    liveTicket?.pricing_mode,
     projectName,
     projectLogo,
     nowFormatted,
@@ -539,9 +542,16 @@ export default function SupportPage() {
             onSend={handleSendMessage}
             sendDisabled={!message.trim() || createTicket.isPending}
             isEnded={ticketEnded}
-            onRequestEndSession={ticketId && user?.id ? () => handleRequestEndSession(false) : undefined}
+            onRequestEndSession={
+              ticketId && user?.id && liveTicket?.pricing_mode !== "fixed_answer"
+                ? () => handleRequestEndSession(false)
+                : undefined
+            }
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}
-            endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
+            // Agent tickets finish through the completion banner, not the end request.
+            endSessionRequestedAt={
+              liveTicket?.pricing_mode === "fixed_answer" ? null : liveTicket?.end_requested_at ?? null
+            }
             endSessionRequestPending={requestEndSession.isPending}
             timeEntryReviews={timeEntryReviews}
             onReviewTimeEntry={canReviewTimeEntries ? handleReviewTimeEntry : undefined}
@@ -551,6 +561,19 @@ export default function SupportPage() {
             attachmentStoragePrefix={user?.id && projectId ? `${projectId}/${ticketId || user.id}` : undefined}
             onPaymentCtaClick={handlePaymentCta}
             paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}
+            agentAnswerPriceSmallestUnit={
+              liveTicket?.pricing_mode === "fixed_answer" ? liveTicket.fixed_price_smallest_unit ?? 0 : null
+            }
+            aboveInput={
+              liveTicket?.id && user?.id && liveTicket.created_by === user.id ? (
+                <CompletionBanner
+                  ticket={liveTicket}
+                  currentUserId={user.id}
+                  role="customer"
+                  paymentStatus={paymentStatus.status}
+                />
+              ) : undefined
+            }
             rightSidebarFooter={
               isAuthenticated ? (
                 <CustomerTicketSidebarFooter

@@ -207,6 +207,14 @@ export type Database = {
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
                     success: boolean;
+                    // Written server-side only (MCP / public API, agent pricing, completion handshake).
+                    source?: "web" | "api";
+                    api_context?: Record<string, unknown> | null;
+                    pricing_mode?: "time" | "fixed_answer";
+                    fixed_price_smallest_unit?: number | null;
+                    completion_proposed_by?: string | null;
+                    completion_proposed_at?: string | null;
+                    completion_summary?: string | null;
                 };
                 Insert: Partial<{
                     id: string;

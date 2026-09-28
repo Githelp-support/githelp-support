@@ -13,7 +13,7 @@ interface StartArgs {
  * surfaces non-2xx responses as a FunctionsHttpError with a generic message.
  * Pull the body message out so callers see the actual cause.
  */
-async function toInvokeError(error: unknown, fallback: string): Promise<Error> {
+export async function toInvokeError(error: unknown, fallback: string): Promise<Error> {
   if (error instanceof FunctionsHttpError) {
     const body = await error.context.json().catch(() => null)
     if (body && typeof body.error === "string") return new Error(body.error)

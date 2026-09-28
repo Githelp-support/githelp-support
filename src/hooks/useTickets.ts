@@ -84,18 +84,29 @@ export function useUpdateTicket() {
         mutationFn: async ({
             id,
             updates,
+            onlyIfStatusIn,
         }: {
             id: string;
             updates: TicketUpdate;
+            /**
+             * Only update while the ticket is in one of these statuses (e.g.
+             * ending a ticket the customer already completed through the
+             * completion handshake must not overwrite it).
+             */
+            onlyIfStatusIn?: string[];
         }) => {
-            const { data, error } = await supabase
-                .from("tickets")
-                .update(updates)
-                .eq("id", id)
-                .select()
-                .single();
+            let query = supabase.from("tickets").update(updates).eq("id", id);
+            if (onlyIfStatusIn) query = query.in("status", onlyIfStatusIn);
+            const { data, error } = await query.select().maybeSingle();
 
             if (error) throw error;
+            if (!data) {
+                throw new Error(
+                    onlyIfStatusIn
+                        ? "This ticket has already been completed or closed."
+                        : "Ticket not found",
+                );
+            }
             return data;
         },
         onSuccess: (data) => {

@@ -41,6 +41,8 @@ export type PaymentSystemMessageKind =
  * `time_entry_accepted` / `time_entry_declined` by the `review_time_entry` RPC
  * (migration 20260925120000_time_entries_customer_review); `time_entry_deleted`
  * by the delete trigger (migration 20260927120000_time_entries_helper_delete_own).
+ * The completion / hand-over kinds are written by the ticket-completion
+ * function and the MCP server (_shared/api/ops).
  */
 export type SystemMessageKind =
   | PaymentSystemMessageKind
@@ -48,6 +50,21 @@ export type SystemMessageKind =
   | "time_entry_accepted"
   | "time_entry_declined"
   | "time_entry_deleted"
+  | "completion_proposed"
+  | "completion_declined"
+  | "completion_accepted"
+  | "agent_released"
+  | "escalated_to_human"
+  | "completion_withdrawn"
+
+/**
+ * Messages posted through the GitHelp API (MCP) carry `metadata.via = "api"`;
+ * a project AI agent's also carry `metadata.agent_id`.
+ */
+export function apiSenderBadge(msg: Pick<TicketChatMessage, "senderType" | "paymentMetadata">): string | null {
+  if (msg.senderType === "system" || msg.paymentMetadata?.via !== "api") return null
+  return msg.paymentMetadata?.agent_id ? "AI agent" : "via AI assistant"
+}
 
 /** Current review state of one logged entry, keyed by `tickets_time_entries.id`. */
 export type TicketChatTimeEntryReview = {
@@ -71,7 +88,7 @@ export type TicketChatMessage = {
   content: string
   kind?: "claimed" | "ended"
   paymentMetadata?: {
-    kind: SystemMessageKind
+    kind?: SystemMessageKind
     [key: string]: unknown
   } | null
 }
@@ -155,6 +172,15 @@ export interface TicketChatProps {
    */
   onPaymentCtaClick?: (msg: TicketChatMessage) => void
   paymentCtaLoading?: boolean
+
+  /** Rendered just above the input (e.g. the completion handshake banner). */
+  aboveInput?: React.ReactNode
+  /**
+   * Set when a project AI agent answers the ticket at a fixed price
+   * (tickets.pricing_mode = fixed_answer): payment copy then describes that
+   * price instead of time-based billing.
+   */
+  agentAnswerPriceSmallestUnit?: number | null
 }
 
 export function TicketChat(props: TicketChatProps) {
@@ -186,6 +212,8 @@ export function TicketChat(props: TicketChatProps) {
     rightSidebarFooter,
     onPaymentCtaClick,
     paymentCtaLoading,
+    aboveInput,
+    agentAnswerPriceSmallestUnit,
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
@@ -361,6 +389,11 @@ export function TicketChat(props: TicketChatProps) {
                                     <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
                                       {msg.senderName || "Unknown"}
                                     </span>
+                                    {apiSenderBadge(msg) && (
+                                      <Badge variant="secondary" className="text-[11px] font-normal px-1.5 py-0">
+                                        {apiSenderBadge(msg)}
+                                      </Badge>
+                                    )}
                                     <span
                                       className="text-xs"
                                       style={{
@@ -381,7 +414,8 @@ export function TicketChat(props: TicketChatProps) {
                                         : msg.paymentMetadata?.kind === "payment_failed"
                                           ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                           : msg.paymentMetadata?.kind === "time_entry_declined" ||
-                                              msg.paymentMetadata?.kind === "payment_hold_declined"
+                                              msg.paymentMetadata?.kind === "payment_hold_declined" ||
+                                              msg.paymentMetadata?.kind === "completion_declined"
                                             ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                             : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
@@ -437,7 +471,10 @@ export function TicketChat(props: TicketChatProps) {
                                           <p className="mt-1.5 text-xs text-muted-foreground">
                                             Once your card is saved we place a temporary hold of $
                                             {(msg.paymentMetadata.hold_amount_smallest_unit / 100).toFixed(2)} on it. This is not a
-                                            charge: you only pay for the time your helper logs.
+                                            charge:{" "}
+                                            {agentAnswerPriceSmallestUnit != null
+                                              ? `you're only charged $${(agentAnswerPriceSmallestUnit / 100).toFixed(2)} if you accept the AI agent's answer.`
+                                              : "you only pay for the time your helper logs."}
                                           </p>
                                         )}
                                     </div>
@@ -494,6 +531,8 @@ export function TicketChat(props: TicketChatProps) {
               onCancel={() => void onCancelEndSessionRequest?.()}
             />
           )}
+
+          {aboveInput}
 
           <TicketChatInput
             value={message}

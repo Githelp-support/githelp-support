@@ -104,6 +104,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         { name: "Project", href: "/settings/project", icon: "fi-rr-folder" },
         { name: "Branding", href: "/settings/branding", icon: "fi-rr-paint-brush" },
         { name: "Integrations", href: "/settings/integrations", icon: "fi-rr-plug" },
+        { name: "AI agents", href: "/settings/agents", icon: "fi-rr-robot" },
       ],
     },
   ]
@@ -136,6 +137,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         { name: "Payment", href: "/user/settings/payment", icon: "fi-rr-credit-card" },
         { name: "Profile", href: "/settings/profile", icon: "fi-rr-user" },
         { name: "Notifications", href: "/user/settings/notifications", icon: "fi-rr-bell" },
+        { name: "API & AI", href: "/user/settings/api", icon: "fi-rr-key" },
       ],
     },
   ]
