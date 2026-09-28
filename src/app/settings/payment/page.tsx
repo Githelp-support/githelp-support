@@ -699,9 +699,19 @@ export default function PaymentSettingsPage() {
 
                 {/* Ticket cost Section */}
                 <div className="bg-card rounded-lg p-6">
-                  <div className="flex items-center mb-6">
+                  <div className="flex items-center mb-2">
                     <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
                   </div>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    When a ticket opens, an authorization hold for the estimated time is placed on the
+                    customer&apos;s card and captured when the ticket ends. Time beyond the hold is charged
+                    as a separate transaction, long-running tickets are captured once a week, and a declined
+                    card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
+                    fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
+                    from that charge before the helper and project shares above are applied, so a ticket paid in
+                    two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
+                    what the customer is charged.
+                  </p>
 
                   <div className="space-y-6">
                     <div className="flex flex-col gap-2">

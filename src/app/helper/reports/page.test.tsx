@@ -7,6 +7,13 @@ vi.mock("@/lib/supabase/client", () => ({ supabase: {} }))
 vi.mock("@/contexts/project-context", () => ({
   useProjectSelection: () => ({ selectedProjectId: "proj-1" }),
 }))
+vi.mock("@/contexts/user-context", () => ({
+  useUser: () => ({ user: { name: "Helper", email: "helper@example.com" } }),
+}))
+vi.mock("@/hooks/useProject", () => ({
+  useProject: () => ({ data: { name: "Project" } }),
+}))
+vi.mock("@/lib/report-pdf", () => ({ downloadCsv: vi.fn(), downloadReportPdf: vi.fn() }))
 vi.mock("@/hooks/useCurrentHelper", () => ({
   useCurrentHelper: () => ({ data: "helper-1", isFetched: true }),
 }))
@@ -31,7 +38,6 @@ vi.mock("@/hooks/useHelperTimeEntries", () => ({
 
 vi.mock("@/components/layout/sidebar", () => ({ Sidebar: () => null }))
 vi.mock("@/components/layout/header", () => ({ Header: () => null }))
-vi.mock("@/components/modals/request-pdf-modal", () => ({ RequestPdfModal: () => null }))
 vi.mock("next/link", () => ({
   default: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a>,
 }))
