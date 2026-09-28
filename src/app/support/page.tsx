@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
@@ -22,6 +23,7 @@ import {
   formatChatTimestamp,
 } from "@/lib/customer-chat-messages"
 import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
+import { useReviewTimeEntry, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
@@ -87,6 +89,7 @@ export default function SupportPage() {
   const { data: resourcesData, isLoading: resourcesLoading } = useProjectResources(projectId || "")
   const { data: brandingData } = useProjectBranding(projectId || "")
   const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
+  const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(projectId || "")
 
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
@@ -126,10 +129,35 @@ export default function SupportPage() {
     claimer,
     timeEntriesDisplay,
     totalLoggedFormatted,
+    timeEntryReviews,
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
   const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, user?.id)
+
+  // Accept / decline logged time — same flow as /support/chat.
+  const reviewTimeEntry = useReviewTimeEntry()
+  const canReviewTimeEntries = !!ticketId && !!user?.id && liveTicket?.created_by === user.id
+  const handleReviewTimeEntry = async (input: { entryId: string; decision: "accepted" | "declined"; reason?: string }) => {
+    if (!ticketId) return
+    try {
+      await reviewTimeEntry.mutateAsync({ ...input, ticketId })
+      toast.success(input.decision === "accepted" ? "Logged time accepted." : "Logged time declined. The helper has been told why.")
+    } catch (error) {
+      console.error("Failed to review time entry:", error)
+      const hint = getReviewTimeEntryErrorHint(error)
+      toast.error(
+        hint === "reason_required"
+          ? "Please explain why you declined the logged time."
+          : hint === "already_reviewed"
+            ? "This entry has already been reviewed."
+            : hint === "ticket_ended"
+              ? "The session has already ended."
+              : "Couldn't save your decision. Please try again.",
+      )
+      throw error
+    }
+  }
 
   // Customer "End session" = ask the helper to finalise (see useRequestEndSession).
   const requestEndSession = useRequestEndSession()
@@ -169,6 +197,7 @@ export default function SupportPage() {
       fallbackDescription: liveTicket?.description ?? null,
       fallbackTimestamp: liveTicket?.created_at ?? null,
       currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+      avgResponseSeconds,
     })
     if (ticketEnded) {
       const cancelled = liveTicket?.status === "cancelled"
@@ -197,6 +226,7 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     paymentStatus.status,
@@ -492,6 +522,9 @@ export default function SupportPage() {
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}
             endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
             endSessionRequestPending={requestEndSession.isPending}
+            timeEntryReviews={timeEntryReviews}
+            onReviewTimeEntry={canReviewTimeEntries ? handleReviewTimeEntry : undefined}
+            timeEntryReviewPending={reviewTimeEntry.isPending}
             // Before the first message there is no ticket yet: uploads go to the
             // user's own folder (see lib/ticket-attachments).
             attachmentStoragePrefix={user?.id && projectId ? `${projectId}/${ticketId || user.id}` : undefined}
@@ -531,6 +564,8 @@ export default function SupportPage() {
                   startPrice={startPrice}
                   first60Price={first60Price}
                   after60Price={after60Price}
+                  avgResponseSeconds={avgResponseSeconds}
+                  avgResponseLoading={avgResponseLoading}
                 />
               )}
 

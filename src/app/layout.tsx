@@ -53,6 +53,7 @@ export default function RootLayout({
             </UserProvider>
           </ReactQueryProvider>
         </Suspense>
+        <Toaster />
       </body>
     </html>
   )

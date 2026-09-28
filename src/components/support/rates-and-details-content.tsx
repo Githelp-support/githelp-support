@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Clock, Target, HelpCircle } from "lucide-react"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { formatDuration } from "@/lib/format"
 
 interface RatesAndDetailsContentProps {
   projectName: string
@@ -12,6 +13,9 @@ interface RatesAndDetailsContentProps {
   startPrice: string
   first60Price: string
   after60Price: string
+  /** From useProjectAverageResponseTime; `null` when no ticket has had a response yet. */
+  avgResponseSeconds: number | null | undefined
+  avgResponseLoading: boolean
 }
 
 /**
@@ -24,6 +28,8 @@ export function RatesAndDetailsContent({
   startPrice,
   first60Price,
   after60Price,
+  avgResponseSeconds,
+  avgResponseLoading,
 }: RatesAndDetailsContentProps) {
   return (
     <div className="space-y-12">
@@ -86,9 +92,17 @@ export function RatesAndDetailsContent({
             <Clock className="h-5 w-5 text-[#444444] mb-2" />
             <div className="flex items-center gap-2 mb-4">
               <h3 className="text-[14px] font-semibold text-[#444444]">Average response time</h3>
-              <HelpCircle className="h-4 w-4 text-[#868c98]" />
+              <span title="Average time from a ticket being created until a helper claims it or replies, whichever comes first.">
+                <HelpCircle className="h-4 w-4 text-[#868c98]" />
+              </span>
             </div>
-            <p className="text-lg font-semibold text-[#2d2a49]">6 minutes</p>
+            <p className="text-lg font-semibold text-[#2d2a49]">
+              {avgResponseLoading
+                ? "…"
+                : avgResponseSeconds == null
+                  ? "~"
+                  : formatDuration(avgResponseSeconds)}
+            </p>
           </div>
 
           {/* Core team support */}

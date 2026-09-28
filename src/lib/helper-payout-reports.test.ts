@@ -4,7 +4,11 @@ import type { HelperTimeEntry } from "@/hooks/useHelperTimeEntries"
 import {
     aggregateHelperMonthly,
     aggregateProjectMonthly,
+    buildPayoutStatement,
     formatMinutes,
+    groupTransfersByTicket,
+    normalizeTransferStatus,
+    payoutReference,
     transferTicketType,
 } from "./helper-payout-reports"
 
@@ -46,6 +50,73 @@ describe("transferTicketType", () => {
             }),
         ).toBe("Bug")
         expect(transferTicketType({ ticket: { id: "x", title: "t" } })).toBe("Support")
+    })
+})
+
+describe("payoutReference", () => {
+    it("prefers the Stripe transfer id and falls back to a short payout id", () => {
+        expect(payoutReference(transfer({ transfer_id: "tr_123abc" }))).toBe("tr_123abc")
+        expect(payoutReference(transfer({ id: "9f8e7d6c-5b4a-4321-8765-0123456789ab", transfer_id: null }))).toBe(
+            "GH-9F8E7D6C",
+        )
+    })
+})
+
+describe("buildPayoutStatement", () => {
+    const full = () =>
+        transfer({
+            id: "9f8e7d6c-5b4a-4321-8765-0123456789ab",
+            transfer_id: "tr_123abc",
+            destination_account_id: "acct_777",
+            payment_id: "pay-1",
+            helper: { user_id: "u-1", user: { name: "  Ada  ", username: "ada", email: "ada@example.com" } },
+            project: { name: "Acme" },
+            ticket: {
+                id: "abcdef0-ticket",
+                title: "  Login broken  ",
+                sla: { name: "Gold" },
+                categories: [{ help_category: { value: "bug" } }],
+            },
+        })
+
+    it("collects payee, project, ticket and Stripe references for a completed payout", () => {
+        const statement = buildPayoutStatement(full())
+        expect(statement.reference).toBe("tr_123abc")
+        expect(statement.date).toBe("2026-08-12T12:00:00.000Z")
+        expect(statement.statusLabel).toBe("Paid out")
+        expect(statement.payee).toEqual({ name: "Ada", email: "ada@example.com", stripeAccountId: "acct_777" })
+        expect(statement.projectName).toBe("Acme")
+        expect(statement.ticketShortId).toBe("abcdef0")
+        expect(statement.ticketTitle).toBe("Login broken")
+        expect(statement.ticketType).toBe("Bug")
+        expect(statement.slaName).toBe("Gold")
+        expect(statement.amountSmallestUnit).toBe(1000)
+        expect(statement.currency).toBe("usd")
+        expect(statement.payoutId).toBe("9f8e7d6c-5b4a-4321-8765-0123456789ab")
+        expect(statement.paymentId).toBe("pay-1")
+        expect(statement.failureReason).toBeNull()
+    })
+
+    it("degrades gracefully for a pending payout with no embeds", () => {
+        const statement = buildPayoutStatement(
+            transfer({ status: "pending", completed_at: null, ticket_id: null, transfer_id: null }),
+        )
+        expect(statement.reference).toBe("GH-T1")
+        expect(statement.date).toBe("2026-08-10T12:00:00.000Z")
+        expect(statement.statusLabel).toBe("Pending")
+        expect(statement.payee).toEqual({ name: "Helper", email: null, stripeAccountId: null })
+        expect(statement.projectName).toBe("Project")
+        expect(statement.ticketShortId).toBe("-")
+        expect(statement.ticketTitle).toBe("Payout")
+        expect(statement.ticketType).toBe("Support")
+        expect(statement.slaName).toBeNull()
+    })
+
+    it("only surfaces the failure reason on failed payouts", () => {
+        expect(buildPayoutStatement(transfer({ failure_reason: "stale" })).failureReason).toBeNull()
+        const failed = buildPayoutStatement(transfer({ status: "failed", failure_reason: "Insufficient funds" }))
+        expect(failed.statusLabel).toBe("Failed")
+        expect(failed.failureReason).toBe("Insufficient funds")
     })
 })
 
@@ -96,5 +167,48 @@ describe("aggregateProjectMonthly", () => {
             projectShareSmallestUnit: 150,
             allPaidOut: false,
         })
+    })
+})
+
+describe("groupTransfersByTicket", () => {
+    it("adds up a ticket's payouts, oldest transfer first, and flags failed ones", () => {
+        const groups = groupTransfersByTicket([
+            transfer({ id: "late", completed_at: "2026-08-20T12:00:00.000Z", amount_smallest_unit: 500 }),
+            transfer({ id: "early" }),
+            transfer({ id: "failed", status: "failed", completed_at: null, amount_smallest_unit: 250 }),
+            transfer({ id: "solo", ticket_id: "ticket-2", completed_at: "2026-08-15T12:00:00.000Z" }),
+        ])
+        expect(groups.map((g) => g.key)).toEqual(["ticket:ticket-1", "ticket:ticket-2"])
+        const [ticket] = groups
+        expect(ticket.items.map((t) => t.id)).toEqual(["failed", "early", "late"])
+        expect(ticket.amountSmallestUnit).toBe(1500)
+        expect(ticket.failedSmallestUnit).toBe(250)
+        expect(ticket.status).toBe("failed")
+        expect(ticket.date).toBe("2026-08-20T12:00:00.000Z")
+    })
+
+    it("keeps pending ahead of completed and can split per helper", () => {
+        const groups = groupTransfersByTicket(
+            [
+                transfer({ id: "a" }),
+                transfer({ id: "b", status: "pending", completed_at: null }),
+                transfer({ id: "c", helper_id: "helper-2" }),
+            ],
+            { byHelper: true },
+        )
+        expect(groups.map((g) => [g.key, g.status, g.amountSmallestUnit])).toEqual([
+            ["ticket:ticket-1:helper-1", "pending", 2000],
+            ["ticket:ticket-1:helper-2", "completed", 1000],
+        ])
+    })
+})
+
+describe("normalizeTransferStatus", () => {
+    it("never shows an unconfirmed or cancelled transfer as paid", () => {
+        expect(normalizeTransferStatus("completed")).toBe("completed")
+        expect(normalizeTransferStatus("processing")).toBe("pending")
+        expect(normalizeTransferStatus("pending")).toBe("pending")
+        expect(normalizeTransferStatus("failed")).toBe("failed")
+        expect(normalizeTransferStatus("cancelled")).toBe("failed")
     })
 })
