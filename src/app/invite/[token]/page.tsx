@@ -244,11 +244,11 @@ export default function InviteAcceptancePage() {
             <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex flex-col items-start gap-4 mb-2 text-left">
                             <CheckCircle className="w-6 h-6 text-green-600" />
                             <CardTitle>Congratulations! You are now a validated helper</CardTitle>
                         </div>
-                        <CardDescription>
+                        <CardDescription className="text-left">
                             Someone from the project core team has added you as a validated helper to {String(project?.name ?? "this project")}. You can now accept incoming tickets to this project.
                         </CardDescription>
                     </CardHeader>
