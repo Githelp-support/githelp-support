@@ -209,7 +209,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const switchRole = (role: UserRole) => {
+  // Memoized so hooks built on it (useEnterProject) keep a stable identity
+  // and can safely be listed as effect dependencies.
+  const switchRole = useCallback((role: UserRole) => {
     // The role switcher in the top bar is responsible for offering only
     // the roles the profile actually holds in the selected project (queried
     // by project id via useProjectAvailableRoles). The previous
@@ -221,7 +223,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("userRole", role)
       return { ...prev, role }
     })
-  }
+  }, [])
 
   const setProjectRole = useCallback((role: UserRole | null) => {
     setUser(prev => {
