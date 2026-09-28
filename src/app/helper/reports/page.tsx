@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
-import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
+import { usePaymentTransfers, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useHelperTimeEntries } from "@/hooks/useHelperTimeEntries"
@@ -25,10 +25,9 @@ import {
   formatMinutes,
   monthLabel,
   transferDate,
-  transferTicketType,
 } from "@/lib/helper-payout-reports"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface PayoutData {
   id: string
@@ -37,7 +36,8 @@ interface PayoutData {
   ticketTitle: string
   /** ISO date used for display, sorting and month filtering. */
   date: string
-  ticketType: string
+  helper: string
+  helperColor: string
   amountSmallestUnit: number
   currency: string
   status: PaymentTransfer["status"]
@@ -52,7 +52,7 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
-type SortField = "ticketId" | "date" | "ticketType" | "amount" | "status"
+type SortField = "ticketId" | "date" | "helper" | "amount" | "status"
 type MonthlySortField = "period" | "description" | "earnings" | "status"
 type SortDirection = "asc" | "desc"
 
@@ -62,11 +62,7 @@ const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
   failed: "Failed",
 }
 
-const STATUS_BADGE_CLASS: Record<PaymentTransfer["status"], string> = {
-  completed: "bg-green-100 text-green-800 hover:bg-green-100",
-  pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  failed: "bg-red-100 text-red-800 hover:bg-red-100",
-}
+const PREVIEW_HELPER_NAME = "You"
 
 const PAYOUTS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
@@ -108,6 +104,40 @@ function SortHeader({
   )
 }
 
+/** Helper avatar (initial on a coloured tile) + name, as on the admin Support reports. */
+function HelperCell({ name, color }: { name: string; color: string }) {
+  return (
+    <>
+      <div
+        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+        style={{ backgroundColor: color }}
+      >
+        {name.trim().charAt(0).toUpperCase() || "?"}
+      </div>
+      <span className="text-sm font-medium text-foreground">{name}</span>
+    </>
+  )
+}
+
+/** Status badge for a single payout, as on the admin Support reports. */
+function PayoutStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
+  return (
+    <Badge className={`${getStatusBadgeClass(status)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+      {status === "pending" && (
+        <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+          <circle cx="6" cy="6" r="2" fill="currentColor" />
+        </svg>
+      )}
+      {status === "completed" && (
+        <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+          <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+      {STATUS_LABEL[status]}
+    </Badge>
+  )
+}
+
 function compare(a: string | number, b: string | number, direction: SortDirection) {
   if (a < b) return direction === "asc" ? -1 : 1
   if (a > b) return direction === "asc" ? 1 : -1
@@ -115,7 +145,7 @@ function compare(a: string | number, b: string | number, direction: SortDirectio
 }
 
 export default function HelperReportsPage() {
-  const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("payouts")
+  const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("monthly")
   const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
@@ -165,7 +195,8 @@ export default function HelperReportsPage() {
         ticketShortId: transfer.ticket_id?.slice(0, 7) || "-",
         ticketTitle: transfer.ticket?.title?.trim() || "",
         date: transferDate(transfer),
-        ticketType: transferTicketType(transfer),
+        helper: getHelperDisplayName(transfer.helper),
+        helperColor: getAvatarColorHexForId(transfer.helper?.user_id ?? transfer.helper_id ?? transfer.id),
         amountSmallestUnit: transfer.amount_smallest_unit,
         currency: transfer.currency || "usd",
         status: transfer.status,
@@ -186,8 +217,8 @@ export default function HelperReportsPage() {
           return compare(a.ticketShortId, b.ticketShortId, sortDirection)
         case "date":
           return compare(new Date(a.date).getTime(), new Date(b.date).getTime(), sortDirection)
-        case "ticketType":
-          return compare(a.ticketType.toLowerCase(), b.ticketType.toLowerCase(), sortDirection)
+        case "helper":
+          return compare(a.helper.toLowerCase(), b.helper.toLowerCase(), sortDirection)
         case "amount":
           return compare(a.amountSmallestUnit, b.amountSmallestUnit, sortDirection)
         case "status":
@@ -388,9 +419,9 @@ export default function HelperReportsPage() {
 
           {/* Payouts Table */}
           {activeTab === "payouts" && (
-            <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={PAYOUTS_GRID}>
+                <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -401,58 +432,56 @@ export default function HelperReportsPage() {
                       aria-label="Select all payouts"
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <SortHeader label="Ticket ID" field="ticketId" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
                   <div className="col-span-1">
                     <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Ticket type" field="ticketType" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  <div className="col-span-3">
+                    <SortHeader label="Helper" field="helper" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-1">
-                    <SortHeader label="Amount" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  <div className="col-span-2">
+                    <SortHeader label="Earnings" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
                   <div className="col-span-2">
                     <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-3 flex items-center">
-                    <span className="text-sm font-medium text-foreground">Actions</span>
-                  </div>
+                  <div className="col-span-2"></div>
                 </div>
               </div>
 
-              {isBusy ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payouts...</div>
-              ) : showPreview ? (
-                PAYOUT_PREVIEW_ROWS.map((payout) => (
-                  <div key={payout.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
-                    <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                      <div className="flex items-center">
-                        <Checkbox disabled checked={false} />
-                      </div>
-                      <div className="col-span-2 text-sm text-gray-900">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono tabular-nums">{payout.ticketId}</span>
+              <div className="divide-y divide-border">
+                {isBusy ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payouts...</div>
+                ) : showPreview ? (
+                  PAYOUT_PREVIEW_ROWS.map((payout) => (
+                    <div key={payout.id} role="presentation" className="px-6 py-4 opacity-80">
+                      <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox disabled checked={false} />
+                        </div>
+                        <div className="col-span-1">
+                          <span className="text-sm font-medium text-foreground font-mono tabular-nums">
+                            {payout.ticketId}
+                          </span>
+                        </div>
+                        <div className="col-span-1">
+                          <span className="text-sm text-muted-foreground">{payout.date}</span>
+                        </div>
+                        <div className="col-span-3 flex items-center gap-[18px] flex-wrap">
+                          <HelperCell name={PREVIEW_HELPER_NAME} color={getAvatarColorHexForId(PREVIEW_HELPER_NAME)} />
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
-                      </div>
-                      <div className="col-span-1 text-sm text-muted-foreground">{payout.date}</div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                          {payout.ticketType}
-                        </Badge>
-                      </div>
-                      <div className="col-span-1 text-sm text-gray-900">{payout.amount}</div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className={STATUS_BADGE_CLASS[payout.status]}>
-                          {STATUS_LABEL[payout.status]}
-                        </Badge>
-                      </div>
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2">
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">{payout.amount}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <PayoutStatusBadge status={payout.status} />
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end space-x-2">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                               Open
@@ -466,48 +495,48 @@ export default function HelperReportsPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : payouts.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
-              ) : (
-                payouts.map((payout) => (
-                  <div key={payout.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
-                    <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                      <div className="flex items-center">
-                        <Checkbox
-                          checked={selectedRows.includes(payout.id)}
-                          onCheckedChange={() => handleRowSelect(payout.id)}
-                          aria-label={`Select payout for ticket ${payout.ticketShortId}`}
-                        />
-                      </div>
-                      <div className="col-span-2 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono tabular-nums text-sm text-gray-900">{payout.ticketShortId}</span>
-                          {payout.status === "pending" && <div className="w-2 h-2 bg-red-500 rounded-full"></div>}
+                  ))
+                ) : payouts.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
+                ) : (
+                  payouts.map((payout) => (
+                    <div key={payout.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={selectedRows.includes(payout.id)}
+                            onCheckedChange={() => handleRowSelect(payout.id)}
+                            aria-label={`Select payout for ticket ${payout.ticketShortId}`}
+                          />
                         </div>
-                        {payout.ticketTitle && (
-                          <div className="text-xs text-muted-foreground truncate" title={payout.ticketTitle}>
-                            {payout.ticketTitle}
-                          </div>
-                        )}
-                      </div>
-                      <div className="col-span-1 text-sm text-muted-foreground">{formatDate(payout.date)}</div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                          {payout.ticketType}
-                        </Badge>
-                      </div>
-                      <div className="col-span-1 text-sm text-gray-900">
-                        {formatAmount(payout.amountSmallestUnit, payout.currency)}
-                      </div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className={STATUS_BADGE_CLASS[payout.status]}>
-                          {STATUS_LABEL[payout.status]}
-                        </Badge>
-                      </div>
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2">
+                        <div className="col-span-1">
+                          {payout.ticketId ? (
+                            <Link
+                              href={`/helper/tickets/${payout.ticketId}`}
+                              title={payout.ticketTitle || undefined}
+                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                            >
+                              {payout.ticketShortId}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-medium text-foreground">—</span>
+                          )}
+                        </div>
+                        <div className="col-span-1">
+                          <span className="text-sm text-muted-foreground">{formatDate(payout.date)}</span>
+                        </div>
+                        <div className="col-span-3 flex items-center gap-[18px]">
+                          <HelperCell name={payout.helper} color={payout.helperColor} />
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">
+                            {formatAmount(payout.amountSmallestUnit, payout.currency)}
+                          </span>
+                        </div>
+                        <div className="col-span-2">
+                          <PayoutStatusBadge status={payout.status} />
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end space-x-2">
                           {payout.ticketId ? (
                             <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
                               <Link href={`/helper/tickets/${payout.ticketId}`}>Open</Link>
@@ -529,9 +558,9 @@ export default function HelperReportsPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           )}
 
