@@ -8,18 +8,25 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserPlus } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { AddHelperDrawer } from "@/components/drawers/add-helper-drawer"
 import { AcceptRequestDrawer } from "@/components/drawers/accept-request-drawer"
-import { useHelpers, useCreateHelper, useAddSelfAsHelper } from "@/hooks/useHelpers"
+import { RemoveHelperModal } from "@/components/modals/remove-helper-modal"
+import { useHelpers, useCreateHelper, useAddSelfAsHelper, useRemoveHelper } from "@/hooks/useHelpers"
 import { usePendingRequests, useUpdatePendingRequest } from "@/hooks/usePendingRequests"
 import { useCreateProjectInvite, useListProjectInvites, useRevokeProjectInvite } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import Link from "next/link"
 
 function isPendingInvite(invite: {
@@ -77,6 +84,7 @@ export default function HelpersPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isAcceptDrawerOpen, setIsAcceptDrawerOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<any>(null)
+  const [helperToRemove, setHelperToRemove] = useState<{ id: string; name: string } | null>(null)
 
   const [selectedCategory, setSelectedCategory] = useState<string>("All helpers")
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -97,6 +105,7 @@ export default function HelpersPage() {
   const { data: helperInvitesData, isLoading: invitesLoading } = useListProjectInvites(projectId, "helper")
   const createHelper = useCreateHelper()
   const addSelfAsHelper = useAddSelfAsHelper()
+  const removeHelper = useRemoveHelper()
   const updatePendingRequest = useUpdatePendingRequest()
   const createInvite = useCreateProjectInvite()
   const revokeInvite = useRevokeProjectInvite()
@@ -114,12 +123,13 @@ export default function HelpersPage() {
     if (!helpersData) return []
     return helpersData.map((helper) => ({
       id: helper.helper_id,
+      // Must match the helper profile page (/helpers/[id]) so avatar colors are consistent
+      avatarId: helper.user_id ?? helper.helper_id,
       name: helper.user?.name || "Unknown",
       initial: (helper.user?.name || "U")[0].toUpperCase(),
       discordUser: helper.user?.username || "-",
       githubAccount: helper.user?.username || "-",
       category: helper.category || "Community",
-      color: getAvatarColorHexForId(helper.user_id ?? helper.helper_id),
       avatarUrl: helper.user?.avatar_url ?? null,
       isRegistered: !!helper.user_id,
     }))
@@ -175,7 +185,7 @@ export default function HelpersPage() {
       github_username: newHelper.github_username,
     })
 
-    return { invite_url: result.invite_url }
+    return { invite_url: result.invite_url, email_sent: result.email_sent }
   }
 
   const handleAcceptRequest = (index: number) => {
@@ -197,6 +207,19 @@ export default function HelpersPage() {
     } catch (error) {
       console.error("Failed to add yourself as helper:", error)
       toast.error("Failed to add yourself as helper. Please try again.")
+    }
+  }
+
+  const handleConfirmRemoveHelper = async () => {
+    if (!helperToRemove) return
+    const { id, name } = helperToRemove
+    try {
+      await removeHelper.mutateAsync({ helperId: id })
+      setHelperToRemove(null)
+      toast.success(`${name} has been removed as helper from the project`)
+    } catch (error) {
+      console.error("Failed to remove helper:", error)
+      toast.error("Failed to remove helper. Please try again.")
     }
   }
 
@@ -374,6 +397,12 @@ export default function HelpersPage() {
     toast.success("Invite link copied to clipboard!")
   }
 
+  const handleCopyInvitationLink = async () => {
+    if (!projectId) return
+    await navigator.clipboard.writeText(`${window.location.origin}/projects/${projectId}`)
+    toast.success("Invitation link copied to clipboard!")
+  }
+
   const handleRevokeInvite = async (inviteId: string) => {
     if (!projectId) return
     try {
@@ -453,12 +482,24 @@ export default function HelpersPage() {
               {showAddSelfAsHelper && (
                 <Button
                   variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-xl text-[13px] font-medium"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <i className="fi fi-rr-user inline-flex items-center justify-center leading-none w-4 h-4" />
                   Add myself as helper
+                </Button>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  onClick={handleCopyInvitationLink}
+                  disabled={!projectId}
+                  title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy invitation link
                 </Button>
               )}
               <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
@@ -632,7 +673,7 @@ export default function HelpersPage() {
                                 Revoke
                               </Button>
                             )}
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
+                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </div>
@@ -663,7 +704,7 @@ export default function HelpersPage() {
                         </div>
                         <div className="col-span-3 flex items-center gap-[18px]">
                           <ProfileAvatar
-                            id={helper.id}
+                            id={helper.avatarId}
                             name={helper.name}
                             avatarUrl={helper.avatarUrl}
                           />
@@ -694,9 +735,28 @@ export default function HelpersPage() {
                           ) : (
                             <span className="text-sm text-muted-foreground px-3 py-1">Not registered</span>
                           )}
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:bg-muted"
+                                aria-label={`More actions for ${helper.name}`}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                disabled={!isAdmin}
+                                onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
+                              >
+                                <i className="fi fi-rr-user inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" />
+                                Remove as helper
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
@@ -708,7 +768,7 @@ export default function HelpersPage() {
                       <div className="px-6 py-12 text-center">
                         <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
                         <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                        <Button className="rounded-md px-5 text-[14px] font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md" onClick={() => setIsDrawerOpen(true)}>
+                        <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
                           <Plus className="w-4 h-4" />
                           Add new helper
                         </Button>
@@ -757,7 +817,7 @@ export default function HelpersPage() {
                           >
                             Accept
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </div>
@@ -787,6 +847,15 @@ export default function HelpersPage() {
         }}
         onSubmit={handleConfirmAcceptRequest}
         requestData={selectedRequest}
+      />
+      <RemoveHelperModal
+        open={!!helperToRemove}
+        onOpenChange={(open) => {
+          if (!open) setHelperToRemove(null)
+        }}
+        helperName={helperToRemove?.name ?? ""}
+        isRemoving={removeHelper.isPending}
+        onConfirm={handleConfirmRemoveHelper}
       />
     </div>
   )

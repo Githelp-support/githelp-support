@@ -128,7 +128,11 @@ export default function ProjectSettingsPage() {
       setInviteEmail("")
       setLatestInviteLink(invite.invite_url)
       setCopiedInvite(false)
-      toast.success(email ? `Admin invite sent to ${email}` : "Admin invite link created")
+      if (email && !invite.email_sent) {
+        toast.error(`Admin invite created, but the email to ${email} could not be sent. Copy the link below to share it.`)
+      } else {
+        toast.success(email ? `Admin invite sent to ${email}` : "Admin invite link created")
+      }
     } catch (error) {
       console.error("Failed to create admin invite:", error)
       toast.error("Failed to create admin invite. Please try again.")

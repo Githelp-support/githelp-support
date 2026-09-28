@@ -2,7 +2,7 @@
 
 import { useState, use, useMemo } from "react"
 import Link from "next/link"
-import { ArrowLeft, Info, Copy, Edit, ExternalLink, Download } from "lucide-react"
+import { ArrowLeft, Info, Copy, Edit, ExternalLink } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +12,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -55,12 +55,13 @@ interface TicketRow {
   created_at: string
   status: string
   sla_id: string | null
-  tickets_time_entries: { time_milliseconds: number; helper_id: string }[]
+  tickets_time_entries: { time_milliseconds: number; helper_id: string; review_status?: string | null }[]
   tickets_participants: { participant_id: string; claimed: boolean }[]
 }
 
 interface HelperPublic {
   helper_id: string
+  user_id: string | null
   user: { name: string } | null
 }
 
@@ -85,7 +86,11 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
       if (error) throw error
-      return (data ?? []) as TicketRow[]
+      // Entries the customer declined are not billed and don't consume SLA minutes.
+      return ((data ?? []) as TicketRow[]).map((t) => ({
+        ...t,
+        tickets_time_entries: (t.tickets_time_entries ?? []).filter((e) => e.review_status !== "declined"),
+      }))
     },
     enabled: !!id,
     staleTime: 1800000,
@@ -100,12 +105,13 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects_helpers")
-        .select("helper_id, user:users_public(name)")
+        .select("helper_id, user_id, user:users_public(name)")
         .eq("project_id", sla!.project_id)
       if (error) throw error
       // Supabase returns user as array when using foreign tables
       return ((data ?? []) as any[]).map((h) => ({
         helper_id: h.helper_id,
+        user_id: h.user_id ?? null,
         user: Array.isArray(h.user) ? (h.user[0] ?? null) : (h.user ?? null),
       })) as HelperPublic[]
     },
@@ -148,6 +154,15 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     const map = new Map<string, string>()
     projectHelpers.forEach((h) => {
       if (h.user?.name) map.set(h.helper_id, h.user.name)
+    })
+    return map
+  }, [projectHelpers])
+
+  // helper_id → avatar key (user_id, falling back to helper_id) so colors match the helpers list/profile
+  const helperAvatarKeyMap = useMemo(() => {
+    const map = new Map<string, string>()
+    projectHelpers.forEach((h) => {
+      map.set(h.helper_id, h.user_id ?? h.helper_id)
     })
     return map
   }, [projectHelpers])
@@ -268,7 +283,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                 <h2 className="text-lg font-semibold text-foreground">Agreement details</h2>
                 <Info className="w-4 h-4 text-muted-foreground" />
               </div>
-              <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent">
+              <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                 <Edit className="w-4 h-4" />
                 Edit agreement
               </Button>
@@ -451,6 +466,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   View all
                 </Button>
                 <Button
+                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                   variant="outline"
                   size="sm"
                   className="border-border text-muted-foreground hover:bg-muted bg-transparent"
@@ -458,6 +474,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   Core team
                 </Button>
                 <Button
+                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                   variant="outline"
                   size="sm"
                   className="border-border text-muted-foreground hover:bg-muted bg-transparent"
@@ -465,6 +482,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   Extended team
                 </Button>
                 <Button
+                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                   variant="outline"
                   size="sm"
                   className="border-border text-muted-foreground hover:bg-muted bg-transparent"
@@ -497,7 +515,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                 <div className="flex items-center gap-3">
                                   <div
                                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                                    style={{ backgroundColor: avatarColor(helper.name) }}
+                                    style={{ backgroundColor: avatarColor(helperAvatarKeyMap.get(helper.id) ?? helper.id) }}
                                   >
                                     {getInitial(helper.name)}
                                   </div>
@@ -507,7 +525,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               <td className="p-4 text-sm text-muted-foreground">{helper.tickets}</td>
                               <td className="p-4 text-sm text-muted-foreground">{formatMs(helper.totalMs)}</td>
                               <td className="p-4">
-                                <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10">
+                                <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                                   <ExternalLink className="w-4 h-4" />
                                 </Button>
                               </td>
@@ -578,6 +596,9 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                           const claimedParticipant = ticket.tickets_participants.find((p) => p.claimed)
                           const primaryHelperId = claimedParticipant?.participant_id
                           const primaryHelperName = primaryHelperId ? (helperMap.get(primaryHelperId) ?? "Unknown") : "—"
+                          const primaryHelperAvatarKey = primaryHelperId
+                            ? (helperAvatarKeyMap.get(primaryHelperId) ?? primaryHelperId)
+                            : null
 
                           const ticketMs = ticket.tickets_time_entries.reduce(
                             (sum, e) => sum + (e.time_milliseconds ?? 0), 0
@@ -600,7 +621,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
-                                    style={{ backgroundColor: avatarColor(primaryHelperName) }}
+                                    style={{ backgroundColor: avatarColor(primaryHelperAvatarKey) }}
                                   >
                                     {getInitial(primaryHelperName)}
                                   </div>
@@ -624,20 +645,16 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               <td className="p-4">
                                 <div className="flex gap-2">
                                   <Button
+                                    title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                                     variant="outline"
                                     size="sm"
                                     className="border-border text-muted-foreground hover:bg-muted bg-transparent"
                                   >
                                     Open
                                   </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                    Download PDF
-                                  </Button>
+                                  {/* SLA tickets are billed on the SLA's Stripe
+                                      subscription invoice, so there is no
+                                      per-ticket receipt to link to here. */}
                                 </div>
                               </td>
                             </tr>

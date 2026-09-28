@@ -4,6 +4,82 @@
 export type Database = {
     public: {
         Tables: {
+            notifications: {
+                Row: {
+                    id: string;
+                    created_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    title: string;
+                    content: string;
+                    route: string | null;
+                    is_read: boolean;
+                    read_at: string | null;
+                    metadata: Record<string, any> | null;
+                    config: Record<string, any> | null;
+                };
+                Insert: Partial<{
+                    id: string;
+                    created_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    title: string;
+                    content: string;
+                    route: string | null;
+                    is_read: boolean;
+                    read_at: string | null;
+                    metadata: Record<string, any> | null;
+                    config: Record<string, any> | null;
+                }>;
+                Update: Partial<{
+                    id: string;
+                    created_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    title: string;
+                    content: string;
+                    route: string | null;
+                    is_read: boolean;
+                    read_at: string | null;
+                    metadata: Record<string, any> | null;
+                    config: Record<string, any> | null;
+                }>;
+            };
+            notification_preferences: {
+                Row: {
+                    id: string;
+                    created_at: string;
+                    updated_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    channel: string;
+                    event_group: string;
+                    enabled: boolean;
+                    digest_frequency: string | null;
+                };
+                Insert: Partial<{
+                    id: string;
+                    created_at: string;
+                    updated_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    channel: string;
+                    event_group: string;
+                    enabled: boolean;
+                    digest_frequency: string | null;
+                }>;
+                Update: Partial<{
+                    id: string;
+                    created_at: string;
+                    updated_at: string;
+                    user_id: string;
+                    project_id: string | null;
+                    channel: string;
+                    event_group: string;
+                    enabled: boolean;
+                    digest_frequency: string | null;
+                }>;
+            };
             projects: {
                 Row: {
                     id: number;
@@ -115,6 +191,9 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    first_response_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -136,6 +215,9 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    first_response_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -157,6 +239,9 @@ export type Database = {
                     deleted_at: string | null;
                     completed_at: string | null;
                     cancelled_at: string | null;
+                    first_response_at: string | null;
+                    end_requested_at: string | null;
+                    end_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -182,6 +267,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 };
                 Insert: Partial<{
                     id: number;
@@ -192,6 +278,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 }>;
                 Update: Partial<{
                     id: number;
@@ -202,6 +289,7 @@ export type Database = {
                     category: "core" | "community" | "extended" | null;
                     updated_at: string;
                     helper_id: string;
+                    deleted_at: string | null;
                 }>;
             };
             slas: {
@@ -292,7 +380,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -303,7 +392,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -314,7 +404,8 @@ export type Database = {
                     id: string;
                     created_at: string;
                     ticket_id: string;
-                    sender_id: string;
+                    /** null for system messages (payments + time_logged). */
+                    sender_id: string | null;
                     sender_type: "user" | "helper" | "system";
                     content: string;
                     deleted_at: string | null;
@@ -325,16 +416,19 @@ export type Database = {
             users: {
                 Row: {
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 };
                 Insert: Partial<{
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;
                 Update: Partial<{
                     id: string;
+                    email: string;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;

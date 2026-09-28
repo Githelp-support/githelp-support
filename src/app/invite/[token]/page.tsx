@@ -11,6 +11,8 @@ import Link from "next/link"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { HelperInviteAcceptance } from "@/components/auth/helper-invite-acceptance"
 import { useAcceptProjectInvite } from "@/hooks/useProject"
+import { useEnterProject } from "@/hooks/useEnterProject"
+import { homeRouteForRole } from "@/lib/roles"
 
 export default function InviteAcceptancePage() {
     const params = useParams()
@@ -30,6 +32,8 @@ export default function InviteAcceptancePage() {
     const { data: onboardingStatus } = useOnboardingStatus()
     const completeOnboarding = useCompleteOnboarding()
     const acceptInvite = useAcceptProjectInvite()
+
+    const selectJoinedProject = useEnterProject()
 
     // Check authentication and find invite by token
     useEffect(() => {
@@ -176,10 +180,12 @@ export default function InviteAcceptancePage() {
             }
             
             toast.success(result.message || "Successfully joined the project!")
-            
-            // Redirect to dashboard after a short delay
+
+            // Land in the newly joined project, in the highest role held there.
+            const nextRole = await selectJoinedProject(result.project_id)
+            const destination = homeRouteForRole(nextRole)
             setTimeout(() => {
-                router.push("/")
+                router.push(destination)
             }, 1500)
         } catch (err: unknown) {
             console.error("Failed to accept invite:", err)
@@ -238,12 +244,12 @@ export default function InviteAcceptancePage() {
             <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex flex-col items-start gap-4 mb-2 text-left">
                             <CheckCircle className="w-6 h-6 text-green-600" />
-                            <CardTitle>You&apos;re already a member</CardTitle>
+                            <CardTitle>Congratulations! You are now a validated helper</CardTitle>
                         </div>
-                        <CardDescription>
-                            You&apos;re already a member of {String(project?.name ?? "this project")}.
+                        <CardDescription className="text-left">
+                            Someone from the project core team has added you as a validated helper to {String(project?.name ?? "this project")}. You can now accept incoming tickets to this project.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -277,8 +283,8 @@ export default function InviteAcceptancePage() {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
-                    <CardDescription className="text-base mt-2">
-                        Join <span className="font-semibold">{String(project?.name ?? "this project")}</span> {inviteTypeLabel}
+                    <CardDescription className="text-sm mt-2">
+                        Join {String(project?.name ?? "this project")} {inviteTypeLabel}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

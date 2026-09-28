@@ -83,14 +83,22 @@ export function useCompleteOnboarding() {
                 throw new Error("User not authenticated");
             }
 
-            // Update public.users table to mark onboarding as complete
+            // Upsert rather than update: the public.users row is normally
+            // created by the on_auth_user_created trigger, but some accounts
+            // have no row (older signups / trigger not applied). A plain
+            // update().single() then fails with PGRST116 "0 rows" *after* the
+            // project was already created. RLS allows insert/update of own row.
             const { data, error } = await supabase
                 .from("users")
-                .update({
-                    onboarding_completed: true,
-                    onboarding_completed_at: new Date().toISOString(),
-                })
-                .eq("id", user.id)
+                .upsert(
+                    {
+                        id: user.id,
+                        email: user.email ?? "",
+                        onboarding_completed: true,
+                        onboarding_completed_at: new Date().toISOString(),
+                    },
+                    { onConflict: "id" },
+                )
                 .select()
                 .single();
 

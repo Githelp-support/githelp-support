@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
-import { Info } from "lucide-react"
+import { Clock, Info } from "lucide-react"
 import { useState } from "react"
 import type { TimeEntry } from "./log-time-drawer"
+import { TimeEntryReviewStatusBadge } from "@/components/ticket-chat/time-entry-review"
+import { TIME_ENTRY_AUTO_ACCEPT_HOURS } from "@/lib/time-entries"
 
 interface EndTicketDrawerProps {
   isOpen: boolean
   onClose: () => void
   onEndTicket: (outcome: string) => void
   timeEntries?: TimeEntry[]
+  /** Set when the customer has asked to end the session — shown as a reminder to log remaining time first. */
+  userRequestedEnd?: boolean
 }
 
-export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = [] }: EndTicketDrawerProps) {
+export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = [], userRequestedEnd }: EndTicketDrawerProps) {
   const [supportOutcome, setSupportOutcome] = useState("")
 
   const formatTimeEntry = (entry: TimeEntry) => {
@@ -26,8 +30,14 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
     }
   }
 
+  // Entries the user is still to accept or decline. Ending is blocked until
+  // they have: the charge is computed from what the user accepted.
+  const pendingReview = timeEntries.filter((entry) => entry.reviewStatus === "pending")
+  const canEnd = !!supportOutcome && pendingReview.length === 0
+
   const getTotalTime = () => {
     const totalMinutes = timeEntries.reduce((acc, entry) => {
+      if (entry.reviewStatus === "declined") return acc
       return acc + entry.hours * 60 + entry.minutes
     }, 0)
     const hours = Math.floor(totalMinutes / 60)
@@ -47,20 +57,50 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
       isOpen={isOpen}
       onClose={onClose}
       title="End ticket"
+      footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cancel
           </Button>
-          <Button onClick={handleEndTicket} disabled={!supportOutcome} variant="default" className="flex-1">
-            End ticket
+          <Button
+            onClick={handleEndTicket}
+            disabled={!canEnd}
+            title={pendingReview.length > 0 ? "Waiting for the user to accept or decline the logged time" : undefined}
+            variant="default"
+            className="flex-1"
+          >
+            {pendingReview.length > 0 ? "Waiting for user review" : "End ticket"}
           </Button>
         </div>
       }
     >
       <div className="flex-1 p-6 space-y-6 overflow-auto">
+        {userRequestedEnd && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
+            <p className="font-medium">The user has asked to end this session.</p>
+            <p className="text-muted-foreground mt-1">
+              Make sure all your time is logged below before ending — ending finalises the ticket and the charge.
+            </p>
+          </div>
+        )}
+        {pendingReview.length > 0 && (
+          <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
+            <p className="font-medium flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-700" />
+              {pendingReview.length === 1
+                ? "The user hasn't reviewed your logged time yet."
+                : `The user hasn't reviewed ${pendingReview.length} of your logged entries yet.`}
+            </p>
+            <p className="text-muted-foreground mt-1">
+              They have to accept or decline every logged entry before the session can end. You can remind them in
+              the chat. Entries they don&apos;t review within {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted
+              automatically. Declined time is not charged.
+            </p>
+          </div>
+        )}
         <div>
-          <h3 className="font-medium text-foreground mb-4">How did the support go?</h3>
+          <h3 className="text-sm font-medium text-foreground mb-4">How did the support go?</h3>
           <RadioGroup value={supportOutcome} onValueChange={setSupportOutcome}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="able-to-help" id="able-to-help" />
@@ -79,13 +119,13 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
         </div>
 
         <div>
-          <h3 className="font-medium text-foreground mb-4">Logged time</h3>
+          <h3 className="text-sm font-medium text-foreground mb-4">Logged time</h3>
           {timeEntries.length > 0 ? (
             <div className="space-y-3">
               {timeEntries.map((entry) => {
                 const formatted = formatTimeEntry(entry)
                 return (
-                  <div key={entry.id} className="py-2 border-b border-border">
+                  <div key={entry.id} className="py-2">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
@@ -99,11 +139,19 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
                       <span className="text-sm text-muted-foreground">{formatted.hours}</span>
                     </div>
                     {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-11">{entry.note}</p>}
+                    {entry.reviewStatus && (
+                      <div className="mt-1 ml-11">
+                        <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                      </div>
+                    )}
+                    {entry.reviewStatus === "declined" && entry.declineReason && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-11 italic">Reason: {entry.declineReason}</p>
+                    )}
                   </div>
                 )
               })}
               <div className="border-t border-border pt-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">Total time</span>
+                <span className="text-sm font-medium text-foreground">Total time (excl. declined)</span>
                 <span className="text-sm font-medium text-foreground">{getTotalTime()}</span>
               </div>
             </div>
@@ -113,7 +161,7 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
         </div>
 
         <div className="bg-muted/50 rounded-lg p-4 border border-border">
-          <h4 className="font-medium text-foreground mb-2">Completed support</h4>
+          <h4 className="text-[13px] font-semibold text-foreground mb-2">Completed support</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
             If the support was completed successfully, log the time spent. If you were not able to help, consider
             adjusting any time spent, in accordance with the user&apos;s expectations and actual delivery.

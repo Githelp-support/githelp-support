@@ -174,8 +174,8 @@ export default function HelperProfilePage() {
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto p-8">
-            <p className="text-muted-foreground">You are not registered as a helper in this project.</p>
+          <main className="flex-1 overflow-auto p-6">
+            <p className="text-sm text-left pl-2 text-muted-foreground">You are not registered as a helper in this project.</p>
           </main>
         </div>
       </div>

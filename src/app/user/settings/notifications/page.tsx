@@ -1,53 +1,91 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { NotificationChannelsManager } from "@/components/settings/notification-channels-manager"
+import {
+  useNotificationPreferences,
+  useSaveNotificationPreferences,
+  type PreferenceEventGroup,
+} from "@/hooks/useNotificationPreferences"
 
-// TODO: Replace local state with backend-persisted settings once a helper_settings
-// table (or equivalent) exists in the database schema.
+const EMAIL_GROUPS: Array<{ key: PreferenceEventGroup; label: string; description: string }> = [
+  {
+    key: "tickets",
+    label: "Ticket activity",
+    description: "Your ticket is claimed or completed",
+  },
+  {
+    key: "messages",
+    label: "Chat messages",
+    description: "New messages while you're away (batched, ~5 min)",
+  },
+  {
+    key: "payments",
+    label: "Payments & payouts",
+    description: "Payouts to you, failed payments, SLA billing",
+  },
+  {
+    key: "membership",
+    label: "Membership & invites",
+    description: "Invites you sent are accepted, helper requests",
+  },
+]
 
-interface NotificationSettings {
-  emailNewTickets: boolean
-  emailAssignments: boolean
-  emailMentions: boolean
-  slackNewTickets: boolean
-  slackAssignments: boolean
-  slackMentions: boolean
-  discordNewTickets: boolean
-  discordAssignments: boolean
-  discordMentions: boolean
+type EmailToggles = Record<PreferenceEventGroup, boolean>
+
+const DEFAULT_EMAIL_TOGGLES: EmailToggles = {
+  tickets: true,
+  messages: true,
+  payments: true,
+  membership: true,
+  digest: true,
 }
 
 export default function UserNotificationsSettingsPage() {
-  // TODO: Load from backend
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    emailNewTickets: true,
-    emailAssignments: true,
-    emailMentions: true,
-    slackNewTickets: false,
-    slackAssignments: false,
-    slackMentions: false,
-    discordNewTickets: false,
-    discordAssignments: false,
-    discordMentions: false,
-  })
+  const { data: preferences, isLoading } = useNotificationPreferences()
+  const savePreferences = useSaveNotificationPreferences()
 
-  const [isSavingNotifications, setIsSavingNotifications] = useState(false)
+  const [emailToggles, setEmailToggles] = useState<EmailToggles>(DEFAULT_EMAIL_TOGGLES)
+  const hydratedRef = useRef(false)
 
-  const handleSaveNotifications = async () => {
-    setIsSavingNotifications(true)
-    // TODO: Persist notification settings to backend
-    await new Promise((resolve) => setTimeout(resolve, 500)) // simulate async
-    setIsSavingNotifications(false)
+  // Hydrate from saved global overrides ONCE (no row = default on). Later
+  // background refetches must not clobber unsaved local edits.
+  useEffect(() => {
+    if (!preferences || hydratedRef.current) return
+    hydratedRef.current = true
+    const next = { ...DEFAULT_EMAIL_TOGGLES }
+    for (const pref of preferences) {
+      if (pref.channel === "email" && pref.project_id === null && pref.event_group in next) {
+        next[pref.event_group] = pref.enabled
+      }
+    }
+    setEmailToggles(next)
+  }, [preferences])
+
+  const handleSave = async () => {
+    try {
+      await savePreferences.mutateAsync(
+        EMAIL_GROUPS.map((group) => ({
+          channel: "email" as const,
+          event_group: group.key,
+          enabled: emailToggles[group.key],
+        })),
+      )
+      toast.success("Notification preferences saved")
+    } catch {
+      toast.error("Could not save preferences — please try again")
+    }
   }
 
-  const toggleNotification = (key: keyof NotificationSettings) => {
-    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }))
+  const toggleEmail = (key: PreferenceEventGroup) => {
+    setEmailToggles((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
   return (
@@ -59,13 +97,12 @@ export default function UserNotificationsSettingsPage() {
 
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-2xl">
-            {/* Notification preferences */}
             <div className="bg-white rounded-lg p-6 mb-6">
               <h2 className="text-base font-semibold text-foreground mb-1">
                 Channels
               </h2>
               <p className="text-sm text-muted-foreground mb-5">
-                Choose how you want to be notified about replies
+                Choose how you want to be notified. In-app notifications (the bell) are always on.
               </p>
 
               {/* Email */}
@@ -74,124 +111,47 @@ export default function UserNotificationsSettingsPage() {
                   Email
                 </h3>
                 <div className="space-y-0 divide-y divide-[rgba(0,0,0,0.06)]">
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="email-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      New tickets
-                    </Label>
-                    <Switch
-                      id="email-new-tickets"
-                      checked={notifications.emailNewTickets}
-                      onCheckedChange={() => toggleNotification("emailNewTickets")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="email-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      Ticket assignments
-                    </Label>
-                    <Switch
-                      id="email-assignments"
-                      checked={notifications.emailAssignments}
-                      onCheckedChange={() => toggleNotification("emailAssignments")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="email-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      Mentions
-                    </Label>
-                    <Switch
-                      id="email-mentions"
-                      checked={notifications.emailMentions}
-                      onCheckedChange={() => toggleNotification("emailMentions")}
-                    />
-                  </div>
+                  {EMAIL_GROUPS.map((group) => (
+                    <div key={group.key} className="flex items-center justify-between py-3">
+                      <div className="pl-1.5">
+                        <Label
+                          htmlFor={`email-${group.key}`}
+                          className="text-sm text-[#737373] cursor-pointer"
+                        >
+                          {group.label}
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">{group.description}</p>
+                      </div>
+                      <Switch
+                        id={`email-${group.key}`}
+                        checked={emailToggles[group.key]}
+                        disabled={isLoading}
+                        onCheckedChange={() => toggleEmail(group.key)}
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Slack */}
+              {/* Personal delivery destinations (Slack / Discord / custom webhook) */}
               <div className="mb-5">
-                <h3 className="text-[13px] font-semibold text-foreground mb-3">
-                  Slack
+                <h3 className="text-[13px] font-semibold text-foreground mb-1">
+                  My delivery channels
                 </h3>
-                <div className="space-y-0 divide-y divide-[rgba(0,0,0,0.06)]">
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="slack-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      New tickets
-                    </Label>
-                    <Switch
-                      id="slack-new-tickets"
-                      checked={notifications.slackNewTickets}
-                      onCheckedChange={() => toggleNotification("slackNewTickets")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="slack-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      Ticket assignments
-                    </Label>
-                    <Switch
-                      id="slack-assignments"
-                      checked={notifications.slackAssignments}
-                      onCheckedChange={() => toggleNotification("slackAssignments")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="slack-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      Mentions
-                    </Label>
-                    <Switch
-                      id="slack-mentions"
-                      checked={notifications.slackMentions}
-                      onCheckedChange={() => toggleNotification("slackMentions")}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Discord */}
-              <div>
-                <h3 className="text-[13px] font-semibold text-foreground mb-3">
-                  Discord
-                </h3>
-                <div className="space-y-0 divide-y divide-[rgba(0,0,0,0.06)]">
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="discord-new-tickets" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      New tickets
-                    </Label>
-                    <Switch
-                      id="discord-new-tickets"
-                      checked={notifications.discordNewTickets}
-                      onCheckedChange={() => toggleNotification("discordNewTickets")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="discord-assignments" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      Ticket assignments
-                    </Label>
-                    <Switch
-                      id="discord-assignments"
-                      checked={notifications.discordAssignments}
-                      onCheckedChange={() => toggleNotification("discordAssignments")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <Label htmlFor="discord-mentions" className="text-sm text-[#737373] cursor-pointer pl-1.5">
-                      Mentions
-                    </Label>
-                    <Switch
-                      id="discord-mentions"
-                      checked={notifications.discordMentions}
-                      onCheckedChange={() => toggleNotification("discordMentions")}
-                    />
-                  </div>
-                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Route your notifications to Slack, Discord, or any system of yours via a signed
+                  webhook. Each channel picks which notification types it receives.
+                </p>
+                <NotificationChannelsManager scope="user" />
               </div>
 
               <Button
-                onClick={handleSaveNotifications}
-                disabled={isSavingNotifications}
+                onClick={handleSave}
+                disabled={savePreferences.isPending || isLoading}
                 variant="outline"
                 className="border-[rgba(0,0,0,0.1)] mt-[22px]"
               >
-                {isSavingNotifications ? (
+                {savePreferences.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   "Save preferences"

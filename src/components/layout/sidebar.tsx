@@ -14,12 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useUser } from "@/contexts/user-context"
 
 interface SidebarProps {
   className?: string
+  /** When provided, renders a discrete "Open project page" external link above the bottom items. */
+  projectPageHref?: string
 }
 
 interface NavigationItem {
@@ -38,8 +40,30 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
-export function Sidebar({ className }: SidebarProps) {
+// Sub-pages of the user-role "Support" parent item. Exact paths only —
+// /support/tickets belongs to the top-level "Tickets" item and must NOT
+// expand "Support".
+const SUPPORT_SUB_PATHS = [
+  "/support/chat",
+  "/support/rates",
+  "/support/resources",
+  "/support/about",
+]
+
+export function Sidebar({ className, projectPageHref }: SidebarProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  // Preserve the active chat context (project/ticket) when navigating between
+  // Support sub-pages so e.g. "Chat" reopens the conversation the user was in.
+  const supportQuery = (() => {
+    const preserved = new URLSearchParams()
+    const project = searchParams?.get("project")
+    const ticket = searchParams?.get("ticket")
+    if (project) preserved.set("project", project)
+    if (ticket) preserved.set("ticket", ticket)
+    const qs = preserved.toString()
+    return qs ? `?${qs}` : ""
+  })()
   // The Sidebar is mounted per-page (not in a shared layout), so its state
   // is wiped on every navigation. Derive the initially-expanded parent from
   // the current path so the active sub-item's parent stays expanded across
@@ -49,6 +73,7 @@ export function Sidebar({ className }: SidebarProps) {
     if (pathname?.startsWith("/settings/")) return ["Settings"]
     if (pathname?.startsWith("/helper/settings/")) return ["Settings"]
     if (pathname?.startsWith("/user/settings/")) return ["Settings"]
+    if (pathname && SUPPORT_SUB_PATHS.includes(pathname)) return ["Support"]
     return []
   })
   // Persist collapsed state across navigations (the Sidebar is mounted
@@ -101,6 +126,7 @@ export function Sidebar({ className }: SidebarProps) {
         { name: "Profile", href: "/settings/profile", icon: "fi-rr-user" },
         { name: "Project", href: "/settings/project", icon: "fi-rr-folder" },
         { name: "Branding", href: "/settings/branding", icon: "fi-rr-paint-brush" },
+        { name: "Integrations", href: "/settings/integrations", icon: "fi-rr-plug" },
       ],
     },
   ]
@@ -123,7 +149,17 @@ export function Sidebar({ className }: SidebarProps) {
 
   const userNavigationItems: NavigationItem[] = [
     { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
-    { name: "Support", href: "/support/chat", icon: "fi-rr-comments" },
+    {
+      name: "Support",
+      href: "#",
+      icon: "fi-rr-comments",
+      subItems: [
+        { name: "Chat", href: `/support/chat${supportQuery}`, icon: "fi-rr-comments" },
+        { name: "Rates and details", href: `/support/rates${supportQuery}`, icon: "fi-rr-credit-card" },
+        { name: "Resources", href: `/support/resources${supportQuery}`, icon: "fi-rr-folder" },
+        { name: "About support", href: `/support/about${supportQuery}`, icon: "fi-rr-info" },
+      ],
+    },
     { name: "Reports", href: "/user/reports", icon: "fi-rr-document" },
     {
       name: "Settings",
@@ -157,9 +193,12 @@ export function Sidebar({ className }: SidebarProps) {
     let next: string[] = []
     for (const item of navigationItems) {
       if (!item.subItems) continue
-      const matched = item.subItems.some(
-        (sub) => pathname === sub.href || (pathname?.startsWith(sub.href + "/") ?? false),
-      )
+      const matched = item.subItems.some((sub) => {
+        // Sub-item hrefs may carry preserved query params (e.g. the Support
+        // sub-pages); match on the path portion only.
+        const subPath = sub.href.split("?")[0]
+        return pathname === subPath || (pathname?.startsWith(subPath + "/") ?? false)
+      })
       if (matched) {
         next = [item.name]
         break
@@ -190,7 +229,9 @@ export function Sidebar({ className }: SidebarProps) {
     return pathname === item.href
   }
 
-  const isSubItemActive = (href: string) => pathname === href
+  // Sub-item hrefs may carry preserved query params (e.g. the Support
+  // sub-pages); compare against the path portion only.
+  const isSubItemActive = (href: string) => pathname === href.split("?")[0]
 
   return (
     <div
@@ -207,7 +248,7 @@ export function Sidebar({ className }: SidebarProps) {
       // `self-stretch` and `h-full` are equivalent — so this is a no-op there.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className="px-4 pt-4 pb-3 flex items-center justify-end min-h-[40px] shrink-0">
+      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
           <Button
             variant="ghost"
@@ -392,7 +433,7 @@ export function Sidebar({ className }: SidebarProps) {
                 ) : (
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
-                      className={`flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
+                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                       title={isCollapsed ? item.name : undefined}
@@ -411,9 +452,23 @@ export function Sidebar({ className }: SidebarProps) {
       </nav>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5 shrink-0">
+        {projectPageHref && (
+          <a
+            href={projectPageHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            title={isCollapsed ? "Open project page" : undefined}
+          >
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <FlaticonIcon iconClass="fi-rr-browser" />
+            </span>
+            {!isCollapsed && "Open project page"}
+          </a>
+        )}
         {bottomItems.map((item) => {
           const isActive = item.href !== "#" && pathname === item.href
-          const className = `flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
+          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
             isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
           }`
           const content = (

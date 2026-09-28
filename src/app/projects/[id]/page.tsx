@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useProject, useProjectBySlug, useProjectBranding, useProjectResources } from "@/hooks/useProject"
+import { useProject, useProjectBySlug, useProjectBranding } from "@/hooks/useProject"
 import { useCreatePendingRequest } from "@/hooks/usePendingRequests"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { supabase } from "@/lib/supabase/client"
@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -33,7 +34,6 @@ export default function ProjectLandingPage() {
     const projectLoading = isUuid ? loadingById : loadingBySlug
 
     const { data: branding } = useProjectBranding(projectId)
-    const { data: resources } = useProjectResources(projectId)
     const { data: onboardingStatus } = useOnboardingStatus()
     const createRequest = useCreatePendingRequest()
     const completeOnboarding = useCompleteOnboarding()
@@ -154,7 +154,10 @@ export default function ProjectLandingPage() {
                                     />
                                 ) : (
                                     <Avatar className="w-24 h-24">
-                                        <AvatarFallback className="bg-[#3c2ec5] text-white text-3xl">
+                                        <AvatarFallback
+                                            className={cn("text-white text-3xl", !branding?.primary_color && "bg-[#3c2ec5]")}
+                                            style={branding?.primary_color ? { backgroundColor: branding.primary_color } : undefined}
+                                        >
                                             {projectName?.[0]?.toUpperCase() || "?"}
                                         </AvatarFallback>
                                     </Avatar>
@@ -223,29 +226,9 @@ export default function ProjectLandingPage() {
                     </div>
                 </div>
 
-                {/* Resources Section */}
-                {resources && resources.length > 0 && (
-                    <div className="bg-card rounded-lg shadow-sm border border-border p-8 mb-8">
-                        <h2 className="text-xl font-semibold text-foreground mb-4">Project resources</h2>
-                        <div className="flex flex-wrap gap-3">
-                            {resources.map((resource) => (
-                                <a
-                                    key={resource.id}
-                                    href={resource.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-6 py-3 bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-[#2d2a49] rounded-full font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-all cursor-pointer shadow-sm hover:shadow-md"
-                                >
-                                    {resource.name}
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Support Link */}
                 <div className="bg-card rounded-lg shadow-sm border border-border p-8">
-                    <h2 className="text-xl font-semibold text-foreground mb-4">Need support?</h2>
+                    <h3 className="font-semibold text-lg text-foreground mb-4">Need support?</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                         If you&apos;re looking for help with this project, visit the support page.
                     </p>

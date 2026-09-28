@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCreateProject, useListUserGithubRepos, useCreateProjectFromGitHub, useCreateSandboxProject, useHasSandbox } from "@/hooks/useProject"
 import { useCompleteOnboarding, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
-import { useProjectSelection } from "@/contexts/project-context"
+import { useEnterProject } from "@/hooks/useEnterProject"
+import { homeRouteForRole } from "@/lib/roles"
 import { Loader2, Plus, Users, Github, ArrowLeft, Check, Search, FlaskConical } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { signInWithGitHub } from "@/lib/supabase/auth"
@@ -32,7 +33,7 @@ export default function OnboardingPage() {
     const createSandbox = useCreateSandboxProject()
     const { data: hasSandbox } = useHasSandbox()
     const completeOnboarding = useCompleteOnboarding()
-    const { setSelectedProjectId } = useProjectSelection()
+    const enterProject = useEnterProject()
     const { data: onboardingStatus, isLoading: onboardingStatusLoading } = useOnboardingStatus()
 
     const { data: githubRepos = [], isLoading: isLoadingRepos } = useListUserGithubRepos(githubToken)
@@ -62,6 +63,12 @@ export default function OnboardingPage() {
         }
     }, [searchParams])
 
+    // Existing members can come back here on purpose to add another project
+    // (top-bar "Add new", sandbox "Exit sandbox", GitHub import). Those entry
+    // points pass an explicit intent param so the redirect below is skipped.
+    const wantsAnotherProject =
+        searchParams.get("new") === "1" || searchParams.get("import") === "github"
+
     // CRM / admin-seeded users already have a project; this route is public so
     // AuthGuard does not redirect them away — send them to the app instead of
     // showing "Create or join" again.
@@ -69,17 +76,25 @@ export default function OnboardingPage() {
     // Do not use `!needsOnboarding` alone: when logged out, useOnboardingStatus
     // returns needsOnboarding: false (no user), which would wrongly redirect.
     const hasFinishedOnboardingWizard =
-        onboardingStatus &&
+        !wantsAnotherProject &&
+        !isCreating &&
+        !!onboardingStatus &&
         (onboardingStatus.isMember || onboardingStatus.onboardingCompleted)
 
     useEffect(() => {
         if (onboardingStatusLoading || !onboardingStatus) return
+        if (wantsAnotherProject) return
+        // Creating a project makes the user a member right away; the create
+        // handlers navigate themselves once the new project is selected and
+        // the role is switched. Redirecting here first would race them and
+        // land on "/" before any project is selected.
+        if (isCreating) return
         const done =
             onboardingStatus.isMember || onboardingStatus.onboardingCompleted
         if (done) {
             router.replace("/")
         }
-    }, [onboardingStatus, onboardingStatusLoading, router])
+    }, [onboardingStatus, onboardingStatusLoading, router, wantsAnotherProject, isCreating])
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
@@ -102,18 +117,18 @@ export default function OnboardingPage() {
             })
 
             await completeOnboarding.mutateAsync()
-            await Promise.all([
-                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
-                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
-            ])
+            await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
 
-            setSelectedProjectId(project.project_id)
+            // The creator is the project's admin — land them there as admin
+            // even if their last active role (e.g. helper) was something else.
+            const role = await enterProject(project.project_id, "admin")
             toast.success("Project created successfully!")
-            router.push("/")
+            router.push(homeRouteForRole(role))
         } catch (error: unknown) {
             console.error("Failed to create project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create project. Please try again.")
-        } finally {
+            // Only reset on failure — on success we navigate away, and
+            // clearing it would re-arm the member redirect above.
             setIsCreating(false)
         }
     }
@@ -141,18 +156,16 @@ export default function OnboardingPage() {
             })
 
             await completeOnboarding.mutateAsync()
-            await Promise.all([
-                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
-                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
-            ])
+            await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
 
-            setSelectedProjectId(result.project.project_id)
+            await enterProject(result.project.project_id, "admin")
             toast.success("Project imported from GitHub successfully!")
             router.push(`/projects/${result.project.project_id}/invite-contributors?repo=${encodeURIComponent(repo.full_name)}`)
         } catch (error: unknown) {
             console.error("Failed to import project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to import project. Please try again.")
-        } finally {
+            // Only reset on failure — on success we navigate away, and
+            // clearing it would re-arm the member redirect above.
             setIsCreating(false)
         }
     }
@@ -164,18 +177,16 @@ export default function OnboardingPage() {
             // complete server-side, so we only refetch to pick up the changes.
             const result = await createSandbox.mutateAsync()
 
-            await Promise.all([
-                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
-                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
-            ])
+            await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
 
-            setSelectedProjectId(result.project.project_id)
+            const role = await enterProject(result.project.project_id, "admin")
             toast.success("Sandbox ready! Explore your demo project.")
-            router.push("/")
+            router.push(homeRouteForRole(role))
         } catch (error: unknown) {
             console.error("Failed to create sandbox:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create sandbox. Please try again.")
-        } finally {
+            // Only reset on failure — on success we navigate away, and
+            // clearing it would re-arm the member redirect above.
             setIsCreating(false)
         }
     }
@@ -206,8 +217,8 @@ export default function OnboardingPage() {
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-2xl">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-2xl font-bold">Welcome! Let&apos;s get you started</CardTitle>
-                        <CardDescription className="text-base mt-2">
+                        <CardTitle className="text-2xl font-bold">Welcome to Githelp! Let&apos;s get you started</CardTitle>
+                        <CardDescription className="text-sm mt-2">
                             Choose how you&apos;d like to get started with Githelp
                         </CardDescription>
                     </CardHeader>
@@ -217,8 +228,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Plus className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Create a new project</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -233,8 +244,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Users className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Users className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Join an existing project</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -274,8 +285,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Plus className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Create from scratch</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -290,8 +301,8 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-center gap-3">
-                                <Github className="w-6 h-6 text-brand-primary" />
+                            <div className="flex items-start gap-3">
+                                <Github className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Import from GitHub</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -308,8 +319,8 @@ export default function OnboardingPage() {
                                 className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
                                 variant="outline"
                             >
-                                <div className="flex items-center gap-3 w-full">
-                                    <FlaskConical className="w-6 h-6 text-brand-primary flex-shrink-0" />
+                                <div className="flex items-start gap-3 w-full">
+                                    <FlaskConical className="w-6 h-6 mt-0.5 text-brand-primary flex-shrink-0" />
                                     <div className="flex-1">
                                         <div className="font-semibold text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
@@ -317,7 +328,7 @@ export default function OnboardingPage() {
                                         </div>
                                     </div>
                                     {isCreating && (
-                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0" />
+                                        <Loader2 className="w-5 h-5 mt-1 animate-spin text-muted-foreground flex-shrink-0" />
                                     )}
                                 </div>
                             </Button>

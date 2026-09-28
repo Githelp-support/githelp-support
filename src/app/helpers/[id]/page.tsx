@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft, HelpCircle } from "lucide-react"
+import { Fragment, useState, useMemo, use } from "react"
+import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft, HelpCircle, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,11 +12,28 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
 import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeEntries"
-import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
+import { usePaymentTransfers, usePayments, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
+import {
+  TransactionLine,
+  TransactionsPanel,
+  TransactionsToggle,
+  transactionsPanelId,
+  useExpandedRows,
+} from "@/components/reports/ticket-transactions"
+
+const TRANSFER_STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
+  completed: "Paid out",
+  pending: "Pending",
+  failed: "Failed",
+}
+
+const ROW_BUTTON_CLASS =
+  "rounded-lg border-border text-muted-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -50,6 +67,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     helperId: id,
     projectId,
   })
+  // Customer-side charges for this project — the source of the Stripe receipt
+  // link shown on each ticket row.
+  const { data: paymentsData } = usePayments(projectId)
 
   const generateMonthOptions = () => {
     const months = []
@@ -72,6 +92,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   }
 
   const monthOptions = generateMonthOptions()
+  const { isExpanded, toggle } = useExpandedRows()
 
   const stats = useMemo(() => {
     const totalTime = timeEntriesData ? calculateTotalTime(timeEntriesData) : 0
@@ -88,32 +109,46 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     }
   }, [timeEntriesData, helperTicketsData])
 
-  // Transform helper tickets to ticket list
+  // Transform helper tickets to ticket list. A ticket can be paid out to
+  // the helper in several transfers (hold capture + overage, weekly
+  // captures, a retried charge); they are summed into one record and listed
+  // underneath, each with the receipt of the charge it was split from.
   const tickets = useMemo(() => {
+    // Stripe receipt URLs per ticket, oldest charge first; used when payouts
+    // can't be matched to their charge (legacy rows without payment_id).
+    const receiptsByTicket = new Map<string, string[]>()
+    for (const payment of [...(paymentsData ?? [])].reverse()) {
+      if (!payment.ticket_id || !payment.stripe_receipt_url) continue
+      const list = receiptsByTicket.get(payment.ticket_id) ?? []
+      list.push(payment.stripe_receipt_url)
+      receiptsByTicket.set(payment.ticket_id, list)
+    }
+    const receiptsFor = (ticketId: string | null | undefined) =>
+      ticketId ? receiptsByTicket.get(ticketId) ?? [] : []
+
+    const groups = groupTransfersByTicket(transfersData ?? [])
+
     if (!helperTicketsData || helperTicketsData.length === 0) {
       // Fallback to transfers if no tickets found via participants
-      if (!transfersData) return []
-      return transfersData.map((transfer) => ({
-        id: transfer.ticket_id ?? "",
-        displayId: transfer.ticket_id?.slice(0, 5) || "-",
-        date: transfer.completed_at ? new Date(transfer.completed_at).toLocaleDateString("en-GB") : "-",
+      return groups.map((group) => ({
+        key: group.key,
+        id: group.ticketId ?? "",
+        displayId: group.ticketId?.slice(0, 5) || "-",
+        date: group.date ? new Date(group.date).toLocaleDateString("en-GB") : "-",
         type: "Bug", // TODO: Get from ticket
-        amount: formatAmount(transfer.amount_smallest_unit, transfer.currency),
-        status: transfer.status === "completed" ? "Completed" : "In progress",
+        amount: formatAmount(group.amountSmallestUnit, group.currency),
+        status: group.status === "completed" ? "Completed" : "In progress",
+        receipts: receiptsFor(group.ticketId),
+        transfers: group.items,
       }))
     }
 
-    // Create a map of transfers by ticket_id for amount lookup
-    const transfersMap = new Map(
-      (transfersData || []).map((transfer) => [
-        transfer.ticket_id,
-        transfer,
-      ])
-    )
+    const groupsByTicket = new Map(groups.filter((g) => g.ticketId).map((group) => [group.ticketId as string, group]))
 
     return helperTicketsData.map((ticket) => {
-      const transfer = transfersMap.get(ticket.id)
+      const group = groupsByTicket.get(ticket.id)
       return {
+        key: ticket.id,
         id: ticket.id,
         displayId: ticket.id.slice(0, 5),
         date: ticket.completed_at
@@ -122,9 +157,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             ? new Date(ticket.created_at).toLocaleDateString("en-GB")
             : "-",
         type: "Bug", // TODO: Get from ticket help category
-        amount: transfer
-          ? formatAmount(transfer.amount_smallest_unit, transfer.currency)
-          : "-",
+        amount: group ? formatAmount(group.amountSmallestUnit, group.currency) : "-",
         status:
           ticket.status === "completed"
             ? "Completed"
@@ -133,9 +166,14 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               : ticket.status === "available"
                 ? "Available"
                 : "Unknown",
+        receipts: receiptsFor(ticket.id),
+        transfers: group?.items ?? [],
       }
     })
-  }, [helperTicketsData, transfersData])
+  }, [helperTicketsData, transfersData, paymentsData])
+
+  const receiptForTransfer = (transfer: PaymentTransfer) =>
+    (transfer.payment_id && paymentsData?.find((p) => p.id === transfer.payment_id)?.stripe_receipt_url) || null
 
   if (helperLoading) {
     return (
@@ -171,6 +209,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     avatar: (helperData.user?.name || "U")[0].toUpperCase(),
     avatarColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id),
     category: helperData.category || "Community",
+    isRemoved: !!helperData.deleted_at,
     discord: helperData.user?.username || "-",
     email: helperData.user?.email || "-",
     github: helperData.user?.username || "-",
@@ -210,6 +249,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
                     {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
                   </Badge>
+                  {helper.isRemoved && (
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground border-0 text-xs font-medium">
+                      Removed
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="space-y-3 pl-6">
@@ -365,9 +409,17 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                       </tr>
                     </thead>
                     <tbody>
-                      {helper.tickets.map((ticket) => (
-                        <tr key={ticket.id} className="border-b border-border last:border-b-0 hover:bg-muted/40 transition-colors">
-                          <td className="px-4 py-3">
+                      {helper.tickets.map((ticket) => {
+                        const count = ticket.transfers.length
+                        const expanded = count > 1 && isExpanded(ticket.key)
+                        const panelId = transactionsPanelId(ticket.key)
+                        // Receipts per payout need each payout linked to its charge;
+                        // older payouts aren't, so keep the per-ticket receipt list then.
+                        const receiptsPerPayout = count > 1 && ticket.transfers.every((t) => !!t.payment_id)
+                        return (
+                        <Fragment key={ticket.key}>
+                        <tr className={cn("border-b border-border last:border-b-0 hover:bg-muted/40 transition-colors", expanded && "border-b-0")}>
+                          <td className="px-4 py-3 align-top">
                             <div className="flex items-center gap-3">
                               <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
                               {ticket.id ? (
@@ -380,6 +432,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                               ) : (
                                 <span className="text-sm text-foreground font-semibold font-mono tabular-nums">{ticket.displayId}</span>
                               )}
+                            </div>
+                            <div className="pl-7">
+                              <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(ticket.key)} panelId={panelId} noun="payout" />
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground tabular-nums">{ticket.date}</td>
@@ -420,17 +475,81 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                   Open
                                 </Button>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-lg border-border text-muted-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
-                              >
-                                Download PDF
-                              </Button>
+                              {receiptsPerPayout ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={ROW_BUTTON_CLASS}
+                                  aria-expanded={expanded}
+                                  aria-controls={expanded ? panelId : undefined}
+                                  title="Each payout links to the receipt of the charge it came from"
+                                  onClick={() => toggle(ticket.key)}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Receipts
+                                </Button>
+                              ) : ticket.receipts.length === 0 ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={ROW_BUTTON_CLASS}
+                                  disabled
+                                  title="No Stripe receipt yet — available once the ticket has been charged"
+                                >
+                                  View receipt
+                                </Button>
+                              ) : (
+                                ticket.receipts.map((url, index) => (
+                                  <Button key={`${index}-${url}`} variant="outline" size="sm" className={ROW_BUTTON_CLASS} asChild>
+                                    <a href={url} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      {ticket.receipts.length === 1 ? "View receipt" : `Receipt ${index + 1}`}
+                                    </a>
+                                  </Button>
+                                ))
+                              )}
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        {expanded && (
+                          <tr className="border-b border-border last:border-b-0">
+                            <td colSpan={6} className="px-4 pb-3 pt-0">
+                              <TransactionsPanel id={panelId} className="mt-0">
+                                {ticket.transfers.map((transfer, index) => {
+                                  const receipt = receiptForTransfer(transfer)
+                                  return (
+                                    <TransactionLine
+                                      key={transfer.id}
+                                      index={index}
+                                      count={count}
+                                      date={new Date(transferDate(transfer)).toLocaleDateString("en-GB")}
+                                      description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
+                                      amount={formatAmount(transfer.amount_smallest_unit, transfer.currency)}
+                                      status={<span className="text-xs text-muted-foreground">{TRANSFER_STATUS_LABEL[transfer.status]}</span>}
+                                      actions={
+                                        !receiptsPerPayout ? undefined : receipt ? (
+                                          <Button variant="outline" size="sm" className={ROW_BUTTON_CLASS} asChild>
+                                            <a href={receipt} target="_blank" rel="noopener noreferrer">
+                                              <ExternalLink className="w-3.5 h-3.5" />
+                                              Receipt
+                                            </a>
+                                          </Button>
+                                        ) : (
+                                          <Button variant="outline" size="sm" className={ROW_BUTTON_CLASS} disabled title="No Stripe receipt for this charge yet">
+                                            Receipt
+                                          </Button>
+                                        )
+                                      }
+                                    />
+                                  )
+                                })}
+                              </TransactionsPanel>
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>

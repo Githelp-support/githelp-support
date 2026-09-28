@@ -10,7 +10,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import { supabase } from "@/lib/supabase/client";
-import { useStartPaymentConnect } from "../usePaymentConnect";
+import { useStartPaymentConnect, useSyncPaymentConnect } from "../usePaymentConnect";
 
 function makeWrapper() {
     const queryClient = new QueryClient({
@@ -144,5 +144,64 @@ describe("useStartHelperPaymentConnect", () => {
         await waitFor(async () => {
             await expect(result.current.mutateAsync()).rejects.toThrow("nope");
         });
+    });
+});
+
+describe("useSyncPaymentConnect", () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it("invokes payments-sync-account with scope/project and invalidates payment-status queries", async () => {
+        vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
+            data: {
+                scope: "user",
+                mode: "test",
+                stripe_account_id: "acct_u",
+                stripe_details_submitted: true,
+                stripe_charges_enabled: true,
+                stripe_payouts_enabled: true,
+            },
+            error: null,
+        } as never);
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+        });
+        const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            createElement(QueryClientProvider, { client: queryClient }, children);
+
+        const { result } = renderHook(() => useSyncPaymentConnect(), { wrapper });
+        const out = await result.current.mutateAsync({ scope: "user", projectId: "proj-1" });
+
+        expect(out.stripe_details_submitted).toBe(true);
+        expect(supabase.functions.invoke).toHaveBeenCalledWith(
+            "payments-sync-account",
+            { body: { scope: "user", project_id: "proj-1" } },
+        );
+        await waitFor(() =>
+            expect(invalidate).toHaveBeenCalledWith({ queryKey: ["payment-status"] }),
+        );
+    });
+
+    it("passes organization_id for organization scope", async () => {
+        vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
+            data: { scope: "organization", mode: "live" },
+            error: null,
+        } as never);
+        const { result } = renderHook(() => useSyncPaymentConnect(), { wrapper: makeWrapper() });
+        await result.current.mutateAsync({ scope: "organization", organizationId: "org-1" });
+        expect(supabase.functions.invoke).toHaveBeenCalledWith(
+            "payments-sync-account",
+            { body: { scope: "organization", organization_id: "org-1" } },
+        );
+    });
+
+    it("rejects when the function returns an error", async () => {
+        vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
+            data: null,
+            error: { message: "boom" },
+        } as never);
+        const { result } = renderHook(() => useSyncPaymentConnect(), { wrapper: makeWrapper() });
+        await expect(result.current.mutateAsync({ scope: "user" })).rejects.toThrow("boom");
     });
 });

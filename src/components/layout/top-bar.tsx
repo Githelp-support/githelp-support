@@ -2,10 +2,12 @@
 
 import { Bell, ChevronDown, Check, Plus } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,17 +16,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Logo } from "@/components/brand/logo"
-import { NotificationsPanel, type Notification } from "./notifications-panel"
+import { NotificationsPanel } from "./notifications-panel"
+import type { Notification } from "@/hooks/useNotifications"
 import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
-import { useUserRoles } from "@/hooks/useProjectRole"
+import {
+  useProjectAvailableRoles,
+  projectAvailableRolesQueryOptions,
+  useUserRoles,
+} from "@/hooks/useProjectRole"
+import { homeRouteForRole } from "@/lib/roles"
 import {
   useNotifications,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from "@/hooks/useNotifications"
-import { formatRelativeTime } from "@/lib/format"
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications"
 import type { Database } from "@/types/database"
 
 type Project = Database["public"]["Tables"]["projects"]["Row"]
@@ -43,10 +51,12 @@ const ProjectLogo = ({
   logoUrl,
   projectName,
   size = "w-6 h-6",
+  primaryColor,
 }: {
   logoUrl: string | null | undefined
   projectName: string
   size?: string
+  primaryColor?: string | null
 }) => {
   const firstLetter = projectName?.[0]?.toUpperCase() || "?"
   const radius = sizeRadiusMap[size] || "rounded-[9px]"
@@ -55,7 +65,10 @@ const ProjectLogo = ({
   return (
     <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${radius}`}>
       {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
-      <AvatarFallback className={`bg-brand-primary text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}>
+      <AvatarFallback
+        className={`${primaryColor ? "" : "bg-brand-primary"} text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}
+        style={primaryColor ? { backgroundColor: primaryColor } : undefined}
+      >
         {firstLetter}
       </AvatarFallback>
     </Avatar>
@@ -64,45 +77,40 @@ const ProjectLogo = ({
 
 export function TopBar() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
-  const { data: userRoles, isSuccess: rolesLoaded } = useUserRoles()
+  const { data: userRoles, isSuccess: userRolesLoaded } = useUserRoles()
 
   const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
+  const { data: projectAvailableRoles, isSuccess: projectRolesLoaded } = useProjectAvailableRoles(
+    selectedProject?.project_id,
+  )
   const { data: selectedProjectBranding } = useProjectBranding(selectedProject?.project_id || "")
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const bellButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Fetch notifications
+  // Fetch notifications; the realtime subscription keeps the bell live and
+  // fires a toast on new rows.
+  useRealtimeNotifications()
   const { data: notificationsData } = useNotifications()
   const markNotificationRead = useMarkNotificationRead()
   const markAllRead = useMarkAllNotificationsRead()
 
-  // Transform notifications to UI format
-  const notifications: Notification[] = (notificationsData || []).map((notif) => ({
-    id: notif.id,
-    title: notif.title,
-    type: (notif.metadata?.type || "INFO") as "SUPPORT_TICKET" | "HELPER_REQUEST" | "NEW_PAYOUT" | "INFO",
-    content: notif.content,
-    route: notif.route || "#",
-    timestamp: formatRelativeTime(notif.created_at),
-    isRead: notif.is_read,
-  }))
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const notifications: Notification[] = notificationsData || []
+  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   const handleMarkAllAsRead = async () => {
     await markAllRead.mutateAsync()
   }
 
+  // Navigation on click is handled inside NotificationsPanel (it owns the
+  // per-type route overrides); this callback only marks the row read.
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.isRead) {
+    if (!notification.is_read) {
       await markNotificationRead.mutateAsync(notification.id)
-    }
-    if (notification.route && notification.route !== "#") {
-      router.push(notification.route)
     }
   }
 
@@ -114,18 +122,28 @@ export function TopBar() {
     return branding?.logo_url ?? null
   }
 
-  const handleProjectSelect = (project: Project) => {
+  const routeForRole = (role: UserRole) => {
+    router.push(homeRouteForRole(role))
+  }
+
+  const handleProjectSelect = async (project: Project) => {
     const isDifferentProject = project.project_id !== selectedProjectId
     setSelectedProjectId(project.project_id)
-    if (isDifferentProject) {
-      if (user.role === "admin") {
-        router.push("/")
-      } else if (user.role === "helper") {
-        router.push("/helper/overview")
-      } else if (user.role === "user") {
-        router.push("/support/tickets")
-      }
+    if (!isDifferentProject) return
+
+    // Always land in the HIGHEST role the user holds in the newly selected
+    // project (e.g. helper in A → admin in B switches to admin; admin in A →
+    // helper-only in B switches to helper). Roles come back ordered
+    // admin > helper > user, and fetchQuery shares the switcher's cache.
+    let nextRole: UserRole = "user"
+    try {
+      const roles = await queryClient.fetchQuery(projectAvailableRolesQueryOptions(project.project_id))
+      nextRole = roles[0] ?? "user"
+    } catch (error) {
+      console.error("Failed to resolve roles for project:", error)
     }
+    if (nextRole !== user.role) switchRole(nextRole)
+    routeForRole(nextRole)
   }
 
   const getRoleDisplayName = (role: UserRole) => {
@@ -134,13 +152,7 @@ export function TopBar() {
 
   const handleSwitchRole = (role: UserRole) => {
     switchRole(role)
-    if (role === "admin") {
-      router.push("/")
-    } else if (role === "helper") {
-      router.push("/helper/overview")
-    } else if (role === "user") {
-      router.push("/support/tickets")
-    }
+    routeForRole(role)
   }
 
   const isSignedIn = Boolean(user.id)
@@ -164,28 +176,37 @@ export function TopBar() {
     }
   }
 
-  // Available roles reflect the role categories the profile is ACTUALLY
-  // registered for across ALL of their projects (no implied roles), ordered
-  // admin → helper → user. While the query is loading, fall back to the
-  // current role so the dropdown is never empty.
+  // Roles are scoped to the SELECTED project (keyed by the persisted selected
+  // project id — not the per-page projectRole, which gets cleared/lowered on
+  // /support pages), and limited to the role categories the profile is
+  // ACTUALLY registered for (no implied "user" role for e.g. a freshly
+  // registered helper). Ordered admin → helper → user.
   const availableRoles: UserRole[] = useMemo(() => {
-    const order: UserRole[] = ["admin", "helper", "user"]
-    if (rolesLoaded && userRoles && userRoles.length > 0) {
-      return order.filter((role) => userRoles.includes(role))
+    const registered = userRolesLoaded && userRoles && userRoles.length > 0 ? userRoles : null
+    if (!projectAvailableRoles) {
+      // No projects at all (support-only users) or queries still loading:
+      // fall back to the global registrations, then to the active role so
+      // the dropdown is never empty.
+      return registered ?? [user.role]
     }
-    return [user.role]
-  }, [rolesLoaded, userRoles, user.role])
+    if (!registered) return projectAvailableRoles
+    const scoped = projectAvailableRoles.filter((role) => registered.includes(role))
+    return scoped.length > 0 ? scoped : projectAvailableRoles
+  }, [userRolesLoaded, userRoles, projectAvailableRoles, user.role])
 
-  // Once roles are loaded, if the current role isn't one the profile holds,
+  const rolesResolved =
+    userRolesLoaded && !projectsLoading && (!selectedProject || projectRolesLoaded)
+
+  // Once roles are resolved, if the current role isn't one the profile holds,
   // switch to the first available role (e.g. a freshly registered helper
   // lands in the Helper view instead of the default User view).
   useEffect(() => {
-    if (!isSignedIn || !rolesLoaded || availableRoles.length === 0) return
+    if (!isSignedIn || !rolesResolved || availableRoles.length === 0) return
     if (!availableRoles.includes(user.role)) {
       handleSwitchRole(availableRoles[0])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, rolesLoaded, availableRoles, user.role])
+  }, [isSignedIn, rolesResolved, availableRoles, user.role])
 
   if (!isSignedIn) return null
 
@@ -241,6 +262,7 @@ export function TopBar() {
                       logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
                       projectName={selectedProject?.name || ""}
                       size="w-[22px] h-[22px]"
+                      primaryColor={selectedProjectBranding?.primary_color}
                     />
                     <span className="font-sans text-[14px] font-[550] text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
@@ -254,22 +276,26 @@ export function TopBar() {
                 className="w-56 font-sans"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
-                {userProjects.map((project) => {
-                  const isSelected = selectedProject?.project_id === project.project_id
-                  return (
-                    <ProjectLogoWithBranding
-                      key={project.project_id}
-                      project={project}
-                      isSelected={isSelected}
-                      onSelect={handleProjectSelect}
-                    />
-                  )
-                })}
+                {/* Scrollable project list — capped at three rows (3 × 32px) so the
+                    separator and "Add new" below always stay visible. */}
+                <div className={cn("max-h-24 overflow-y-auto")}>
+                  {userProjects.map((project) => {
+                    const isSelected = selectedProject?.project_id === project.project_id
+                    return (
+                      <ProjectLogoWithBranding
+                        key={project.project_id}
+                        project={project}
+                        isSelected={isSelected}
+                        onSelect={handleProjectSelect}
+                      />
+                    )
+                  })}
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
                   onClick={() => {
-                    if (typeof window !== "undefined") window.location.href = "/onboarding"
+                    if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
                   }}
                 >
                   <Plus className="w-4 h-4" />
@@ -297,7 +323,7 @@ export function TopBar() {
             <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
-                {unreadCount}
+                {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </button>
@@ -340,7 +366,12 @@ function ProjectLogoWithBranding({
       onClick={() => onSelect(project)}
       className={`group gap-2 ${isSelected ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
     >
-      <ProjectLogo logoUrl={logoUrl} projectName={project.name} size="w-5 h-5" />
+      <ProjectLogo
+        logoUrl={logoUrl}
+        projectName={project.name}
+        size="w-5 h-5"
+        primaryColor={branding?.primary_color}
+      />
       <span
         className={`font-sans truncate text-[14px] ${
           isSelected

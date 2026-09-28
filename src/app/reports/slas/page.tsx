@@ -11,7 +11,8 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 
 interface ReportData {
   id: string
@@ -111,6 +112,7 @@ export default function ReportsSLAsPage() {
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
   const [ticketsSortField, setTicketsSortField] = useState<TicketsSortField | null>(null)
   const [ticketsSortDirection, setTicketsSortDirection] = useState<SortDirection>("asc")
+  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -487,6 +489,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-2 flex items-center justify-end space-x-2">
                           <Button
+                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
@@ -497,8 +500,9 @@ export default function ReportsSLAsPage() {
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            onClick={() => setRequestPdfOpen(true)}
                           >
-                            Download PDF
+                            Request PDF
                           </Button>
                         </div>
                       </div>
@@ -616,6 +620,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-2 flex items-center justify-end space-x-2">
                           <Button
+                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
@@ -626,8 +631,9 @@ export default function ReportsSLAsPage() {
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                            onClick={() => setRequestPdfOpen(true)}
                           >
-                            Download PDF
+                            Request PDF
                           </Button>
                         </div>
                       </div>
@@ -640,6 +646,8 @@ export default function ReportsSLAsPage() {
           </div>
         </main>
       </div>
+
+      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }

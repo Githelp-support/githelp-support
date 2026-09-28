@@ -1,22 +1,65 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Info, Plus } from "lucide-react"
+import { Check, Plus } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
-import { ImageUploadModal } from "@/components/modals/image-upload-modal"
+import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
+import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "./right-sidebar-collapse"
+import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
+import {
+  DeclineTimeEntryDialog,
+  TimeEntryReviewActions,
+  TimeEntryReviewBanner,
+  TimeEntryReviewStatusBadge,
+} from "@/components/ticket-chat/time-entry-review"
+import { describeAutoAcceptDeadline, formatTime, type TimeEntryReviewStatus } from "@/lib/time-entries"
+import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
+import { appendToDraft } from "@/lib/ticket-attachments"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
   | "payment_authorized"
   | "payment_requires_action"
+  | "payment_hold_declined"
   | "payment_cap_exceeded"
+  | "payment_failed"
+  | "payment_completed"
   | "sla_covered"
+  | "free_support"
+
+/**
+ * `metadata.kind` of persisted system messages. Payment kinds are written by
+ * the payments edge functions; `time_logged` is written by the DB trigger on
+ * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages);
+ * `time_entry_accepted` / `time_entry_declined` by the `review_time_entry` RPC
+ * (migration 20260925120000_time_entries_customer_review); `time_entry_deleted`
+ * by the delete trigger (migration 20260927120000_time_entries_helper_delete_own).
+ */
+export type SystemMessageKind =
+  | PaymentSystemMessageKind
+  | "time_logged"
+  | "time_entry_accepted"
+  | "time_entry_declined"
+  | "time_entry_deleted"
+
+/** Current review state of one logged entry, keyed by `tickets_time_entries.id`. */
+export type TicketChatTimeEntryReview = {
+  status: TimeEntryReviewStatus
+  declineReason?: string | null
+  /** Drives the "accepted automatically in about N hours" hint while pending. */
+  reviewRequestedAt?: string | null
+  autoAccepted?: boolean
+}
+
+export type TimeEntryReviewDecision = Exclude<TimeEntryReviewStatus, "pending">
 
 export type TicketChatMessage = {
   id: string
@@ -29,7 +72,7 @@ export type TicketChatMessage = {
   content: string
   kind?: "claimed" | "ended"
   paymentMetadata?: {
-    kind: PaymentSystemMessageKind
+    kind: SystemMessageKind
     [key: string]: unknown
   } | null
 }
@@ -72,17 +115,45 @@ export interface TicketChatProps {
   isEnded?: boolean
 
   /**
-   * When provided, enables the image attachment button in the chat toolbar.
-   * Format: "{projectId}/{ticketId}" — used as the storage path prefix under the ticket-attachments bucket.
+   * Customer-side "End session". Pressing the toolbar button does not end the
+   * ticket — it asks the helper to finalise. When `endSessionRequestedAt` is
+   * set, the button is replaced by a status banner with a cancel action.
+   * Omit `onRequestEndSession` to hide the button entirely (e.g. no ticket yet).
+   */
+  onRequestEndSession?: () => void | Promise<void>
+  onCancelEndSessionRequest?: () => void | Promise<void>
+  endSessionRequestedAt?: string | null
+  endSessionRequestPending?: boolean
+
+  /**
+   * Customer-side review of logged time. `timeEntryReviews` maps a time entry
+   * id (from `time_logged` metadata) to its current status; when
+   * `onReviewTimeEntry` is set, pending entries get Accept / Decline actions
+   * in their bubble and a banner above the input counts what is still open.
+   * Declining opens a dialog that requires an explanation. Omit the handler
+   * on the helper side (statuses are still shown).
+   */
+  timeEntryReviews?: Record<string, TicketChatTimeEntryReview>
+  onReviewTimeEntry?: (input: { entryId: string; decision: TimeEntryReviewDecision; reason?: string }) => void | Promise<void>
+  timeEntryReviewPending?: boolean
+
+  /**
+   * When provided, enables image attachments (toolbar button, paste, drag & drop).
+   * Format: "{projectId}/{ticketId}" — or "{projectId}/{userId}" before the
+   * ticket exists — used as the folder inside the ticket-attachments bucket.
+   * Uploaded images are added to the message as markdown via `onMessageChange`.
    */
   attachmentStoragePrefix?: string
-  /** Called after a successful image upload with the resolved URL */
-  onImageUploaded?: (url: string) => void
 
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
 
-  /** Called when the user clicks the "Add payment method" CTA on a payment_required system message. */
+  /**
+   * Called when the user clicks a payment CTA on a system message: "Add
+   * payment method" (payment_required), "Pay yourself instead"
+   * (payment_cap_exceeded) or "Update payment method" (payment_failed).
+   * Branch on `msg.paymentMetadata?.kind`.
+   */
   onPaymentCtaClick?: (msg: TicketChatMessage) => void
   paymentCtaLoading?: boolean
 }
@@ -105,17 +176,77 @@ export function TicketChat(props: TicketChatProps) {
     onSend,
     sendDisabled,
     isEnded,
+    onRequestEndSession,
+    onCancelEndSessionRequest,
+    endSessionRequestedAt,
+    endSessionRequestPending,
+    timeEntryReviews,
+    onReviewTimeEntry,
+    timeEntryReviewPending,
     attachmentStoragePrefix,
-    onImageUploaded,
     rightSidebarFooter,
     onPaymentCtaClick,
     paymentCtaLoading,
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
+  const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false)
+  // Collapsed state is shared across views via localStorage (see
+  // right-sidebar-collapse.tsx).
+  const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
+  const endSessionRequested = !!endSessionRequestedAt && !isEnded
+
+  // Logged entry the customer is about to decline (opens the reason dialog).
+  const [decliningEntry, setDecliningEntry] = useState<{
+    entryId: string
+    durationLabel: string | null
+    helperName: string | null
+  } | null>(null)
+  const canReviewTimeEntries = !!onReviewTimeEntry && !isEnded
+  const pendingTimeEntryReviewCount = useMemo(() => {
+    if (!canReviewTimeEntries || !timeEntryReviews) return 0
+    return Object.values(timeEntryReviews).filter((r) => r.status === "pending").length
+  }, [canReviewTimeEntries, timeEntryReviews])
+  // The page handlers toast and rethrow; swallow here so a failed review
+  // (e.g. already reviewed in another tab) is not an unhandled rejection.
+  const reviewTimeEntry = async (input: {
+    entryId: string
+    decision: TimeEntryReviewDecision
+    reason?: string
+  }): Promise<boolean> => {
+    if (!onReviewTimeEntry) return false
+    try {
+      await onReviewTimeEntry(input)
+      return true
+    } catch {
+      return false
+    }
+  }
+  const timeEntryReviewFor = (msg: TicketChatMessage): TicketChatTimeEntryReview | null => {
+    if (msg.paymentMetadata?.kind !== "time_logged") return null
+    const entryId = msg.paymentMetadata.time_entry_id
+    if (typeof entryId !== "string") return null
+    return timeEntryReviews?.[entryId] ?? null
+  }
+
+  // Uploads finish asynchronously, so append to the latest draft rather than
+  // the one captured when the upload started.
+  const messageRef = useRef(message)
+  useEffect(() => {
+    messageRef.current = message
+  }, [message])
+  const handleImageAttached = useCallback(
+    (markdown: string) => {
+      const next = appendToDraft(messageRef.current, markdown)
+      messageRef.current = next
+      onMessageChange(next)
+    },
+    [onMessageChange],
+  )
+  const { uploadFiles, isUploading } = useTicketAttachmentUpload(attachmentStoragePrefix, handleImageAttached)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
 
   useEffect(() => {
     // Defer to after layout so any ended/outcome summary (driven by ticket
@@ -131,6 +262,12 @@ export function TicketChat(props: TicketChatProps) {
   // "Add payment method" button disappears after the hold is placed.
   const paymentResolved = useMemo(
     () => thread.some((m) => m.paymentMetadata?.kind === "payment_authorized"),
+    [thread],
+  )
+  // A payment_failed CTA stays live until a later payment_completed message
+  // confirms the retry went through (index order = chronological order).
+  const paymentCompletedIdx = useMemo(
+    () => thread.findIndex((m) => m.paymentMetadata?.kind === "payment_completed"),
     [thread],
   )
 
@@ -160,7 +297,17 @@ export function TicketChat(props: TicketChatProps) {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
-              <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+              <div
+                className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                onLoadCapture={(e) => {
+                  // Images load after the initial scroll and push the thread
+                  // down; keep it pinned to the bottom if it was there.
+                  if (!(e.target instanceof HTMLImageElement)) return
+                  const box = e.currentTarget
+                  const distance = box.scrollHeight - box.scrollTop - box.clientHeight
+                  if (distance <= e.target.offsetHeight + 120) scrollToBottom()
+                }}
+              >
                 <div className="px-6 py-5">
                   <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                     {intro}
@@ -216,7 +363,7 @@ export function TicketChat(props: TicketChatProps) {
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
-                                      {msg.senderName || "Unknown"}
+                                      {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
                                     </span>
                                     <span
                                       className="text-xs"
@@ -233,14 +380,60 @@ export function TicketChat(props: TicketChatProps) {
                                 <div
                                   className={
                                     msg.senderType === "system"
-                                      ? msg.paymentMetadata?.kind === "payment_cap_exceeded"
-                                        ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                        : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                      ? msg.paymentMetadata?.kind === "payment_authorized"
+                                        ? "bg-status-success-bg text-status-success-text py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                        : msg.paymentMetadata?.kind === "payment_cap_exceeded"
+                                          ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                          : msg.paymentMetadata?.kind === "payment_failed"
+                                            ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                            : msg.paymentMetadata?.kind === "time_entry_declined" ||
+                                                msg.paymentMetadata?.kind === "payment_hold_declined"
+                                              ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                              : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
-                                  <MarkdownContent content={msg.content} />
+                                  <MarkdownContent
+                                    content={
+                                      msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
+                                        ? `✓ ${msg.content}`
+                                        : msg.content
+                                    }
+                                  />
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "time_logged" &&
+                                    (() => {
+                                      const review = timeEntryReviewFor(msg)
+                                      if (!review) return null
+                                      const entryId = msg.paymentMetadata?.time_entry_id as string
+                                      if (review.status === "pending" && canReviewTimeEntries) {
+                                        const ms = msg.paymentMetadata?.time_milliseconds
+                                        return (
+                                          <TimeEntryReviewActions
+                                            pending={timeEntryReviewPending}
+                                            autoAcceptHint={describeAutoAcceptDeadline(review.reviewRequestedAt)}
+                                            onAccept={() => void reviewTimeEntry({ entryId, decision: "accepted" })}
+                                            onDecline={() =>
+                                              setDecliningEntry({
+                                                entryId,
+                                                durationLabel: typeof ms === "number" ? formatTime(ms) : null,
+                                                helperName: (msg.paymentMetadata?.helper_name as string | undefined) ?? null,
+                                              })
+                                            }
+                                          />
+                                        )
+                                      }
+                                      return (
+                                        <div className="mt-2">
+                                          <TimeEntryReviewStatusBadge
+                                            status={review.status}
+                                            auto={review.autoAccepted}
+                                            perspective={onReviewTimeEntry ? "customer" : "helper"}
+                                          />
+                                        </div>
+                                      )
+                                    })()}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button
@@ -250,6 +443,28 @@ export function TicketChat(props: TicketChatProps) {
                                         className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
                                       >
                                         {paymentCtaLoading ? "Opening Stripe…" : "Add payment method"}
+                                      </button>
+                                      {typeof msg.paymentMetadata?.hold_amount_smallest_unit === "number" &&
+                                        msg.paymentMetadata.hold_amount_smallest_unit > 0 && (
+                                          <p className="mt-1.5 text-xs text-muted-foreground">
+                                            Once your card is saved we place a temporary hold of $
+                                            {(msg.paymentMetadata.hold_amount_smallest_unit / 100).toFixed(2)} on it. This is not a
+                                            charge: you only pay for the time your helper logs.
+                                          </p>
+                                        )}
+                                    </div>
+                                  )}
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "payment_failed" &&
+                                    (paymentCompletedIdx === -1 || paymentCompletedIdx < thread.indexOf(msg)) && (
+                                    <div className="mt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        disabled={paymentCtaLoading}
+                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                      >
+                                        {paymentCtaLoading ? "Opening Stripe…" : "Update payment method"}
                                       </button>
                                     </div>
                                   )}
@@ -282,6 +497,16 @@ export function TicketChat(props: TicketChatProps) {
             </div>
           </div>
 
+          {pendingTimeEntryReviewCount > 0 && <TimeEntryReviewBanner pendingCount={pendingTimeEntryReviewCount} />}
+
+          {endSessionRequested && (
+            <EndSessionRequestedBanner
+              requestedAt={endSessionRequestedAt}
+              pending={endSessionRequestPending}
+              onCancel={() => void onCancelEndSessionRequest?.()}
+            />
+          )}
+
           <TicketChatInput
             value={message}
             onChange={onMessageChange}
@@ -289,11 +514,15 @@ export function TicketChat(props: TicketChatProps) {
             sendDisabled={sendDisabled}
             placeholder="Message #askanything"
             onImageClick={attachmentStoragePrefix ? () => setImageUploadOpen(true) : undefined}
+            onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
+            imagesUploading={isUploading}
             toolbarEndContent={
-              !isEnded ? (
+              !isEnded && onRequestEndSession && !endSessionRequested ? (
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => setEndSessionDialogOpen(true)}
+                  disabled={endSessionRequestPending}
                   className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
                 >
                   End session
@@ -302,20 +531,43 @@ export function TicketChat(props: TicketChatProps) {
             }
           />
 
+          {onRequestEndSession && (
+            <EndSessionRequestDialog
+              open={endSessionDialogOpen}
+              onOpenChange={setEndSessionDialogOpen}
+              pending={endSessionRequestPending}
+              onConfirm={async () => {
+                await onRequestEndSession()
+                setEndSessionDialogOpen(false)
+              }}
+            />
+          )}
+
+          {onReviewTimeEntry && (
+            <DeclineTimeEntryDialog
+              open={!!decliningEntry}
+              onOpenChange={(open) => {
+                if (!open) setDecliningEntry(null)
+              }}
+              pending={timeEntryReviewPending}
+              durationLabel={decliningEntry?.durationLabel}
+              helperName={decliningEntry?.helperName}
+              onConfirm={async (reason) => {
+                if (!decliningEntry) return
+                // Stays open on failure so the explanation isn't lost.
+                if (await reviewTimeEntry({ entryId: decliningEntry.entryId, decision: "declined", reason })) {
+                  setDecliningEntry(null)
+                }
+              }}
+            />
+          )}
+
           {attachmentStoragePrefix && (
-            <ImageUploadModal
+            <AttachImageModal
               open={imageUploadOpen}
               onOpenChange={setImageUploadOpen}
-              storagePath={`ticket-attachments/${attachmentStoragePrefix}/${new Date().getTime()}`}
-              onUploadComplete={(url) => {
-                // Insert the image as a markdown reference into the message
-                const imageMarkdown = `\n![attachment](${url})\n`
-                onMessageChange(message + imageMarkdown)
-                onImageUploaded?.(url)
-              }}
-              title="Attach Image"
-              description="Upload an image to attach to this ticket"
-              privateBucket
+              storagePrefix={attachmentStoragePrefix}
+              onAttached={handleImageAttached}
             />
           )}
         </div>
@@ -323,24 +575,20 @@ export function TicketChat(props: TicketChatProps) {
       </div>
 
       {/* Right Sidebar */}
-      <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-          <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
+      <div
+        suppressHydrationWarning
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+      >
+          <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
+
+          {!isCollapsed && (
+          <div className="flex-1 overflow-y-auto px-3 pb-6">
             {/* People in Chat */}
             <div>
-              <h3
-                className="mb-3 uppercase"
-                style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.05em',
-                  color: 'rgba(0,0,0,0.5)',
-                  fontWeight: 500,
-                }}
-              >
-                People in this chat
-              </h3>
+              <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
 
               {participantsLoading ? (
-                <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
+                <SidebarEmpty>Loading...</SidebarEmpty>
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
@@ -356,36 +604,22 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+                <SidebarEmpty />
               )}
 
               {!isEnded && (
-                <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
+                <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                   <Plus className="w-4 h-4" />
                   Invite other helper
                 </Button>
               )}
             </div>
 
-            {/* Divider */}
-            <div className="border-t border-border my-6 -ml-5 -mr-4" />
+            <SidebarDivider />
 
             {/* Other Topics */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <h3
-                  className="uppercase leading-none"
-                  style={{
-                    fontSize: '11px',
-                    letterSpacing: '0.05em',
-                    color: 'rgba(0,0,0,0.5)',
-                    fontWeight: 500,
-                  }}
-                >
-                  Other topics in this chat
-                </h3>
-                <Info className="w-4 h-4 text-muted-foreground shrink-0" />
-              </div>
+              <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
 
               {topics.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -396,12 +630,19 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+                <SidebarEmpty />
               )}
             </div>
 
-            {rightSidebarFooter}
+            {/* Page-specific sections (Logged time / Active tickets), separated like the sections above */}
+            {rightSidebarFooter && (
+              <>
+                <SidebarDivider />
+                {rightSidebarFooter}
+              </>
+            )}
           </div>
+          )}
         </div>
     </div>
   )
