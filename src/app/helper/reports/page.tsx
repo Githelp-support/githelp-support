@@ -6,15 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText } from "lucide-react"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
+import { useProject } from "@/hooks/useProject"
+import { useUser } from "@/contexts/user-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useHelperTimeEntries } from "@/hooks/useHelperTimeEntries"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 import {
   HELPER_MONTHLY_PREVIEW_ROWS,
   PAYOUT_PREVIEW_ROWS,
@@ -23,24 +24,41 @@ import {
 import {
   aggregateHelperMonthly,
   formatMinutes,
+  groupTransfersByTicket,
   monthLabel,
+  payoutReference,
   transferDate,
 } from "@/lib/helper-payout-reports"
 import { getStatusBadgeClass } from "@/lib/status-colors"
+import {
+  TransactionLine,
+  TransactionsPanel,
+  TransactionsToggle,
+  transactionsPanelId,
+  useExpandedRows,
+} from "@/components/reports/ticket-transactions"
+import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
+import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
+/** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
+  /** Group key (the ticket, or the payout itself when it has no ticket). */
   id: string
   ticketId: string | null
   ticketShortId: string
   ticketTitle: string
-  /** ISO date used for display, sorting and month filtering. */
+  /** ISO date of the latest transfer, used for display and sorting. */
   date: string
   helper: string
   helperColor: string
   amountSmallestUnit: number
+  /** Transfers that failed (not paid) on top of `amountSmallestUnit`. */
+  failedSmallestUnit: number
   currency: string
   status: PaymentTransfer["status"]
+  /** The payout rows, oldest first, for statements and exports. */
+  transfers: PaymentTransfer[]
 }
 
 // dd/mm/yyyy
@@ -144,6 +162,20 @@ function compare(a: string | number, b: string | number, direction: SortDirectio
   return 0
 }
 
+function StatementLink({ transfer }: { transfer: PaymentTransfer }) {
+  return (
+    <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
+      <Link
+        href={`/helper/reports/payouts/${transfer.id}`}
+        title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
+      >
+        <FileText className="w-3.5 h-3.5" />
+        Statement
+      </Link>
+    </Button>
+  )
+}
+
 export default function HelperReportsPage() {
   const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("monthly")
   const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
@@ -154,10 +186,11 @@ export default function HelperReportsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
-  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
-
+  const { isExpanded, toggle } = useExpandedRows()
+  const { user } = useUser()
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
+  const { data: project } = useProject(projectId ?? "")
   const { data: helperId, isFetched: helperFetched } = useCurrentHelper(projectId)
 
   const transfersQueryEnabled = !!projectId && helperFetched && !!helperId
@@ -187,28 +220,29 @@ export default function HelperReportsPage() {
       ? selectedMonth || monthLabel(new Date().toISOString())
       : null
 
-  const allPayouts: PayoutData[] = useMemo(
-    () =>
-      (transfersData ?? []).map((transfer) => ({
-        id: transfer.id,
-        ticketId: transfer.ticket_id,
-        ticketShortId: transfer.ticket_id?.slice(0, 7) || "-",
-        ticketTitle: transfer.ticket?.title?.trim() || "",
-        date: transferDate(transfer),
-        helper: getHelperDisplayName(transfer.helper),
-        helperColor: getAvatarColorHexForId(transfer.helper?.user_id ?? transfer.helper_id ?? transfer.id),
-        amountSmallestUnit: transfer.amount_smallest_unit,
-        currency: transfer.currency || "usd",
-        status: transfer.status,
-      })),
-    [transfersData],
-  )
-
+  // The month filter applies to individual transfers, then they are grouped per ticket.
   const payouts: PayoutData[] = useMemo(() => {
-    let list = allPayouts
+    let transfers = transfersData ?? []
     if (targetMonth) {
-      list = list.filter((payout) => monthLabel(payout.date) === targetMonth)
+      transfers = transfers.filter((transfer) => monthLabel(transferDate(transfer)) === targetMonth)
     }
+    const list: PayoutData[] = groupTransfersByTicket(transfers).map((group) => {
+      const first = group.items[0]
+      return {
+        id: group.key,
+        ticketId: group.ticketId,
+        ticketShortId: group.ticketId?.slice(0, 7) || "-",
+        ticketTitle: first.ticket?.title?.trim() || "",
+        date: group.date,
+        helper: getHelperDisplayName(first.helper),
+        helperColor: getAvatarColorHexForId(first.helper?.user_id ?? first.helper_id ?? first.id),
+        amountSmallestUnit: group.amountSmallestUnit,
+        failedSmallestUnit: group.failedSmallestUnit,
+        currency: group.currency,
+        status: group.status,
+        transfers: group.items,
+      }
+    })
     if (!sortField) return list
     const sorted = [...list]
     sorted.sort((a, b) => {
@@ -228,7 +262,7 @@ export default function HelperReportsPage() {
       }
     })
     return sorted
-  }, [allPayouts, targetMonth, sortField, sortDirection])
+  }, [transfersData, targetMonth, sortField, sortDirection])
 
   const monthlyReports = useMemo(() => {
     let list = aggregateHelperMonthly(transfersData ?? [], timeEntries ?? []).map((row) => ({
@@ -306,7 +340,7 @@ export default function HelperReportsPage() {
   const isBusy =
     !!projectId && (!helperFetched || (transfersQueryEnabled && (transfersLoading || !transfersFetched || timeLoading)))
 
-  const hasRealData = allPayouts.length > 0 || (timeEntries?.length ?? 0) > 0
+  const hasRealData = (transfersData?.length ?? 0) > 0 || (timeEntries?.length ?? 0) > 0
 
   /**
    * Preview (sample rows + disclaimer) only while the helper has no payouts
@@ -317,6 +351,42 @@ export default function HelperReportsPage() {
 
   const emptyMessage = (what: string) =>
     targetMonth ? `No ${what} found for ${targetMonth}` : `No ${what} found`
+
+  /**
+   * Accounting export for this helper on the selected project: every payout
+   * in `period` (or all time) plus a monthly summary with hours logged. One
+   * ticket can be exported by passing its transfers (all of them together,
+   * so a ticket paid out more than once is still one record).
+   */
+  const buildExport = (period: string | null, single?: PaymentTransfer[]): ReportDocument => {
+    const ticketId = single?.[0]?.ticket_id
+    return buildHelperPayoutReport({
+      transfers: single ?? transfersData ?? [],
+      timeEntries: single
+        ? (timeEntries ?? []).filter((entry) => !!ticketId && entry.ticket_id === ticketId)
+        : timeEntries ?? [],
+      period,
+      periodTitle: single
+        ? single.length === 1
+          ? `Payout ${payoutReference(single[0])}`
+          : `Ticket ${ticketId?.slice(0, 7) ?? "-"}`
+        : undefined,
+      helper: { name: user.name, email: user.email ?? null },
+      projectName: project?.name || "Project",
+    })
+  }
+  /** Every payout on the payout's ticket, not only those in the filtered month. */
+  const wholeTicket = (payout: PayoutData): PaymentTransfer[] =>
+    payout.ticketId ? (transfersData ?? []).filter((t) => t.ticket_id === payout.ticketId) : payout.transfers
+  const exportPdf = (period: string | null, single?: PaymentTransfer[]) => {
+    downloadReportPdf(buildExport(period, single)).catch((error) => console.error("PDF export failed", error))
+  }
+  const exportCsv = (period: string | null, single?: PaymentTransfer[]) => {
+    const report = buildExport(period, single)
+    downloadCsv(report.fileName, reportToCsv(report))
+  }
+  const exportTitle = (kind: "PDF" | "CSV") =>
+    `Download the ${targetMonth ?? "all-time"} payout report as ${kind} for your accounting`
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -403,6 +473,32 @@ export default function HelperReportsPage() {
             >
               All
             </Button>
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                className={`h-9 ${OUTLINE_BUTTON_CLASS}`}
+                disabled={!hasRealData}
+                title={exportTitle("CSV")}
+                onClick={() => exportCsv(targetMonth)}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                Export CSV
+              </Button>
+              <Button
+                variant="lavender"
+                size="sm"
+                type="button"
+                className="h-9"
+                disabled={!hasRealData}
+                title={exportTitle("PDF")}
+                onClick={() => exportPdf(targetMonth)}
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download PDF
+              </Button>
+            </div>
           </div>
 
           {!projectId && (
@@ -481,7 +577,7 @@ export default function HelperReportsPage() {
                         <div className="col-span-2">
                           <PayoutStatusBadge status={payout.status} />
                         </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                               Open
@@ -489,7 +585,14 @@ export default function HelperReportsPage() {
                           </span>
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Request PDF
+                              <FileText className="w-3.5 h-3.5" />
+                              Statement
+                            </Button>
+                          </span>
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
                             </Button>
                           </span>
                         </div>
@@ -499,7 +602,11 @@ export default function HelperReportsPage() {
                 ) : payouts.length === 0 ? (
                   <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
                 ) : (
-                  payouts.map((payout) => (
+                  payouts.map((payout) => {
+                    const count = payout.transfers.length
+                    const expanded = count > 1 && isExpanded(payout.id)
+                    const panelId = transactionsPanelId(payout.id)
+                    return (
                     <div key={payout.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                         <div className="flex items-center">
@@ -509,7 +616,7 @@ export default function HelperReportsPage() {
                             aria-label={`Select payout for ticket ${payout.ticketShortId}`}
                           />
                         </div>
-                        <div className="col-span-1">
+                        <div className="col-span-1 min-w-0">
                           {payout.ticketId ? (
                             <Link
                               href={`/helper/tickets/${payout.ticketId}`}
@@ -521,6 +628,7 @@ export default function HelperReportsPage() {
                           ) : (
                             <span className="text-sm font-medium text-foreground">—</span>
                           )}
+                          <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(payout.id)} panelId={panelId} noun="payout" />
                         </div>
                         <div className="col-span-1">
                           <span className="text-sm text-muted-foreground">{formatDate(payout.date)}</span>
@@ -529,14 +637,18 @@ export default function HelperReportsPage() {
                           <HelperCell name={payout.helper} color={payout.helperColor} />
                         </div>
                         <div className="col-span-2">
-                          <span className="text-sm text-foreground">
+                          <div className="text-sm text-foreground">
                             {formatAmount(payout.amountSmallestUnit, payout.currency)}
-                          </span>
+                          </div>
+                          {payout.failedSmallestUnit > 0 && (
+                            <div className="text-xs text-red-700">{formatAmount(payout.failedSmallestUnit, payout.currency)} failed</div>
+                          )}
                         </div>
                         <div className="col-span-2">
                           <PayoutStatusBadge status={payout.status} />
                         </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                        <div className="col-span-2">
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
                           {payout.ticketId ? (
                             <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
                               <Link href={`/helper/tickets/${payout.ticketId}`}>Open</Link>
@@ -546,19 +658,56 @@ export default function HelperReportsPage() {
                               Open
                             </Button>
                           )}
+                          {count > 1 ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              type="button"
+                              className={OUTLINE_BUTTON_CLASS}
+                              aria-expanded={expanded}
+                              aria-controls={expanded ? panelId : undefined}
+                              title="Each payout has its own statement"
+                              onClick={() => toggle(payout.id)}
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              Statements
+                            </Button>
+                          ) : (
+                            <StatementLink transfer={payout.transfers[0]} />
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
                             type="button"
                             className={OUTLINE_BUTTON_CLASS}
-                            onClick={() => setRequestPdfOpen(true)}
+                            title="Download all your payouts on this ticket as a PDF for your accounting"
+                            onClick={() => exportPdf(null, wholeTicket(payout))}
                           >
-                            Request PDF
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
                           </Button>
                         </div>
                       </div>
                     </div>
-                  ))
+                      {expanded && (
+                        <TransactionsPanel id={panelId}>
+                          {payout.transfers.map((transfer, index) => (
+                            <TransactionLine
+                              key={transfer.id}
+                              index={index}
+                              count={count}
+                              date={formatDate(transferDate(transfer))}
+                              description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
+                              amount={formatAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
+                              status={<PayoutStatusBadge status={transfer.status} />}
+                              actions={<StatementLink transfer={transfer} />}
+                            />
+                          ))}
+                        </TransactionsPanel>
+                      )}
+                    </div>
+                    )
+                  })
                 )}
               </div>
             </div>
@@ -621,15 +770,17 @@ export default function HelperReportsPage() {
                             {row.status}
                           </Badge>
                         </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Open
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
                             </Button>
                           </span>
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Request PDF
+                              <FileSpreadsheet className="w-3.5 h-3.5" />
+                              CSV
                             </Button>
                           </span>
                         </div>
@@ -663,24 +814,28 @@ export default function HelperReportsPage() {
                             {row.status}
                           </Badge>
                         </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
+                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
                           <Button
-                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                             variant="outline"
                             size="sm"
                             type="button"
                             className={OUTLINE_BUTTON_CLASS}
+                            title={`Download the ${row.period} payout report as PDF`}
+                            onClick={() => exportPdf(row.period)}
                           >
-                            Open
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             type="button"
                             className={OUTLINE_BUTTON_CLASS}
-                            onClick={() => setRequestPdfOpen(true)}
+                            title={`Export the ${row.period} payout report as CSV`}
+                            onClick={() => exportCsv(row.period)}
                           >
-                            Request PDF
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                            CSV
                           </Button>
                         </div>
                       </div>
@@ -692,8 +847,6 @@ export default function HelperReportsPage() {
           )}
         </main>
       </div>
-
-      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }

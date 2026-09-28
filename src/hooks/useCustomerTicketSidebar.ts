@@ -1,6 +1,13 @@
 import { useMemo } from "react";
 import { useTicketParticipants, type ParticipantWithUser } from "@/hooks/useTicketParticipants";
-import { useTimeEntries, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries";
+import {
+    useTimeEntries,
+    timeMillisecondsToHoursMinutes,
+    getTimeEntryReviewStatus,
+    isBillableTimeEntry,
+    type TimeEntryReviewStatus,
+} from "@/hooks/useTimeEntries";
+import type { TicketChatTimeEntryReview } from "@/components/ticket-chat/ticket-chat";
 import { useUserActiveTicketsSidebar } from "@/hooks/useTicketsWithDetails";
 import type { TicketChatParticipant } from "@/components/ticket-chat/ticket-chat";
 
@@ -11,6 +18,9 @@ export interface CustomerTimeEntryDisplay {
     hours: number;
     minutes: number;
     note?: string;
+    reviewStatus: TimeEntryReviewStatus;
+    declineReason?: string | null;
+    autoAccepted?: boolean;
 }
 
 /**
@@ -55,9 +65,17 @@ export function useCustomerTicketSidebar(
         [participants]
     );
 
-    const { timeEntriesDisplay, totalLoggedFormatted } = useMemo(() => {
+    const { timeEntriesDisplay, totalLoggedFormatted, timeEntryReviews, pendingReviewCount } = useMemo(() => {
+        const reviews: Record<string, TicketChatTimeEntryReview> = {};
         const entries: CustomerTimeEntryDisplay[] = timeEntriesFromDb.map((entry) => {
             const { hours, minutes } = timeMillisecondsToHoursMinutes(entry.time_milliseconds);
+            const reviewStatus = getTimeEntryReviewStatus(entry);
+            reviews[entry.id] = {
+                status: reviewStatus,
+                declineReason: entry.decline_reason ?? null,
+                reviewRequestedAt: entry.review_requested_at ?? null,
+                autoAccepted: entry.auto_accepted ?? false,
+            };
             return {
                 id: entry.id,
                 type: entry.type,
@@ -65,15 +83,23 @@ export function useCustomerTicketSidebar(
                 hours,
                 minutes,
                 note: entry.note ?? undefined,
+                reviewStatus,
+                declineReason: entry.decline_reason ?? null,
+                autoAccepted: entry.auto_accepted ?? false,
             };
         });
-        const totalMs = timeEntriesFromDb.reduce((sum, e) => sum + e.time_milliseconds, 0);
+        // Declined entries stay listed (with their status) but don't count.
+        const totalMs = timeEntriesFromDb
+            .filter(isBillableTimeEntry)
+            .reduce((sum, e) => sum + e.time_milliseconds, 0);
         const totalMins = Math.floor(totalMs / 60000);
         const h = Math.floor(totalMins / 60);
         const m = totalMins % 60;
         return {
             timeEntriesDisplay: entries,
             totalLoggedFormatted: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")} h`,
+            timeEntryReviews: reviews,
+            pendingReviewCount: entries.filter((e) => e.reviewStatus === "pending").length,
         };
     }, [timeEntriesFromDb]);
 
@@ -83,6 +109,9 @@ export function useCustomerTicketSidebar(
         claimer,
         timeEntriesDisplay,
         totalLoggedFormatted,
+        /** Review state per entry id, for the Accept / Decline actions in the chat. */
+        timeEntryReviews,
+        pendingReviewCount,
         activeTicketsSidebar: activeTicketsSidebarData?.items ?? [],
         activeTicketsCount: activeTicketsSidebarData?.activeCount ?? 0,
     };
