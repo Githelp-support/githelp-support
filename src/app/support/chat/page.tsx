@@ -35,6 +35,7 @@ import {
   formatChatTimestamp,
 } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -127,6 +128,7 @@ export default function UserSupportChatPage() {
     : effectiveProjectId
       ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
       : undefined
+  const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
   const organizationName = hasSLA ? projectName : null
   const freeHelpRemaining: string | null = null
@@ -349,6 +351,7 @@ export default function UserSupportChatPage() {
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
       currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+      avgResponseSeconds,
     })
     if (ticketEnded) {
       const cancelled = existingTicket?.status === "cancelled"
@@ -377,6 +380,7 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
+    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     slaId,

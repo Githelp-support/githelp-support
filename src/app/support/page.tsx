@@ -199,6 +199,7 @@ export default function SupportPage() {
       fallbackDescription: liveTicket?.description ?? null,
       fallbackTimestamp: liveTicket?.created_at ?? null,
       currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+      avgResponseSeconds,
     })
     if (ticketEnded) {
       const cancelled = liveTicket?.status === "cancelled"
@@ -227,6 +228,7 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     paymentStatus.status,
