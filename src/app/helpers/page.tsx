@@ -397,6 +397,12 @@ export default function HelpersPage() {
     toast.success("Invite link copied to clipboard!")
   }
 
+  const handleCopyInvitationLink = async () => {
+    if (!projectId) return
+    await navigator.clipboard.writeText(`${window.location.origin}/projects/${projectId}`)
+    toast.success("Invitation link copied to clipboard!")
+  }
+
   const handleRevokeInvite = async (inviteId: string) => {
     if (!projectId) return
     try {
@@ -482,6 +488,18 @@ export default function HelpersPage() {
                 >
                   <i className="fi fi-rr-user inline-flex items-center justify-center leading-none w-4 h-4" />
                   Add myself as helper
+                </Button>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  onClick={handleCopyInvitationLink}
+                  disabled={!projectId}
+                  title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy invitation link
                 </Button>
               )}
               <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
