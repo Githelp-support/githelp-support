@@ -78,6 +78,26 @@ describe("NotificationsPage", () => {
     expect(screen.getByText("No notifications")).toBeInTheDocument()
   })
 
+  it("highlights unread notifications with a purple stroke and light purple fill", () => {
+    useNotifications.mockReturnValue({
+      data: [
+        makeNotification({ id: "n-unread", content: "Unread notification", is_read: false }),
+        makeNotification({ id: "n-read", content: "Read notification", is_read: true, read_at: "2026-09-19T11:00:00Z" }),
+      ],
+      isLoading: false,
+    })
+
+    render(<NotificationsPage />)
+
+    const unread = screen.getByText("Unread notification").closest("[data-unread]")
+    const read = screen.getByText("Read notification").closest("[data-unread]")
+
+    expect(unread).toHaveClass("border-brand-primary", "bg-brand-primary/10")
+    expect(read).toHaveClass("border-border")
+    expect(read).not.toHaveClass("border-brand-primary")
+    expect(read).not.toHaveClass("bg-brand-primary/10")
+  })
+
   it("marks an unread notification as read when clicked", async () => {
     useNotifications.mockReturnValue({
       data: [makeNotification({ id: "n-unread", content: "Unread notification", is_read: false })],

@@ -86,7 +86,13 @@ export default function NotificationsPage() {
                   return (
                     <div
                       key={notification.id}
-                      className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                      data-unread={!notification.is_read}
+                      className={cn(
+                        "p-4 border rounded-lg cursor-pointer transition-colors",
+                        !notification.is_read
+                          ? "border-brand-primary bg-brand-primary/10 hover:bg-brand-primary/15"
+                          : "border-border hover:bg-muted",
+                      )}
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex items-start justify-between mb-2">

@@ -1,6 +1,7 @@
 "use client"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import type { RefObject } from "react"
@@ -132,7 +133,13 @@ export function NotificationsPanel({
               {notifications.slice(0, 3).map((notification) => (
                 <div
                   key={notification.id}
-                  className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                  data-unread={!notification.isRead}
+                  className={cn(
+                    "p-4 border rounded-lg cursor-pointer transition-colors",
+                    !notification.isRead
+                      ? "border-brand-primary bg-brand-primary/10 hover:bg-brand-primary/15"
+                      : "border-border hover:bg-muted",
+                  )}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start justify-between mb-2">
