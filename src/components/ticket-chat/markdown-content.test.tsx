@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest"
 // MarkdownContent → ChatImage → useTicketAttachments pulls in the client, which throws without env vars.
 vi.mock("@/lib/supabase/client", () => ({ supabase: {} }))
 
-import { AUTO_REPLY } from "@/lib/customer-chat-messages"
+import { buildAutoReply } from "@/lib/customer-chat-messages"
 import { MarkdownContent } from "./markdown-content"
 
 describe("MarkdownContent code rendering", () => {
@@ -62,9 +62,9 @@ describe("MarkdownContent code rendering", () => {
     })
 
     it("renders the auto-reply's response time in bold", () => {
-        const { container } = render(<MarkdownContent content={AUTO_REPLY} />)
+        const { container } = render(<MarkdownContent content={buildAutoReply(18 * 60)} />)
         const strong = Array.from(container.querySelectorAll("strong")).find(
-            (el) => el.textContent === "18 minutes",
+            (el) => el.textContent === "18m",
         )
         expect(strong).toBeDefined()
     })

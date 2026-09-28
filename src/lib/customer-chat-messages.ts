@@ -1,5 +1,6 @@
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
+import { formatDuration } from "@/lib/format";
 
 /**
  * Message-thread building shared by the two customer-facing chat pages
@@ -14,9 +15,12 @@ export const TICKET_DISCLAIMER =
 /**
  * Synthetic auto-reply shown right after the customer's first message.
  * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
+ * Shows "~" while the project has no average response time yet.
  */
-export const AUTO_REPLY =
-    "Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **18 minutes**.";
+export function buildAutoReply(avgResponseSeconds: number | null | undefined): string {
+    const responseTime = avgResponseSeconds == null ? "~" : formatDuration(avgResponseSeconds);
+    return `Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **${responseTime}**.`;
+}
 
 /** dd/mm/yyyy, hh:mm — the timestamp format used throughout the chat UI. */
 export function formatChatTimestamp(date: Date | string): string {
@@ -60,6 +64,8 @@ export interface CustomerThreadOptions {
     /** Timestamp for the fallback first message (ticket created_at). */
     fallbackTimestamp?: string | null;
     currentUser: { id?: string; name?: string | null; avatarUrl?: string | null };
+    /** Project's average response time in seconds (`null` until one exists). */
+    avgResponseSeconds?: number | null;
 }
 
 /**
@@ -77,6 +83,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         fallbackDescription,
         fallbackTimestamp,
         currentUser,
+        avgResponseSeconds,
     } = opts;
 
     const userName = currentUser.name || "You";
@@ -153,7 +160,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         list.splice(firstUserIndex + 1, 0, {
             id: "auto-reply",
             senderType: "system",
-            content: AUTO_REPLY,
+            content: buildAutoReply(avgResponseSeconds),
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
             timestamp: list[firstUserIndex].timestamp,

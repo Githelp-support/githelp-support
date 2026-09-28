@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-    AUTO_REPLY,
+    buildAutoReply,
     buildCustomerThreadMessages,
     describeChargedLine,
     findPendingSca,
@@ -36,7 +36,7 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         expect(list[pendingIndex + 1]).toMatchObject({
             id: "auto-reply",
             senderType: "system",
-            content: AUTO_REPLY,
+            content: buildAutoReply(null),
         });
     });
 
@@ -54,7 +54,7 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         expect(list[firstUserIndex + 1]).toMatchObject({
             id: "auto-reply",
             senderType: "system",
-            content: AUTO_REPLY,
+            content: buildAutoReply(null),
         });
         // Only one auto-reply, after the first user message — not the second.
         expect(list.filter((m) => m.id === "auto-reply")).toHaveLength(1);
@@ -65,8 +65,16 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         expect(list.some((m) => m.id === "auto-reply")).toBe(false);
     });
 
-    it("keeps the bold markdown around the response time", () => {
-        expect(AUTO_REPLY).toContain("**18 minutes**");
+    it("uses the project's average response time", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({ pendingFirstMessage: "My build is broken", avgResponseSeconds: 90 * 60 }),
+        );
+        expect(list.find((m) => m.id === "auto-reply")?.content).toContain("**1h 30m**");
+    });
+
+    it("shows ~ while the project has no average response time yet", () => {
+        expect(buildAutoReply(null)).toContain("**~**");
+        expect(buildAutoReply(undefined)).toContain("**~**");
     });
 });
 
