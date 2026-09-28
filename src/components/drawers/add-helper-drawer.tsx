@@ -49,6 +49,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
   const [error, setError] = useState<string | null>(null)
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [emailTooltipOpen, setEmailTooltipOpen] = useState(false)
 
   const [githubToken, setGithubToken] = useState<string | null>(null)
   const { data: repoFullName } = useGetProjectRepo(projectId ?? null)
@@ -300,14 +301,27 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                   <Label htmlFor="link" className="cursor-pointer text-sm text-foreground/80">Generate shareable link</Label>
                 </div>
                 <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center space-x-2.5">
-                        <RadioGroupItem value="email" id="email" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
-                        <Label htmlFor="email" className="cursor-pointer text-sm text-foreground/80">Send via email</Label>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>This option is currently not available.</TooltipContent>
+                  <Tooltip open={emailTooltipOpen}>
+                    <div
+                      className="flex w-fit items-center space-x-2.5"
+                      onMouseEnter={() => setEmailTooltipOpen(true)}
+                      onMouseLeave={() => setEmailTooltipOpen(false)}
+                      onFocus={() => setEmailTooltipOpen(true)}
+                      onBlur={() => setEmailTooltipOpen(false)}
+                    >
+                      <RadioGroupItem value="email" id="email" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                      <Label htmlFor="email" className="cursor-pointer text-sm text-foreground/80">
+                        {/* The tooltip is anchored to the second-to-last letter so its arrow points at it */}
+                        <span>
+                          Send via ema
+                          <TooltipTrigger asChild>
+                            <span>i</span>
+                          </TooltipTrigger>
+                          l
+                        </span>
+                      </Label>
+                    </div>
+                    <TooltipContent sideOffset={-3}>This option is currently not available.</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
                 {projectId && (
