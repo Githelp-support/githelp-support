@@ -1051,7 +1051,11 @@ export default function TicketDetailPage() {
               onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
               imagesUploading={imagesUploading}
               toolbarEndContent={
-                !isTicketEnded ? (
+                !isClaimed ? (
+                  <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
+                    Claim ticket
+                  </Button>
+                ) : !isTicketEnded ? (
                   <Button
                     variant="ghost"
                     size="sm"
