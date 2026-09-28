@@ -10,7 +10,23 @@ import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
-import { useTimeEntries, useCreateTimeEntry, isPaymentNotAuthorizedError, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
+import {
+  useTimeEntries,
+  useCreateTimeEntry,
+  useDeleteTimeEntry,
+  isPaymentNotAuthorizedError,
+  getReviewTimeEntryErrorHint,
+  timeMillisecondsToHoursMinutes,
+  getTimeEntryReviewStatus,
+  TIME_ENTRY_AUTO_ACCEPT_HOURS,
+  describeAutoAcceptDeadline,
+  formatTime,
+} from "@/hooks/useTimeEntries"
+import {
+  DeleteTimeEntryDialog,
+  TimeEntryAwaitingApprovalBanner,
+  TimeEntryReviewStatusBadge,
+} from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
@@ -25,6 +41,7 @@ import {
   AtSign,
   Mic,
   Video,
+  Trash2,
 } from "lucide-react"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
@@ -72,6 +89,10 @@ interface Message {
   senderId?: string
   senderAvatarUrl?: string | null
   type?: "claimed" | "ended"
+  /** `metadata.kind` of a persisted system message (payment_*, time_logged, time_entry_*). */
+  metadataKind?: string
+  /** `metadata.time_entry_id` of a `time_logged` system message. */
+  timeEntryId?: string
 }
 
 export default function TicketDetailPage() {
@@ -117,6 +138,8 @@ export default function TicketDetailPage() {
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
   const currentHelperId = useCurrentHelper(ticket?.project_id ?? undefined).data ?? null
   const createTimeEntry = useCreateTimeEntry()
+  const deleteTimeEntry = useDeleteTimeEntry()
+  const [deletingEntry, setDeletingEntry] = useState<TimeEntry | null>(null)
 
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
@@ -163,8 +186,29 @@ export default function TicketDetailPage() {
           hours,
           minutes,
           note: entry.note ?? undefined,
+          reviewStatus: getTimeEntryReviewStatus(entry),
+          declineReason: entry.decline_reason ?? null,
+          autoAccepted: entry.auto_accepted ?? false,
+          helperId: entry.helper_id,
         }
       }),
+    [timeEntriesFromDb]
+  )
+  // Entries the customer still has to accept or decline; the End ticket
+  // drawer refuses to end while any are left (declined time isn't charged).
+  const pendingReviewCount = useMemo(
+    () => timeEntries.filter((entry) => entry.reviewStatus === "pending").length,
+    [timeEntries]
+  )
+  const timeEntriesById = useMemo(() => new Map(timeEntries.map((entry) => [entry.id, entry])), [timeEntries])
+  // Oldest pending entry is the next one the 24h job will auto-accept.
+  const pendingReviewRequestedAt = useMemo(
+    () =>
+      timeEntriesFromDb
+        .filter((entry) => getTimeEntryReviewStatus(entry) === "pending")
+        .map((entry) => entry.review_requested_at)
+        .filter((at): at is string => !!at)
+        .sort()[0] ?? null,
     [timeEntriesFromDb]
   )
   
@@ -212,7 +256,7 @@ export default function TicketDetailPage() {
         created_at: "",
         user: {
           id: creatorId,
-          name: (creatorUser as { name?: string })?.name ?? "Unknown",
+          name: (creatorUser as { name?: string })?.name ?? "User",
           avatar_url: (creatorUser as { avatar_url?: string | null })?.avatar_url ?? null,
         },
       })
@@ -285,10 +329,12 @@ export default function TicketDetailPage() {
           minute: "2-digit",
         }),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
-        senderName: msg.sender?.name || "Unknown",
+        senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
         senderId: msg.sender_id ?? msg.sender?.id,
         senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
+        metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
+        timeEntryId: (msg.metadata as { time_entry_id?: string } | null | undefined)?.time_entry_id,
       }))
     )
   }, [messagesData, isClaimed, claimer])
@@ -485,7 +531,7 @@ export default function TicketDetailPage() {
         {
           onError: (error) =>
             toast.error(`Payment failed: ${error.message}`, {
-              description: "The customer has been asked to update their card. You can also retry below.",
+              description: "The user has been asked to update their card. You can also retry below.",
             }),
         },
       )
@@ -518,15 +564,42 @@ export default function TicketDetailPage() {
         onError: (error) =>
           isPaymentNotAuthorizedError(error)
             ? toast.error("Time can't be logged yet", {
-                description: "The payment for this ticket isn't authorized. Ask the customer to add a payment method.",
+                description: "The payment for this ticket isn't authorized. Ask the user to add a payment method.",
               })
             : toast.error("Failed to log time. Please try again."),
       }
     )
   }
 
+  // Own entries on an open ticket, unless the customer already accepted them
+  // (may be captured by a re-hold; the DB guard rejects those too).
+  const canDeleteTimeEntry = (entry: TimeEntry) =>
+    !isTicketEnded && !!currentHelperId && entry.helperId === currentHelperId && entry.reviewStatus !== "accepted"
+
+  const handleDeleteTimeEntry = async () => {
+    if (!deletingEntry || !ticketId) return
+    try {
+      await deleteTimeEntry.mutateAsync({ entryId: deletingEntry.id, ticketId })
+      setDeletingEntry(null)
+      toast.success("Logged time deleted")
+    } catch (error) {
+      const hint = getReviewTimeEntryErrorHint(error)
+      setDeletingEntry(null)
+      toast.error(
+        hint === "accepted_entry_locked"
+          ? "The user already accepted this time, so it can't be deleted."
+          : hint === "ticket_ended"
+            ? "The session has ended, so logged time can't be changed."
+            : hint === "not_entry_owner"
+              ? "You can only delete time you logged yourself."
+              : "Failed to delete logged time. Please try again."
+      )
+    }
+  }
+
   const getTotalLoggedTime = () => {
     const totalMinutes = timeEntries.reduce((acc, entry) => {
+      if (entry.reviewStatus === "declined") return acc
       return acc + entry.hours * 60 + entry.minutes
     }, 0)
     const hours = Math.floor(totalMinutes / 60)
@@ -568,6 +641,13 @@ export default function TicketDetailPage() {
         : paymentFailed
           ? "Failed"
           : "—"
+  // Who got what out of the charge. Shown once the capture has settled.
+  const formatUsd = (smallestUnit: number) => `$${(smallestUnit / 100).toFixed(2)}`
+  const chargeSplits =
+    !isCancelledEnd && paymentSettled && chargedSmallestUnit != null ? paymentGate.capturedSplits : null
+  const billedHelperCount = new Set(
+    timeEntries.filter((e) => e.reviewStatus !== "declined").map((e) => e.helperId),
+  ).size
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
@@ -790,12 +870,25 @@ export default function TicketDetailPage() {
                             <div
                               className={
                                 msg.sender === "system"
-                                  ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                  ? msg.metadataKind === "time_entry_declined"
+                                    ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                    : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                   : "text-sm"
                               }
                               style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
+                              {msg.metadataKind === "time_logged" &&
+                                msg.timeEntryId &&
+                                (() => {
+                                  const entry = timeEntriesById.get(msg.timeEntryId)
+                                  if (!entry?.reviewStatus) return null
+                                  return (
+                                    <div className="mt-2">
+                                      <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                                    </div>
+                                  )
+                                })()}
                             </div>
                           </div>
                         </>
@@ -845,6 +938,30 @@ export default function TicketDetailPage() {
                                   <span className="text-muted-foreground">Charged</span>
                                   <span className="font-medium text-foreground tabular-nums">{chargedLabel}</span>
                                 </div>
+                                {chargeSplits && (
+                                  <div className="mt-2 pt-2 border-t border-border space-y-1.5">
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">
+                                        {billedHelperCount > 1 ? `Share helpers (${billedHelperCount})` : "Share helper"}
+                                      </span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.helperSmallestUnit)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">Share project</span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.projectSmallestUnit)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">Stripe fee</span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.stripeFeeSmallestUnit)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {paymentFailed && paymentFailureReason && (
@@ -854,7 +971,7 @@ export default function TicketDetailPage() {
                               )}
                               {paymentFailed && (
                                 <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
+                                  The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
                               {paymentFailed && (
@@ -865,7 +982,7 @@ export default function TicketDetailPage() {
                                       {
                                         onError: (error) =>
                                           toast.error(`Payment failed: ${error.message}`, {
-                                            description: "The customer has been asked to update their card.",
+                                            description: "The user has been asked to update their card.",
                                           }),
                                       },
                                     )
@@ -900,6 +1017,14 @@ export default function TicketDetailPage() {
             </div>
             </div>
 
+            {!isTicketEnded && (
+              <TimeEntryAwaitingApprovalBanner
+                pendingCount={pendingReviewCount}
+                customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+                autoAcceptHint={describeAutoAcceptDeadline(pendingReviewRequestedAt)}
+              />
+            )}
+
             {endRequested && (
               <EndSessionRequestedHelperBanner
                 requesterName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
@@ -930,7 +1055,11 @@ export default function TicketDetailPage() {
               onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
               imagesUploading={imagesUploading}
               toolbarEndContent={
-                !isTicketEnded ? (
+                !isClaimed ? (
+                  <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
+                    Claim ticket
+                  </Button>
+                ) : !isTicketEnded ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1035,17 +1164,45 @@ export default function TicketDetailPage() {
                         </div>
                         <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                       </div>
-                      <span className="text-[13px] text-muted-foreground tabular-nums">
-                        {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[13px] text-muted-foreground tabular-nums">
+                          {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                        </span>
+                        {canDeleteTimeEntry(entry) && (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingEntry(entry)}
+                            aria-label="Delete logged time"
+                            title="Delete logged time"
+                            className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-muted"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                    {entry.reviewStatus && (
+                      <div className="mt-1 ml-8">
+                        <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                      </div>
+                    )}
+                    {entry.reviewStatus === "declined" && entry.declineReason && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+                    )}
                   </div>
                 ))}
                 <div className="flex items-center justify-between py-2 font-medium">
                   <span className="text-[13px] text-foreground">Total</span>
                   <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                 </div>
+                {pendingReviewCount > 0 && (
+                  <p className="text-xs text-amber-800">
+                    {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} waiting for the user to
+                    accept or decline. The session can&apos;t end until they have; entries not reviewed within{" "}
+                    {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted automatically.
+                  </p>
+                )}
               </div>
             )}
             {!isTicketEnded && (
@@ -1137,6 +1294,16 @@ export default function TicketDetailPage() {
         isOpen={isLogTimeDrawerOpen}
         onClose={() => setIsLogTimeDrawerOpen(false)}
         onLogTime={handleLogTime}
+      />
+
+      <DeleteTimeEntryDialog
+        open={!!deletingEntry}
+        onOpenChange={(open) => !open && setDeletingEntry(null)}
+        onConfirm={handleDeleteTimeEntry}
+        pending={deleteTimeEntry.isPending}
+        durationLabel={
+          deletingEntry ? formatTime((deletingEntry.hours * 3600 + deletingEntry.minutes * 60) * 1000) : null
+        }
       />
 
       {/* Add myself as helper - required for admin before claiming or logging time */}
