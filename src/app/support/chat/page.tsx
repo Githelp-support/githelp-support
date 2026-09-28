@@ -9,13 +9,15 @@ import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "
 import { Search } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useCreateTicket, useRequestEndSession } from "@/hooks/useTickets"
+import { useReviewTimeEntry, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
+import { useHoldTicketAfterSetup } from "@/hooks/useHoldTicketAfterSetup"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
@@ -33,6 +35,7 @@ import {
   formatChatTimestamp,
 } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -75,6 +78,13 @@ export default function UserSupportChatPage() {
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
   /** SCA prompt (payment_requires_action) already resolved or dismissed in this session. */
   const [handledScaMessageId, setHandledScaMessageId] = useState<string | null>(null)
+  /** 3-D Secure confirmation returned directly by the hold placed after card setup. */
+  const [returnScaSecret, setReturnScaSecret] = useState<string | null>(null)
+  /** Client secret already confirmed or dismissed, so its chat prompt doesn't reopen the modal. */
+  const [handledScaSecret, setHandledScaSecret] = useState<string | null>(null)
+  const holdAfterSetup = useHoldTicketAfterSetup()
+  /** Checkout sessions already handled (effects run twice in dev). */
+  const handledSetupSessions = useRef(new Set<string>())
 
   // Get project_id and optional existing ticket from query params
   const projectIdParam = searchParams.get("project")
@@ -118,6 +128,7 @@ export default function UserSupportChatPage() {
     : effectiveProjectId
       ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
       : undefined
+  const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
   const organizationName = hasSLA ? projectName : null
   const freeHelpRemaining: string | null = null
@@ -152,19 +163,62 @@ export default function UserSupportChatPage() {
     }
   }
 
-  // Back from the "Update payment method" Checkout (see
-  // payments-retry-ticket-payment): the retry charge runs from the webhook
-  // and the summary updates via realtime — just tell the user what to expect.
+  // Back from Stripe Checkout:
+  // - "Add payment method" (card=added / setup_cancelled): the Checkout only
+  //   saved the card, so place the ticket's hold on it now. Stripe's page
+  //   never showed an amount; the chat explains the hold instead.
+  // - "Update payment method" (card=updated / cancelled, see
+  //   payments-retry-ticket-payment): the retry charge runs from the webhook
+  //   and the summary updates via realtime — just tell the user what to expect.
   const cardParam = searchParams.get("card")
+  const sessionIdParam = searchParams.get("session_id")
   useEffect(() => {
     if (!ticketIdParam || !cardParam) return
     if (cardParam === "updated") {
       toast.success("Card updated. We're retrying the payment now…")
     } else if (cardParam === "cancelled") {
       toast.info("Card update cancelled. Your previous card is still on file.")
+    } else if (cardParam === "setup_cancelled") {
+      toast.info("No card was added, so nothing is held.")
+    } else if (cardParam === "added" && sessionIdParam && !handledSetupSessions.current.has(sessionIdParam)) {
+      handledSetupSessions.current.add(sessionIdParam)
+      holdAfterSetup
+        .mutateAsync({ ticketId: ticketIdParam, sessionId: sessionIdParam })
+        .then((result) => {
+          const amount =
+            typeof result.holdAmountSmallestUnit === "number"
+              ? `$${(result.holdAmountSmallestUnit / 100).toFixed(2)}`
+              : "the estimated amount"
+          switch (result.status) {
+            case "authorized":
+              toast.success(`Card added. A temporary hold of ${amount} is placed on it (not a charge).`)
+              break
+            case "requires_action":
+              if (result.clientSecret) setReturnScaSecret(result.clientSecret)
+              break
+            case "declined":
+              toast.error(
+                `Your card was saved, but your bank declined the ${amount} hold${result.declineMessage ? ` (${result.declineMessage})` : ""}. Nothing was charged. Please add a different card.`,
+              )
+              break
+            case "pending":
+              toast.info("Card added. We're placing the hold now…")
+              break
+            case "superseded":
+              toast.info("Card saved. This ticket is already using a card you added more recently; check the chat if it still needs confirming.")
+              break
+            default:
+              toast.success("Card added.")
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to place the hold after card setup:", err)
+          toast.error("Your card was saved, but we couldn't place the hold. Please try adding it again.")
+        })
     }
     const params = new URLSearchParams(searchParams.toString())
     params.delete("card")
+    params.delete("session_id")
     router.replace(`/support/chat?${params.toString()}`)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketIdParam, cardParam])
@@ -230,12 +284,39 @@ export default function UserSupportChatPage() {
     claimer,
     timeEntriesDisplay,
     totalLoggedFormatted,
+    timeEntryReviews,
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
 
   // Check if user is authenticated (has an id)
   const isAuthenticated = !!user?.id
+
+  // Accept / decline logged time. Only the ticket creator may review (the RPC
+  // enforces it too); a decline needs a reason, which the RPC posts into the
+  // chat so the helper sees it.
+  const reviewTimeEntry = useReviewTimeEntry()
+  const canReviewTimeEntries = !!existingTicket?.id && !!user?.id && existingTicket.created_by === user.id
+  const handleReviewTimeEntry = async (input: { entryId: string; decision: "accepted" | "declined"; reason?: string }) => {
+    if (!existingTicket?.id) return
+    try {
+      await reviewTimeEntry.mutateAsync({ ...input, ticketId: existingTicket.id })
+      toast.success(input.decision === "accepted" ? "Logged time accepted." : "Logged time declined. The helper has been told why.")
+    } catch (error) {
+      console.error("Failed to review time entry:", error)
+      const hint = getReviewTimeEntryErrorHint(error)
+      toast.error(
+        hint === "reason_required"
+          ? "Please explain why you declined the logged time."
+          : hint === "already_reviewed"
+            ? "This entry has already been reviewed."
+            : hint === "ticket_ended"
+              ? "The session has already ended."
+              : "Couldn't save your decision. Please try again.",
+      )
+      throw error
+    }
+  }
 
   // Ensure support users always have an organization and a selected organization
   useEffect(() => {
@@ -270,6 +351,7 @@ export default function UserSupportChatPage() {
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
       currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+      avgResponseSeconds,
     })
     if (ticketEnded) {
       const cancelled = existingTicket?.status === "cancelled"
@@ -298,6 +380,7 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
+    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     slaId,
@@ -315,6 +398,19 @@ export default function UserSupportChatPage() {
     () => findPendingSca(chatMessages, handledScaMessageId),
     [chatMessages, handledScaMessageId],
   )
+  // The hold placed on return from card setup hands back its confirmation
+  // directly; it can also arrive as a chat prompt, which must not reopen the
+  // modal once handled.
+  const scaToConfirm: { clientSecret: string; messageId: string | null } | null = returnScaSecret
+    ? { clientSecret: returnScaSecret, messageId: null }
+    : pendingSca && pendingSca.clientSecret !== handledScaSecret
+      ? pendingSca
+      : null
+  const closeSca = (sca: { clientSecret: string; messageId: string | null }) => {
+    setHandledScaSecret(sca.clientSecret)
+    setReturnScaSecret(null)
+    if (sca.messageId) setHandledScaMessageId(sca.messageId)
+  }
 
   if (noParams) {
     // While we look up the user's latest ticket, show a small loading state.
@@ -575,6 +671,9 @@ export default function UserSupportChatPage() {
         onCancelEndSessionRequest={() => handleRequestEndSession(true)}
         endSessionRequestedAt={endSessionRequestedAt}
         endSessionRequestPending={requestEndSession.isPending}
+        timeEntryReviews={timeEntryReviews}
+        onReviewTimeEntry={canReviewTimeEntries ? handleReviewTimeEntry : undefined}
+        timeEntryReviewPending={reviewTimeEntry.isPending}
         // Before the first message there is no ticket yet: uploads go to the
         // user's own folder (see lib/ticket-attachments).
         attachmentStoragePrefix={user?.id && effectiveProjectId ? `${effectiveProjectId}/${ticketId || user.id}` : undefined}
@@ -615,12 +714,12 @@ export default function UserSupportChatPage() {
           ) : undefined
         }
       />
-      {pendingSca && (
+      {scaToConfirm && (
         <ConfirmPaymentModal
-          clientSecret={pendingSca.clientSecret}
+          clientSecret={scaToConfirm.clientSecret}
           mode={project?.sandbox ? "test" : "live"}
-          onResolved={() => setHandledScaMessageId(pendingSca.messageId)}
-          onCancel={() => setHandledScaMessageId(pendingSca.messageId)}
+          onResolved={() => closeSca(scaToConfirm)}
+          onCancel={() => closeSca(scaToConfirm)}
         />
       )}
       <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />

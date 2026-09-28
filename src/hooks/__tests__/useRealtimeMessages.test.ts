@@ -30,7 +30,7 @@ vi.mock("@/hooks/useTicketParticipants", () => ({
 
 import { supabase } from "@/lib/supabase/client";
 import { refetchTicketParticipants } from "@/hooks/useTicketParticipants";
-import { useRealtimeMessages, isTimeLoggedMessage } from "../useRealtimeMessages";
+import { useRealtimeMessages, isTimeLoggedMessage, isTimeEntryMessage } from "../useRealtimeMessages";
 
 const TICKET = "ticket-1";
 const timeEntriesKey = (ticket: string) => ["time-entries", undefined, ticket, undefined, undefined, undefined];
@@ -64,6 +64,17 @@ describe("isTimeLoggedMessage", () => {
         expect(isTimeLoggedMessage({ eventType: "DELETE", old: { id: "m1" } })).toBe(false);
         expect(isTimeLoggedMessage(undefined)).toBe(false);
         expect(isTimeLoggedMessage({})).toBe(false);
+    });
+});
+
+describe("isTimeEntryMessage", () => {
+    it("matches INSERTs of time_logged and the customer review kinds only", () => {
+        expect(isTimeEntryMessage(timeLoggedInsert)).toBe(true);
+        expect(isTimeEntryMessage({ eventType: "INSERT", new: { metadata: { kind: "time_entry_accepted" } } })).toBe(true);
+        expect(isTimeEntryMessage({ eventType: "INSERT", new: { metadata: { kind: "time_entry_declined" } } })).toBe(true);
+        expect(isTimeEntryMessage({ eventType: "INSERT", new: { metadata: { kind: "payment_authorized" } } })).toBe(false);
+        expect(isTimeEntryMessage({ eventType: "UPDATE", new: { metadata: { kind: "time_entry_declined" } } })).toBe(false);
+        expect(isTimeEntryMessage(undefined)).toBe(false);
     });
 });
 
@@ -108,6 +119,17 @@ describe("useRealtimeMessages", () => {
             expect(queryClient.getQueryState(timeEntriesKey(TICKET))?.isInvalidated).toBe(true);
         });
         expect(queryClient.getQueryState(timeEntriesKey("other"))?.isInvalidated).toBe(false);
+    });
+
+    it("a time_entry_declined system message refreshes this ticket's time entries", async () => {
+        const { queryClient } = setup();
+        queryClient.setQueryData(timeEntriesKey(TICKET), []);
+
+        await fire({ eventType: "INSERT", new: { id: "m3", metadata: { kind: "time_entry_declined", time_entry_id: "te1" } } });
+
+        await waitFor(() => {
+            expect(queryClient.getQueryState(timeEntriesKey(TICKET))?.isInvalidated).toBe(true);
+        });
     });
 
     it("does nothing without a ticket id", () => {
