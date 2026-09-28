@@ -1,12 +1,23 @@
 "use client"
 
-/** Stripe fee: 2.9% + $0.30 per transaction (US) */
+/**
+ * Stripe fee: 2.9% + $0.30 per transaction (US). Charged on every card
+ * transaction, not once per ticket — see the note rendered under the preview.
+ */
 const STRIPE_PERCENT = 0.029
 const STRIPE_FIXED_CENTS = 30
 
 /**
  * Preview card showing how money is split between participants for 1 hour of support.
  * Matches the Figma design: "1 hour of support - Distribution"
+ *
+ * The preview assumes the whole hour is collected in a single card
+ * transaction. A ticket can be charged more than once (the hold capture,
+ * a separate charge for time beyond the hold, one capture per week on
+ * long-running tickets, a retry after a decline), and each transaction pays
+ * Stripe's fee — including the fixed $0.30 — on its own. The backend deducts
+ * the actual fee per charge before splitting that charge, so the helper and
+ * project shares shrink by one extra fee for every additional transaction.
  */
 export function DistributionPreview({
   helperPercentage,
@@ -44,7 +55,7 @@ export function DistributionPreview({
     { label: "Helper", amount: helperAmount },
     { label: "Project", amount: projectAmount },
     { label: "Githelp", amount: githelpAmount },
-    { label: "Stripe", amount: stripeFee },
+    { label: "Stripe (per transaction)", amount: stripeFee },
   ]
 
   const sumMoney = formatCurrency(oneHourTotal)
@@ -78,6 +89,14 @@ export function DistributionPreview({
           {sumMoney.amount}
         </span>
       </div>
+      <p className="mt-3 text-[12px] leading-snug text-muted-foreground">
+        Stripe charges a fee (typically 2.9% + $0.30 for US cards) on every
+        card transaction. This preview
+        assumes one transaction; a ticket charged in several transactions
+        (extra time beyond the hold, weekly captures on long tickets, a retry
+        after a declined card) pays the Stripe fee on each of them, which is
+        deducted from that charge before the helper and project split.
+      </p>
     </div>
   )
 }

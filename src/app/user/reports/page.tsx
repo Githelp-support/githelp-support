@@ -7,12 +7,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink } from "lucide-react"
 import { useUserPayments, formatAmount } from "@/hooks/usePayments"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 import {
   USER_MONTHLY_PREVIEW_ROWS,
   USER_PAYMENT_PREVIEW_ROWS,
@@ -20,12 +19,24 @@ import {
 } from "@/lib/helper-area-preview-copy"
 import {
   aggregateMonthly,
+  groupUserPaymentsByTicket,
   monthLabel,
   toUserPaymentRow,
   USER_PAYMENT_STATUS_LABELS,
+  USER_TRANSACTION_DESCRIPTIONS,
   type UserMonthlyReportRow,
   type UserPaymentRow,
+  type UserTicketPaymentGroup,
 } from "@/lib/user-payment-reports"
+import { buildUserMonthlyReport, buildUserTicketReport } from "@/lib/report-export"
+import { downloadReportPdf } from "@/lib/report-pdf"
+import {
+  TransactionLine,
+  TransactionsPanel,
+  TransactionsToggle,
+  transactionsPanelId,
+  useExpandedRows,
+} from "@/components/reports/ticket-transactions"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 
@@ -96,6 +107,39 @@ function compare(a: string | number, b: string | number, direction: SortDirectio
   return 0
 }
 
+function ReceiptButton({ row }: { row: UserPaymentRow }) {
+  if (row.receiptUrl) {
+    return (
+      <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
+        <a
+          href={row.receiptUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open the Stripe receipt for this payment (view, download or print)"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Receipt
+        </a>
+      </Button>
+    )
+  }
+  return (
+    <span
+      title={
+        row.displayStatus === "paid"
+          ? "The receipt is still being prepared by Stripe. Check back shortly."
+          : "A receipt becomes available once the payment has been captured."
+      }
+      className="inline-flex"
+    >
+      <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+        <ExternalLink className="w-3.5 h-3.5" />
+        Receipt
+      </Button>
+    </span>
+  )
+}
+
 function ticketHref(row: UserPaymentRow): string | null {
   if (!row.ticketId) return null
   const params = new URLSearchParams({ ticket: row.ticketId })
@@ -113,7 +157,7 @@ export default function UserReportsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
-  const [requestPdfOpen, setRequestPdfOpen] = useState(false)
+  const { isExpanded, toggle } = useExpandedRows()
 
   const { user, isLoading: userLoading } = useUser()
   const userId = user?.id
@@ -150,13 +194,17 @@ export default function UserReportsPage() {
       ? selectedMonth || monthLabel(new Date().toISOString())
       : null
 
-  const payments: UserPaymentRow[] = useMemo(() => {
+  // One record per ticket; a ticket charged more than once lists its
+  // transactions underneath. The month filter applies to transactions, so a
+  // ticket charged in two months shows each month's part in that month.
+  const payments: UserTicketPaymentGroup[] = useMemo(() => {
     let list = allPayments
     if (targetMonth) {
       list = list.filter((row) => monthLabel(row.date) === targetMonth)
     }
-    if (!sortField) return list
-    const sorted = [...list]
+    const groups = groupUserPaymentsByTicket(list)
+    if (!sortField) return groups
+    const sorted = [...groups]
     sorted.sort((a, b) => {
       switch (sortField) {
         case "ticket":
@@ -238,6 +286,29 @@ export default function UserReportsPage() {
     setSelectedMonthlyRows(
       selectedMonthlyRows.length === monthlyReports.length ? [] : monthlyReports.map((row) => row.id),
     )
+  }
+
+  // The PDF covers the whole ticket, even when the list is filtered to a
+  // month and shows only that month's transactions.
+  const downloadTicketPdf = (row: UserTicketPaymentGroup) => {
+    const ticket =
+      (row.ticketId
+        ? groupUserPaymentsByTicket(allPayments.filter((p) => p.ticketId === row.ticketId))[0]
+        : undefined) ?? row
+    const report = buildUserTicketReport({
+      ticket,
+      customer: { name: user?.name || "Customer", email: user?.email ?? null },
+    })
+    downloadReportPdf(report).catch((error) => console.error("PDF export failed", error))
+  }
+
+  const downloadMonthlyPdf = (period: string) => {
+    const report = buildUserMonthlyReport({
+      rows: allPayments,
+      period,
+      customer: { name: user?.name || "Customer", email: user?.email ?? null },
+    })
+    downloadReportPdf(report).catch((error) => console.error("PDF export failed", error))
   }
 
   const isBusy = isAuthenticated ? paymentsLoading || !paymentsFetched : userLoading
@@ -436,7 +507,14 @@ export default function UserReportsPage() {
                             </span>
                             <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                               <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                Request PDF
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Receipt
+                              </Button>
+                            </span>
+                            <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                                <Download className="w-3.5 h-3.5" />
+                                PDF
                               </Button>
                             </span>
                           </div>
@@ -448,6 +526,9 @@ export default function UserReportsPage() {
                   ) : (
                     payments.map((row) => {
                       const href = ticketHref(row)
+                      const count = row.transactions.length
+                      const expanded = count > 1 && isExpanded(row.id)
+                      const panelId = transactionsPanelId(row.id)
                       return (
                         <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
                           <div className="grid gap-4 items-center" style={PAYMENTS_GRID}>
@@ -469,13 +550,24 @@ export default function UserReportsPage() {
                               <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
                                 {row.ticketTitle}
                               </div>
+                              <TransactionsToggle
+                                count={count}
+                                expanded={expanded}
+                                onToggle={() => toggle(row.id)}
+                                panelId={panelId}
+                              />
                             </div>
                             <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
                             <div className="min-w-0 text-sm text-gray-900 truncate" title={row.projectName}>
                               {row.projectName}
                             </div>
-                            <div className="min-w-0 text-sm text-gray-900 whitespace-nowrap">
-                              {formatAmount(row.amountSmallestUnit, row.currency)}
+                            <div className="min-w-0 text-sm text-gray-900">
+                              <div className="whitespace-nowrap">{formatAmount(row.amountSmallestUnit, row.currency)}</div>
+                              {row.paidSmallestUnit > 0 && row.openSmallestUnit > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  {formatAmount(row.openSmallestUnit, row.currency)} not charged yet
+                                </div>
+                              )}
                             </div>
                             <div className="min-w-0">
                               <Badge className={statusBadgeClass(USER_PAYMENT_STATUS_LABELS[row.displayStatus])}>
@@ -492,17 +584,56 @@ export default function UserReportsPage() {
                                   Open
                                 </Button>
                               )}
+                              {count > 1 ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  type="button"
+                                  className={OUTLINE_BUTTON_CLASS}
+                                  aria-expanded={expanded}
+                                  aria-controls={expanded ? panelId : undefined}
+                                  title="Each transaction has its own Stripe receipt"
+                                  onClick={() => toggle(row.id)}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  Receipts
+                                </Button>
+                              ) : (
+                                <ReceiptButton row={row.transactions[0]} />
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
                                 type="button"
                                 className={OUTLINE_BUTTON_CLASS}
-                                onClick={() => setRequestPdfOpen(true)}
+                                title="Download a PDF report of this ticket with all its transactions"
+                                onClick={() => downloadTicketPdf(row)}
                               >
-                                Request PDF
+                                <Download className="w-3.5 h-3.5" />
+                                PDF
                               </Button>
                             </div>
                           </div>
+                          {expanded && (
+                            <TransactionsPanel id={panelId}>
+                              {row.transactions.map((transaction, index) => (
+                                <TransactionLine
+                                  key={transaction.id}
+                                  index={index}
+                                  count={count}
+                                  date={formatDate(transaction.date)}
+                                  description={USER_TRANSACTION_DESCRIPTIONS[transaction.displayStatus]}
+                                  amount={formatAmount(transaction.amountSmallestUnit, transaction.currency)}
+                                  status={
+                                    <Badge className={statusBadgeClass(USER_PAYMENT_STATUS_LABELS[transaction.displayStatus])}>
+                                      {USER_PAYMENT_STATUS_LABELS[transaction.displayStatus]}
+                                    </Badge>
+                                  }
+                                  actions={<ReceiptButton row={transaction} />}
+                                />
+                              ))}
+                            </TransactionsPanel>
+                          )}
                         </div>
                       )
                     })
@@ -564,7 +695,8 @@ export default function UserReportsPage() {
                           <div className="col-span-2">
                             <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                               <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                Request PDF
+                                <Download className="w-3.5 h-3.5" />
+                                PDF
                               </Button>
                             </span>
                           </div>
@@ -602,9 +734,11 @@ export default function UserReportsPage() {
                               size="sm"
                               type="button"
                               className={OUTLINE_BUTTON_CLASS}
-                              onClick={() => setRequestPdfOpen(true)}
+                              title="Download a PDF report of this month's charges"
+                              onClick={() => downloadMonthlyPdf(row.period)}
                             >
-                              Request PDF
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
                             </Button>
                           </div>
                         </div>
@@ -617,8 +751,6 @@ export default function UserReportsPage() {
           )}
         </main>
       </div>
-
-      <RequestPdfModal open={requestPdfOpen} onOpenChange={setRequestPdfOpen} />
     </div>
   )
 }
