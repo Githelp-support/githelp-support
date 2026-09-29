@@ -148,8 +148,8 @@ export default function UserNotificationsSettingsPage() {
               <Button
                 onClick={handleSave}
                 disabled={savePreferences.isPending || isLoading}
-                variant="outline"
-                className="border-[rgba(0,0,0,0.1)] mt-[22px]"
+                variant="lavender"
+                className="mt-[22px]"
               >
                 {savePreferences.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
