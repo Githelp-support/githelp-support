@@ -186,14 +186,14 @@ export const HELPER_MONTHLY_PREVIEW_ROWS: HelperMonthlyPreviewRow[] = [
         id: "preview-helper-month-1",
         period: "May 2026",
         description: "1 ticket · Total time logged: 1h 10m",
-        earnings: "USD 42.00",
+        earnings: "42.00",
         status: "Pending",
     },
     {
         id: "preview-helper-month-2",
         period: "April 2026",
         description: "3 tickets · Total time logged: 4h 35m",
-        earnings: "USD 203.75",
+        earnings: "203.75",
         status: "Paid out",
     },
 ]

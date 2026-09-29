@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
@@ -16,6 +22,7 @@ import { useHelperTimeEntries } from "@/hooks/useHelperTimeEntries"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
+import { cn } from "@/lib/utils"
 import {
   HELPER_MONTHLY_PREVIEW_ROWS,
   PAYOUT_PREVIEW_ROWS,
@@ -270,7 +277,7 @@ export default function HelperReportsPage() {
       period: row.period,
       periodRaw: row.periodRaw,
       description: `${row.ticketsClosed} ticket${row.ticketsClosed === 1 ? "" : "s"} · Total time logged: ${formatMinutes(row.minutesLogged)}`,
-      earnings: formatAmount(row.earningsSmallestUnit, row.currency),
+      earnings: (row.earningsSmallestUnit / 100).toFixed(2),
       earningsRaw: row.earningsSmallestUnit,
       status:
         row.earningsSmallestUnit > 0 && row.paidOutSmallestUnit === row.earningsSmallestUnit
@@ -735,12 +742,11 @@ export default function HelperReportsPage() {
                     <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
                   <div className="col-span-2">
-                    <SortHeader label="Earnings" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                    <SortHeader label="Earnings (USD)" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-4 flex items-center">
                     <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-2"></div>
                 </div>
               </div>
               <div className="divide-y divide-border">
@@ -765,23 +771,33 @@ export default function HelperReportsPage() {
                         <div className="col-span-2">
                           <span className="text-sm text-foreground">{row.earnings}</span>
                         </div>
-                        <div className="col-span-2">
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                        <div className="col-span-4 flex items-center">
+                          <Badge className={cn(getStatusBadgeClass(row.status), "shrink-0 hover:opacity-90 text-[13px] px-3 py-1")}>
                             {row.status}
                           </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
-                            </Button>
-                          </span>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <FileSpreadsheet className="w-3.5 h-3.5" />
-                              CSV
-                            </Button>
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="ml-[52px] inline-flex shrink-0">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-muted-foreground hover:bg-muted"
+                                  aria-label={`More actions for ${row.period}`}
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem disabled>
+                                  <Download className="size-4" />
+                                  PDF
+                                </DropdownMenuItem>
+                                <DropdownMenuItem disabled>
+                                  <FileSpreadsheet className="size-4" />
+                                  CSV
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </span>
                         </div>
                       </div>
@@ -809,34 +825,32 @@ export default function HelperReportsPage() {
                         <div className="col-span-2">
                           <span className="text-sm text-foreground">{row.earnings}</span>
                         </div>
-                        <div className="col-span-2">
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                        <div className="col-span-4 flex items-center">
+                          <Badge className={cn(getStatusBadgeClass(row.status), "shrink-0 hover:opacity-90 text-[13px] px-3 py-1")}>
                             {row.status}
                           </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title={`Download the ${row.period} payout report as PDF`}
-                            onClick={() => exportPdf(row.period)}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            PDF
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title={`Export the ${row.period} payout report as CSV`}
-                            onClick={() => exportCsv(row.period)}
-                          >
-                            <FileSpreadsheet className="w-3.5 h-3.5" />
-                            CSV
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="ml-[52px] shrink-0 text-muted-foreground hover:bg-muted"
+                                aria-label={`More actions for ${row.period}`}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onSelect={() => exportPdf(row.period)}>
+                                <Download className="size-4" />
+                                PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => exportCsv(row.period)}>
+                                <FileSpreadsheet className="size-4" />
+                                CSV
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
