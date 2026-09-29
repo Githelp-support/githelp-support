@@ -7,6 +7,7 @@ import type { RefObject } from "react"
 import { createPortal } from "react-dom"
 import { notificationType, type Notification, type NotificationType } from "@/hooks/useNotifications"
 import { formatRelativeTime } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 export function notificationTypeColor(type: NotificationType) {
   switch (type) {
@@ -133,7 +134,12 @@ export function NotificationsPanel({
                 return (
                   <div
                     key={notification.id}
-                    className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                    className={cn(
+                      "p-4 border rounded-lg cursor-pointer transition-colors",
+                      !notification.is_read
+                        ? "border-brand-primary bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-950/50"
+                        : "border-border hover:bg-muted"
+                    )}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start justify-between mb-2">

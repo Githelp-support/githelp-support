@@ -16,6 +16,7 @@ import {
   type Notification,
 } from "@/hooks/useNotifications"
 import { formatRelativeTime } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 25
 
@@ -110,7 +111,12 @@ export default function NotificationsPage() {
                   return (
                     <div
                       key={notification.id}
-                      className="p-4 border border-border rounded-lg bg-card hover:bg-muted cursor-pointer transition-colors"
+                      className={cn(
+                        "p-4 border rounded-lg cursor-pointer transition-colors",
+                        !notification.is_read
+                          ? "border-brand-primary bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-950/50"
+                          : "border-border bg-card hover:bg-muted",
+                      )}
                       onClick={() => handleNotificationClick(notification)}
                       role="button"
                       tabIndex={0}
