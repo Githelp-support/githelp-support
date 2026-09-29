@@ -28,7 +28,7 @@ export function AIRephraseModal({ isOpen, onClose, originalText }: AIRephraseMod
       setRephrasedText(data.rephrased || "Could not generate interpretation.")
     } catch (err) {
       console.error("AI rephrase failed:", err)
-      setRephrasedText("Failed to generate AI interpretation. Please try again.")
+      setRephrasedText("AI interpretation is currently not activated.")
     } finally {
       setHasGenerated(true)
       setIsLoading(false)
@@ -57,10 +57,10 @@ export function AIRephraseModal({ isOpen, onClose, originalText }: AIRephraseMod
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto space-y-6">
+        <div className="mt-1 flex-1 overflow-auto space-y-6">
           {/* Original Text */}
           <div>
-            <h3 className="font-medium text-foreground mb-3">Original user request:</h3>
+            <h3 className="font-[550] text-sm text-foreground mb-3">Original user request:</h3>
             <Card className="border border-border">
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">{originalText}</p>
@@ -71,7 +71,7 @@ export function AIRephraseModal({ isOpen, onClose, originalText }: AIRephraseMod
           {/* AI Rephrased Text */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-foreground">AI interpretation:</h3>
+              <h3 className="font-[550] text-sm text-foreground">AI interpretation:</h3>
               {hasGenerated && (
                 <Button
                   onClick={handleRegenerate}
@@ -89,8 +89,8 @@ export function AIRephraseModal({ isOpen, onClose, originalText }: AIRephraseMod
               <CardContent className="p-4">
                 {!hasGenerated && !isLoading && (
                   <div className="text-center py-8">
-                    <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground mb-4">
+                    <Sparkles className="w-[29px] h-[29px] text-muted-foreground mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground mb-4">
                       Click &quot;Generate AI Interpretation&quot; to get a clearer understanding of the user&apos;s request.
                     </p>
                     <Button onClick={handleRephrase} variant="lavender">

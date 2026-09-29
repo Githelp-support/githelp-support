@@ -11,12 +11,13 @@ import { Header } from "@/components/layout/header"
 import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
+import { formatTicketRates } from "@/lib/ticket-pricing"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } from "@/hooks/useTicketParticipants"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 
 interface Ticket {
@@ -101,15 +102,7 @@ export default function TicketsPage() {
   useRealtimeTickets(projectId)
 
   // Format rate (convert cents to dollars)
-  const ratePerMinute = paymentSettings?.ticket_price_minute_first_60 
-    ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) 
-    : "1.50"
-  const startPrice = paymentSettings?.ticket_start_price
-    ? (paymentSettings.ticket_start_price / 100).toFixed(2)
-    : "10.00"
-  const after60Price = paymentSettings?.ticket_price_minute_after_60
-    ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2)
-    : "1.00"
+  const { startPrice, first60Price: ratePerMinute, after60Price } = formatTicketRates(paymentSettings)
 
   // Transform tickets to UI format
   const tickets = useMemo(() => {
@@ -559,17 +552,21 @@ export default function TicketsPage() {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-3">
-                                  <Button variant="lavender" disabled>
-                                    Claim ticket
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    disabled
-                                    className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-                                  >
-                                    <Sparkles className="w-4 h-4" />
-                                    Rephrase with AI
-                                  </Button>
+                                  <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                    <Button variant="lavender" disabled>
+                                      Claim ticket
+                                    </Button>
+                                  </span>
+                                  <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                    <Button
+                                      variant="outline"
+                                      disabled
+                                      className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                    >
+                                      <Sparkles className="w-4 h-4" />
+                                      Rephrase with AI
+                                    </Button>
+                                  </span>
                                 </div>
                               </div>
                             )}

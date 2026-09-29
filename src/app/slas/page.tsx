@@ -10,6 +10,7 @@ import { Header } from "@/components/layout/header"
 import { CreateSLADrawer } from "@/components/drawers/create-sla-drawer"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 const slaColors = ["#cbbcf6", "#d0f6bc", "#f6e6bc", "#bcedf6"]
 
@@ -272,7 +273,7 @@ export default function SLAsPage() {
                           See details
                         </Button>
                       </Link>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
+                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </div>

@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCreateProject } from "@/hooks/useProject"
-import { useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
+import { useEnterProject } from "@/hooks/useEnterProject"
+import { homeRouteForRole } from "@/lib/roles"
 import { Loader2, Plus, Users, Mail, ArrowRight } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -18,8 +20,9 @@ export default function WaitingPage() {
     const [isCreating, setIsCreating] = useState(false)
     const [showCreateForm, setShowCreateForm] = useState(false)
     
+    const queryClient = useQueryClient()
     const createProject = useCreateProject()
-    const completeOnboarding = useCompleteOnboarding()
+    const enterProject = useEnterProject()
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
@@ -43,10 +46,15 @@ export default function WaitingPage() {
                 open_for_new_helpers: true,
             })
 
+            // AuthGuard sends completed-but-not-a-member users back here, so
+            // refresh the cached status before leaving or "/" bounces us back.
+            await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
+
+            // The creator is the project's admin — land them there as admin
+            // even if their last active role (e.g. helper) was something else.
+            const role = await enterProject(project.project_id, "admin")
             toast.success("Project created successfully!")
-            
-            // Redirect to dashboard
-            router.push("/")
+            router.push(homeRouteForRole(role))
         } catch (error: unknown) {
             console.error("Failed to create project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create project. Please try again.")

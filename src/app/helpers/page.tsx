@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, UserMinus } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,7 @@ import { usePendingRequests, useUpdatePendingRequest } from "@/hooks/usePendingR
 import { useCreateProjectInvite, useListProjectInvites, useRevokeProjectInvite } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import Link from "next/link"
 
 function isPendingInvite(invite: {
@@ -216,7 +216,7 @@ export default function HelpersPage() {
     try {
       await removeHelper.mutateAsync({ helperId: id })
       setHelperToRemove(null)
-      toast.success(`${name} has been removed from the project.`)
+      toast.success(`${name} has been removed as helper from the project`)
     } catch (error) {
       console.error("Failed to remove helper:", error)
       toast.error("Failed to remove helper. Please try again.")
@@ -397,6 +397,12 @@ export default function HelpersPage() {
     toast.success("Invite link copied to clipboard!")
   }
 
+  const handleCopyInvitationLink = async () => {
+    if (!projectId) return
+    await navigator.clipboard.writeText(`${window.location.origin}/projects/${projectId}`)
+    toast.success("Invitation link copied to clipboard!")
+  }
+
   const handleRevokeInvite = async (inviteId: string) => {
     if (!projectId) return
     try {
@@ -482,6 +488,18 @@ export default function HelpersPage() {
                 >
                   <i className="fi fi-rr-user inline-flex items-center justify-center leading-none w-4 h-4" />
                   Add myself as helper
+                </Button>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  onClick={handleCopyInvitationLink}
+                  disabled={!projectId}
+                  title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
+                >
+                  <Copy className="w-4 h-4" />
+                  Copy invitation link
                 </Button>
               )}
               <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
@@ -655,7 +673,7 @@ export default function HelpersPage() {
                                 Revoke
                               </Button>
                             )}
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
+                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </div>
@@ -734,8 +752,8 @@ export default function HelpersPage() {
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >
-                                <UserMinus />
-                                Remove helper
+                                <i className="fi fi-rr-user inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" />
+                                Remove as helper
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -799,7 +817,7 @@ export default function HelpersPage() {
                           >
                             Accept
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted">
+                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </div>

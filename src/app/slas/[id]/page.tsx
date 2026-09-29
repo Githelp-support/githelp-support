@@ -12,7 +12,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -55,7 +55,7 @@ interface TicketRow {
   created_at: string
   status: string
   sla_id: string | null
-  tickets_time_entries: { time_milliseconds: number; helper_id: string }[]
+  tickets_time_entries: { time_milliseconds: number; helper_id: string; review_status?: string | null }[]
   tickets_participants: { participant_id: string; claimed: boolean }[]
 }
 
@@ -86,7 +86,11 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
       if (error) throw error
-      return (data ?? []) as TicketRow[]
+      // Entries the customer declined are not billed and don't consume SLA minutes.
+      return ((data ?? []) as TicketRow[]).map((t) => ({
+        ...t,
+        tickets_time_entries: (t.tickets_time_entries ?? []).filter((e) => e.review_status !== "declined"),
+      }))
     },
     enabled: !!id,
     staleTime: 1800000,
@@ -279,7 +283,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                 <h2 className="text-lg font-semibold text-foreground">Agreement details</h2>
                 <Info className="w-4 h-4 text-muted-foreground" />
               </div>
-              <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent">
+              <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                 <Edit className="w-4 h-4" />
                 Edit agreement
               </Button>
@@ -462,6 +466,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   View all
                 </Button>
                 <Button
+                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                   variant="outline"
                   size="sm"
                   className="border-border text-muted-foreground hover:bg-muted bg-transparent"
@@ -469,6 +474,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   Core team
                 </Button>
                 <Button
+                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                   variant="outline"
                   size="sm"
                   className="border-border text-muted-foreground hover:bg-muted bg-transparent"
@@ -476,6 +482,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   Extended team
                 </Button>
                 <Button
+                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                   variant="outline"
                   size="sm"
                   className="border-border text-muted-foreground hover:bg-muted bg-transparent"
@@ -518,7 +525,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               <td className="p-4 text-sm text-muted-foreground">{helper.tickets}</td>
                               <td className="p-4 text-sm text-muted-foreground">{formatMs(helper.totalMs)}</td>
                               <td className="p-4">
-                                <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10">
+                                <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                                   <ExternalLink className="w-4 h-4" />
                                 </Button>
                               </td>
@@ -638,6 +645,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               <td className="p-4">
                                 <div className="flex gap-2">
                                   <Button
+                                    title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                                     variant="outline"
                                     size="sm"
                                     className="border-border text-muted-foreground hover:bg-muted bg-transparent"

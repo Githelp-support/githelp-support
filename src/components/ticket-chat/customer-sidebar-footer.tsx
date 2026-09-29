@@ -5,6 +5,7 @@ import { getAvatarColorHexForId } from "@/lib/constants"
 import type { CustomerTimeEntryDisplay } from "@/hooks/useCustomerTicketSidebar"
 import type { UserActiveTicketSidebarItem } from "@/hooks/useTicketsWithDetails"
 import { SidebarSectionHeading, SidebarDivider } from "./sidebar-section"
+import { TimeEntryReviewStatusBadge } from "./time-entry-review"
 
 export interface CustomerTicketSidebarFooterProps {
   /** Current ticket id, if a ticket exists yet. */
@@ -56,6 +57,12 @@ export function CustomerTicketSidebarFooter({
                       </span>
                     </div>
                     {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                    <div className="mt-1 ml-8">
+                      <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} perspective="customer" />
+                    </div>
+                    {entry.reviewStatus === "declined" && entry.declineReason && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+                    )}
                   </div>
                 ))}
                 <div className="flex items-center justify-between py-2 font-medium">
@@ -75,9 +82,9 @@ export function CustomerTicketSidebarFooter({
       {/* Active Tickets — latest active tickets for this user */}
       <div>
         <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-        <div className={`-ml-5 -mr-4 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+        <div className={`-mx-3 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
           {activeTickets.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground pl-5 pr-4">No active tickets</p>
+            <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
           ) : (
             activeTickets.map((item) => (
               <Link
