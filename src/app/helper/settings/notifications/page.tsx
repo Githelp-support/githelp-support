@@ -7,30 +7,22 @@ import {
   type EmailGroupOption,
 } from "@/components/settings/personal-notification-settings"
 
+// Only the groups helpers actually receive email for. New-ticket alerts reach
+// helpers in-app and via their delivery channels ("Tickets"), not by email.
 const EMAIL_GROUPS: EmailGroupOption[] = [
-  {
-    key: "tickets",
-    label: "Ticket activity",
-    description: "Your ticket is claimed or completed",
-  },
   {
     key: "messages",
     label: "Chat messages",
-    description: "New messages while you're away (batched, ~5 min)",
+    description: "New messages on tickets you've claimed (batched, ~5 min)",
   },
   {
     key: "payments",
-    label: "Payments & payouts",
-    description: "Payouts to you, failed payments, SLA billing",
-  },
-  {
-    key: "membership",
-    label: "Membership & invites",
-    description: "Invites you sent are accepted, helper requests",
+    label: "Payouts",
+    description: "Earnings transferred to you, failed payouts",
   },
 ]
 
-export default function UserNotificationsSettingsPage() {
+export default function HelperNotificationsSettingsPage() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />

@@ -143,6 +143,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         { name: "Payout", href: "/helper/settings/payout", icon: "fi-rr-credit-card" },
         { name: "Profile", href: "/helper/settings/profile", icon: "fi-rr-user" },
         { name: "Availability", href: "/helper/settings/availability", icon: "fi-rr-list-check" },
+        { name: "Notifications", href: "/helper/settings/notifications", icon: "fi-rr-bell" },
       ],
     },
   ]
