@@ -38,7 +38,6 @@ import {
 import { buildUserMonthlyReport, buildUserTicketReport } from "@/lib/report-export"
 import { downloadReportPdf } from "@/lib/report-pdf"
 import {
-  TransactionLine,
   TransactionsPanel,
   TransactionsToggle,
   transactionsPanelId,
@@ -72,10 +71,14 @@ type SortDirection = "asc" | "desc"
 const statusBadgeClass = (label: string) =>
   `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
 
+// Each row (and each transaction line) is its own grid, so every column that must line up has a width that does not depend on the row's content.
+// Status: fixed, sized for the widest status badge ("Action required").
+// Last: the kebab trigger (2.75rem) plus 36px which, with the 16px grid gap, puts 52px between the Status column and the kebab menu.
 const PAYMENTS_GRID = {
-  // Fixed last column sized for the kebab menu trigger: each row is its own grid, so an `auto` width could differ per row and from the empty header cell.
-  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 2.5rem",
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,2fr) minmax(0,1fr) 9rem calc(2.75rem + 36px)",
 }
+// Right padding of the Project column: with the 16px grid gap, text ends at least 60px before the amount.
+const BEFORE_AMOUNT_CLASS = "pr-11"
 const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
@@ -506,7 +509,7 @@ export default function UserReportsPage() {
                             <div className="text-xs text-muted-foreground truncate">{row.ticketTitle}</div>
                           </div>
                           <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
-                          <div className="min-w-0 text-sm text-gray-900 truncate">{row.projectName}</div>
+                          <div className={cn("min-w-0 text-sm text-gray-900 truncate", BEFORE_AMOUNT_CLASS)}>{row.projectName}</div>
                           <div className="min-w-0 text-sm text-gray-900 whitespace-nowrap">{row.amount.replace(/^USD\s+/, "")}</div>
                           <div className="min-w-0">
                             <Badge className={statusBadgeClass(row.status)}>{row.status}</Badge>
@@ -585,7 +588,7 @@ export default function UserReportsPage() {
                               </div>
                             </div>
                             <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
-                            <div className="min-w-0 text-sm text-gray-900 truncate" title={row.projectName}>
+                            <div className={cn("min-w-0 text-sm text-gray-900 truncate", BEFORE_AMOUNT_CLASS)} title={row.projectName}>
                               {row.projectName}
                             </div>
                             <div className="min-w-0 text-sm text-gray-900">
@@ -651,23 +654,42 @@ export default function UserReportsPage() {
                           )}
                           {expanded && (
                             <div className="cursor-default" onClick={stopRowNavigation}>
-                            <TransactionsPanel id={panelId}>
-                              {row.transactions.map((transaction, index) => (
-                                <TransactionLine
-                                  key={transaction.id}
-                                  index={index}
-                                  count={count}
-                                  date={formatDate(transaction.date)}
-                                  description={USER_TRANSACTION_DESCRIPTIONS[transaction.displayStatus]}
-                                  amount={formatPaymentAmount(transaction.amountSmallestUnit, transaction.currency)}
-                                  status={
-                                    <Badge className={statusBadgeClass(USER_PAYMENT_STATUS_LABELS[transaction.displayStatus])}>
-                                      {USER_PAYMENT_STATUS_LABELS[transaction.displayStatus]}
-                                    </Badge>
-                                  }
-                                  actions={<ReceiptButton row={transaction} />}
-                                />
-                              ))}
+                            {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                            <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                              {row.transactions.map((transaction, index) => {
+                                const description = USER_TRANSACTION_DESCRIPTIONS[transaction.displayStatus]
+                                return (
+                                  <div
+                                    key={transaction.id}
+                                    role="listitem"
+                                    className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                    style={PAYMENTS_GRID}
+                                  >
+                                    <span />
+                                    <span className="min-w-0 text-xs text-muted-foreground tabular-nums">
+                                      {index + 1} of {count}
+                                    </span>
+                                    <span className="min-w-0 text-muted-foreground tabular-nums">
+                                      {formatDate(transaction.date)}
+                                    </span>
+                                    <span className={cn("min-w-0 truncate text-foreground", BEFORE_AMOUNT_CLASS)} title={description}>
+                                      {description}
+                                    </span>
+                                    <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                      {formatPaymentAmount(transaction.amountSmallestUnit, transaction.currency)}
+                                    </span>
+                                    <span className="min-w-0">
+                                      <Badge className={statusBadgeClass(USER_PAYMENT_STATUS_LABELS[transaction.displayStatus])}>
+                                        {USER_PAYMENT_STATUS_LABELS[transaction.displayStatus]}
+                                      </Badge>
+                                    </span>
+                                    {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                    <span className="flex items-center justify-end [&>*]:shrink-0">
+                                      <ReceiptButton row={transaction} />
+                                    </span>
+                                  </div>
+                                )
+                              })}
                             </TransactionsPanel>
                             </div>
                           )}
