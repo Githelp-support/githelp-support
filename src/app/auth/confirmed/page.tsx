@@ -119,7 +119,7 @@ export default function AuthConfirmedPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
       <div className="text-center">
         <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">Completing sign in...</p>
+        <p className="text-[14px] text-muted-foreground">Completing sign in...</p>
       </div>
     </div>
   )
