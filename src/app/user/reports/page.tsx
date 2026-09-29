@@ -56,8 +56,8 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
-// Payments tab: the column header already says "Amount (USD)", so USD amounts
-// drop the prefix. Any other currency keeps it so it is never silently hidden.
+// Payments and Monthly reports: the column header already says "Amount (USD)",
+// so USD amounts drop the prefix. Any other currency keeps it so it is never silently hidden.
 const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)
 const formatPaymentAmount = (cents: number, currency: string = "usd") =>
   currency.toLowerCase() === "usd" ? formatAmountValue(cents) : formatAmount(cents, currency)
@@ -721,7 +721,7 @@ export default function UserReportsPage() {
                         <SortHeader label="Tickets" field="tickets" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                       </div>
                       <div className="col-span-2">
-                        <SortHeader label="Amount spent" field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                        <SortHeader label="Amount (USD)" field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                       </div>
                       <div className="col-span-2 flex items-center">
                         <span className="text-sm font-medium text-foreground">Status</span>
@@ -747,7 +747,7 @@ export default function UserReportsPage() {
                             </Badge>
                           </div>
                           <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
-                          <div className="col-span-2 text-sm text-gray-900">{row.amount}</div>
+                          <div className="col-span-2 text-sm text-gray-900">{row.amount.replace(/^USD\s+/, "")}</div>
                           <div className="col-span-2">
                             <Badge className={statusBadgeClass("Paid")}>Paid</Badge>
                           </div>
@@ -782,7 +782,7 @@ export default function UserReportsPage() {
                           <div className="col-span-3 text-sm text-gray-900">{row.period}</div>
                           <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
                           <div className="col-span-2 text-sm text-gray-900">
-                            {formatAmount(row.amountSmallestUnit, row.currency)}
+                            {formatPaymentAmount(row.amountSmallestUnit, row.currency)}
                           </div>
                           <div className="col-span-2">
                             <Badge className={statusBadgeClass("Paid")}>Paid</Badge>
