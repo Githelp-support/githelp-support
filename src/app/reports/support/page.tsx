@@ -566,7 +566,7 @@ export default function ReportsSupportPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
                   ) : monthlyRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
                       {selectedMonth ? `No income found for ${selectedMonth}` : "No income found"}
@@ -681,7 +681,7 @@ export default function ReportsSupportPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
                   ) : ticketRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("ticket payments")}</div>
                   ) : (
@@ -819,7 +819,7 @@ export default function ReportsSupportPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
                   ) : helperRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("helper payouts")}</div>
                   ) : (
