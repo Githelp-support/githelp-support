@@ -5,6 +5,7 @@ import { groupUserPaymentsByTicket, type UserPaymentRow } from "@/lib/user-payme
 import {
     buildHelperPayoutReport,
     buildProjectPayoutReport,
+    buildUserMonthlyReport,
     buildUserTicketReport,
     chargedAmount,
     csvCell,
@@ -291,6 +292,55 @@ describe("buildUserTicketReport", () => {
             ["Ticket total", "USD 84.00"],
         ])
         expect(transactions.note).toMatch(/more than one transaction/)
+    })
+})
+
+describe("buildUserMonthlyReport", () => {
+    const row = (overrides: Partial<UserPaymentRow>): UserPaymentRow => ({
+        id: "p-1",
+        ticketId: "abcdef0-ticket",
+        ticketShortId: "abcdef0",
+        ticketTitle: "Login broken",
+        projectId: "proj-1",
+        projectName: "Acme",
+        ticketType: "Bug",
+        date: "2026-08-11T10:00:00.000Z",
+        amountSmallestUnit: 4200,
+        currency: "usd",
+        displayStatus: "paid",
+        receiptUrl: null,
+        ...overrides,
+    })
+
+    it("reports the month's captured charges per ticket, matching the Monthly reports tab", () => {
+        const report = buildUserMonthlyReport({
+            rows: [
+                row({}),
+                row({ id: "p-2", date: "2026-08-19T10:00:00.000Z", amountSmallestUnit: 1200 }),
+                row({ id: "p-3", ticketId: "1234567-ticket", ticketShortId: "1234567", ticketTitle: "Deploy", date: "2026-08-02T10:00:00.000Z", amountSmallestUnit: 500 }),
+                row({ id: "p-4", date: "2026-08-20T10:00:00.000Z", displayStatus: "on_hold" }),
+                row({ id: "p-5", date: "2026-08-21T10:00:00.000Z", displayStatus: "failed" }),
+                row({ id: "p-6", date: "2026-07-30T10:00:00.000Z" }),
+            ],
+            period: "August 2026",
+            customer: { name: "Grace", email: "grace@example.com" },
+            generatedAt: GENERATED,
+        })
+        expect(report.title).toBe("Monthly payment report")
+        expect(report.fileName).toBe("githelp-payments-august-2026")
+        expect(report.meta).toContainEqual(["Customer", "Grace"])
+        const [charges] = report.sections
+        expect(charges.rows).toEqual([
+            ["02/08/2026", "1234567", "Deploy", "Acme", "USD 5.00"],
+            ["19/08/2026", "abcdef0", "Login broken (2 charges)", "Acme", "USD 54.00"],
+            ["11/08/2026", "", "Charge 1 of 2", "", "USD 42.00"],
+            ["19/08/2026", "", "Charge 2 of 2", "", "USD 12.00"],
+        ])
+        expect(charges.rowKinds).toEqual(["ticket", "ticket", "transaction", "transaction"])
+        expect(charges.totals).toEqual([
+            ["Tickets", "2"],
+            ["Total spent", "USD 59.00"],
+        ])
     })
 })
 

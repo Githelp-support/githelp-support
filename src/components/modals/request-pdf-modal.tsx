@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { CheckCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -26,11 +26,11 @@ export function RequestPdfModal({ open, onOpenChange, onConfirm }: RequestPdfMod
   const [requested, setRequested] = useState(false)
 
   // Reset to the initial state whenever the modal is reopened
-  useEffect(() => {
-    if (open) {
-      setRequested(false)
-    }
-  }, [open])
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) setRequested(false)
+  }
 
   const handleConfirm = () => {
     onConfirm?.()
