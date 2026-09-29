@@ -277,7 +277,8 @@ export function TopBar() {
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
                 {/* Scrollable project list — capped at three rows (3 × 32px) so the
-                    separator and "Add new" below always stay visible. */}
+                    separator and the bottom item below ("Add new", or "Ask to be
+                    validated" for helpers) always stay visible. */}
                 <div className={cn("max-h-24 overflow-y-auto")}>
                   {userProjects.map((project) => {
                     const isSelected = selectedProject?.project_id === project.project_id
@@ -295,11 +296,15 @@ export function TopBar() {
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
                   onClick={() => {
+                    if (user.role === "helper") {
+                      router.push("/onboarding/join")
+                      return
+                    }
                     if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
                   }}
                 >
                   <Plus className="w-4 h-4" />
-                  Add new
+                  {user.role === "helper" ? "Ask to be validated" : "Add new"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
