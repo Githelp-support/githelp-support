@@ -89,7 +89,15 @@ const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
 
 const PREVIEW_HELPER_NAME = "You"
 
-const PAYOUTS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
+/** Checkbox, four evenly sized data columns, then Status together with the row actions. */
+const PAYOUTS_GRID = { gridTemplateColumns: "2rem repeat(4, minmax(0, 1fr)) minmax(0, 3fr)" }
+/** Row actions sit 52px to the right of the status badge itself. */
+const PAYOUT_ACTIONS_CLASS = "ml-[52px] flex min-w-0 items-center gap-2 flex-wrap"
+/**
+ * The kebab trigger has 14px of invisible horizontal padding around its icon,
+ * so a 38px margin leaves 52px between the status badge and the visible icon.
+ */
+const KEBAB_OFFSET_CLASS = "ml-[38px]"
 const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
@@ -541,16 +549,15 @@ export default function HelperReportsPage() {
                   <div className="col-span-1">
                     <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-3">
+                  <div>
                     <SortHeader label="Helper" field="helper" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <SortHeader label="Earnings" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2"></div>
                 </div>
               </div>
 
@@ -572,19 +579,18 @@ export default function HelperReportsPage() {
                         <div className="col-span-1">
                           <span className="text-sm text-muted-foreground">{payout.date}</span>
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px] flex-wrap">
+                        <div className="flex items-center gap-[18px] flex-wrap">
                           <HelperCell name={PREVIEW_HELPER_NAME} color={getAvatarColorHexForId(PREVIEW_HELPER_NAME)} />
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <span className="text-sm text-foreground">{payout.amount}</span>
                         </div>
-                        <div className="col-span-2">
+                        <div className="flex items-center">
                           <PayoutStatusBadge status={payout.status} />
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
+                          <div className={PAYOUT_ACTIONS_CLASS}>
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                               Open
@@ -602,6 +608,7 @@ export default function HelperReportsPage() {
                               PDF
                             </Button>
                           </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -640,10 +647,10 @@ export default function HelperReportsPage() {
                         <div className="col-span-1">
                           <span className="text-sm text-muted-foreground">{formatDate(payout.date)}</span>
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
+                        <div className="flex items-center gap-[18px]">
                           <HelperCell name={payout.helper} color={payout.helperColor} />
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <div className="text-sm text-foreground">
                             {formatAmount(payout.amountSmallestUnit, payout.currency)}
                           </div>
@@ -651,11 +658,9 @@ export default function HelperReportsPage() {
                             <div className="text-xs text-red-700">{formatAmount(payout.failedSmallestUnit, payout.currency)} failed</div>
                           )}
                         </div>
-                        <div className="col-span-2">
+                        <div className="flex items-center">
                           <PayoutStatusBadge status={payout.status} />
-                        </div>
-                        <div className="col-span-2">
-                          <div className="flex items-center justify-end gap-2 flex-wrap">
+                          <div className={PAYOUT_ACTIONS_CLASS}>
                           {payout.ticketId ? (
                             <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
                               <Link href={`/helper/tickets/${payout.ticketId}`}>Open</Link>
@@ -775,7 +780,7 @@ export default function HelperReportsPage() {
                           <Badge className={cn(getStatusBadgeClass(row.status), "shrink-0 hover:opacity-90 text-[13px] px-3 py-1")}>
                             {row.status}
                           </Badge>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="ml-[52px] inline-flex shrink-0">
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className={cn(KEBAB_OFFSET_CLASS, "inline-flex shrink-0")}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
@@ -834,7 +839,7 @@ export default function HelperReportsPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="ml-[52px] shrink-0 text-muted-foreground hover:bg-muted"
+                                className={cn(KEBAB_OFFSET_CLASS, "shrink-0 text-muted-foreground hover:bg-muted")}
                                 aria-label={`More actions for ${row.period}`}
                               >
                                 <MoreVertical className="w-4 h-4" />
