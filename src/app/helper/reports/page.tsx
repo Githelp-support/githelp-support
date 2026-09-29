@@ -104,10 +104,18 @@ const PAYOUTS_GRID = {
 }
 // Extra 32px after the Ticket ID and Date columns (header, rows and transaction lines alike).
 const COLUMN_SPACING_CLASS = "pr-8"
-// Monthly reports: same fixed Status and kebab tracks as the payouts, so the kebab menu sits 52px after the Status column.
+// Monthly reports: the fixed tracks add up to the same width as in the payouts grid, so the flexible columns keep their size.
+// The kebab track is just the trigger; the 36px it used to carry sits in the Status track instead.
 const MONTHLY_GRID = {
-  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,2.5fr) minmax(0,1fr) 9rem calc(2.75rem + 36px)",
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,2.5fr) minmax(0,1fr) calc(9rem + 36px) 2.75rem",
 }
+// Monthly reports column offsets (header and rows alike):
+// Description sits 30px closer to Period (142px -> 112px between the texts).
+const MONTHLY_DESCRIPTION_CLASS = "-ml-[30px]"
+// Earnings sits a further 80px closer to Description (180px -> 100px between the texts).
+const MONTHLY_EARNINGS_CLASS = "-ml-[110px]"
+// Status sits 70px closer to the kebab menu (134px -> 64px between the badge and the menu).
+const MONTHLY_STATUS_CLASS = "pl-[70px]"
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
 
@@ -790,13 +798,13 @@ export default function HelperReportsPage() {
                   <div className="min-w-0">
                     <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="min-w-0">
+                  <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
                     <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="min-w-0 whitespace-nowrap">
+                  <div className={cn("min-w-0 whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
                     <SortHeader label="Earnings (USD)" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="min-w-0">
+                  <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
                     <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
                   <div />
@@ -818,13 +826,13 @@ export default function HelperReportsPage() {
                             Preview
                           </Badge>
                         </div>
-                        <div className="min-w-0">
+                        <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
                           <span className="text-sm text-muted-foreground">{row.description}</span>
                         </div>
-                        <div className="min-w-0 text-sm text-foreground whitespace-nowrap">
+                        <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
                           {row.earnings.replace(/^USD\s+/, "")}
                         </div>
-                        <div className="min-w-0">
+                        <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
                           <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
                             {row.status}
                           </Badge>
@@ -876,13 +884,13 @@ export default function HelperReportsPage() {
                         <div className="min-w-0">
                           <span className="text-sm font-medium text-foreground">{row.period}</span>
                         </div>
-                        <div className="min-w-0">
+                        <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
                           <span className="text-sm text-muted-foreground">{row.description}</span>
                         </div>
-                        <div className="min-w-0 text-sm text-foreground whitespace-nowrap">
+                        <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
                           {formatPayoutAmount(row.earningsSmallestUnit, row.currency)}
                         </div>
-                        <div className="min-w-0">
+                        <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
                           <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
                             {row.status}
                           </Badge>
