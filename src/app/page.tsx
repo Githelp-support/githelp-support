@@ -16,6 +16,7 @@ import { TabSelector } from "@/components/ui/tab-selector"
 import Link from "next/link"
 import { useProjectSelection } from "@/contexts/project-context"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
+import { homeRouteForRole } from "@/lib/roles"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -39,9 +40,9 @@ export default function Dashboard() {
     if (!projectRole) return
 
     if (projectRole === "helper") {
-      router.replace("/helper/overview")
+      router.replace(homeRouteForRole("helper"))
     } else if (projectRole === "user") {
-      router.replace("/support/tickets")
+      router.replace(homeRouteForRole("user"))
     }
   }, [
     isUserLoading,

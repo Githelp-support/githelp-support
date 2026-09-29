@@ -148,7 +148,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   ]
 
   const userNavigationItems: NavigationItem[] = [
-    { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
+    { name: "Overview", href: "/user/overview", icon: "fi-rr-apps" },
     {
       name: "Support",
       href: "#",
@@ -160,6 +160,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         { name: "About support", href: `/support/about${supportQuery}`, icon: "fi-rr-info" },
       ],
     },
+    { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
     { name: "Reports", href: "/user/reports", icon: "fi-rr-document" },
     {
       name: "Settings",
