@@ -188,8 +188,13 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   // expansion against the current role's `navigationItems` + `pathname`.
   // The active highlight (`isItemActive` / `isSubItemActive`) is derived from
   // `pathname` on every render via `navigationItems`, so it stays in sync
-  // automatically — this effect only fixes the imperative expansion state.
-  useEffect(() => {
+  // automatically — this only fixes the imperative expansion state. It runs
+  // during render (not in an effect) so the new role's nav never paints with
+  // the old role's expansion. It also runs on the first render, since the
+  // useState seed above only knows a few path prefixes.
+  const [expansionRole, setExpansionRole] = useState<{ role: typeof user.role } | null>(null)
+  if (!expansionRole || expansionRole.role !== user.role) {
+    setExpansionRole({ role: user.role })
     let next: string[] = []
     for (const item of navigationItems) {
       if (!item.subItems) continue
@@ -204,16 +209,10 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         break
       }
     }
-    setExpandedItems((prev) => {
-      // Preserve reference equality when unchanged to avoid an extra re-render
-      // (notably on the initial mount where `useState` already seeded the same value).
-      if (prev.length === next.length && prev.every((n, i) => n === next[i])) {
-        return prev
-      }
-      return next
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only re-run on role change; navigationItems/pathname are read from the latest render closure
-  }, [user.role])
+    if (expandedItems.length !== next.length || expandedItems.some((n, i) => n !== next[i])) {
+      setExpandedItems(next)
+    }
+  }
 
   const bottomItems = [
     { name: "Documentation", href: "#", icon: "fi-rr-book-alt" },

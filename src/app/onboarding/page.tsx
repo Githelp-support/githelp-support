@@ -57,11 +57,12 @@ export default function OnboardingPage() {
         checkGithubSession()
     }, [])
 
-    useEffect(() => {
-        if (searchParams.get("import") === "github") {
-            setStep("create-github")
-        }
-    }, [searchParams])
+    const importParam = searchParams.get("import")
+    const [syncedImportParam, setSyncedImportParam] = useState<string | null>(null)
+    if (importParam !== syncedImportParam) {
+        setSyncedImportParam(importParam)
+        if (importParam === "github") setStep("create-github")
+    }
 
     // Existing members can come back here on purpose to add another project
     // (top-bar "Add new", sandbox "Exit sandbox", GitHub import). Those entry

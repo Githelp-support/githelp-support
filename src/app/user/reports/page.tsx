@@ -59,7 +59,8 @@ const statusBadgeClass = (label: string) =>
   `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
 
 const PAYMENTS_GRID = {
-  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) auto",
+  // Fixed last column: each row is its own grid, so an `auto` width would differ per row (Receipt vs Receipts) and from the empty header cell.
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 16.5rem",
 }
 const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 

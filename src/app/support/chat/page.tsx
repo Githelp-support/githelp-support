@@ -224,12 +224,15 @@ export default function UserSupportChatPage() {
   }, [ticketIdParam, cardParam])
 
   // When opening an existing ticket from URL, set ticket state
-  useEffect(() => {
-    if (ticketIdParam && existingTicket?.id) {
-      setTicketId(existingTicket.id)
+  const openedTicketId = ticketIdParam && existingTicket?.id ? existingTicket.id : null
+  const [syncedOpenedTicketId, setSyncedOpenedTicketId] = useState<string | null>(null)
+  if (openedTicketId !== syncedOpenedTicketId) {
+    setSyncedOpenedTicketId(openedTicketId)
+    if (openedTicketId) {
+      setTicketId(openedTicketId)
       setTicketCreated(true)
     }
-  }, [ticketIdParam, existingTicket?.id])
+  }
   
   // Get user's role in this project
   const { data: projectRole } = useProjectRole(projectId || undefined)

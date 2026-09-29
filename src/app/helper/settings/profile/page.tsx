@@ -59,13 +59,13 @@ export default function HelperProfilePage() {
   const updateUserProfile = useUpdateUserProfile()
 
   // Sync local form state when helper data loads
-  useEffect(() => {
-    if (helperData) {
-      setName(helperData.user?.name ?? "")
-      setEmail(helperData.user?.email ?? "")
-      setCategory((helperData.category as "core" | "extended" | "community") ?? "community")
-    }
-  }, [helperData])
+  const [syncedHelperData, setSyncedHelperData] = useState<typeof helperData>(undefined)
+  if (helperData && helperData !== syncedHelperData) {
+    setSyncedHelperData(helperData)
+    setName(helperData.user?.name ?? "")
+    setEmail(helperData.user?.email ?? "")
+    setCategory((helperData.category as "core" | "extended" | "community") ?? "community")
+  }
 
   // GitHub connection status, display username, and auto-sync to users_public when empty
   useEffect(() => {
@@ -116,11 +116,11 @@ export default function HelperProfilePage() {
   }, [user?.id, helperData?.user?.username])
 
   // Sync selected keywords when data loads (only when defined to avoid infinite loop from [] default)
-  useEffect(() => {
-    if (selectedKeywordIds !== undefined) {
-      setSelectedKeywords(selectedKeywordIds)
-    }
-  }, [selectedKeywordIds])
+  const [syncedKeywordIds, setSyncedKeywordIds] = useState<typeof selectedKeywordIds>(undefined)
+  if (selectedKeywordIds !== undefined && selectedKeywordIds !== syncedKeywordIds) {
+    setSyncedKeywordIds(selectedKeywordIds)
+    setSelectedKeywords(selectedKeywordIds)
+  }
 
   const handleSaveProfile = async () => {
     if (!user?.id) return
