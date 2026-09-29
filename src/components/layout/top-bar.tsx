@@ -3,7 +3,7 @@
 import { Bell, ChevronDown, Check, Plus } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
@@ -77,6 +77,7 @@ const ProjectLogo = ({
 
 export function TopBar() {
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
@@ -209,6 +210,11 @@ export function TopBar() {
   }, [isSignedIn, rolesResolved, availableRoles, user.role])
 
   if (!isSignedIn) return null
+
+  // Hide the top bar on the invite acceptance flow (/invite/[token]) so its
+  // full-screen centered cards render without the role/project/notifications
+  // banner.
+  if (pathname?.startsWith("/invite")) return null
 
   return (
     <>
