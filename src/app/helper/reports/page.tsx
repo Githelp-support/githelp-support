@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
-import { usePaymentTransfers, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
+import { usePaymentTransfers, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
@@ -49,7 +49,7 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
@@ -59,12 +59,10 @@ interface PayoutData {
   ticketId: string | null
   ticketShortId: string
   ticketTitle: string
-  /** The ticket's first message ("" when it has none); shown truncated next to the ticket id. */
+  /** The ticket's first message ("" when it has none); shown truncated below the ticket id. */
   firstMessage: string
   /** ISO date of the latest transfer, used for display and sorting. */
   date: string
-  helper: string
-  helperColor: string
   amountSmallestUnit: number
   /** Transfers that failed (not paid) on top of `amountSmallestUnit`. */
   failedSmallestUnit: number
@@ -83,7 +81,7 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
-type SortField = "ticketId" | "date" | "helper" | "amount" | "status"
+type SortField = "ticketId" | "date" | "amount" | "status"
 type MonthlySortField = "period" | "description" | "earnings" | "status"
 type SortDirection = "asc" | "desc"
 
@@ -93,33 +91,38 @@ const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
   failed: "Failed",
 }
 
-const PREVIEW_HELPER_NAME = "You"
+type MonthlyStatus = "Paid out" | "Pending"
+
+const PAYOUT_STATUSES = Object.keys(STATUS_LABEL) as PaymentTransfer["status"][]
+const MONTHLY_STATUSES: MonthlyStatus[] = ["Paid out", "Pending"]
 
 /**
  * Payouts columns, shared by the header, real rows and preview rows (gap-4 between tracks):
- * checkbox | ticket id + snippet | date | helper | earnings | status | kebab.
+ * checkbox | ticket id (first message below) | date | earnings | status | kebab.
  *
- * Widths are relative to the previous "2rem repeat(11, 1fr)" layout, where one
+ * Widths are relative to the original "2rem repeat(11, 1fr)" layout, where one
  * track was (100% - 208px) / 11 (2rem checkbox + 11 gaps of 16px = 208px):
- * - Ticket ID: old track + 32px + room for the snippet (8px gap + 17 characters).
- * - Date: old track + 32px.
- * - Helper: sized so the space between the helper name and Earnings is half of
- *   what it was (old column: 3 tracks + 2 gaps; avatar + name taken as ~142px).
- * - Status and kebab are fixed; the kebab cell adds a 36px margin to the 16px
- *   gap, so it sits exactly 52px from the Status cell.
+ * - Ticket ID and Date: old track + 32px each.
+ * - Status: as wide as the widest status badge (see StatusCell), so the kebab
+ *   is 52px from the status container.
  */
 const PAYOUTS_GRID = {
   gridTemplateColumns: [
     "2rem",
-    "calc((100% - 208px) / 11 + 192px)",
     "calc((100% - 208px) / 11 + 32px)",
-    "calc((100% - 208px) * 1.5 / 11 + 79px)",
+    "calc((100% - 208px) / 11 + 32px)",
     "minmax(0, 1fr)",
-    "8rem",
+    "max-content",
     "5rem",
   ].join(" "),
 }
-const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
+/** checkbox | period (2) | description (3) | earnings (2) | status | kebab. */
+const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(7, minmax(0, 1fr)) max-content 5rem" }
+/**
+ * Kebab cell, after the Status track: 16px grid gap + 22px margin + the
+ * button's 14px padding put the kebab icon 52px from the status container.
+ */
+const KEBAB_CELL_CLASS = "ml-[22px] flex items-center"
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
 function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
@@ -158,21 +161,6 @@ function SortHeader({
   )
 }
 
-/** Helper avatar (initial on a coloured tile) + name, as on the admin Support reports. */
-function HelperCell({ name, color }: { name: string; color: string }) {
-  return (
-    <>
-      <div
-        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-        style={{ backgroundColor: color }}
-      >
-        {name.trim().charAt(0).toUpperCase() || "?"}
-      </div>
-      <span className="text-sm font-medium text-foreground">{name}</span>
-    </>
-  )
-}
-
 /** Status badge for a single payout, as on the admin Support reports. */
 function PayoutStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
   return (
@@ -191,6 +179,32 @@ function PayoutStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
     </Badge>
   )
 }
+
+function MonthlyStatusBadge({ status }: { status: MonthlyStatus }) {
+  return (
+    <Badge className={`${getStatusBadgeClass(status)} hover:opacity-90 text-[13px] px-3 py-1`}>{status}</Badge>
+  )
+}
+
+/**
+ * Status column cell. Rows are separate grids, so to give the "max-content"
+ * Status track the same width in every row (and the header), each cell also
+ * holds every possible badge, invisible and with no height: the track is as
+ * wide as the widest badge.
+ */
+function StatusCell({ children, sizers }: { children: ReactNode; sizers: ReactNode }) {
+  return (
+    <div className="flex flex-col items-start">
+      {children}
+      <div aria-hidden="true" className="invisible flex h-0 flex-col items-start overflow-hidden">
+        {sizers}
+      </div>
+    </div>
+  )
+}
+
+const PAYOUT_STATUS_SIZERS = PAYOUT_STATUSES.map((status) => <PayoutStatusBadge key={status} status={status} />)
+const MONTHLY_STATUS_SIZERS = MONTHLY_STATUSES.map((status) => <MonthlyStatusBadge key={status} status={status} />)
 
 function compare(a: string | number, b: string | number, direction: SortDirection) {
   if (a < b) return direction === "asc" ? -1 : 1
@@ -280,8 +294,6 @@ export default function HelperReportsPage() {
         ticketTitle: first.ticket?.title?.trim() || "",
         firstMessage: (group.ticketId && firstMessages?.[group.ticketId]) || "",
         date: group.date,
-        helper: getHelperDisplayName(first.helper),
-        helperColor: getAvatarColorHexForId(first.helper?.user_id ?? first.helper_id ?? first.id),
         amountSmallestUnit: group.amountSmallestUnit,
         failedSmallestUnit: group.failedSmallestUnit,
         currency: group.currency,
@@ -297,8 +309,6 @@ export default function HelperReportsPage() {
           return compare(a.ticketShortId, b.ticketShortId, sortDirection)
         case "date":
           return compare(new Date(a.date).getTime(), new Date(b.date).getTime(), sortDirection)
-        case "helper":
-          return compare(a.helper.toLowerCase(), b.helper.toLowerCase(), sortDirection)
         case "amount":
           return compare(a.amountSmallestUnit, b.amountSmallestUnit, sortDirection)
         case "status":
@@ -316,7 +326,7 @@ export default function HelperReportsPage() {
       period: row.period,
       periodRaw: row.periodRaw,
       description: `${row.ticketsClosed} ticket${row.ticketsClosed === 1 ? "" : "s"} · Total time logged: ${formatMinutes(row.minutesLogged)}`,
-      earnings: formatAmount(row.earningsSmallestUnit, row.currency),
+      earnings: formatAmountNumber(row.earningsSmallestUnit),
       earningsRaw: row.earningsSmallestUnit,
       status:
         row.earningsSmallestUnit > 0 && row.paidOutSmallestUnit === row.earningsSmallestUnit
@@ -552,14 +562,11 @@ export default function HelperReportsPage() {
                     <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
                   <div>
-                    <SortHeader label="Helper" field="helper" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                  </div>
-                  <div>
                     <SortHeader label="Earnings (USD)" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div>
+                  <StatusCell sizers={PAYOUT_STATUS_SIZERS}>
                     <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                  </div>
+                  </StatusCell>
                   <div></div>
                 </div>
               </div>
@@ -574,27 +581,24 @@ export default function HelperReportsPage() {
                         <div className="flex items-center">
                           <Checkbox disabled checked={false} />
                         </div>
-                        <div className="min-w-0 whitespace-nowrap">
+                        <div className="min-w-0 flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-foreground font-mono tabular-nums">
                             {payout.ticketId}
                           </span>
-                        </div>
-                        <div>
-                          <span className="text-sm text-muted-foreground">{payout.date}</span>
-                        </div>
-                        <div className="flex items-center gap-[18px] flex-wrap">
-                          <HelperCell name={PREVIEW_HELPER_NAME} color={getAvatarColorHexForId(PREVIEW_HELPER_NAME)} />
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
                         <div>
-                          <span className="text-sm text-foreground">{payout.amount.replace(/^USD\s*/, "")}</span>
+                          <span className="text-sm text-muted-foreground">{payout.date}</span>
                         </div>
                         <div>
-                          <PayoutStatusBadge status={payout.status} />
+                          <span className="text-sm text-foreground">{payout.amount.replace(/^USD\s*/, "")}</span>
                         </div>
-                        <div className="ml-9 flex items-center">
+                        <StatusCell sizers={PAYOUT_STATUS_SIZERS}>
+                          <PayoutStatusBadge status={payout.status} />
+                        </StatusCell>
+                        <div className={KEBAB_CELL_CLASS}>
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button
                               variant="ghost"
@@ -646,7 +650,7 @@ export default function HelperReportsPage() {
                             aria-label={`Select payout for ticket ${payout.ticketShortId}`}
                           />
                         </div>
-                        <div className="min-w-0 whitespace-nowrap">
+                        <div className="min-w-0">
                           {ticketHref ? (
                             <Link
                               href={ticketHref}
@@ -660,19 +664,16 @@ export default function HelperReportsPage() {
                             <span className="text-sm font-medium text-foreground">—</span>
                           )}
                           {snippet && (
-                            <span
-                              className="ml-2 text-sm text-muted-foreground"
+                            <div
+                              className="text-xs text-muted-foreground truncate"
                               title={payout.firstMessage || payout.ticketTitle}
                             >
                               {snippet}
-                            </span>
+                            </div>
                           )}
                         </div>
                         <div>
                           <span className="text-sm text-muted-foreground">{formatDate(payout.date)}</span>
-                        </div>
-                        <div className="flex items-center gap-[18px]">
-                          <HelperCell name={payout.helper} color={payout.helperColor} />
                         </div>
                         <div>
                           <div className="text-sm text-foreground">{formatAmountNumber(payout.amountSmallestUnit)}</div>
@@ -680,10 +681,10 @@ export default function HelperReportsPage() {
                             <div className="text-xs text-red-700">{formatAmountNumber(payout.failedSmallestUnit)} failed</div>
                           )}
                         </div>
-                        <div>
+                        <StatusCell sizers={PAYOUT_STATUS_SIZERS}>
                           <PayoutStatusBadge status={payout.status} />
-                        </div>
-                        <div className="ml-9 flex items-center">
+                        </StatusCell>
+                        <div className={KEBAB_CELL_CLASS}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -743,9 +744,17 @@ export default function HelperReportsPage() {
                                 index={index}
                                 count={count}
                                 date={formatDate(transferDate(transfer))}
-                                description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
+                                reference={
+                                  <span className="font-mono" title={payoutReference(transfer)}>
+                                    {payoutReference(transfer)}
+                                  </span>
+                                }
                                 amount={formatAmountNumber(transfer.amount_smallest_unit)}
-                                status={<PayoutStatusBadge status={transfer.status} />}
+                                status={
+                                  <StatusCell sizers={PAYOUT_STATUS_SIZERS}>
+                                    <PayoutStatusBadge status={transfer.status} />
+                                  </StatusCell>
+                                }
                                 actions={<StatementLink transfer={transfer} />}
                               />
                             ))}
@@ -782,12 +791,12 @@ export default function HelperReportsPage() {
                     <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
                   <div className="col-span-2">
-                    <SortHeader label="Earnings" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                    <SortHeader label="Earnings (USD)" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-2">
+                  <StatusCell sizers={MONTHLY_STATUS_SIZERS}>
                     <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className="col-span-2"></div>
+                  </StatusCell>
+                  <div></div>
                 </div>
               </div>
               <div className="divide-y divide-border">
@@ -810,24 +819,22 @@ export default function HelperReportsPage() {
                           <span className="text-sm text-muted-foreground">{row.description}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-sm text-foreground">{row.earnings}</span>
+                          <span className="text-sm text-foreground">{row.earnings.replace(/^USD\s*/, "")}</span>
                         </div>
-                        <div className="col-span-2">
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
-                            {row.status}
-                          </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
+                        <StatusCell sizers={MONTHLY_STATUS_SIZERS}>
+                          <MonthlyStatusBadge status={row.status} />
+                        </StatusCell>
+                        <div className={KEBAB_CELL_CLASS}>
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
-                            </Button>
-                          </span>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <FileSpreadsheet className="w-3.5 h-3.5" />
-                              CSV
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className="text-muted-foreground hover:bg-muted"
+                              aria-label={`More actions for ${row.period}`}
+                            >
+                              <MoreVertical className="w-4 h-4" />
                             </Button>
                           </span>
                         </div>
@@ -856,34 +863,32 @@ export default function HelperReportsPage() {
                         <div className="col-span-2">
                           <span className="text-sm text-foreground">{row.earnings}</span>
                         </div>
-                        <div className="col-span-2">
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
-                            {row.status}
-                          </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title={`Download the ${row.period} payout report as PDF`}
-                            onClick={() => exportPdf(row.period)}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            PDF
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title={`Export the ${row.period} payout report as CSV`}
-                            onClick={() => exportCsv(row.period)}
-                          >
-                            <FileSpreadsheet className="w-3.5 h-3.5" />
-                            CSV
-                          </Button>
+                        <StatusCell sizers={MONTHLY_STATUS_SIZERS}>
+                          <MonthlyStatusBadge status={row.status} />
+                        </StatusCell>
+                        <div className={KEBAB_CELL_CLASS}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:bg-muted"
+                                aria-label={`More actions for ${row.period}`}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onSelect={() => exportPdf(row.period)}>
+                                <Download className="w-4 h-4" />
+                                PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => exportCsv(row.period)}>
+                                <FileSpreadsheet className="w-4 h-4" />
+                                CSV
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>

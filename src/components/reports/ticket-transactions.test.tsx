@@ -125,6 +125,31 @@ describe("table-aligned transactions", () => {
     expect(cells[6]).toHaveClass("justify-end")
   })
 
+  it("leaves out the description cell for a table without that column", () => {
+    render(
+      <TransactionsPanel id="p" align="table">
+        <TransactionLine
+          align="table"
+          columns="2rem 12rem 8rem minmax(0, 1fr) 8rem 5rem"
+          index={0}
+          count={2}
+          date="19/08/2026"
+          reference="REF-123"
+          amount="12.00"
+          status="Paid"
+        />
+      </TransactionsPanel>,
+    )
+    const cells = Array.from(screen.getByRole("listitem").children)
+    expect(cells).toHaveLength(6)
+    // checkbox | ticket id | date | earnings | status | kebab
+    expect(cells[1]).toHaveTextContent("1 of 2")
+    expect(cells[1]).toHaveTextContent("REF-123")
+    expect(cells[2]).toHaveTextContent("19/08/2026")
+    expect(cells[3]).toHaveTextContent("12.00")
+    expect(cells[4]).toHaveTextContent("Paid")
+  })
+
   it("accepts a columns override without the table layout", () => {
     render(
       <TransactionsPanel id="p">

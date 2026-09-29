@@ -111,14 +111,18 @@ export function TransactionsPanel({
  * One transaction under its ticket: "1 of 2 · date · description · amount · status · actions".
  *
  * With `align="table"` the line starts with an empty cell (the table's checkbox
- * column) and uses `columns`, the parent table's 7-track grid template:
+ * column) and uses `columns`, the parent table's grid template:
  * checkbox | 1 of 2 | date | description | amount | status | actions.
+ *
+ * A table without a column for the description leaves `description` out (the
+ * cell is then not rendered) and can pass a `reference`, shown under "1 of 2".
  */
 export function TransactionLine({
   index,
   count,
   date,
   description,
+  reference,
   amount,
   status,
   actions,
@@ -129,7 +133,10 @@ export function TransactionLine({
   index: number
   count: number
   date: string
-  description: ReactNode
+  /** Omit to render no description cell. */
+  description?: ReactNode
+  /** Shown under "1 of 2", in the same cell. */
+  reference?: ReactNode
   amount: ReactNode
   status: ReactNode
   actions?: ReactNode
@@ -147,11 +154,16 @@ export function TransactionLine({
       style={{ gridTemplateColumns: columns ?? DEFAULT_LINE_COLUMNS }}
     >
       {table && <span aria-hidden="true" data-slot="transaction-line-spacer" />}
-      <span className="text-xs text-muted-foreground tabular-nums">
+      <span className="min-w-0 text-xs text-muted-foreground tabular-nums">
         {index + 1} of {count}
+        {reference !== undefined && (
+          <span data-slot="transaction-line-reference" className="block truncate">
+            {reference}
+          </span>
+        )}
       </span>
       <span className="text-muted-foreground tabular-nums">{date}</span>
-      <span className="truncate text-foreground">{description}</span>
+      {description !== undefined && <span className="truncate text-foreground">{description}</span>}
       <span className="text-foreground tabular-nums">{amount}</span>
       <span>{status}</span>
       <span className="flex items-center justify-end gap-2">{actions}</span>
