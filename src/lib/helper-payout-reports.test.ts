@@ -5,11 +5,13 @@ import {
     aggregateHelperMonthly,
     aggregateProjectMonthly,
     buildPayoutStatement,
+    formatAmountNumber,
     formatMinutes,
     groupTransfersByTicket,
     normalizeTransferStatus,
     payoutReference,
     transferTicketType,
+    truncateFirstMessage,
 } from "./helper-payout-reports"
 
 function transfer(overrides: Partial<PaymentTransfer> = {}): PaymentTransfer {
@@ -126,6 +128,49 @@ describe("formatMinutes", () => {
         expect(formatMinutes(45)).toBe("45m")
         expect(formatMinutes(60)).toBe("1h")
         expect(formatMinutes(275)).toBe("4h 35m")
+    })
+})
+
+describe("truncateFirstMessage", () => {
+    it("returns text under 15 characters unchanged", () => {
+        expect(truncateFirstMessage("Login broken")).toBe("Login broken")
+    })
+
+    it("returns text of exactly 15 characters without dots", () => {
+        const text = "123456789012345"
+        expect(text).toHaveLength(15)
+        expect(truncateFirstMessage(text)).toBe(text)
+    })
+
+    it("cuts text over 15 characters to 15 characters plus two dots", () => {
+        const result = truncateFirstMessage("1234567890123456")
+        expect(result).toBe("123456789012345..")
+        expect(result).toHaveLength(17)
+        expect(result).not.toContain("…")
+    })
+
+    it("returns an empty string for empty or whitespace-only input", () => {
+        expect(truncateFirstMessage("")).toBe("")
+        expect(truncateFirstMessage("  \n\t ")).toBe("")
+    })
+
+    it("collapses newlines and repeated whitespace before measuring", () => {
+        expect(truncateFirstMessage("  Hi\n\nthere  ")).toBe("Hi there")
+        expect(truncateFirstMessage("My app\ncrashes\r\n  on startup every time")).toBe("My app crashes ..")
+    })
+
+    it("honours a custom max", () => {
+        expect(truncateFirstMessage("abcdef", 3)).toBe("abc..")
+    })
+})
+
+describe("formatAmountNumber", () => {
+    it("renders the amount with 2 decimals and no currency code", () => {
+        expect(formatAmountNumber(4200)).toBe("42.00")
+        expect(formatAmountNumber(1999)).toBe("19.99")
+        expect(formatAmountNumber(5)).toBe("0.05")
+        expect(formatAmountNumber(0)).toBe("0.00")
+        expect(formatAmountNumber(123456)).toBe("1234.56")
     })
 })
 

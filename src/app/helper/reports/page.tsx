@@ -2,16 +2,24 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
 import { usePaymentTransfers, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
+import { useTicketFirstMessages } from "@/hooks/useTicketFirstMessages"
 import { useHelperTimeEntries } from "@/hooks/useHelperTimeEntries"
 import { useProjectSelection } from "@/contexts/project-context"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -23,11 +31,13 @@ import {
 } from "@/lib/helper-area-preview-copy"
 import {
   aggregateHelperMonthly,
+  formatAmountNumber,
   formatMinutes,
   groupTransfersByTicket,
   monthLabel,
   payoutReference,
   transferDate,
+  truncateFirstMessage,
 } from "@/lib/helper-payout-reports"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import {
@@ -40,6 +50,7 @@ import {
 import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -48,6 +59,8 @@ interface PayoutData {
   ticketId: string | null
   ticketShortId: string
   ticketTitle: string
+  /** The ticket's first message ("" when it has none); shown truncated next to the ticket id. */
+  firstMessage: string
   /** ISO date of the latest transfer, used for display and sorting. */
   date: string
   helper: string
@@ -82,7 +95,30 @@ const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
 
 const PREVIEW_HELPER_NAME = "You"
 
-const PAYOUTS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
+/**
+ * Payouts columns, shared by the header, real rows and preview rows (gap-4 between tracks):
+ * checkbox | ticket id + snippet | date | helper | earnings | status | kebab.
+ *
+ * Widths are relative to the previous "2rem repeat(11, 1fr)" layout, where one
+ * track was (100% - 208px) / 11 (2rem checkbox + 11 gaps of 16px = 208px):
+ * - Ticket ID: old track + 32px + room for the snippet (8px gap + 17 characters).
+ * - Date: old track + 32px.
+ * - Helper: sized so the space between the helper name and Earnings is half of
+ *   what it was (old column: 3 tracks + 2 gaps; avatar + name taken as ~142px).
+ * - Status and kebab are fixed; the kebab cell adds a 36px margin to the 16px
+ *   gap, so it sits exactly 52px from the Status cell.
+ */
+const PAYOUTS_GRID = {
+  gridTemplateColumns: [
+    "2rem",
+    "calc((100% - 208px) / 11 + 192px)",
+    "calc((100% - 208px) / 11 + 32px)",
+    "calc((100% - 208px) * 1.5 / 11 + 79px)",
+    "minmax(0, 1fr)",
+    "8rem",
+    "5rem",
+  ].join(" "),
+}
 const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
@@ -178,8 +214,8 @@ function StatementLink({ transfer }: { transfer: PaymentTransfer }) {
 
 export default function HelperReportsPage() {
   const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("monthly")
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
-  const [selectedMonth, setSelectedMonth] = useState("")
+  // "all", "current", or a month label from `months`
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [monthlySelectedRows, setMonthlySelectedRows] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -187,6 +223,7 @@ export default function HelperReportsPage() {
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
   const [monthlySortDirection, setMonthlySortDirection] = useState<SortDirection>("asc")
   const { isExpanded, toggle } = useExpandedRows()
+  const router = useRouter()
   const { user } = useUser()
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -204,6 +241,12 @@ export default function HelperReportsPage() {
   })
   const { data: timeEntries, isLoading: timeLoading } = useHelperTimeEntries(helperId, projectId)
 
+  const ticketIds = useMemo(
+    () => (transfersData ?? []).map((transfer) => transfer.ticket_id).filter((id): id is string => !!id),
+    [transfersData],
+  )
+  const { data: firstMessages } = useTicketFirstMessages(ticketIds)
+
   // Last 12 months for the month filter dropdown
   const months = useMemo(() => {
     const result: string[] = []
@@ -216,9 +259,11 @@ export default function HelperReportsPage() {
   }, [])
 
   const targetMonth =
-    selectedFilter === "current" || selectedMonth
-      ? selectedMonth || monthLabel(new Date().toISOString())
-      : null
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? monthLabel(new Date().toISOString())
+        : selectedPeriod
 
   // The month filter applies to individual transfers, then they are grouped per ticket.
   const payouts: PayoutData[] = useMemo(() => {
@@ -233,6 +278,7 @@ export default function HelperReportsPage() {
         ticketId: group.ticketId,
         ticketShortId: group.ticketId?.slice(0, 7) || "-",
         ticketTitle: first.ticket?.title?.trim() || "",
+        firstMessage: (group.ticketId && firstMessages?.[group.ticketId]) || "",
         date: group.date,
         helper: getHelperDisplayName(first.helper),
         helperColor: getAvatarColorHexForId(first.helper?.user_id ?? first.helper_id ?? first.id),
@@ -262,7 +308,7 @@ export default function HelperReportsPage() {
       }
     })
     return sorted
-  }, [transfersData, targetMonth, sortField, sortDirection])
+  }, [transfersData, firstMessages, targetMonth, sortField, sortDirection])
 
   const monthlyReports = useMemo(() => {
     let list = aggregateHelperMonthly(transfersData ?? [], timeEntries ?? []).map((row) => ({
@@ -427,34 +473,16 @@ export default function HelperReportsPage() {
 
           {/* Filters */}
           <div className="flex gap-2">
-            {activeTab === "payouts" && (
-              <Button
-                variant={selectedFilter === "current" ? "default" : "outline"}
-                size="sm"
-                className={
-                  selectedFilter === "current"
-                    ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                    : `h-9 ${OUTLINE_BUTTON_CLASS}`
-                }
-                onClick={() => {
-                  setSelectedFilter("current")
-                  setSelectedMonth("")
-                }}
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger
+                className="w-[180px] h-9 text-muted-foreground"
+                aria-label="Choose period"
               >
-                Current month
-              </Button>
-            )}
-            <Select
-              value={selectedMonth}
-              onValueChange={(v) => {
-                setSelectedMonth(v)
-                if (v) setSelectedFilter("all")
-              }}
-            >
-              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                <SelectValue placeholder="Choose month" />
+                <SelectValue placeholder="Choose period" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
                 {months.map((month) => (
                   <SelectItem key={month} value={month}>
                     {month}
@@ -462,17 +490,6 @@ export default function HelperReportsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              variant={selectedFilter === "all" && !selectedMonth ? "default" : "outline"}
-              size="sm"
-              className={OUTLINE_BUTTON_CLASS}
-              onClick={() => {
-                setSelectedFilter("all")
-                setSelectedMonth("")
-              }}
-            >
-              All
-            </Button>
             <div className="ml-auto flex gap-2">
               <Button
                 variant="outline"
@@ -528,22 +545,22 @@ export default function HelperReportsPage() {
                       aria-label="Select all payouts"
                     />
                   </div>
-                  <div className="col-span-1">
+                  <div>
                     <SortHeader label="Ticket ID" field="ticketId" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-1">
+                  <div>
                     <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-3">
+                  <div>
                     <SortHeader label="Helper" field="helper" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Earnings" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  <div>
+                    <SortHeader label="Earnings (USD)" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2"></div>
+                  <div></div>
                 </div>
               </div>
 
@@ -557,42 +574,37 @@ export default function HelperReportsPage() {
                         <div className="flex items-center">
                           <Checkbox disabled checked={false} />
                         </div>
-                        <div className="col-span-1">
+                        <div className="min-w-0 whitespace-nowrap">
                           <span className="text-sm font-medium text-foreground font-mono tabular-nums">
                             {payout.ticketId}
                           </span>
                         </div>
-                        <div className="col-span-1">
+                        <div>
                           <span className="text-sm text-muted-foreground">{payout.date}</span>
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px] flex-wrap">
+                        <div className="flex items-center gap-[18px] flex-wrap">
                           <HelperCell name={PREVIEW_HELPER_NAME} color={getAvatarColorHexForId(PREVIEW_HELPER_NAME)} />
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{payout.amount}</span>
+                        <div>
+                          <span className="text-sm text-foreground">{payout.amount.replace(/^USD\s*/, "")}</span>
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <PayoutStatusBadge status={payout.status} />
                         </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
+                        <div className="ml-9 flex items-center">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Open
-                            </Button>
-                          </span>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <FileText className="w-3.5 h-3.5" />
-                              Statement
-                            </Button>
-                          </span>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className="text-muted-foreground hover:bg-muted"
+                              aria-label={`More actions for ticket ${payout.ticketId}`}
+                            >
+                              <MoreVertical className="w-4 h-4" />
                             </Button>
                           </span>
                         </div>
@@ -606,104 +618,139 @@ export default function HelperReportsPage() {
                     const count = payout.transfers.length
                     const expanded = count > 1 && isExpanded(payout.id)
                     const panelId = transactionsPanelId(payout.id)
+                    const ticketHref = payout.ticketId ? `/helper/tickets/${payout.ticketId}` : null
+                    const snippet = truncateFirstMessage(payout.firstMessage || payout.ticketTitle)
                     return (
-                    <div key={payout.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                    <div
+                      key={payout.id}
+                      className={cn("px-6 py-4 hover:bg-[#f7f9ff]", ticketHref && "cursor-pointer")}
+                      role={ticketHref ? "link" : undefined}
+                      tabIndex={ticketHref ? 0 : undefined}
+                      onClick={ticketHref ? () => router.push(ticketHref) : undefined}
+                      onKeyDown={
+                        ticketHref
+                          ? (event) => {
+                              // Only when the row itself has focus, not a control inside it.
+                              if (event.key === "Enter" && event.target === event.currentTarget) {
+                                router.push(ticketHref)
+                              }
+                            }
+                          : undefined
+                      }
+                    >
                       <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                        <div className="flex items-center">
+                        <div className="flex items-center" onClick={(event) => event.stopPropagation()}>
                           <Checkbox
                             checked={selectedRows.includes(payout.id)}
                             onCheckedChange={() => handleRowSelect(payout.id)}
                             aria-label={`Select payout for ticket ${payout.ticketShortId}`}
                           />
                         </div>
-                        <div className="col-span-1 min-w-0">
-                          {payout.ticketId ? (
+                        <div className="min-w-0 whitespace-nowrap">
+                          {ticketHref ? (
                             <Link
-                              href={`/helper/tickets/${payout.ticketId}`}
+                              href={ticketHref}
                               title={payout.ticketTitle || undefined}
                               className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              onClick={(event) => event.stopPropagation()}
                             >
                               {payout.ticketShortId}
                             </Link>
                           ) : (
                             <span className="text-sm font-medium text-foreground">—</span>
                           )}
-                          <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(payout.id)} panelId={panelId} noun="payout" />
+                          {snippet && (
+                            <span
+                              className="ml-2 text-sm text-muted-foreground"
+                              title={payout.firstMessage || payout.ticketTitle}
+                            >
+                              {snippet}
+                            </span>
+                          )}
                         </div>
-                        <div className="col-span-1">
+                        <div>
                           <span className="text-sm text-muted-foreground">{formatDate(payout.date)}</span>
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
+                        <div className="flex items-center gap-[18px]">
                           <HelperCell name={payout.helper} color={payout.helperColor} />
                         </div>
-                        <div className="col-span-2">
-                          <div className="text-sm text-foreground">
-                            {formatAmount(payout.amountSmallestUnit, payout.currency)}
-                          </div>
+                        <div>
+                          <div className="text-sm text-foreground">{formatAmountNumber(payout.amountSmallestUnit)}</div>
                           {payout.failedSmallestUnit > 0 && (
-                            <div className="text-xs text-red-700">{formatAmount(payout.failedSmallestUnit, payout.currency)} failed</div>
+                            <div className="text-xs text-red-700">{formatAmountNumber(payout.failedSmallestUnit)} failed</div>
                           )}
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <PayoutStatusBadge status={payout.status} />
                         </div>
-                        <div className="col-span-2">
-                          <div className="flex items-center justify-end gap-2 flex-wrap">
-                          {payout.ticketId ? (
-                            <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
-                              <Link href={`/helper/tickets/${payout.ticketId}`}>Open</Link>
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Open
-                            </Button>
-                          )}
-                          {count > 1 ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              type="button"
-                              className={OUTLINE_BUTTON_CLASS}
-                              aria-expanded={expanded}
-                              aria-controls={expanded ? panelId : undefined}
-                              title="Each payout has its own statement"
-                              onClick={() => toggle(payout.id)}
+                        <div className="ml-9 flex items-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:bg-muted"
+                                aria-label={`More actions for ticket ${payout.ticketShortId}`}
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-44"
+                              onClick={(event) => event.stopPropagation()}
+                              onKeyDown={(event) => event.stopPropagation()}
                             >
-                              <FileText className="w-3.5 h-3.5" />
-                              Statements
-                            </Button>
-                          ) : (
-                            <StatementLink transfer={payout.transfers[0]} />
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title="Download all your payouts on this ticket as a PDF for your accounting"
-                            onClick={() => exportPdf(null, wholeTicket(payout))}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            PDF
-                          </Button>
+                              <DropdownMenuItem
+                                onSelect={() => {
+                                  if (count > 1) toggle(payout.id)
+                                  else router.push(`/helper/reports/payouts/${payout.transfers[0].id}`)
+                                }}
+                              >
+                                <FileText className="w-4 h-4" />
+                                Statements
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => exportPdf(null, wholeTicket(payout))}>
+                                <Download className="w-4 h-4" />
+                                PDF
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
-                    </div>
+                      {count > 1 && (
+                        // Below the grid row, aligned with the Ticket ID column (2rem checkbox + 1rem gap).
+                        <div className="mt-2 ml-12 w-fit" onClick={(event) => event.stopPropagation()}>
+                          <TransactionsToggle
+                            count={count}
+                            expanded={expanded}
+                            onToggle={() => toggle(payout.id)}
+                            panelId={panelId}
+                            noun="payout"
+                            className="mt-0"
+                          />
+                        </div>
+                      )}
                       {expanded && (
-                        <TransactionsPanel id={panelId}>
-                          {payout.transfers.map((transfer, index) => (
-                            <TransactionLine
-                              key={transfer.id}
-                              index={index}
-                              count={count}
-                              date={formatDate(transferDate(transfer))}
-                              description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
-                              amount={formatAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
-                              status={<PayoutStatusBadge status={transfer.status} />}
-                              actions={<StatementLink transfer={transfer} />}
-                            />
-                          ))}
-                        </TransactionsPanel>
+                        <div className="cursor-default" onClick={(event) => event.stopPropagation()}>
+                          <TransactionsPanel id={panelId} align="table">
+                            {payout.transfers.map((transfer, index) => (
+                              <TransactionLine
+                                key={transfer.id}
+                                align="table"
+                                columns={PAYOUTS_GRID.gridTemplateColumns}
+                                index={index}
+                                count={count}
+                                date={formatDate(transferDate(transfer))}
+                                description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
+                                amount={formatAmountNumber(transfer.amount_smallest_unit)}
+                                status={<PayoutStatusBadge status={transfer.status} />}
+                                actions={<StatementLink transfer={transfer} />}
+                              />
+                            ))}
+                          </TransactionsPanel>
+                        </div>
                       )}
                     </div>
                     )

@@ -164,6 +164,21 @@ export function formatMinutes(minutes: number): string {
     return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
 }
 
+/**
+ * Short preview of a ticket's first message for the Payouts table: whitespace
+ * and newlines collapsed, cut to `max` characters followed by ".." when longer.
+ */
+export function truncateFirstMessage(text: string, max = 15): string {
+    const clean = (text ?? "").replace(/\s+/g, " ").trim()
+    if (clean.length <= max) return clean
+    return `${clean.slice(0, max)}..`
+}
+
+/** Amount as a plain number with 2 decimals and no currency code, e.g. "42.00". */
+export function formatAmountNumber(smallestUnit: number): string {
+    return ((smallestUnit || 0) / 100).toFixed(2)
+}
+
 interface Group extends HelperMonthlyReportRow {
     tickets: Set<string>
 }
