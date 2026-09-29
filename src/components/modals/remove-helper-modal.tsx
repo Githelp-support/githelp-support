@@ -34,7 +34,7 @@ export function RemoveHelperModal({
     <Dialog open={open} onOpenChange={(next) => (!isRemoving || next) && onOpenChange(next)}>
       <DialogContent className="sm:max-w-md" showCloseButton={!isRemoving}>
         <DialogHeader>
-          <DialogTitle>Remove {helperName}?</DialogTitle>
+          <DialogTitle>Remove {helperName} as helper?</DialogTitle>
           <DialogDescription className="mt-[3px]">
             {helperName} will lose access to this project&apos;s helper tools and will no longer
             receive new tickets. Their tickets, logged time and payouts are kept for your records.

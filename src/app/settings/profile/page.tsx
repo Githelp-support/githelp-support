@@ -42,12 +42,12 @@ export default function ProfileSettingsPage() {
   const updateUserProfile = useUpdateUserProfile()
 
   // Sync local form state when helper data loads
-  useEffect(() => {
-    if (helperData) {
-      setName(helperData.user?.name ?? "")
-      setEmail(helperData.user?.email ?? "")
-    }
-  }, [helperData])
+  const [syncedHelperData, setSyncedHelperData] = useState<typeof helperData>(undefined)
+  if (helperData && helperData !== syncedHelperData) {
+    setSyncedHelperData(helperData)
+    setName(helperData.user?.name ?? "")
+    setEmail(helperData.user?.email ?? "")
+  }
 
   // GitHub connection status, display username, and auto-sync to users_public when empty
   useEffect(() => {

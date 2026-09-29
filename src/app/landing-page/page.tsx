@@ -12,6 +12,7 @@ import { Plus, Trash2, ExternalLink, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useUserProjects, useProjectResources, useCreateProjectResource, useDeleteProjectResource } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface Resource {
   id: number
@@ -162,6 +163,7 @@ export default function LandingPageSettings() {
                       onClick={handleAddResource}
                       disabled={!newResourceName || !newResourceUrl || createResource.isPending}
                       variant="lavender"
+                      className="text-[14px]"
                     >
                       <Plus className="w-4 h-4" />
                       {createResource.isPending ? "Adding..." : "Add resource"}
@@ -209,7 +211,7 @@ export default function LandingPageSettings() {
                     </div>
                   )}
 
-                  <Button variant="lavender" size="sm" className="mt-3">
+                  <Button variant="lavender" size="sm" className="mt-3" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                     Save
                   </Button>
                 </div>

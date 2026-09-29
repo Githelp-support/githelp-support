@@ -1,5 +1,6 @@
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
+import { formatDuration } from "@/lib/format";
 
 /**
  * Message-thread building shared by the two customer-facing chat pages
@@ -10,6 +11,16 @@ import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
 /** Grey system bubble at the top of every customer thread. */
 export const TICKET_DISCLAIMER =
     "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm.";
+
+/**
+ * Synthetic auto-reply shown right after the customer's first message.
+ * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
+ * Shows "~" while the project has no average response time yet.
+ */
+export function buildAutoReply(avgResponseSeconds: number | null | undefined): string {
+    const responseTime = avgResponseSeconds == null ? "~" : formatDuration(avgResponseSeconds);
+    return `Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **${responseTime}**.`;
+}
 
 /** dd/mm/yyyy, hh:mm — the timestamp format used throughout the chat UI. */
 export function formatChatTimestamp(date: Date | string): string {
@@ -53,6 +64,8 @@ export interface CustomerThreadOptions {
     /** Timestamp for the fallback first message (ticket created_at). */
     fallbackTimestamp?: string | null;
     currentUser: { id?: string; name?: string | null; avatarUrl?: string | null };
+    /** Project's average response time in seconds (`null` until one exists). */
+    avgResponseSeconds?: number | null;
 }
 
 /**
@@ -70,6 +83,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         fallbackDescription,
         fallbackTimestamp,
         currentUser,
+        avgResponseSeconds,
     } = opts;
 
     const userName = currentUser.name || "You";
@@ -138,6 +152,21 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         });
     });
 
+    // Auto-reply right after the customer's first message — whether that is the
+    // synthetic pending-first message or the first persisted user message — so
+    // it shows both in the live session and on reload.
+    const firstUserIndex = list.findIndex((m) => m.senderType === "user");
+    if (firstUserIndex !== -1) {
+        list.splice(firstUserIndex + 1, 0, {
+            id: "auto-reply",
+            senderType: "system",
+            content: buildAutoReply(avgResponseSeconds),
+            senderName: `${projectName} Team`,
+            senderAvatarUrl: projectLogo,
+            timestamp: list[firstUserIndex].timestamp,
+        });
+    }
+
     return list;
 }
 
@@ -152,6 +181,7 @@ export function describeChargedLine(opts: {
 }): string {
     if (opts.cancelled) return "No charge";
     if (opts.slaCovered) return "Covered by your SLA";
+    if (opts.paymentStatus === "free") return "Free support — no charge";
     if (opts.paymentStatus === "distributing" || opts.paymentStatus === "completed") {
         return opts.capturedAmountSmallestUnit != null
             ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}`
@@ -196,13 +226,24 @@ export function buildSessionEndedMessage(opts: {
     };
 }
 
-/** The pending SCA prompt carried by a `payment_requires_action` system message, if any. */
+/**
+ * The pending SCA prompt carried by the latest `payment_requires_action` system
+ * message, if any. Only the latest counts: an earlier prompt belongs to a hold
+ * that a newer card replaced (and that was cancelled). A prompt followed by
+ * `payment_authorized` (confirmed, possibly in an earlier visit) is resolved,
+ * so it never reopens the modal after a reload.
+ */
 export function findPendingSca(
     messages: TicketChatMessage[],
     handledMessageId: string | null
 ): { messageId: string; clientSecret: string; ticketId?: string } | null {
-    const scaMsg = messages.find((m) => m.paymentMetadata?.kind === "payment_requires_action");
+    let scaIndex = -1;
+    messages.forEach((m, index) => {
+        if (m.paymentMetadata?.kind === "payment_requires_action") scaIndex = index;
+    });
+    const scaMsg = scaIndex === -1 ? undefined : messages[scaIndex];
     if (!scaMsg || scaMsg.id === handledMessageId) return null;
+    if (messages.slice(scaIndex + 1).some((m) => m.paymentMetadata?.kind === "payment_authorized")) return null;
     const clientSecret = scaMsg.paymentMetadata?.client_secret as string | undefined;
     if (!clientSecret) return null;
     return {

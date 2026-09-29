@@ -289,7 +289,7 @@ export default function SupportTicketsPage() {
 
               {/* Loading / Empty / Table */}
               {isLoading ? (
-                <div className="py-8 text-center text-muted-foreground">Loading your tickets...</div>
+                <div className="py-8 text-center text-[14px] text-muted-foreground">Loading your tickets...</div>
               ) : tickets.length === 0 ? (
                 <Card className="border-border">
                   <CardContent className="p-8 text-center">
