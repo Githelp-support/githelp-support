@@ -248,6 +248,13 @@ export default function ReportsSupportPage() {
     return result
   }, [])
 
+  // Include the selected month even when it's older than the last 12 months,
+  // so the Select can still display it (e.g. after clicking an old monthly report row).
+  const monthOptions = useMemo(
+    () => (selectedMonth && !months.includes(selectedMonth) ? [...months, selectedMonth] : months),
+    [months, selectedMonth],
+  )
+
   // "Current month" only exists on the per-row tabs; the monthly tab filters by the dropdown alone.
   const targetMonth =
     selectedMonth || (activeTab !== "monthly" && selectedFilter === "current" ? getMonthYear(new Date().toISOString()) : null)
@@ -408,6 +415,13 @@ export default function ReportsSupportPage() {
   }
   const exportPeriod = activeTab === "monthly" ? selectedMonth || null : targetMonth
 
+  /** Open the Tickets tab filtered to the given month (row.period, e.g. "January 2026"). */
+  const openMonthTickets = (period: string) => {
+    setActiveTab("tickets")
+    setSelectedMonth(period)
+    setSelectedFilter("all")
+  }
+
   const tabButton = (tab: Tab, label: string) => (
     <button
       type="button"
@@ -469,7 +483,7 @@ export default function ReportsSupportPage() {
                   <SelectValue placeholder="Choose month" />
                 </SelectTrigger>
                 <SelectContent>
-                  {months.map((month) => (
+                  {monthOptions.map((month) => (
                     <SelectItem key={month} value={month}>
                       {month}
                     </SelectItem>
@@ -559,9 +573,23 @@ export default function ReportsSupportPage() {
                     </div>
                   ) : (
                     monthlyRows.map((row) => (
-                      <div key={row.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div
+                        key={row.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View tickets for ${row.period}`}
+                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        onClick={() => openMonthTickets(row.period)}
+                        onKeyDown={(e) => {
+                          if (e.target !== e.currentTarget) return
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            openMonthTickets(row.period)
+                          }
+                        }}
+                      >
                         <div className="grid gap-4 items-center" style={INCOME_GRID}>
-                          <div>
+                          <div onClick={(e) => e.stopPropagation()}>
                             <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.period}`} />
                           </div>
                           <div className="col-span-2">
@@ -590,7 +618,10 @@ export default function ReportsSupportPage() {
                               size="sm"
                               className={OUTLINE_BUTTON_CLASS}
                               title={`Download the ${row.period} project report as PDF`}
-                              onClick={() => exportPdf(row.period)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                exportPdf(row.period)
+                              }}
                             >
                               <Download className="w-3.5 h-3.5" />
                               PDF
@@ -600,7 +631,10 @@ export default function ReportsSupportPage() {
                               size="sm"
                               className={OUTLINE_BUTTON_CLASS}
                               title={`Export the ${row.period} project report as CSV`}
-                              onClick={() => exportCsv(row.period)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                exportCsv(row.period)
+                              }}
                             >
                               <FileSpreadsheet className="w-3.5 h-3.5" />
                               CSV

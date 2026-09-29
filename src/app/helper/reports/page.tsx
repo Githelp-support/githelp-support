@@ -215,6 +215,13 @@ export default function HelperReportsPage() {
     return result
   }, [])
 
+  // Include the selected month even when it's older than the last 12 months,
+  // so the Select can still display it (e.g. after clicking an old monthly report row).
+  const monthOptions = useMemo(
+    () => (selectedMonth && !months.includes(selectedMonth) ? [...months, selectedMonth] : months),
+    [months, selectedMonth],
+  )
+
   const targetMonth =
     selectedFilter === "current" || selectedMonth
       ? selectedMonth || monthLabel(new Date().toISOString())
@@ -317,6 +324,13 @@ export default function HelperReportsPage() {
       setMonthlySortField(next)
       setMonthlySortDirection("asc")
     }
+  }
+
+  /** Open the Payouts tab filtered to the given month (row.period, e.g. "January 2026"). */
+  const openMonthPayouts = (period: string) => {
+    setActiveTab("payouts")
+    setSelectedMonth(period)
+    setSelectedFilter("all")
   }
 
   const handleRowSelect = (id: string) => {
@@ -455,7 +469,7 @@ export default function HelperReportsPage() {
                 <SelectValue placeholder="Choose month" />
               </SelectTrigger>
               <SelectContent>
-                {months.map((month) => (
+                {monthOptions.map((month) => (
                   <SelectItem key={month} value={month}>
                     {month}
                   </SelectItem>
@@ -791,9 +805,23 @@ export default function HelperReportsPage() {
                   <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("monthly reports")}</div>
                 ) : (
                   monthlyReports.map((row) => (
-                    <div key={row.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                    <div
+                      key={row.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View payouts for ${row.period}`}
+                      className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                      onClick={() => openMonthPayouts(row.period)}
+                      onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          openMonthPayouts(row.period)
+                        }
+                      }}
+                    >
                       <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                        <div className="flex items-center">
+                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             checked={monthlySelectedRows.includes(row.id)}
                             onCheckedChange={() => handleMonthlyRowSelect(row.id)}
@@ -821,7 +849,10 @@ export default function HelperReportsPage() {
                             type="button"
                             className={OUTLINE_BUTTON_CLASS}
                             title={`Download the ${row.period} payout report as PDF`}
-                            onClick={() => exportPdf(row.period)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              exportPdf(row.period)
+                            }}
                           >
                             <Download className="w-3.5 h-3.5" />
                             PDF
@@ -832,7 +863,10 @@ export default function HelperReportsPage() {
                             type="button"
                             className={OUTLINE_BUTTON_CLASS}
                             title={`Export the ${row.period} payout report as CSV`}
-                            onClick={() => exportCsv(row.period)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              exportCsv(row.period)
+                            }}
                           >
                             <FileSpreadsheet className="w-3.5 h-3.5" />
                             CSV
