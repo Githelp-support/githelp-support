@@ -1,13 +1,20 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type SyntheticEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, MoreVertical } from "lucide-react"
 import { useUserPayments, formatAmount } from "@/hooks/usePayments"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -31,7 +38,6 @@ import {
 import { buildUserMonthlyReport, buildUserTicketReport } from "@/lib/report-export"
 import { downloadReportPdf } from "@/lib/report-pdf"
 import {
-  TransactionLine,
   TransactionsPanel,
   TransactionsToggle,
   transactionsPanelId,
@@ -39,6 +45,7 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
+import { cn } from "@/lib/utils"
 
 // dd/mm/yyyy, matching the helper reports page
 const formatDate = (dateString: string) => {
@@ -49,6 +56,12 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
+// Payments and Monthly reports: the column header already says "Amount (USD)",
+// so USD amounts drop the prefix. Any other currency keeps it so it is never silently hidden.
+const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)
+const formatPaymentAmount = (cents: number, currency: string = "usd") =>
+  currency.toLowerCase() === "usd" ? formatAmountValue(cents) : formatAmount(cents, currency)
+
 type SortField = "ticket" | "project" | "date" | "amount" | "status"
 type MonthlySortField = "period" | "tickets" | "amount"
 type SortDirection = "asc" | "desc"
@@ -58,13 +71,27 @@ type SortDirection = "asc" | "desc"
 const statusBadgeClass = (label: string) =>
   `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
 
+// Each row (and each transaction line) is its own grid, so every column that must line up has a width that does not depend on the row's content.
+// Status: fixed, sized for the widest status badge ("Action required").
+// Last: the kebab trigger (2.75rem) plus 36px which, with the 16px grid gap, puts 52px between the Status column and the kebab menu.
 const PAYMENTS_GRID = {
-  // Fixed last column: each row is its own grid, so an `auto` width would differ per row (Receipt vs Receipts) and from the empty header cell.
-  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 16.5rem",
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,2fr) minmax(0,1fr) 9rem calc(2.75rem + 36px)",
 }
+// Right padding of the Project column: with the 16px grid gap, text ends at least 60px before the amount.
+const BEFORE_AMOUNT_CLASS = "pr-11"
 const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
+const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
+
+// Payments rows are clickable; controls inside a row stop the event so they do not navigate.
+const stopRowNavigation = (event: SyntheticEvent) => event.stopPropagation()
+
+const RECEIPT_AVAILABLE_TITLE = "Open the Stripe receipt for this payment (view, download or print)"
+const receiptUnavailableTitle = (row: UserPaymentRow) =>
+  row.displayStatus === "paid"
+    ? "The receipt is still being prepared by Stripe. Check back shortly."
+    : "A receipt becomes available once the payment has been captured."
 
 function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
   if (sortField !== field) {
@@ -116,7 +143,7 @@ function ReceiptButton({ row }: { row: UserPaymentRow }) {
           href={row.receiptUrl}
           target="_blank"
           rel="noopener noreferrer"
-          title="Open the Stripe receipt for this payment (view, download or print)"
+          title={RECEIPT_AVAILABLE_TITLE}
         >
           <ExternalLink className="w-3.5 h-3.5" />
           Receipt
@@ -125,18 +152,34 @@ function ReceiptButton({ row }: { row: UserPaymentRow }) {
     )
   }
   return (
-    <span
-      title={
-        row.displayStatus === "paid"
-          ? "The receipt is still being prepared by Stripe. Check back shortly."
-          : "A receipt becomes available once the payment has been captured."
-      }
-      className="inline-flex"
-    >
+    <span title={receiptUnavailableTitle(row)} className="inline-flex">
       <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
         <ExternalLink className="w-3.5 h-3.5" />
         Receipt
       </Button>
+    </span>
+  )
+}
+
+/** "Receipt" entry of the row's kebab menu, for a ticket with a single transaction. */
+function ReceiptMenuItem({ row }: { row: UserPaymentRow }) {
+  if (row.receiptUrl) {
+    return (
+      <DropdownMenuItem asChild>
+        <a href={row.receiptUrl} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
+          <ExternalLink />
+          Receipt
+        </a>
+      </DropdownMenuItem>
+    )
+  }
+  // Disabled items ignore pointer events, so the explanation sits on a wrapper.
+  return (
+    <span title={receiptUnavailableTitle(row)} className="block">
+      <DropdownMenuItem disabled>
+        <ExternalLink />
+        Receipt
+      </DropdownMenuItem>
     </span>
   )
 }
@@ -149,9 +192,10 @@ function ticketHref(row: UserPaymentRow): string | null {
 }
 
 export default function UserReportsPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<"monthly" | "payments">("payments")
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
-  const [selectedMonth, setSelectedMonth] = useState("")
+  // "all", "current", or a month label from `months` (Radix Select items cannot have an empty value)
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [selectedMonthlyRows, setSelectedMonthlyRows] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -191,9 +235,11 @@ export default function UserReportsPage() {
   }, [])
 
   const targetMonth =
-    selectedFilter === "current" || selectedMonth
-      ? selectedMonth || monthLabel(new Date().toISOString())
-      : null
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? monthLabel(new Date().toISOString())
+        : selectedPeriod
 
   // One record per ticket; a ticket charged more than once lists its
   // transactions underneath. The month filter applies to transactions, so a
@@ -383,34 +429,13 @@ export default function UserReportsPage() {
 
               {/* Filters */}
               <div className="flex gap-2">
-                {activeTab === "payments" && (
-                  <Button
-                    variant={selectedFilter === "current" ? "default" : "outline"}
-                    size="sm"
-                    className={
-                      selectedFilter === "current"
-                        ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                        : `h-9 ${OUTLINE_BUTTON_CLASS}`
-                    }
-                    onClick={() => {
-                      setSelectedFilter("current")
-                      setSelectedMonth("")
-                    }}
-                  >
-                    Current month
-                  </Button>
-                )}
-                <Select
-                  value={selectedMonth}
-                  onValueChange={(v) => {
-                    setSelectedMonth(v)
-                    if (v) setSelectedFilter("all")
-                  }}
-                >
+                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                   <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                    <SelectValue placeholder="Choose month" />
+                    <SelectValue placeholder="Choose period" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="current">Current month</SelectItem>
                     {months.map((month) => (
                       <SelectItem key={month} value={month}>
                         {month}
@@ -418,17 +443,6 @@ export default function UserReportsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button
-                  variant={selectedFilter === "all" && !selectedMonth ? "default" : "outline"}
-                  size="sm"
-                  className={OUTLINE_BUTTON_CLASS}
-                  onClick={() => {
-                    setSelectedFilter("all")
-                    setSelectedMonth("")
-                  }}
-                >
-                  All
-                </Button>
               </div>
 
               {paymentsError && (
@@ -467,7 +481,7 @@ export default function UserReportsPage() {
                         <SortHeader label="Project" field="project" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
                       <div className="min-w-0 whitespace-nowrap">
-                        <SortHeader label="Amount" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                        <SortHeader label="Amount (USD)" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       </div>
                       <div className="min-w-0">
                         <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
@@ -495,27 +509,22 @@ export default function UserReportsPage() {
                             <div className="text-xs text-muted-foreground truncate">{row.ticketTitle}</div>
                           </div>
                           <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
-                          <div className="min-w-0 text-sm text-gray-900 truncate">{row.projectName}</div>
-                          <div className="min-w-0 text-sm text-gray-900 whitespace-nowrap">{row.amount}</div>
+                          <div className={cn("min-w-0 text-sm text-gray-900 truncate", BEFORE_AMOUNT_CLASS)}>{row.projectName}</div>
+                          <div className="min-w-0 text-sm text-gray-900 whitespace-nowrap">{row.amount.replace(/^USD\s+/, "")}</div>
                           <div className="min-w-0">
                             <Badge className={statusBadgeClass(row.status)}>{row.status}</Badge>
                           </div>
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end">
                             <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                Open
-                              </Button>
-                            </span>
-                            <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                Receipt
-                              </Button>
-                            </span>
-                            <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                              <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                <Download className="w-3.5 h-3.5" />
-                                PDF
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                type="button"
+                                disabled
+                                className={KEBAB_BUTTON_CLASS}
+                                aria-label="More actions"
+                              >
+                                <MoreVertical className="w-4 h-4" />
                               </Button>
                             </span>
                           </div>
@@ -531,18 +540,44 @@ export default function UserReportsPage() {
                       const expanded = count > 1 && isExpanded(row.id)
                       const panelId = transactionsPanelId(row.id)
                       return (
-                        <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
+                        <div
+                          key={row.id}
+                          className={cn(
+                            "px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]",
+                            href &&
+                              "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
+                          )}
+                          {...(href
+                            ? {
+                                role: "link",
+                                tabIndex: 0,
+                                "aria-label": `Open ticket ${row.ticketShortId}`,
+                                onClick: () => router.push(href),
+                                // Only when the row itself has focus, not a control inside it.
+                                onKeyDown: (event) => {
+                                  if (event.key === "Enter" && event.target === event.currentTarget) {
+                                    router.push(href)
+                                  }
+                                },
+                              }
+                            : {})}
+                        >
                           <div className="grid gap-4 items-center" style={PAYMENTS_GRID}>
                             <div className="flex items-center">
                               <Checkbox
                                 checked={selectedRows.includes(row.id)}
                                 onCheckedChange={() => handleRowSelect(row.id)}
+                                onClick={stopRowNavigation}
                                 aria-label={`Select payment for ticket ${row.ticketShortId}`}
                               />
                             </div>
                             <div className="min-w-0">
                               {href ? (
-                                <Link href={href} className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums">
+                                <Link
+                                  href={href}
+                                  onClick={stopRowNavigation}
+                                  className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                                >
                                   {row.ticketShortId}
                                 </Link>
                               ) : (
@@ -551,22 +586,16 @@ export default function UserReportsPage() {
                               <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
                                 {row.ticketTitle}
                               </div>
-                              <TransactionsToggle
-                                count={count}
-                                expanded={expanded}
-                                onToggle={() => toggle(row.id)}
-                                panelId={panelId}
-                              />
                             </div>
                             <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
-                            <div className="min-w-0 text-sm text-gray-900 truncate" title={row.projectName}>
+                            <div className={cn("min-w-0 text-sm text-gray-900 truncate", BEFORE_AMOUNT_CLASS)} title={row.projectName}>
                               {row.projectName}
                             </div>
                             <div className="min-w-0 text-sm text-gray-900">
-                              <div className="whitespace-nowrap">{formatAmount(row.amountSmallestUnit, row.currency)}</div>
+                              <div className="whitespace-nowrap">{formatPaymentAmount(row.amountSmallestUnit, row.currency)}</div>
                               {row.paidSmallestUnit > 0 && row.openSmallestUnit > 0 && (
                                 <div className="text-xs text-muted-foreground">
-                                  {formatAmount(row.openSmallestUnit, row.currency)} not charged yet
+                                  {formatPaymentAmount(row.openSmallestUnit, row.currency)} not charged yet
                                 </div>
                               )}
                             </div>
@@ -575,65 +604,94 @@ export default function UserReportsPage() {
                                 {USER_PAYMENT_STATUS_LABELS[row.displayStatus]}
                               </Badge>
                             </div>
-                            <div className="flex items-center justify-end gap-2">
-                              {href ? (
-                                <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
-                                  <Link href={href}>Open</Link>
-                                </Button>
-                              ) : (
-                                <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                  Open
-                                </Button>
-                              )}
-                              {count > 1 ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  type="button"
-                                  className={OUTLINE_BUTTON_CLASS}
-                                  aria-expanded={expanded}
-                                  aria-controls={expanded ? panelId : undefined}
-                                  title="Each transaction has its own Stripe receipt"
-                                  onClick={() => toggle(row.id)}
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  Receipts
-                                </Button>
-                              ) : (
-                                <ReceiptButton row={row.transactions[0]} />
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                type="button"
-                                className={OUTLINE_BUTTON_CLASS}
-                                title="Download a PDF report of this ticket with all its transactions"
-                                onClick={() => downloadTicketPdf(row)}
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                PDF
-                              </Button>
+                            <div className="flex items-center justify-end">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={KEBAB_BUTTON_CLASS}
+                                    aria-label={`More actions for ticket ${row.ticketShortId}`}
+                                    onClick={stopRowNavigation}
+                                  >
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                {/* Portalled, but React events still bubble to the row. */}
+                                <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                                  {count > 1 ? (
+                                    <DropdownMenuItem
+                                      title="Each transaction has its own Stripe receipt"
+                                      onSelect={() => toggle(row.id)}
+                                    >
+                                      <ExternalLink />
+                                      Receipts
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <ReceiptMenuItem row={row.transactions[0]} />
+                                  )}
+                                  <DropdownMenuItem
+                                    title="Download a PDF report of this ticket with all its transactions"
+                                    onSelect={() => downloadTicketPdf(row)}
+                                  >
+                                    <Download />
+                                    PDF
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
+                          {count > 1 && (
+                            <div className="w-fit" onClick={stopRowNavigation}>
+                              <TransactionsToggle
+                                className="ml-12 mt-2"
+                                count={count}
+                                expanded={expanded}
+                                onToggle={() => toggle(row.id)}
+                                panelId={panelId}
+                              />
+                            </div>
+                          )}
                           {expanded && (
-                            <TransactionsPanel id={panelId}>
-                              {row.transactions.map((transaction, index) => (
-                                <TransactionLine
-                                  key={transaction.id}
-                                  index={index}
-                                  count={count}
-                                  date={formatDate(transaction.date)}
-                                  description={USER_TRANSACTION_DESCRIPTIONS[transaction.displayStatus]}
-                                  amount={formatAmount(transaction.amountSmallestUnit, transaction.currency)}
-                                  status={
-                                    <Badge className={statusBadgeClass(USER_PAYMENT_STATUS_LABELS[transaction.displayStatus])}>
-                                      {USER_PAYMENT_STATUS_LABELS[transaction.displayStatus]}
-                                    </Badge>
-                                  }
-                                  actions={<ReceiptButton row={transaction} />}
-                                />
-                              ))}
+                            <div className="cursor-default" onClick={stopRowNavigation}>
+                            {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                            <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                              {row.transactions.map((transaction, index) => {
+                                const description = USER_TRANSACTION_DESCRIPTIONS[transaction.displayStatus]
+                                return (
+                                  <div
+                                    key={transaction.id}
+                                    role="listitem"
+                                    className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                    style={PAYMENTS_GRID}
+                                  >
+                                    <span />
+                                    <span className="min-w-0 text-xs text-muted-foreground tabular-nums">
+                                      {index + 1} of {count}
+                                    </span>
+                                    <span className="min-w-0 text-muted-foreground tabular-nums">
+                                      {formatDate(transaction.date)}
+                                    </span>
+                                    <span className={cn("min-w-0 truncate text-foreground", BEFORE_AMOUNT_CLASS)} title={description}>
+                                      {description}
+                                    </span>
+                                    <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                      {formatPaymentAmount(transaction.amountSmallestUnit, transaction.currency)}
+                                    </span>
+                                    <span className="min-w-0">
+                                      <Badge className={statusBadgeClass(USER_PAYMENT_STATUS_LABELS[transaction.displayStatus])}>
+                                        {USER_PAYMENT_STATUS_LABELS[transaction.displayStatus]}
+                                      </Badge>
+                                    </span>
+                                    {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                    <span className="flex items-center justify-end [&>*]:shrink-0">
+                                      <ReceiptButton row={transaction} />
+                                    </span>
+                                  </div>
+                                )
+                              })}
                             </TransactionsPanel>
+                            </div>
                           )}
                         </div>
                       )
@@ -663,7 +721,7 @@ export default function UserReportsPage() {
                         <SortHeader label="Tickets" field="tickets" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                       </div>
                       <div className="col-span-2">
-                        <SortHeader label="Amount spent" field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                        <SortHeader label="Amount (USD)" field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                       </div>
                       <div className="col-span-2 flex items-center">
                         <span className="text-sm font-medium text-foreground">Status</span>
@@ -689,7 +747,7 @@ export default function UserReportsPage() {
                             </Badge>
                           </div>
                           <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
-                          <div className="col-span-2 text-sm text-gray-900">{row.amount}</div>
+                          <div className="col-span-2 text-sm text-gray-900">{row.amount.replace(/^USD\s+/, "")}</div>
                           <div className="col-span-2">
                             <Badge className={statusBadgeClass("Paid")}>Paid</Badge>
                           </div>
@@ -724,7 +782,7 @@ export default function UserReportsPage() {
                           <div className="col-span-3 text-sm text-gray-900">{row.period}</div>
                           <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
                           <div className="col-span-2 text-sm text-gray-900">
-                            {formatAmount(row.amountSmallestUnit, row.currency)}
+                            {formatPaymentAmount(row.amountSmallestUnit, row.currency)}
                           </div>
                           <div className="col-span-2">
                             <Badge className={statusBadgeClass("Paid")}>Paid</Badge>
