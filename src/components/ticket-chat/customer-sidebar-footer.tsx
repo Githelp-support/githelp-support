@@ -82,9 +82,9 @@ export function CustomerTicketSidebarFooter({
       {/* Active Tickets — latest active tickets for this user */}
       <div>
         <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-        <div className={`-ml-5 -mr-4 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+        <div className={`-mx-3 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
           {activeTickets.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground pl-5 pr-4">No active tickets</p>
+            <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
           ) : (
             activeTickets.map((item) => (
               <Link

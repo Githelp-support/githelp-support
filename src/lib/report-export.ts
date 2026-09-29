@@ -722,3 +722,84 @@ export function buildUserTicketReport(input: UserTicketReportInput): ReportDocum
         fileName: reportFileName("ticket", ticket.ticketShortId, ticket.projectName),
     }
 }
+
+export interface UserMonthlyReportInput {
+    /** All of the customer's payment rows; only paid ones in `period` are reported. */
+    rows: UserPaymentRow[]
+    /** Month label, e.g. "September 2026". */
+    period: string
+    customer: { name: string; email?: string | null }
+    generatedAt?: Date
+}
+
+/**
+ * The customer's spending for one month: every captured charge, one line per
+ * ticket (a ticket charged more than once lists each charge underneath).
+ * Same scope as the Monthly reports tab, so the totals match the screen.
+ */
+export function buildUserMonthlyReport(input: UserMonthlyReportInput): ReportDocument {
+    const generatedAt = input.generatedAt ?? new Date()
+    const charges = input.rows.filter((r) => r.displayStatus === "paid" && inPeriod(r.date, input.period))
+    const currency = currencyOf(charges)
+    const dateOf = (r: UserPaymentRow) => r.date
+    const groups = chronologicalGroups(groupByTicket(charges, (r) => r.ticketId, (r) => r.id), dateOf)
+
+    const chargeRows = groupedRows(
+        groups,
+        (r) => [
+            formatReportDate(r.date),
+            r.ticketShortId,
+            r.ticketTitle,
+            r.projectName,
+            formatMoney(r.amountSmallestUnit, r.currency || currency),
+        ],
+        (items) => [
+            formatReportDate(latestDate(items, dateOf)),
+            items[0].ticketShortId,
+            `${items[0].ticketTitle} (${transactionCountLabel(items.length, "charge")})`,
+            items[0].projectName,
+            formatMoney(sumOf(items, (r) => r.amountSmallestUnit), items[0].currency || currency),
+        ],
+        (r, index, count) => [
+            formatReportDate(r.date),
+            "",
+            `Charge ${index + 1} of ${count}`,
+            "",
+            formatMoney(r.amountSmallestUnit, r.currency || currency),
+        ],
+    )
+
+    const section: ReportSection = {
+        heading: "Charges",
+        note: "Captured charges only; card holds and declined charges are not included. A ticket charged more than once shows its total first, with each charge underneath.",
+        columns: [
+            { label: "Date" },
+            { label: "Ticket" },
+            { label: "Description" },
+            { label: "Project" },
+            { label: "Amount", align: "right" },
+        ],
+        ...chargeRows,
+        totals: [
+            ["Tickets", String(groups.length)],
+            ["Total spent", formatMoney(sumOf(charges, (r) => r.amountSmallestUnit), currency)],
+        ],
+        emptyMessage: "No charges in this month.",
+    }
+
+    return {
+        title: "Monthly payment report",
+        period: input.period,
+        meta: [
+            ["Customer", input.customer.name],
+            ...(input.customer.email ? [["Email", input.customer.email] as [string, string]] : []),
+            ["Period", input.period],
+            ["Currency", currency.toUpperCase()],
+            ["Generated", formatGeneratedAt(generatedAt)],
+        ],
+        sections: [section],
+        footerNote:
+            "Charges are collected by Githelp through Stripe. Stripe's receipt for each charge is available from the Payments tab on the Reports page. This report is issued for your records and is not a tax invoice.",
+        fileName: reportFileName("payments", input.period),
+    }
+}

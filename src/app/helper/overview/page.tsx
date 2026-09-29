@@ -21,6 +21,7 @@ export default function HelperOverviewPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("")
   const [issueFilter, setIssueFilter] = useState<"all" | "applied">("all")
   const [ticketFilter, setTicketFilter] = useState<"all" | "last24h">("all")
+  const [now] = useState(() => Date.now())
 
   const [issueSort, setIssueSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
 
@@ -69,7 +70,7 @@ export default function HelperOverviewPage() {
     ticketFilter === "all"
       ? inProgressTickets
       : inProgressTickets.filter(
-          (ticket) => Date.now() - new Date(ticket.created_at).getTime() <= 24 * 60 * 60 * 1000
+          (ticket) => now - new Date(ticket.created_at).getTime() <= 24 * 60 * 60 * 1000
         )
 
   const sortIssueTypes = (issues: typeof allIssueTypes) => {

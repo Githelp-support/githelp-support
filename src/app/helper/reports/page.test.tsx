@@ -85,7 +85,8 @@ describe("HelperReportsPage monthly report rows", () => {
   it("clicking a monthly report row opens the Payouts tab filtered to that month", () => {
     render(<HelperReportsPage />)
 
-    // Payouts tab is the default and unfiltered: both months' payouts show.
+    // Payouts tab is unfiltered by default: both months' payouts show.
+    fireEvent.click(screen.getByRole("button", { name: "Payouts" }))
     expect(screen.getByText("augaaaa")).toBeInTheDocument()
     expect(screen.getByText("sepbbbb")).toBeInTheDocument()
 
@@ -103,7 +104,6 @@ describe("HelperReportsPage monthly report rows", () => {
   it("pressing Enter on a monthly report row applies the same month filter", () => {
     render(<HelperReportsPage />)
 
-    fireEvent.click(screen.getByRole("button", { name: "Monthly reports" }))
     fireEvent.keyDown(screen.getByRole("button", { name: "View payouts for September 2026" }), {
       key: "Enter",
     })

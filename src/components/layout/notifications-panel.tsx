@@ -2,7 +2,7 @@
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import type { RefObject } from "react"
 import { createPortal } from "react-dom"
 import { notificationType, type Notification, type NotificationType } from "@/hooks/useNotifications"
@@ -43,6 +43,8 @@ const DEFAULT_POSITION = { top: 64, right: 16 }
 // banner).
 const ANCHOR_GAP = 6
 
+const subscribeNoop = () => () => {}
+
 export function NotificationsPanel({
   isOpen,
   onClose,
@@ -52,12 +54,9 @@ export function NotificationsPanel({
   anchorRef,
 }: NotificationsPanelProps) {
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
+  // false during SSR and hydration, true afterwards (the panel portals into document.body)
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false)
   const [position, setPosition] = useState<{ top: number; right: number }>(DEFAULT_POSITION)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Keep the panel positioned relative to the bell icon so that anything
   // shifting the bell vertically (e.g. a top banner across the page) also

@@ -19,8 +19,9 @@ function makeWrapper() {
             queries: { retry: false },
         },
     });
-    return ({ children }: { children: React.ReactNode }) =>
-        createElement(QueryClientProvider, { client: queryClient }, children);
+    return function Wrapper({ children }: { children: React.ReactNode }) {
+        return createElement(QueryClientProvider, { client: queryClient }, children);
+    };
 }
 
 function mockChain(resolveWith: { data: unknown; error: unknown }) {

@@ -11,6 +11,7 @@ import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
+import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "./right-sidebar-collapse"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import {
   DeclineTimeEntryDialog,
@@ -190,6 +191,9 @@ export function TicketChat(props: TicketChatProps) {
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false)
+  // Collapsed state is shared across views via localStorage (see
+  // right-sidebar-collapse.tsx).
+  const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
 
   // Logged entry the customer is about to decline (opens the reason dialog).
@@ -359,7 +363,7 @@ export function TicketChat(props: TicketChatProps) {
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
-                                      {msg.senderName || "Unknown"}
+                                      {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
                                     </span>
                                     <span
                                       className="text-xs"
@@ -376,19 +380,27 @@ export function TicketChat(props: TicketChatProps) {
                                 <div
                                   className={
                                     msg.senderType === "system"
-                                      ? msg.paymentMetadata?.kind === "payment_cap_exceeded"
-                                        ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                        : msg.paymentMetadata?.kind === "payment_failed"
-                                          ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                          : msg.paymentMetadata?.kind === "time_entry_declined" ||
-                                              msg.paymentMetadata?.kind === "payment_hold_declined"
-                                            ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                            : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                      ? msg.paymentMetadata?.kind === "payment_authorized"
+                                        ? "bg-status-success-bg text-status-success-text py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                        : msg.paymentMetadata?.kind === "payment_cap_exceeded"
+                                          ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                          : msg.paymentMetadata?.kind === "payment_failed"
+                                            ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                            : msg.paymentMetadata?.kind === "time_entry_declined" ||
+                                                msg.paymentMetadata?.kind === "payment_hold_declined"
+                                              ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                              : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
-                                  <MarkdownContent content={msg.content} />
+                                  <MarkdownContent
+                                    content={
+                                      msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
+                                        ? `✓ ${msg.content}`
+                                        : msg.content
+                                    }
+                                  />
                                   {msg.senderType === "system" &&
                                     msg.paymentMetadata?.kind === "time_logged" &&
                                     (() => {
@@ -563,8 +575,14 @@ export function TicketChat(props: TicketChatProps) {
       </div>
 
       {/* Right Sidebar */}
-      <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-          <div className="flex-1 overflow-y-auto pl-5 pr-4 py-6">
+      <div
+        suppressHydrationWarning
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+      >
+          <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
+
+          {!isCollapsed && (
+          <div className="flex-1 overflow-y-auto px-3 pb-6">
             {/* People in Chat */}
             <div>
               <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
@@ -624,6 +642,7 @@ export function TicketChat(props: TicketChatProps) {
               </>
             )}
           </div>
+          )}
         </div>
     </div>
   )
