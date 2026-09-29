@@ -3,7 +3,7 @@
 import { Bell, ChevronDown, Check, Plus } from "lucide-react"
 import { useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
@@ -72,6 +72,7 @@ const ProjectLogo = ({
 
 export function TopBar() {
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
@@ -193,6 +194,10 @@ export function TopBar() {
   }
 
   if (!isSignedIn) return null
+
+  // The "I am acting as" role chooser is part of the login flow — the user
+  // has not picked a role yet, so the nav banner must not be shown there.
+  if (pathname === "/auth/role" || pathname?.startsWith("/auth/role/")) return null
 
   return (
     <>
