@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -48,13 +49,18 @@ const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted
 
 const INCOME_BADGE_CLASS: Record<ProjectIncomeStatus, string> = {
   received: "bg-green-100 text-green-800 hover:bg-green-100",
-  pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
+  pending: getStatusBadgeClass("pending"),
   no_share: "bg-muted text-muted-foreground hover:bg-muted",
   on_hold: "bg-blue-100 text-blue-800 hover:bg-blue-100",
   awaiting_payment: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
   action_required: "bg-orange-100 text-orange-800 hover:bg-orange-100",
   failed: "bg-red-100 text-red-800 hover:bg-red-100",
   cancelled: "bg-muted text-muted-foreground hover:bg-muted",
+}
+
+/** Tickets tab status badge: same size and hover as the Monthly reports status badge. */
+function incomeBadgeClass(status: ProjectIncomeStatus) {
+  return cn(INCOME_BADGE_CLASS[status], "hover:opacity-90 text-[13px] px-3 py-1")
 }
 
 function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
@@ -722,7 +728,7 @@ export default function ReportsSupportPage() {
                           </div>
                           <div className="col-span-2 text-sm font-medium text-foreground">{formatAmount(row.projectIncomeSmallestUnit, row.currency)}</div>
                           <div className="col-span-1">
-                            <Badge variant="secondary" className={`${INCOME_BADGE_CLASS[row.status]} text-xs`}>
+                            <Badge className={incomeBadgeClass(row.status)}>
                               {PROJECT_INCOME_STATUS_LABELS[row.status]}
                             </Badge>
                           </div>
@@ -772,7 +778,7 @@ export default function ReportsSupportPage() {
                                 description={<span title={charge.stripeTransferId ?? undefined}>{chargeSplitLabel(charge)}</span>}
                                 amount={formatAmount(charge.chargedSmallestUnit, charge.currency)}
                                 status={
-                                  <Badge variant="secondary" className={`${INCOME_BADGE_CLASS[charge.status]} text-xs`}>
+                                  <Badge className={incomeBadgeClass(charge.status)}>
                                     {PROJECT_INCOME_STATUS_LABELS[charge.status]}
                                   </Badge>
                                 }
