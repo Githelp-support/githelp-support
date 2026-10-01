@@ -36,6 +36,7 @@ import {
   formatChatTimestamp,
 } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -128,6 +129,7 @@ export default function UserSupportChatPage() {
     : effectiveProjectId
       ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
       : undefined
+  const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
   const organizationName = hasSLA ? projectName : null
   const freeHelpRemaining: string | null = null
@@ -223,12 +225,15 @@ export default function UserSupportChatPage() {
   }, [ticketIdParam, cardParam])
 
   // When opening an existing ticket from URL, set ticket state
-  useEffect(() => {
-    if (ticketIdParam && existingTicket?.id) {
-      setTicketId(existingTicket.id)
+  const openedTicketId = ticketIdParam && existingTicket?.id ? existingTicket.id : null
+  const [syncedOpenedTicketId, setSyncedOpenedTicketId] = useState<string | null>(null)
+  if (openedTicketId !== syncedOpenedTicketId) {
+    setSyncedOpenedTicketId(openedTicketId)
+    if (openedTicketId) {
+      setTicketId(openedTicketId)
       setTicketCreated(true)
     }
-  }, [ticketIdParam, existingTicket?.id])
+  }
   
   // Get user's role in this project
   const { data: projectRole } = useProjectRole(projectId || undefined)
@@ -350,6 +355,7 @@ export default function UserSupportChatPage() {
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
       currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+      avgResponseSeconds,
     })
     if (ticketEnded) {
       const cancelled = existingTicket?.status === "cancelled"
@@ -380,6 +386,7 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
+    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     slaId,
@@ -418,8 +425,11 @@ export default function UserSupportChatPage() {
       (isAuthenticated && userTicketsLoadingForResolve) || !!latestUserTicket
     if (resolving) {
       return (
-        <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
-          <div className="text-muted-foreground">Loading your support…</div>
+        <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="text-[14px] text-muted-foreground">Loading your support…</div>
+          </main>
         </div>
       )
     }
@@ -496,21 +506,29 @@ export default function UserSupportChatPage() {
   const openingOtherTicket = !!ticketIdParam && ticketIdParam !== createdTicketId
   if (openingOtherTicket && existingTicketLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#f7f9ff]">
-        <div className="text-muted-foreground">Loading ticket…</div>
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+        <Sidebar projectPageHref={projectPageHref} />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-[14px] text-muted-foreground">Loading ticket…</div>
+        </main>
       </div>
     )
   }
 
   if (openingOtherTicket && !existingTicket?.id) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-          <h1 className="text-2xl font-semibold text-foreground mb-2">Ticket not found</h1>
-          <p className="text-muted-foreground">
-            This ticket may have been removed or you may not have access to it.
-          </p>
-        </div>
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+        <Sidebar projectPageHref={projectPageHref} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-6 py-12">
+            <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+              <h1 className="text-2xl font-semibold text-foreground mb-2">Ticket not found</h1>
+              <p className="text-muted-foreground">
+                This ticket may have been removed or you may not have access to it.
+              </p>
+            </div>
+          </div>
+        </main>
       </div>
     )
   }

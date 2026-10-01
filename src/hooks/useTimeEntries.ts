@@ -13,7 +13,9 @@ export interface TimeEntryWithDetails extends TimeEntry {
     };
     helper?: {
         user?: {
+            id: string;
             name: string;
+            avatar_url?: string | null;
         };
     };
 }
@@ -46,7 +48,7 @@ export function useTimeEntries(
           *,
           ticket:tickets(id, title, project_id),
           helper:projects_helpers(
-            user:users_public(name)
+            user:users_public(id, name, avatar_url)
           )
         `
                 )

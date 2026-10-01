@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText } from "lucide-react"
-import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
+import { usePaymentTransfers, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
@@ -28,9 +28,8 @@ import {
   monthLabel,
   payoutReference,
   transferDate,
-  transferTicketType,
-  type HelperMonthlyReportRow,
 } from "@/lib/helper-payout-reports"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 import {
   TransactionLine,
   TransactionsPanel,
@@ -40,7 +39,7 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
-import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -51,7 +50,8 @@ interface PayoutData {
   ticketTitle: string
   /** ISO date of the latest transfer, used for display and sorting. */
   date: string
-  ticketType: string
+  helper: string
+  helperColor: string
   amountSmallestUnit: number
   /** Transfers that failed (not paid) on top of `amountSmallestUnit`. */
   failedSmallestUnit: number
@@ -70,8 +70,8 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
-type SortField = "ticketId" | "date" | "ticketType" | "amount" | "status"
-type MonthlySortField = "month" | "ticketsClosed" | "hoursLogged" | "earnings"
+type SortField = "ticketId" | "date" | "helper" | "amount" | "status"
+type MonthlySortField = "period" | "description" | "earnings" | "status"
 type SortDirection = "asc" | "desc"
 
 const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
@@ -80,14 +80,10 @@ const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
   failed: "Failed",
 }
 
-const STATUS_BADGE_CLASS: Record<PaymentTransfer["status"], string> = {
-  completed: "bg-green-100 text-green-800 hover:bg-green-100",
-  pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  failed: "bg-red-100 text-red-800 hover:bg-red-100",
-}
+const PREVIEW_HELPER_NAME = "You"
 
 const PAYOUTS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
-const MONTHLY_GRID = { gridTemplateColumns: "repeat(12, 1fr)" }
+const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
 function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
@@ -126,6 +122,40 @@ function SortHeader({
   )
 }
 
+/** Helper avatar (initial on a coloured tile) + name, as on the admin Support reports. */
+function HelperCell({ name, color }: { name: string; color: string }) {
+  return (
+    <>
+      <div
+        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+        style={{ backgroundColor: color }}
+      >
+        {name.trim().charAt(0).toUpperCase() || "?"}
+      </div>
+      <span className="text-sm font-medium text-foreground">{name}</span>
+    </>
+  )
+}
+
+/** Status badge for a single payout, as on the admin Support reports. */
+function PayoutStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
+  return (
+    <Badge className={`${getStatusBadgeClass(status)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+      {status === "pending" && (
+        <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+          <circle cx="6" cy="6" r="2" fill="currentColor" />
+        </svg>
+      )}
+      {status === "completed" && (
+        <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+          <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+      {STATUS_LABEL[status]}
+    </Badge>
+  )
+}
+
 function compare(a: string | number, b: string | number, direction: SortDirection) {
   if (a < b) return direction === "asc" ? -1 : 1
   if (a > b) return direction === "asc" ? 1 : -1
@@ -147,10 +177,11 @@ function StatementLink({ transfer }: { transfer: PaymentTransfer }) {
 }
 
 export default function HelperReportsPage() {
-  const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("payouts")
+  const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("monthly")
   const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [monthlySelectedRows, setMonthlySelectedRows] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
@@ -184,6 +215,13 @@ export default function HelperReportsPage() {
     return result
   }, [])
 
+  // Include the selected month even when it's older than the last 12 months,
+  // so the Select can still display it (e.g. after clicking an old monthly report row).
+  const monthOptions = useMemo(
+    () => (selectedMonth && !months.includes(selectedMonth) ? [...months, selectedMonth] : months),
+    [months, selectedMonth],
+  )
+
   const targetMonth =
     selectedFilter === "current" || selectedMonth
       ? selectedMonth || monthLabel(new Date().toISOString())
@@ -203,7 +241,8 @@ export default function HelperReportsPage() {
         ticketShortId: group.ticketId?.slice(0, 7) || "-",
         ticketTitle: first.ticket?.title?.trim() || "",
         date: group.date,
-        ticketType: transferTicketType(first),
+        helper: getHelperDisplayName(first.helper),
+        helperColor: getAvatarColorHexForId(first.helper?.user_id ?? first.helper_id ?? first.id),
         amountSmallestUnit: group.amountSmallestUnit,
         failedSmallestUnit: group.failedSmallestUnit,
         currency: group.currency,
@@ -219,8 +258,8 @@ export default function HelperReportsPage() {
           return compare(a.ticketShortId, b.ticketShortId, sortDirection)
         case "date":
           return compare(new Date(a.date).getTime(), new Date(b.date).getTime(), sortDirection)
-        case "ticketType":
-          return compare(a.ticketType.toLowerCase(), b.ticketType.toLowerCase(), sortDirection)
+        case "helper":
+          return compare(a.helper.toLowerCase(), b.helper.toLowerCase(), sortDirection)
         case "amount":
           return compare(a.amountSmallestUnit, b.amountSmallestUnit, sortDirection)
         case "status":
@@ -232,8 +271,19 @@ export default function HelperReportsPage() {
     return sorted
   }, [transfersData, targetMonth, sortField, sortDirection])
 
-  const monthlyReports: HelperMonthlyReportRow[] = useMemo(() => {
-    let list = aggregateHelperMonthly(transfersData ?? [], timeEntries ?? [])
+  const monthlyReports = useMemo(() => {
+    let list = aggregateHelperMonthly(transfersData ?? [], timeEntries ?? []).map((row) => ({
+      id: row.id,
+      period: row.period,
+      periodRaw: row.periodRaw,
+      description: `${row.ticketsClosed} ticket${row.ticketsClosed === 1 ? "" : "s"} · Total time logged: ${formatMinutes(row.minutesLogged)}`,
+      earnings: formatAmount(row.earningsSmallestUnit, row.currency),
+      earningsRaw: row.earningsSmallestUnit,
+      status:
+        row.earningsSmallestUnit > 0 && row.paidOutSmallestUnit === row.earningsSmallestUnit
+          ? ("Paid out" as const)
+          : ("Pending" as const),
+    }))
     if (targetMonth) {
       list = list.filter((row) => row.period === targetMonth)
     }
@@ -241,14 +291,14 @@ export default function HelperReportsPage() {
     const sorted = [...list]
     sorted.sort((a, b) => {
       switch (monthlySortField) {
-        case "month":
+        case "period":
           return compare(a.periodRaw, b.periodRaw, monthlySortDirection)
-        case "ticketsClosed":
-          return compare(a.ticketsClosed, b.ticketsClosed, monthlySortDirection)
-        case "hoursLogged":
-          return compare(a.minutesLogged, b.minutesLogged, monthlySortDirection)
+        case "description":
+          return compare(a.description.toLowerCase(), b.description.toLowerCase(), monthlySortDirection)
         case "earnings":
-          return compare(a.earningsSmallestUnit, b.earningsSmallestUnit, monthlySortDirection)
+          return compare(a.earningsRaw, b.earningsRaw, monthlySortDirection)
+        case "status":
+          return compare(a.status.toLowerCase(), b.status.toLowerCase(), monthlySortDirection)
         default:
           return 0
       }
@@ -276,12 +326,29 @@ export default function HelperReportsPage() {
     }
   }
 
+  /** Open the Payouts tab filtered to the given month (row.period, e.g. "January 2026"). */
+  const openMonthPayouts = (period: string) => {
+    setActiveTab("payouts")
+    setSelectedMonth(period)
+    setSelectedFilter("all")
+  }
+
   const handleRowSelect = (id: string) => {
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]))
   }
 
   const handleSelectAll = () => {
     setSelectedRows(selectedRows.length === payouts.length ? [] : payouts.map((payout) => payout.id))
+  }
+
+  const handleMonthlyRowSelect = (id: string) => {
+    setMonthlySelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]))
+  }
+
+  const handleMonthlySelectAll = () => {
+    setMonthlySelectedRows(
+      monthlySelectedRows.length === monthlyReports.length ? [] : monthlyReports.map((row) => row.id),
+    )
   }
 
   const isBusy =
@@ -344,15 +411,15 @@ export default function HelperReportsPage() {
 
         <main className="flex-1 overflow-auto p-6 space-y-6">
           {/* Tab Navigation */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+          <div className="mb-6">
+            <div className="flex gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("monthly")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === "monthly"
-                    ? "border-brand-primary text-brand-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "text-brand-primary border-brand-primary"
+                    : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
                 Monthly reports
@@ -360,15 +427,16 @@ export default function HelperReportsPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("payouts")}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === "payouts"
-                    ? "border-brand-primary text-brand-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "text-brand-primary border-brand-primary"
+                    : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
                 Payouts
               </button>
-            </nav>
+            </div>
+            <div className="h-px bg-border -mx-6" />
           </div>
 
           {/* Filters */}
@@ -401,7 +469,7 @@ export default function HelperReportsPage() {
                 <SelectValue placeholder="Choose month" />
               </SelectTrigger>
               <SelectContent>
-                {months.map((month) => (
+                {monthOptions.map((month) => (
                   <SelectItem key={month} value={month}>
                     {month}
                   </SelectItem>
@@ -461,9 +529,9 @@ export default function HelperReportsPage() {
 
           {/* Payouts Table */}
           {activeTab === "payouts" && (
-            <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={PAYOUTS_GRID}>
+                <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -474,58 +542,56 @@ export default function HelperReportsPage() {
                       aria-label="Select all payouts"
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <SortHeader label="Ticket ID" field="ticketId" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
                   <div className="col-span-1">
                     <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Ticket type" field="ticketType" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  <div className="col-span-3">
+                    <SortHeader label="Helper" field="helper" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-1">
-                    <SortHeader label="Amount" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  <div className="col-span-2">
+                    <SortHeader label="Earnings" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
                   <div className="col-span-2">
                     <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-3 flex items-center">
-                    <span className="text-sm font-medium text-foreground">Actions</span>
-                  </div>
+                  <div className="col-span-2"></div>
                 </div>
               </div>
 
-              {isBusy ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payouts...</div>
-              ) : showPreview ? (
-                PAYOUT_PREVIEW_ROWS.map((payout) => (
-                  <div key={payout.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
-                    <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                      <div className="flex items-center">
-                        <Checkbox disabled checked={false} />
-                      </div>
-                      <div className="col-span-2 text-sm text-gray-900">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono tabular-nums">{payout.ticketId}</span>
+              <div className="divide-y divide-border">
+                {isBusy ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payouts...</div>
+                ) : showPreview ? (
+                  PAYOUT_PREVIEW_ROWS.map((payout) => (
+                    <div key={payout.id} role="presentation" className="px-6 py-4 opacity-80">
+                      <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox disabled checked={false} />
+                        </div>
+                        <div className="col-span-1">
+                          <span className="text-sm font-medium text-foreground font-mono tabular-nums">
+                            {payout.ticketId}
+                          </span>
+                        </div>
+                        <div className="col-span-1">
+                          <span className="text-sm text-muted-foreground">{payout.date}</span>
+                        </div>
+                        <div className="col-span-3 flex items-center gap-[18px] flex-wrap">
+                          <HelperCell name={PREVIEW_HELPER_NAME} color={getAvatarColorHexForId(PREVIEW_HELPER_NAME)} />
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
-                      </div>
-                      <div className="col-span-1 text-sm text-muted-foreground">{payout.date}</div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                          {payout.ticketType}
-                        </Badge>
-                      </div>
-                      <div className="col-span-1 text-sm text-gray-900">{payout.amount}</div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className={STATUS_BADGE_CLASS[payout.status]}>
-                          {STATUS_LABEL[payout.status]}
-                        </Badge>
-                      </div>
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">{payout.amount}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <PayoutStatusBadge status={payout.status} />
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                             <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
                               Open
@@ -546,56 +612,57 @@ export default function HelperReportsPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : payouts.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
-              ) : (
-                payouts.map((payout) => {
-                  const count = payout.transfers.length
-                  const expanded = count > 1 && isExpanded(payout.id)
-                  const panelId = transactionsPanelId(payout.id)
-                  return (
-                  <div key={payout.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
-                    <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                      <div className="flex items-center">
-                        <Checkbox
-                          checked={selectedRows.includes(payout.id)}
-                          onCheckedChange={() => handleRowSelect(payout.id)}
-                          aria-label={`Select payout for ticket ${payout.ticketShortId}`}
-                        />
-                      </div>
-                      <div className="col-span-2 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono tabular-nums text-sm text-gray-900">{payout.ticketShortId}</span>
-                          {payout.status === "pending" && <div className="w-2 h-2 bg-red-500 rounded-full"></div>}
+                  ))
+                ) : payouts.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
+                ) : (
+                  payouts.map((payout) => {
+                    const count = payout.transfers.length
+                    const expanded = count > 1 && isExpanded(payout.id)
+                    const panelId = transactionsPanelId(payout.id)
+                    return (
+                    <div key={payout.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={selectedRows.includes(payout.id)}
+                            onCheckedChange={() => handleRowSelect(payout.id)}
+                            aria-label={`Select payout for ticket ${payout.ticketShortId}`}
+                          />
                         </div>
-                        {payout.ticketTitle && (
-                          <div className="text-xs text-muted-foreground truncate" title={payout.ticketTitle}>
-                            {payout.ticketTitle}
+                        <div className="col-span-1 min-w-0">
+                          {payout.ticketId ? (
+                            <Link
+                              href={`/helper/tickets/${payout.ticketId}`}
+                              title={payout.ticketTitle || undefined}
+                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                            >
+                              {payout.ticketShortId}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-medium text-foreground">—</span>
+                          )}
+                          <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(payout.id)} panelId={panelId} noun="payout" />
+                        </div>
+                        <div className="col-span-1">
+                          <span className="text-sm text-muted-foreground">{formatDate(payout.date)}</span>
+                        </div>
+                        <div className="col-span-3 flex items-center gap-[18px]">
+                          <HelperCell name={payout.helper} color={payout.helperColor} />
+                        </div>
+                        <div className="col-span-2">
+                          <div className="text-sm text-foreground">
+                            {formatAmount(payout.amountSmallestUnit, payout.currency)}
                           </div>
-                        )}
-                        <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(payout.id)} panelId={panelId} noun="payout" />
-                      </div>
-                      <div className="col-span-1 text-sm text-muted-foreground">{formatDate(payout.date)}</div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                          {payout.ticketType}
-                        </Badge>
-                      </div>
-                      <div className="col-span-1 text-sm text-gray-900">
-                        <div>{formatAmount(payout.amountSmallestUnit, payout.currency)}</div>
-                        {payout.failedSmallestUnit > 0 && (
-                          <div className="text-xs text-red-700">{formatAmount(payout.failedSmallestUnit, payout.currency)} failed</div>
-                        )}
-                      </div>
-                      <div className="col-span-2">
-                        <Badge variant="secondary" className={STATUS_BADGE_CLASS[payout.status]}>
-                          {STATUS_LABEL[payout.status]}
-                        </Badge>
-                      </div>
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2 flex-wrap">
+                          {payout.failedSmallestUnit > 0 && (
+                            <div className="text-xs text-red-700">{formatAmount(payout.failedSmallestUnit, payout.currency)} failed</div>
+                          )}
+                        </div>
+                        <div className="col-span-2">
+                          <PayoutStatusBadge status={payout.status} />
+                        </div>
+                        <div className="col-span-2">
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
                           {payout.ticketId ? (
                             <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
                               <Link href={`/helper/tickets/${payout.ticketId}`}>Open</Link>
@@ -636,132 +703,180 @@ export default function HelperReportsPage() {
                         </div>
                       </div>
                     </div>
-                    {expanded && (
-                      <TransactionsPanel id={panelId}>
-                        {payout.transfers.map((transfer, index) => (
-                          <TransactionLine
-                            key={transfer.id}
-                            index={index}
-                            count={count}
-                            date={formatDate(transferDate(transfer))}
-                            description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
-                            amount={formatAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
-                            status={
-                              <Badge variant="secondary" className={STATUS_BADGE_CLASS[transfer.status]}>
-                                {STATUS_LABEL[transfer.status]}
-                              </Badge>
-                            }
-                            actions={<StatementLink transfer={transfer} />}
-                          />
-                        ))}
-                      </TransactionsPanel>
-                    )}
-                  </div>
-                  )
-                })
-              )}
+                      {expanded && (
+                        <TransactionsPanel id={panelId}>
+                          {payout.transfers.map((transfer, index) => (
+                            <TransactionLine
+                              key={transfer.id}
+                              index={index}
+                              count={count}
+                              date={formatDate(transferDate(transfer))}
+                              description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
+                              amount={formatAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
+                              status={<PayoutStatusBadge status={transfer.status} />}
+                              actions={<StatementLink transfer={transfer} />}
+                            />
+                          ))}
+                        </TransactionsPanel>
+                      )}
+                    </div>
+                    )
+                  })
+                )}
+              </div>
             </div>
           )}
 
           {/* Monthly Reports Tab Content */}
           {activeTab === "monthly" && (
-            <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid gap-4 text-sm font-medium text-foreground" style={MONTHLY_GRID}>
+                <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="rounded border-border"
+                      checked={monthlySelectedRows.length === monthlyReports.length && monthlyReports.length > 0}
+                      onChange={handleMonthlySelectAll}
+                      disabled={monthlyReports.length === 0}
+                      aria-label="Select all monthly reports"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                  </div>
                   <div className="col-span-3">
-                    <SortHeader label="Month" field="month" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Tickets closed" field="ticketsClosed" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Hours logged" field="hoursLogged" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                    <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
                   <div className="col-span-2">
                     <SortHeader label="Earnings" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-3 flex items-center">
-                    <span className="text-sm font-medium text-foreground">Actions</span>
+                  <div className="col-span-2">
+                    <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
+                  <div className="col-span-2"></div>
                 </div>
               </div>
-              {isBusy ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
-              ) : showPreview ? (
-                HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
-                  <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
-                    <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                      <div className="col-span-3 flex items-center gap-2 text-sm text-gray-900">
-                        {row.period}
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                          Preview
-                        </Badge>
+              <div className="divide-y divide-border">
+                {isBusy ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
+                ) : showPreview ? (
+                  HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
+                    <div key={row.id} role="presentation" className="px-6 py-4 opacity-80">
+                      <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox disabled checked={false} />
+                        </div>
+                        <div className="col-span-2 flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-foreground">{row.period}</span>
+                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                            Preview
+                          </Badge>
+                        </div>
+                        <div className="col-span-3">
+                          <span className="text-sm text-muted-foreground">{row.description}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">{row.earnings}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                            {row.status}
+                          </Badge>
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              <Download className="w-3.5 h-3.5" />
+                              PDF
+                            </Button>
+                          </span>
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                              <FileSpreadsheet className="w-3.5 h-3.5" />
+                              CSV
+                            </Button>
+                          </span>
+                        </div>
                       </div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.ticketsClosed}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.hoursLogged}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.earnings}</div>
-                      <div className="col-span-3 flex items-center gap-2 flex-wrap">
-                        <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                          <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                    </div>
+                  ))
+                ) : monthlyReports.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("monthly reports")}</div>
+                ) : (
+                  monthlyReports.map((row) => (
+                    <div
+                      key={row.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View payouts for ${row.period}`}
+                      className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                      onClick={() => openMonthPayouts(row.period)}
+                      onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          openMonthPayouts(row.period)
+                        }
+                      }}
+                    >
+                      <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={monthlySelectedRows.includes(row.id)}
+                            onCheckedChange={() => handleMonthlyRowSelect(row.id)}
+                            aria-label={`Select monthly report for ${row.period}`}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm font-medium text-foreground">{row.period}</span>
+                        </div>
+                        <div className="col-span-3">
+                          <span className="text-sm text-muted-foreground">{row.description}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-foreground">{row.earnings}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                            {row.status}
+                          </Badge>
+                        </div>
+                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            className={OUTLINE_BUTTON_CLASS}
+                            title={`Download the ${row.period} payout report as PDF`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              exportPdf(row.period)
+                            }}
+                          >
                             <Download className="w-3.5 h-3.5" />
-                            Download PDF
+                            PDF
                           </Button>
-                        </span>
-                        <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                          <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            className={OUTLINE_BUTTON_CLASS}
+                            title={`Export the ${row.period} payout report as CSV`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              exportCsv(row.period)
+                            }}
+                          >
                             <FileSpreadsheet className="w-3.5 h-3.5" />
                             CSV
                           </Button>
-                        </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              ) : monthlyReports.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("monthly reports")}</div>
-              ) : (
-                monthlyReports.map((row) => (
-                  <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
-                    <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                      <div className="col-span-3 text-sm text-gray-900">{row.period}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{row.ticketsClosed}</div>
-                      <div className="col-span-2 text-sm text-gray-900">{formatMinutes(row.minutesLogged)}</div>
-                      <div className="col-span-2 text-sm text-gray-900">
-                        <div>{formatAmount(row.earningsSmallestUnit, row.currency)}</div>
-                        {row.paidOutSmallestUnit !== row.earningsSmallestUnit && (
-                          <div className="text-xs text-muted-foreground">
-                            {formatAmount(row.paidOutSmallestUnit, row.currency)} paid out
-                          </div>
-                        )}
-                      </div>
-                      <div className="col-span-3 flex items-center gap-2 flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          className={OUTLINE_BUTTON_CLASS}
-                          title={`Download the ${row.period} payout report as PDF`}
-                          onClick={() => exportPdf(row.period)}
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          Download PDF
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          className={OUTLINE_BUTTON_CLASS}
-                          title={`Export the ${row.period} payout report as CSV`}
-                          onClick={() => exportCsv(row.period)}
-                        >
-                          <FileSpreadsheet className="w-3.5 h-3.5" />
-                          CSV
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           )}
         </main>

@@ -1,9 +1,9 @@
 "use client"
 
 import { Bell, ChevronDown, Check, Plus } from "lucide-react"
-import { useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
@@ -21,7 +21,11 @@ import type { Notification } from "@/hooks/useNotifications"
 import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
-import { useProjectAvailableRoles, projectAvailableRolesQueryOptions } from "@/hooks/useProjectRole"
+import {
+  useProjectAvailableRoles,
+  projectAvailableRolesQueryOptions,
+  useUserRoles,
+} from "@/hooks/useProjectRole"
 import { homeRouteForRole } from "@/lib/roles"
 import {
   useNotifications,
@@ -73,13 +77,17 @@ const ProjectLogo = ({
 
 export function TopBar() {
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
+  const { data: userRoles, isSuccess: userRolesLoaded } = useUserRoles()
 
   const selectedProject = userProjects.find((p) => p.project_id === selectedProjectId) || userProjects[0]
-  const { data: projectAvailableRoles } = useProjectAvailableRoles(selectedProject?.project_id)
+  const { data: projectAvailableRoles, isSuccess: projectRolesLoaded } = useProjectAvailableRoles(
+    selectedProject?.project_id,
+  )
   const { data: selectedProjectBranding } = useProjectBranding(selectedProject?.project_id || "")
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -169,22 +177,44 @@ export function TopBar() {
     }
   }
 
-  const getAvailableRoles = (): UserRole[] => {
-    // Roles are scoped to the SELECTED project: a helper only sees Helper and
-    // User unless they are also an admin of that project. Keyed by the
-    // persisted selected project id — not the per-page projectRole, which
-    // gets cleared/lowered on /support pages and previously made roles
-    // disappear from the switcher.
+  // Roles are scoped to the SELECTED project (keyed by the persisted selected
+  // project id — not the per-page projectRole, which gets cleared/lowered on
+  // /support pages), and limited to the role categories the profile is
+  // ACTUALLY registered for (no implied "user" role for e.g. a freshly
+  // registered helper). Ordered admin → helper → user.
+  const availableRoles: UserRole[] = useMemo(() => {
+    const registered = userRolesLoaded && userRoles && userRoles.length > 0 ? userRoles : null
     if (!projectAvailableRoles) {
-      // Query not resolved yet, or the profile has no projects at all
-      // (support-only users). Keep the active role listed so the menu never
-      // drops the role currently in use.
-      return user.role === "user" ? ["user"] : [user.role, "user"]
+      // No projects at all (support-only users) or queries still loading:
+      // fall back to the global registrations, then to the active role so
+      // the dropdown is never empty.
+      return registered ?? [user.role]
     }
-    return projectAvailableRoles
-  }
+    if (!registered) return projectAvailableRoles
+    const scoped = projectAvailableRoles.filter((role) => registered.includes(role))
+    return scoped.length > 0 ? scoped : projectAvailableRoles
+  }, [userRolesLoaded, userRoles, projectAvailableRoles, user.role])
+
+  const rolesResolved =
+    userRolesLoaded && !projectsLoading && (!selectedProject || projectRolesLoaded)
+
+  // Once roles are resolved, if the current role isn't one the profile holds,
+  // switch to the first available role (e.g. a freshly registered helper
+  // lands in the Helper view instead of the default User view).
+  useEffect(() => {
+    if (!isSignedIn || !rolesResolved || availableRoles.length === 0) return
+    if (!availableRoles.includes(user.role)) {
+      handleSwitchRole(availableRoles[0])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, rolesResolved, availableRoles, user.role])
 
   if (!isSignedIn) return null
+
+  // Hide the top bar on the invite acceptance flow (/invite/[token]) so its
+  // full-screen centered cards render without the role/project/notifications
+  // banner.
+  if (pathname?.startsWith("/invite")) return null
 
   return (
     <>
@@ -200,9 +230,9 @@ export function TopBar() {
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
-              {getAvailableRoles().length > 0 ? (
+              {availableRoles.length > 0 ? (
                 <>
-                  {getAvailableRoles().map((role) => {
+                  {availableRoles.map((role) => {
                     const isCurrent = role === user.role
                     return (
                       <DropdownMenuItem

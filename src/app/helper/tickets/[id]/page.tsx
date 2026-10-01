@@ -56,6 +56,7 @@ import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/sidebar-section"
+import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
@@ -98,6 +99,8 @@ interface Message {
   apiBadge?: string | null
 }
 
+const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
+
 export default function TicketDetailPage() {
   const params = useParams()
   const ticketId = params.id as string
@@ -113,6 +116,9 @@ export default function TicketDetailPage() {
   const [isAddSelfAsHelperDialogOpen, setIsAddSelfAsHelperDialogOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<"claim" | "logTime" | null>(null)
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false)
+  // Collapsed state is shared across views via localStorage (see
+  // right-sidebar-collapse.tsx).
+  const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
 
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId)
@@ -190,6 +196,9 @@ export default function TicketDetailPage() {
           declineReason: entry.decline_reason ?? null,
           autoAccepted: entry.auto_accepted ?? false,
           helperId: entry.helper_id,
+          helperUser: entry.helper?.user
+            ? { id: entry.helper.user.id, name: entry.helper.user.name, avatarUrl: entry.helper.user.avatar_url ?? null }
+            : undefined,
         }
       }),
     [timeEntriesFromDb]
@@ -256,7 +265,7 @@ export default function TicketDetailPage() {
         created_at: "",
         user: {
           id: creatorId,
-          name: (creatorUser as { name?: string })?.name ?? "Unknown",
+          name: (creatorUser as { name?: string })?.name ?? "User",
           avatar_url: (creatorUser as { avatar_url?: string | null })?.avatar_url ?? null,
         },
       })
@@ -325,7 +334,11 @@ export default function TicketDetailPage() {
       messagesData.map((msg): Message => ({
         id: msg.id,
         sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
-        content: msg.content,
+        // The stored payment_authorized text is worded for the customer; helpers/admins get their own.
+        content:
+          msg.sender_type === "system" && (msg.metadata as { kind?: string } | null | undefined)?.kind === "payment_authorized"
+            ? HELPER_PAYMENT_AUTHORIZED_MESSAGE
+            : msg.content,
         timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
           day: "2-digit",
           month: "2-digit",
@@ -334,7 +347,7 @@ export default function TicketDetailPage() {
           minute: "2-digit",
         }),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
-        senderName: msg.sender?.name || "Unknown",
+        senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
         senderId: msg.sender_id ?? msg.sender?.id,
         senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
@@ -551,7 +564,7 @@ export default function TicketDetailPage() {
         {
           onError: (error) =>
             toast.error(`Payment failed: ${error.message}`, {
-              description: "The customer has been asked to update their card. You can also retry below.",
+              description: "The user has been asked to update their card. You can also retry below.",
             }),
         },
       )
@@ -584,7 +597,7 @@ export default function TicketDetailPage() {
         onError: (error) =>
           isPaymentNotAuthorizedError(error)
             ? toast.error("Time can't be logged yet", {
-                description: "The payment for this ticket isn't authorized. Ask the customer to add a payment method.",
+                description: "The payment for this ticket isn't authorized. Ask the user to add a payment method.",
               })
             : toast.error("Failed to log time. Please try again."),
       }
@@ -969,15 +982,15 @@ export default function TicketDetailPage() {
                                   <div className="mt-2 pt-2 border-t border-border space-y-1.5">
                                     <div className="flex items-center justify-between gap-6">
                                       <span className="text-muted-foreground">
-                                        {billedHelperCount > 1 ? "Helpers" : "Helper"}
+                                        {billedHelperCount > 1 ? `Share helpers (${billedHelperCount})` : "Share helper"}
                                       </span>
                                       <span className="font-medium text-foreground tabular-nums">
                                         {formatUsd(chargeSplits.helperSmallestUnit)}
                                       </span>
                                     </div>
                                     <div className="flex items-center justify-between gap-6">
-                                      <span className="text-muted-foreground truncate">{project?.name || "Project"}</span>
-                                      <span className="font-medium text-foreground tabular-nums shrink-0">
+                                      <span className="text-muted-foreground">Share project</span>
+                                      <span className="font-medium text-foreground tabular-nums">
                                         {formatUsd(chargeSplits.projectSmallestUnit)}
                                       </span>
                                     </div>
@@ -998,7 +1011,7 @@ export default function TicketDetailPage() {
                               )}
                               {paymentFailed && (
                                 <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
+                                  The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
                               {paymentFailed && (
@@ -1009,7 +1022,7 @@ export default function TicketDetailPage() {
                                       {
                                         onError: (error) =>
                                           toast.error(`Payment failed: ${error.message}`, {
-                                            description: "The customer has been asked to update their card.",
+                                            description: "The user has been asked to update their card.",
                                           }),
                                       },
                                     )
@@ -1093,7 +1106,11 @@ export default function TicketDetailPage() {
               onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
               imagesUploading={imagesUploading}
               toolbarEndContent={
-                !isTicketEnded && !isFixedAnswer ? (
+                !isClaimed && ticket?.status === "available" ? (
+                  <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
+                    Claim ticket
+                  </Button>
+                ) : !isTicketEnded && !isFixedAnswer ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1115,190 +1132,203 @@ export default function TicketDetailPage() {
               />
             )}
           </div>
+        </main>
+      </div>
 
-          {/* Right Sidebar */}
-          <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-            <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
-              {/* People in Chat */}
-              <div>
-                <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
-                {participantsLoading ? (
-                  <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
-                ) : allParticipants.length > 0 ? (
-                  <div className="space-y-2 mb-3">
-                    {allParticipants.map((participant) => {
-                      const isCurrentUser = participant.participant_id === currentUser?.id
-                      return (
-                        <div key={participant.id} className="flex items-center gap-2">
-                          <ProfileAvatar
-                            id={participant.user.id}
-                            name={participant.user.name}
-                            avatarUrl={participant.user.avatar_url ?? null}
-                            size="md"
-                          />
-                          <span className="text-[13px] text-muted-foreground">
-                            {isCurrentUser ? "You" : participant.user.name}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
-                )}
-                {!isTicketEnded && (
-                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                    <Plus className="w-4 h-4" />
-                    Invite other helper
-                  </Button>
-                )}
+      {/* Right Sidebar — sibling of the header column so it spans the full height, like the left sidebar */}
+      <div
+        suppressHydrationWarning
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+      >
+        <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
+
+        {!isCollapsed && (
+        <div className="flex-1 overflow-y-auto px-3 pb-6">
+          {/* People in Chat */}
+          <div>
+            <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
+            {participantsLoading ? (
+              <div className="text-center text-muted-foreground text-[14px] py-4">Loading...</div>
+            ) : allParticipants.length > 0 ? (
+              <div className="space-y-2 mb-3">
+                {allParticipants.map((participant) => {
+                  const isCurrentUser = participant.participant_id === currentUser?.id
+                  return (
+                    <div key={participant.id} className="flex items-center gap-2">
+                      <ProfileAvatar
+                        id={participant.user.id}
+                        name={participant.user.name}
+                        avatarUrl={participant.user.avatar_url ?? null}
+                        size="md"
+                      />
+                      <span className="text-[13px] text-muted-foreground">
+                        {isCurrentUser ? "You" : participant.user.name}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
+            ) : (
+              <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+            )}
+            {!isTicketEnded && (
+              <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+                <Plus className="w-4 h-4" />
+                Invite other helper
+              </Button>
+            )}
+          </div>
 
-              {/* Divider */}
-              <SidebarDivider />
+          {/* Divider */}
+          <SidebarDivider />
 
-              {/* Other Topics — from ticket keywords */}
-              <div>
-                <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
-                {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
-                  <div className="flex gap-2 flex-wrap">
-                    {ticketDetails.keywords.map((k) => (
-                      <Badge key={k.value} variant="secondary" className="bg-muted text-muted-foreground">
-                        {k.value}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[13px] text-muted-foreground">—</p>
-                )}
+          {/* Other Topics — from ticket keywords */}
+          <div>
+            <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
+            {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
+              <div className="flex gap-2 flex-wrap">
+                {ticketDetails.keywords.map((k) => (
+                  <Badge key={k.value} variant="secondary" className="bg-muted text-muted-foreground">
+                    {k.value}
+                  </Badge>
+                ))}
               </div>
+            ) : (
+              <p className="text-[13px] text-muted-foreground">—</p>
+            )}
+          </div>
 
-              {/* Divider */}
-              <SidebarDivider />
+          {/* Divider */}
+          <SidebarDivider />
 
-              {/* Logged Time */}
-              <div>
-                <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
-                {timeEntries.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {timeEntries.map((entry) => (
-                      <div key={entry.id} className="py-2 border-b border-border">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                            </div>
-                            <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-[13px] text-muted-foreground tabular-nums">
-                              {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                            </span>
-                            {canDeleteTimeEntry(entry) && (
-                              <button
-                                type="button"
-                                onClick={() => setDeletingEntry(entry)}
-                                aria-label="Delete logged time"
-                                title="Delete logged time"
-                                className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-muted"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                        {entry.reviewStatus && (
-                          <div className="mt-1 ml-8">
-                            <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
-                          </div>
-                        )}
-                        {entry.reviewStatus === "declined" && entry.declineReason && (
-                          <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+          {/* Logged Time */}
+          <div>
+            <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
+            {timeEntries.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {timeEntries.map((entry) => (
+                  <div key={entry.id} className="py-2 border-b border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        {/* Same size as before (24px); radius scaled from the chat avatars (9.625px at 28px) */}
+                        <ProfileAvatar
+                          id={entry.helperUser?.id ?? entry.helperId}
+                          name={entry.helperUser?.name}
+                          avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                          size="sm"
+                          radius="8.25px"
+                          className="w-6 h-6"
+                        />
+                        <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[13px] text-muted-foreground tabular-nums">
+                          {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                        </span>
+                        {canDeleteTimeEntry(entry) && (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingEntry(entry)}
+                            aria-label="Delete logged time"
+                            title="Delete logged time"
+                            className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-muted"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         )}
                       </div>
-                    ))}
-                    <div className="flex items-center justify-between py-2 font-medium">
-                      <span className="text-[13px] text-foreground">Total</span>
-                      <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                     </div>
-                    {pendingReviewCount > 0 && (
-                      <p className="text-xs text-amber-800">
-                        {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} waiting for the user to
-                        accept or decline. The session can&apos;t end until they have; entries not reviewed within{" "}
-                        {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted automatically.
-                      </p>
+                    {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                    {entry.reviewStatus && (
+                      <div className="mt-1 ml-8">
+                        <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                      </div>
+                    )}
+                    {entry.reviewStatus === "declined" && entry.declineReason && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
                     )}
                   </div>
-                )}
-                {!isTicketEnded && (
-                  <Button
-                    variant="outline"
-                    disabled={!paymentGate.isReady}
-                    title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
-                    className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={() => {
-                      if (isAdminButNotHelper) {
-                        setPendingAction("logTime")
-                        setIsAddSelfAsHelperDialogOpen(true)
-                      } else {
-                        setIsLogTimeDrawerOpen(true)
-                      }
-                    }}
-                  >
-                    {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
-                  </Button>
-                )}
-              </div>
-
-              {/* Divider */}
-              <SidebarDivider />
-
-              {/* Active Tickets — 3 latest claimed by this helper */}
-              <div>
-                <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-                <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
-                  {activeTicketsSidebar.length === 0 ? (
-                    <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
-                  ) : (
-                    activeTicketsSidebar.map((item) => (
-                      <NextLink
-                        key={item.id}
-                        href={`/helper/tickets/${item.id}`}
-                        className={`block w-full border cursor-pointer transition-colors ${
-                          item.current
-                            ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                            : "bg-white border-border hover:bg-muted"
-                        }`}
-                      >
-                        <div className="p-3">
-                          <div className="flex items-start gap-3">
-                            <ProfileAvatar
-                              id={item.creatorId}
-                              name={item.avatarInitial}
-                              avatarUrl={item.avatarUrl}
-                              size="md"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
-                                {item.hasNotification && (
-                                  <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                              <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </NextLink>
-                    ))
-                  )}
+                ))}
+                <div className="flex items-center justify-between py-2 font-medium">
+                  <span className="text-[13px] text-foreground">Total</span>
+                  <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                 </div>
+                {pendingReviewCount > 0 && (
+                  <p className="text-xs text-amber-800">
+                    {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} waiting for the user to
+                    accept or decline. The session can&apos;t end until they have; entries not reviewed within{" "}
+                    {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted automatically.
+                  </p>
+                )}
               </div>
+            )}
+            {!isTicketEnded && (
+              <Button
+                variant="outline"
+                disabled={!paymentGate.isReady}
+                title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
+                className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => {
+                  if (isAdminButNotHelper) {
+                    setPendingAction("logTime")
+                    setIsAddSelfAsHelperDialogOpen(true)
+                  } else {
+                    setIsLogTimeDrawerOpen(true)
+                  }
+                }}
+              >
+                {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
+              </Button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <SidebarDivider />
+
+          {/* Active Tickets — 3 latest claimed by this helper */}
+          <div>
+            <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
+            <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+              {activeTicketsSidebar.length === 0 ? (
+                <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+              ) : (
+                activeTicketsSidebar.map((item) => (
+                  <NextLink
+                    key={item.id}
+                    href={`/helper/tickets/${item.id}`}
+                    className={`block w-full border cursor-pointer transition-colors ${
+                      item.current
+                        ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
+                        : "bg-white border-border hover:bg-muted"
+                    }`}
+                  >
+                    <div className="p-3">
+                      <div className="flex items-start gap-3">
+                        <ProfileAvatar
+                          id={item.creatorId}
+                          name={item.avatarInitial}
+                          avatarUrl={item.avatarUrl}
+                          size="md"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                            {item.hasNotification && (
+                              <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
+                          <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </NextLink>
+                ))
+              )}
             </div>
           </div>
-        </main>
+        </div>
+        )}
       </div>
 
       {/* AI Rephrase Modal */}

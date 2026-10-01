@@ -28,6 +28,8 @@ export interface TimeEntry {
   autoAccepted?: boolean
   /** `projects_helpers.helper_id` of whoever logged a persisted entry. */
   helperId?: string
+  /** User who logged a persisted entry, for the Logged time avatar. */
+  helperUser?: { id: string; name: string; avatarUrl: string | null }
 }
 
 export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps) {

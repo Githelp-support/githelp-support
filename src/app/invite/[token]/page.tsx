@@ -210,7 +210,7 @@ export default function InviteAcceptancePage() {
             <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
-                    <p className="text-muted-foreground">Loading invite...</p>
+                    <p className="text-[14px] text-muted-foreground">Loading invite...</p>
                 </div>
             </div>
         )
@@ -244,12 +244,12 @@ export default function InviteAcceptancePage() {
             <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex flex-col items-start gap-4 mb-2 text-left">
                             <CheckCircle className="w-6 h-6 text-green-600" />
-                            <CardTitle>You&apos;re already a member</CardTitle>
+                            <CardTitle>Congratulations! You are now a validated helper</CardTitle>
                         </div>
-                        <CardDescription>
-                            You&apos;re already a member of {String(project?.name ?? "this project")}.
+                        <CardDescription className="text-left">
+                            Someone from the project core team has added you as a validated helper to {String(project?.name ?? "this project")}. You can now accept incoming tickets to this project.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

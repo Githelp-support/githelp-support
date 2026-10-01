@@ -42,12 +42,12 @@ export default function ProfileSettingsPage() {
   const updateUserProfile = useUpdateUserProfile()
 
   // Sync local form state when helper data loads
-  useEffect(() => {
-    if (helperData) {
-      setName(helperData.user?.name ?? "")
-      setEmail(helperData.user?.email ?? "")
-    }
-  }, [helperData])
+  const [syncedHelperData, setSyncedHelperData] = useState<typeof helperData>(undefined)
+  if (helperData && helperData !== syncedHelperData) {
+    setSyncedHelperData(helperData)
+    setName(helperData.user?.name ?? "")
+    setEmail(helperData.user?.email ?? "")
+  }
 
   // GitHub connection status, display username, and auto-sync to users_public when empty
   useEffect(() => {
@@ -219,8 +219,7 @@ export default function ProfileSettingsPage() {
               <Button
                 onClick={handleSaveProfile}
                 disabled={updateUserProfile.isPending}
-                variant="outline"
-                className="border-[rgba(0,0,0,0.06)]"
+                variant="lavender"
                 style={{ marginTop: "22px" }}
               >
                 {updateUserProfile.isPending ? (

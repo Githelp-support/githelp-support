@@ -163,6 +163,7 @@ export default function LandingPageSettings() {
                       onClick={handleAddResource}
                       disabled={!newResourceName || !newResourceUrl || createResource.isPending}
                       variant="lavender"
+                      className="text-[14px]"
                     >
                       <Plus className="w-4 h-4" />
                       {createResource.isPending ? "Adding..." : "Add resource"}
@@ -210,7 +211,7 @@ export default function LandingPageSettings() {
                     </div>
                   )}
 
-                  <Button variant="outline" size="sm" className="text-[#55555d] border-border bg-transparent mt-3" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+                  <Button variant="lavender" size="sm" className="mt-3" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                     Save
                   </Button>
                 </div>
