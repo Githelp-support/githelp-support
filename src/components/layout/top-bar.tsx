@@ -211,6 +211,10 @@ export function TopBar() {
 
   if (!isSignedIn) return null
 
+  // The "I am acting as" role chooser is part of the login flow — the user
+  // has not picked a role yet, so the nav banner must not be shown there.
+  if (pathname === "/auth/role" || pathname?.startsWith("/auth/role/")) return null
+
   // Hide the top bar on the invite acceptance flow (/invite/[token]) so its
   // full-screen centered cards render without the role/project/notifications
   // banner.
