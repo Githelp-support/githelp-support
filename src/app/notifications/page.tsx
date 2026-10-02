@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
+import { refreshMembership } from "@/hooks/useUnlisted"
 import { Bell, CheckCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,6 +12,7 @@ import { Header } from "@/components/layout/header"
 import { notificationTypeColor } from "@/components/layout/notifications-panel"
 import {
   notificationType,
+  notificationTypeLabel,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotifications,
@@ -23,6 +26,7 @@ type Filter = "all" | "unread"
 
 export default function NotificationsPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { data: notifications = [], isLoading } = useNotifications()
   const markNotificationRead = useMarkNotificationRead()
   const markAllRead = useMarkAllNotificationsRead()
@@ -45,6 +49,9 @@ export default function NotificationsPage() {
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read) {
       await markNotificationRead.mutateAsync(notification.id)
+    }
+    if (notificationType(notification) === "HELPER_APPLICATION_APPROVED") {
+      await refreshMembership(queryClient)
     }
     if (notification.route) {
       if (notificationType(notification) === "HELPER_REQUEST") {
@@ -125,7 +132,7 @@ export default function NotificationsPage() {
                         <span
                           className={`text-xs font-medium uppercase tracking-wide ${notificationTypeColor(type)}`}
                         >
-                          {type.replace("_", " ")}
+                          {notificationTypeLabel(type)}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">

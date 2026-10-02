@@ -2,10 +2,17 @@
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
+import { refreshMembership } from "@/hooks/useUnlisted"
 import { useEffect, useState, useSyncExternalStore } from "react"
 import type { RefObject } from "react"
 import { createPortal } from "react-dom"
-import { notificationType, type Notification, type NotificationType } from "@/hooks/useNotifications"
+import {
+  notificationType,
+  notificationTypeLabel,
+  type Notification,
+  type NotificationType,
+} from "@/hooks/useNotifications"
 import { formatRelativeTime } from "@/lib/format"
 
 export function notificationTypeColor(type: NotificationType) {
@@ -20,6 +27,18 @@ export function notificationTypeColor(type: NotificationType) {
       return "text-chart-2"
     case "PAYMENT_REQUIRED":
       return "text-destructive"
+    case "COMPLETION_PROPOSED":
+    case "COMPLETION_REMINDER":
+      return "text-chart-3"
+    case "COMPLETION_DECLINED":
+    case "AGENT_ANSWER_DECLINED":
+    case "AGENT_ESCALATED":
+    case "HELPER_APPLICATION_REJECTED":
+      return "text-amber-600"
+    case "TICKET_AVAILABLE":
+    case "PROJECT_LISTED":
+    case "HELPER_APPLICATION_APPROVED":
+      return "text-chart-2"
     default:
       return "text-muted-foreground"
   }
@@ -54,6 +73,7 @@ export function NotificationsPanel({
   anchorRef,
 }: NotificationsPanelProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   // false during SSR and hydration, true afterwards (the panel portals into document.body)
   const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false)
   const [position, setPosition] = useState<{ top: number; right: number }>(DEFAULT_POSITION)
@@ -91,8 +111,13 @@ export function NotificationsPanel({
 
   const stripQuotes = (text: string) => text.replace(/^["“”]+|["“”]+$/g, "")
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     onNotificationClick(notification)
+    // Approved independent helpers just became project members: refresh the
+    // cached "not a member" state or the tickets page sends them to onboarding.
+    if (notificationType(notification) === "HELPER_APPLICATION_APPROVED") {
+      await refreshMembership(queryClient)
+    }
     if (notification.route) {
       if (notificationType(notification) === "HELPER_REQUEST") {
         router.push("/helpers?view=requests")
@@ -138,7 +163,7 @@ export function NotificationsPanel({
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className={`text-xs font-medium uppercase tracking-wide ${notificationTypeColor(type)}`}>
-                        {type.replace("_", " ")}
+                        {notificationTypeLabel(type)}
                       </span>
                       <div className="flex items-center gap-2">
                         <span

@@ -17,6 +17,7 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useUser } from "@/contexts/user-context"
+import { useIsStaff } from "@/hooks/useStaff"
 
 interface SidebarProps {
   className?: string
@@ -94,6 +95,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   })
   const { user } = useUser()
   const isAuthenticated = !!user?.id
+  const isStaff = useIsStaff(isAuthenticated)
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
@@ -136,6 +138,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
     { name: "Overview", href: "/helper/overview", icon: "fi-rr-apps" },
     { name: "Tickets", href: "/tickets", icon: "fi-rr-comments" },
     { name: "Reports", href: "/helper/reports", icon: "fi-rr-document" },
+    { name: "Applications", href: "/user/applications", icon: "fi-rr-hand-holding-heart" },
     {
       name: "Settings",
       href: "#",
@@ -163,6 +166,8 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
       ],
     },
     { name: "Reports", href: "/user/reports", icon: "fi-rr-document" },
+    { name: "Requests", href: "/user/requests", icon: "fi-rr-paper-plane" },
+    { name: "Helper applications", href: "/user/applications", icon: "fi-rr-hand-holding-heart" },
     {
       name: "Settings",
       href: "#",
@@ -218,6 +223,8 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   }
 
   const bottomItems = [
+    // GitHelp staff console (outreach, helper applications, unclaimed projects).
+    ...(isStaff ? [{ name: "Staff", href: "/staff", icon: "fi-rr-shield-check" }] : []),
     { name: "Documentation", href: "#", icon: "fi-rr-book-alt" },
     { name: "Help", href: "/help", icon: "fi-rr-interrogation" },
   ]

@@ -7,13 +7,14 @@ import { Logo } from "@/components/brand/logo"
 import { SignInOptions } from "@/components/auth/sign-in-options"
 import { supabase } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
+import { safeRelativeRedirect } from "@/lib/safe-redirect"
 
 export default function SignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
-  const redirectTo = searchParams.get("redirect") || "/"
+  const redirectTo = safeRelativeRedirect(searchParams.get("redirect")) || "/"
 
   useEffect(() => {
     // Check if user is already authenticated

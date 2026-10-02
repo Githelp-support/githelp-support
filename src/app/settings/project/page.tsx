@@ -49,7 +49,8 @@ export default function ProjectSettingsPage() {
   const promotableHelpers = useMemo(
     () =>
       helpers.filter(
-        (h) => h.user_id && !adminUserIds.has(h.user_id),
+        // AI agents are service accounts, never project admins.
+        (h) => h.user_id && !adminUserIds.has(h.user_id) && (h as { category?: string | null }).category !== "agent",
       ),
     [helpers, adminUserIds],
   )

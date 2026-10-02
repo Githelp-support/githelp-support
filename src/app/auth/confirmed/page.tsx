@@ -10,6 +10,7 @@ import { useAcceptProjectInvite } from "@/hooks/useProject"
 import { useEnterProject } from "@/hooks/useEnterProject"
 import { homeRouteForRole } from "@/lib/roles"
 import { ensureUserOrganization } from "@/lib/organizations"
+import { safeRelativeRedirect } from "@/lib/safe-redirect"
 
 export default function AuthConfirmedPage() {
   const router = useRouter()
@@ -29,13 +30,29 @@ export default function AuthConfirmedPage() {
     hasHandledCallback.current = true
 
     const handleAuthCallback = async () => {
-      // Wait a bit for Supabase to process the OAuth callback
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      const { data: { session } } = await supabase.auth.getSession()
+      // Wait for Supabase to finish the sign-in callback. A slow session
+      // exchange gets a few more chances before we give up.
+      let session = null
+      for (let attempt = 0; attempt < 6 && !session?.user; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        session = (await supabase.auth.getSession()).data.session
+      }
 
       if (!session?.user) {
-        router.push("/auth/signin")
+        // Keep where the user was going (e.g. an AI app's consent page).
+        const redirect = safeRelativeRedirect(searchParams.get("redirect"))
+        const params = new URLSearchParams()
+        if (redirect) params.set("redirect", redirect)
+        if (searchParams.get("skipOnboarding") === "true") params.set("skipOnboarding", "true")
+        if (searchParams.get("githubVerify") === "1") params.set("githubVerify", "1")
+        router.push(params.size ? `/auth/signin?${params.toString()}` : "/auth/signin")
+        return
+      }
+
+      // Signing in to approve an AI connection: go straight back to the
+      // consent page (below); a pending helper invite can wait.
+      if (safeRelativeRedirect(searchParams.get("redirect"))?.startsWith("/oauth/")) {
+        setIsProcessing(false)
         return
       }
 
@@ -100,16 +117,53 @@ export default function AuthConfirmedPage() {
     }
 
     handleAuthCallback()
-  }, [router, queryClient, acceptInviteAsync, enterProject])
+  }, [router, queryClient, acceptInviteAsync, enterProject, searchParams])
+
+  // An MCP/OAuth client is waiting on the consent page: go straight back
+  // there. Signing in to approve an AI connection is not onboarding — no
+  // organization, no role switch.
+  useEffect(() => {
+    if (isProcessing) return
+    const redirectTo = safeRelativeRedirect(searchParams.get("redirect"))
+    if (!redirectTo?.startsWith("/oauth/")) return
+    if (onboardingLoading) return
+    // Someone who isn't on any project team is a support user (customer):
+    // set them up like the support chat's sign-in does, so visiting the app
+    // later doesn't send them into admin onboarding. Team members keep
+    // their role.
+    if (onboardingStatus && !onboardingStatus.isMember) {
+      void ensureUserOrganization("support")
+      if (typeof window !== "undefined" && !localStorage.getItem("userRole")) {
+        localStorage.setItem("userRole", "user")
+      }
+    }
+    router.push(redirectTo)
+  }, [isProcessing, onboardingLoading, onboardingStatus, router, searchParams])
 
   // Handle redirect after onboarding status is loaded
   useEffect(() => {
     if (isProcessing || onboardingLoading || !onboardingStatus) return
 
-    const redirectTo = searchParams.get("redirect")
+    const redirectTo = safeRelativeRedirect(searchParams.get("redirect"))
+    if (redirectTo?.startsWith("/oauth/")) return // handled above
     const skipOnboarding = searchParams.get("skipOnboarding") === "true"
     const isInviteRedirect = !!redirectTo && redirectTo.startsWith("/invite/")
     
+    // GitHub verification round-trip (e.g. claiming a repository on /r/…):
+    // only proving GitHub access, so existing admins/helpers keep their role
+    // and organization; others are set up like support users without
+    // overriding a role they already chose.
+    if (skipOnboarding && redirectTo && searchParams.get("githubVerify") === "1") {
+      if (!onboardingStatus.isMember) {
+        void ensureUserOrganization("support")
+        if (typeof window !== "undefined" && !localStorage.getItem("userRole")) {
+          localStorage.setItem("userRole", "user")
+        }
+      }
+      router.push(redirectTo)
+      return
+    }
+
     // Support users (signing in from support chat) skip onboarding - they don't need an organization
     // Set their role to "user" by default as they are users of support
     if (skipOnboarding && redirectTo) {

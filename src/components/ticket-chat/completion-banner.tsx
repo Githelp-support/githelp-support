@@ -62,11 +62,26 @@ function Strip({
  * helper's proposal (customer view) or the helper's own proposal. Tickets an
  * AI agent answers (pricing_mode = fixed_answer) are only finished here.
  */
+/** A helper's or agent's proposal the customer leaves unanswered is accepted after this many days. */
+export const COMPLETION_AUTO_ACCEPT_DAYS = 3
+
+/** When an open helper/agent proposal is accepted automatically, formatted for display; null if unknown. */
+export function completionAutoAcceptDate(proposedAt: string | null | undefined): string | null {
+  if (!proposedAt) return null
+  const proposed = Date.parse(proposedAt)
+  if (Number.isNaN(proposed)) return null
+  // Same clock as the server (completion-auto-accept-tick): exactly 72 h later,
+  // not "3 calendar days" (which drifts an hour across DST changes).
+  const at = new Date(proposed + COMPLETION_AUTO_ACCEPT_DAYS * 24 * 3600_000)
+  return at.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+}
+
 export function CompletionBanner({
   ticket,
   currentUserId,
   role,
   paymentStatus,
+  canPropose = true,
   className,
 }: {
   ticket: CompletionTicket
@@ -74,6 +89,12 @@ export function CompletionBanner({
   role: "customer" | "helper"
   /** useTicketPaymentStatus().status — gates accepting a paid agent answer. */
   paymentStatus?: string | null
+  /**
+   * Helper view: whether this person takes part in the handshake (the
+   * claiming helper or a project admin). Others only watch — the server
+   * refuses them with not_a_party_to_this_ticket.
+   */
+  canPropose?: boolean
   className?: string
 }) {
   const completion = useTicketCompletion()
@@ -90,7 +111,11 @@ export function CompletionBanner({
   const paidAgentAnswer = fixed && (ticket.fixed_price_smallest_unit ?? 0) > 0
   // The server refuses to complete a ticket whose payment isn't secured
   // (payment_not_authorized); mirror that so Accept isn't a dead end.
-  const PAYMENT_OK = ["authorized", "free", "sla_covered", "distributing", "completed"]
+  // "free" comes from the project's (human) prices; it says nothing about a
+  // paid agent answer, which always needs its own hold.
+  const PAYMENT_OK = paidAgentAnswer
+    ? ["authorized", "sla_covered", "distributing", "completed"]
+    : ["authorized", "free", "sla_covered", "distributing", "completed"]
   const holdMissing =
     paymentStatus != null &&
     !(fixed && !paidAgentAnswer) &&
@@ -100,6 +125,10 @@ export function CompletionBanner({
       ? "customer"
       : "helper"
     : null
+  // Only a helper's/agent's proposal is auto-accepted (the customer stays
+  // silent), and only once payment is secured — otherwise the server skips it.
+  const autoAcceptOn =
+    proposerSide === "helper" && !holdMissing ? completionAutoAcceptDate(ticket.completion_proposed_at) : null
 
   const run = async (input: Parameters<typeof completion.mutateAsync>[0], success: string) => {
     try {
@@ -186,6 +215,8 @@ export function CompletionBanner({
       )
     ) : null
 
+  if (role === "helper" && !canPropose && proposerSide !== role) return null
+
   // The other side proposed: accept or decline.
   if (proposerSide && proposerSide !== role) {
     if (role === "helper" && !fixed) return null // covered by the End session request banner
@@ -232,6 +263,11 @@ export function CompletionBanner({
             </Button>
           </div>
         )}
+        {role === "customer" && autoAcceptOn && mode !== "decline" && (
+          <p className="mt-1 text-xs text-muted-foreground" data-testid="auto-accept-notice">
+            If you don&apos;t respond, this is accepted automatically on {autoAcceptOn}.
+          </p>
+        )}
         {role === "customer" && holdMissing && mode !== "decline" && (
           <p className="mt-1 text-xs text-muted-foreground">
             Add a payment method first — use the payment prompt in the chat. You are only charged when you accept.
@@ -251,16 +287,24 @@ export function CompletionBanner({
           Waiting for {role === "customer" ? "the AI agent" : "the customer"} to confirm the ticket is resolved.
         </p>
         <p className="text-muted-foreground">You can keep writing in the chat meanwhile.</p>
+        {role === "helper" && autoAcceptOn && (
+          <p className="text-xs text-muted-foreground" data-testid="auto-accept-notice">
+            Auto-accepted on {autoAcceptOn} if the customer doesn&apos;t respond.
+          </p>
+        )}
         <div className="mt-1 flex flex-wrap items-center gap-3">
-          <Button
-            variant="link"
-            size="sm"
-            className="px-0 h-auto cursor-pointer"
-            disabled={completion.isPending}
-            onClick={() => run({ action: "withdraw", ticket_id: ticket.id }, "Proposal withdrawn")}
-          >
-            Withdraw
-          </Button>
+          {/* Only whoever proposed can take it back (the server refuses others). */}
+          {ticket.completion_proposed_by === currentUserId && (
+            <Button
+              variant="link"
+              size="sm"
+              className="px-0 h-auto cursor-pointer"
+              disabled={completion.isPending}
+              onClick={() => run({ action: "withdraw", ticket_id: ticket.id }, "Proposal withdrawn")}
+            >
+              Withdraw
+            </Button>
+          )}
           {escalateAction}
         </div>
       </Strip>

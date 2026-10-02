@@ -15,6 +15,8 @@ vi.mock("@/contexts/user-context", () => ({
 
 // Render Next links as plain anchors — the sidebar tests only assert on
 // hrefs/labels, not navigation behavior.
+vi.mock("@/hooks/useStaff", () => ({ useIsStaff: () => false }))
+
 vi.mock("next/link", () => ({
   default: ({
     href,

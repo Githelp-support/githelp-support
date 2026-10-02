@@ -107,6 +107,8 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         .from("projects_helpers")
         .select("helper_id, user_id, user:users_public(name)")
         .eq("project_id", sla!.project_id)
+        // AI agents never work SLA tickets.
+        .or("category.is.null,category.neq.agent")
       if (error) throw error
       // Supabase returns user as array when using foreign tables
       return ((data ?? []) as any[]).map((h) => ({

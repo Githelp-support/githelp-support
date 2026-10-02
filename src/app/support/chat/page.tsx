@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { CompletionBanner } from "@/components/ticket-chat/completion-banner"
+import { AgentOptIn } from "@/components/ticket-chat/agent-opt-in"
 import { Input } from "@/components/ui/input"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
@@ -46,6 +47,8 @@ import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typesc
 import python from "react-syntax-highlighter/dist/esm/languages/prism/python"
 import { prepareOutgoingMessage } from "@/lib/code-format"
 import { stripTicketAttachments } from "@/lib/ticket-attachments"
+import { UnclaimedProjectNotice } from "@/components/unlisted/unclaimed-project-notice"
+import { useProjectUnclaimed } from "@/hooks/useUnlisted"
 
 interface Person {
   name: string
@@ -118,6 +121,7 @@ export default function UserSupportChatPage() {
 
   const { data: existingTicket, isLoading: existingTicketLoading } = useTicketWithDetails(ticketIdParam || undefined)
   const projectIdFromTicket = existingTicket?.project_id
+  const { data: projectUnclaimed } = useProjectUnclaimed(existingTicket?.project_id)
   const projectId = projectIdParam || projectIdFromTicket
   const { data: projectById } = useProject(projectId || "")
   const { data: projectBySlug } = useProjectBySlug(slugParam || "")
@@ -363,6 +367,7 @@ export default function UserSupportChatPage() {
         buildSessionEndedMessage({
           cancelled,
           agentAnswer: existingTicket?.pricing_mode === "fixed_answer",
+          autoAccepted: list.some((m) => m.paymentMetadata?.kind === "completion_auto_accepted"),
           totalLoggedFormatted,
           chargedLine: describeChargedLine({
             cancelled,
@@ -726,14 +731,19 @@ export default function UserSupportChatPage() {
         agentAnswerPriceSmallestUnit={
           existingTicket?.pricing_mode === "fixed_answer" ? existingTicket.fixed_price_smallest_unit ?? 0 : null
         }
+        independentHelpers={projectUnclaimed === true}
         aboveInput={
           existingTicket?.id && user?.id && existingTicket.created_by === user.id ? (
-            <CompletionBanner
-              ticket={existingTicket}
-              currentUserId={user.id}
-              role="customer"
-              paymentStatus={paymentStatus.status}
-            />
+            <>
+              <UnclaimedProjectNotice projectId={existingTicket.project_id} />
+              <AgentOptIn ticket={existingTicket} />
+              <CompletionBanner
+                ticket={existingTicket}
+                currentUserId={user.id}
+                role="customer"
+                paymentStatus={paymentStatus.status}
+              />
+            </>
           ) : undefined
         }
         rightSidebarFooter={

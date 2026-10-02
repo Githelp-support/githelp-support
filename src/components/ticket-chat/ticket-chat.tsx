@@ -57,6 +57,7 @@ export type SystemMessageKind =
   | "agent_released"
   | "escalated_to_human"
   | "completion_withdrawn"
+  | "completion_auto_accepted"
 
 /**
  * Messages posted through the GitHelp API (MCP) carry `metadata.via = "api"`;
@@ -182,6 +183,11 @@ export interface TicketChatProps {
    * price instead of time-based billing.
    */
   agentAnswerPriceSmallestUnit?: number | null
+  /**
+   * The project isn't run by its maintainers yet (unclaimed): label helper
+   * messages "Independent helper" so customers know they aren't the team.
+   */
+  independentHelpers?: boolean
 }
 
 export function TicketChat(props: TicketChatProps) {
@@ -215,6 +221,7 @@ export function TicketChat(props: TicketChatProps) {
     paymentCtaLoading,
     aboveInput,
     agentAnswerPriceSmallestUnit,
+    independentHelpers,
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
@@ -396,6 +403,11 @@ export function TicketChat(props: TicketChatProps) {
                                     {apiSenderBadge(msg) && (
                                       <Badge variant="secondary" className="text-[11px] font-normal px-1.5 py-0">
                                         {apiSenderBadge(msg)}
+                                      </Badge>
+                                    )}
+                                    {independentHelpers && msg.senderType === "helper" && !apiSenderBadge(msg) && (
+                                      <Badge variant="outline" className="text-[11px] font-normal px-1.5 py-0">
+                                        Independent helper
                                       </Badge>
                                     )}
                                     <span

@@ -208,13 +208,16 @@ export type Database = {
                     sla_id: string | null;
                     success: boolean;
                     // Written server-side only (MCP / public API, agent pricing, completion handshake).
-                    source?: "web" | "api";
-                    api_context?: Record<string, unknown> | null;
-                    pricing_mode?: "time" | "fixed_answer";
-                    fixed_price_smallest_unit?: number | null;
-                    completion_proposed_by?: string | null;
-                    completion_proposed_at?: string | null;
-                    completion_summary?: string | null;
+                    source: "web" | "api";
+                    created_via_key_id: string | null;
+                    api_context: Record<string, unknown>;
+                    pricing_mode: "time" | "fixed_answer";
+                    fixed_price_smallest_unit: number | null;
+                    completion_proposed_by: string | null;
+                    completion_proposed_at: string | null;
+                    completion_summary: string | null;
+                    completion_reminded_at: string | null;
+                    capture_lock_until: string | null;
                 };
                 Insert: Partial<{
                     id: string;

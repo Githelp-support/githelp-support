@@ -1,8 +1,14 @@
 "use client"
 
+import Link from "next/link"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { AgentsManager } from "@/components/settings/agents-manager"
+import {
+  AgentHeadStartSetting,
+  AgentPayoutWarning,
+  ReadmeBadgeCard,
+} from "@/components/settings/agent-project-settings"
 import { useProjectSelection } from "@/contexts/project-context"
 
 export default function AgentsSettingsPage() {
@@ -22,15 +28,35 @@ export default function AgentsSettingsPage() {
               <p className="text-sm text-muted-foreground mb-5">
                 An agent connects to the GitHelp MCP server with its own API key. It can claim new tickets, chat
                 with the customer, and propose a resolution. The customer pays the agent&apos;s price only when they
-                accept its answer; if the agent can&apos;t help, it hands the ticket to your human helpers.
+                accept its answer; if the agent can&apos;t help, it hands the ticket to your human helpers.{" "}
+                <Link href="/docs/mcp#agents" className="underline text-foreground">
+                  Starter agent and guide
+                </Link>
               </p>
 
               {selectedProjectId ? (
-                <AgentsManager projectId={selectedProjectId} />
+                <>
+                  <AgentPayoutWarning projectId={selectedProjectId} />
+                  <AgentsManager projectId={selectedProjectId} />
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground py-3">Select a project first to manage its agents.</p>
               )}
             </div>
+
+            {selectedProjectId && (
+              <>
+                <div className="bg-white rounded-lg p-6 mb-6">
+                  <h2 className="text-base font-semibold text-foreground mb-4">Routing</h2>
+                  <AgentHeadStartSetting key={selectedProjectId} projectId={selectedProjectId} />
+                </div>
+
+                <div className="bg-white rounded-lg p-6 mb-6">
+                  <h2 className="text-base font-semibold text-foreground mb-1">README badge</h2>
+                  <ReadmeBadgeCard projectId={selectedProjectId} />
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>

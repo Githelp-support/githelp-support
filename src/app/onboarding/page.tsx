@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useCreateProject, useListUserGithubRepos, useCreateProjectFromGitHub, useCreateSandboxProject, useHasSandbox } from "@/hooks/useProject"
+import { ClaimableProjectError, useCreateProject, useListUserGithubRepos, useCreateProjectFromGitHub, useCreateSandboxProject, useHasSandbox } from "@/hooks/useProject"
 import { useCompleteOnboarding, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { useEnterProject } from "@/hooks/useEnterProject"
 import { homeRouteForRole } from "@/lib/roles"
@@ -163,6 +163,12 @@ export default function OnboardingPage() {
             toast.success("Project imported from GitHub successfully!")
             router.push(`/projects/${result.project.project_id}/invite-contributors?repo=${encodeURIComponent(repo.full_name)}`)
         } catch (error: unknown) {
+            if (error instanceof ClaimableProjectError) {
+                // GitHelp already runs this repo for its users: take it over.
+                toast.info("People already asked for support with this repository — claim the project to take it over.")
+                router.push(`${error.claimUrl}?claim=1`)
+                return
+            }
             console.error("Failed to import project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to import project. Please try again.")
             // Only reset on failure — on success we navigate away, and

@@ -206,6 +206,8 @@ export function buildSessionEndedMessage(opts: {
     chargedLine: string;
     /** Answered by a project AI agent at a fixed price (tickets.pricing_mode = fixed_answer). */
     agentAnswer?: boolean;
+    /** Completed by the server after the customer didn't answer a resolution for 3 days. */
+    autoAccepted?: boolean;
 }): TicketChatMessage {
     if (opts.agentAnswer && !opts.cancelled) {
         return {
@@ -218,7 +220,9 @@ export function buildSessionEndedMessage(opts: {
             content: [
                 "**Ticket completed**",
                 "",
-                "You accepted the AI agent's answer.",
+                opts.autoAccepted
+                    ? "The AI agent's answer was accepted automatically after 3 days without a response."
+                    : "You accepted the AI agent's answer.",
                 "",
                 "- **Outcome:** Resolved",
                 `- **Amount charged:** ${opts.chargedLine}`,
@@ -237,7 +241,9 @@ export function buildSessionEndedMessage(opts: {
         content: [
             "**Session ended**",
             "",
-            `The helper has ended this session — ${opts.cancelled ? "they were not able to help" : "marked as resolved"}.`,
+            opts.autoAccepted && !opts.cancelled
+                ? "The helper's resolution was accepted automatically after 3 days without a response."
+                : `The helper has ended this session — ${opts.cancelled ? "they were not able to help" : "marked as resolved"}.`,
             "",
             `- **Outcome:** ${opts.cancelled ? "Not able to help" : "Resolved"}`,
             `- **Time logged:** ${opts.totalLoggedFormatted}`,

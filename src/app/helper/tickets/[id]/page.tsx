@@ -52,6 +52,7 @@ import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
+import { useTicketCompletion } from "@/hooks/useApiAccess"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
@@ -152,6 +153,7 @@ export default function TicketDetailPage() {
   const { data: project } = useProject(projectId)
   const { data: projectRole } = useProjectRole(projectId || undefined)
   const isAdmin = projectRole === "admin"
+  const completion = useTicketCompletion()
   const addSelfAsHelper = useAddSelfAsHelper()
 
   // Active tickets sidebar — Admins see every `claimed`/`in-progress` ticket
@@ -483,19 +485,13 @@ export default function TicketDetailPage() {
     }
 
     try {
-      // Claim the ticket (add/update participant with claimed=true)
+      // Atomic on the server: only if the ticket is still available (another
+      // helper or the project's AI agent may have taken it a moment ago), or
+      // already this helper's. This also places the payment hold.
       await claimTicket.mutateAsync({
         ticketId,
         participantId: currentUser.id,
       })
-
-      // Update ticket status to "claimed" if it's currently "available"
-      if (ticket?.status === "available") {
-        await updateTicket.mutateAsync({
-          id: ticketId,
-          updates: { status: "claimed" },
-        })
-      }
 
       // Log claimed event in tickets_events
       await supabase.from("tickets_events").insert({
@@ -507,6 +503,7 @@ export default function TicketDetailPage() {
       setJustClaimedLocal(true)
     } catch (error) {
       console.error("Failed to claim ticket:", error)
+      toast.error(error instanceof Error ? error.message : "Could not claim the ticket.")
     }
   }
 
@@ -519,8 +516,16 @@ export default function TicketDetailPage() {
     if (!ticketId) return
     // The customer may have completed the ticket meanwhile (completion
     // handshake), or it is an AI agent's ticket: never overwrite or re-capture.
-    if (isFixedAnswer || (ticket?.status !== "claimed" && ticket?.status !== "in-progress")) {
-      toast.info("This ticket is already closed.")
+    if (isFixedAnswer) {
+      toast.info("The AI agent's ticket is finished when the customer accepts its answer.")
+      return
+    }
+    if (ticket?.status === "available") {
+      toast.info("This ticket hasn't been claimed yet.")
+      return
+    }
+    if (ticket?.status !== "claimed" && ticket?.status !== "in-progress") {
+      toast.info(`This ticket is already ${ticket?.status === "cancelled" ? "closed" : "completed"}.`)
       return
     }
 
@@ -1066,14 +1071,51 @@ export default function TicketDetailPage() {
             )}
 
             {ticket && !isTicketEnded && (
-              <CompletionBanner ticket={ticket} currentUserId={currentUser?.id} role="helper" />
+              <CompletionBanner
+                ticket={ticket}
+                currentUserId={currentUser?.id}
+                role="helper"
+                paymentStatus={paymentGate.status}
+                // Only the claiming helper or a project admin takes part in the
+                // handshake (the server refuses anyone else).
+                canPropose={
+                  isAdmin ||
+                  !!(participants && currentUser?.id &&
+                    participants.some((p) => p.participant_id === currentUser.id && p.claimed === true))
+                }
+              />
             )}
 
             {isFixedAnswer && !isTicketEnded && (
-              <p className="mx-4 mb-2 text-xs text-muted-foreground">
-                The project&apos;s AI agent is answering this ticket at a fixed price. It is completed when the customer
-                accepts the answer, so End session is not available here.
-              </p>
+              <div className="mx-4 mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  The project&apos;s AI agent is answering this ticket at a fixed price. It is completed when the
+                  customer accepts the answer, so End session is not available here.
+                </p>
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="cursor-pointer"
+                    disabled={completion.isPending}
+                    onClick={async () => {
+                      if (
+                        !window.confirm(
+                          "Take this ticket over from the AI agent? You become the helper on it and continue the conversation; the agent stops answering, its fixed-price hold is released and the ticket switches to normal time-based billing.",
+                        )
+                      ) return
+                      try {
+                        await completion.mutateAsync({ action: "take_over", ticket_id: ticketId })
+                        toast.success("You've taken over this ticket — it's now billed by time")
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : "Could not take over the ticket")
+                      }
+                    }}
+                  >
+                    Take over from AI agent
+                  </Button>
+                )}
+              </div>
             )}
 
             {endRequested && !isFixedAnswer && (
@@ -1106,11 +1148,13 @@ export default function TicketDetailPage() {
               onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
               imagesUploading={imagesUploading}
               toolbarEndContent={
-                !isClaimed && ticket?.status === "available" ? (
+                // Nothing until the ticket has loaded, so a stale "End session"
+                // can't flash for a ticket that is still available.
+                !ticket ? undefined : !isClaimed && ticket.status === "available" ? (
                   <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
                     Claim ticket
                   </Button>
-                ) : !isTicketEnded && !isFixedAnswer ? (
+                ) : isClaimed && !isTicketEnded && !isFixedAnswer ? (
                   <Button
                     variant="ghost"
                     size="sm"

@@ -704,6 +704,9 @@ export default function ReportsSupportPage() {
                               <span className="text-sm font-medium text-foreground">—</span>
                             )}
                             <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
+                              {row.agentAnswer && (
+                                <Badge variant="outline" className="mr-1 text-[10px] px-1.5 py-0">AI agent</Badge>
+                              )}
                               {row.ticketTitle}
                             </div>
                             <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(row.id)} panelId={panelId} noun="charge" />

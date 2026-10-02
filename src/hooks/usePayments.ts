@@ -20,7 +20,7 @@ export interface Payment {
   captured_amount_smallest_unit?: number | null
   amount_helper_smallest_unit?: number | null
   stripe_payment_intent_id?: string | null
-  ticket?: { id: string; title: string } | null
+  ticket?: { id: string; title: string; pricing_mode?: string | null } | null
   /**
    * Stripe-hosted receipt page for the charge. Ticket charges are plain
    * PaymentIntents (no Stripe Invoice), so this is the document to link the
@@ -71,7 +71,7 @@ export function usePayments(projectId?: string) {
     queryFn: async () => {
       let query = supabase
         .from("payments")
-        .select("*, ticket:tickets(id, title)")
+        .select("*, ticket:tickets(id, title, pricing_mode)")
         .order("created_at", { ascending: false })
 
       if (projectId) {

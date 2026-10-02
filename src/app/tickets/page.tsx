@@ -34,6 +34,8 @@ interface Ticket {
   status: "available" | "claimed" | "in-progress" | "completed"
   priority: "low" | "medium" | "high"
   createdAt: string
+  /** Claimed by the project's AI agent (fixed price per accepted answer). */
+  agentAnswer?: boolean
   estimatedTime?: string
   rate?: string
   messages?: number
@@ -121,6 +123,7 @@ export default function TicketsPage() {
       status: ticket.status as "available" | "claimed" | "in-progress" | "completed",
       priority: ticket.priority as "low" | "medium" | "high",
       createdAt: formatDate(ticket.created_at),
+      agentAnswer: ticket.pricing_mode === "fixed_answer",
       estimatedTime: "30-45 min", // TODO: Calculate from time entries
       rate: `USD ${ratePerMinute}/min`,
       messages: ticket.message_count || 0,
@@ -701,6 +704,9 @@ export default function TicketsPage() {
                           <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
                             {getStatusLabel(ticket.status)}
                           </Badge>
+                          {ticket.agentAnswer && (
+                            <Badge variant="outline" className="ml-1 text-[10px]">AI agent</Badge>
+                          )}
                         </div>
                         <div className="col-span-2 flex items-start justify-between gap-2">
                           <div className="text-sm text-muted-foreground">
@@ -796,6 +802,9 @@ export default function TicketsPage() {
                       <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
                         {getStatusLabel(ticket.status)}
                       </Badge>
+                      {ticket.agentAnswer && (
+                        <Badge variant="outline" className="text-[10px]">AI agent</Badge>
+                      )}
                       {ticket.helper && (
                         <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-white text-xs font-medium shrink-0">
                           {ticket.helper.avatar}

@@ -42,6 +42,8 @@ export interface ProjectTicketIncomeRow {
     ticketId: string | null
     ticketShortId: string
     ticketTitle: string
+    /** Answered by the project's AI agent (fixed price per accepted answer). */
+    agentAnswer: boolean
     /** ISO timestamp: when captured, else when the payment was created. */
     date: string
     /** True once the customer has actually been charged. */
@@ -90,6 +92,7 @@ export function toProjectTicketIncomeRow(payment: Payment, transfers: PaymentTra
         ticketId: payment.ticket_id,
         ticketShortId: payment.ticket_id?.slice(0, 7) || "-",
         ticketTitle: payment.ticket?.title?.trim() || "Untitled ticket",
+        agentAnswer: payment.ticket?.pricing_mode === "fixed_answer",
         date: (captured && payment.completed_at) || payment.created_at,
         captured,
         chargedSmallestUnit: payment.captured_amount_smallest_unit ?? payment.amount_smallest_unit,

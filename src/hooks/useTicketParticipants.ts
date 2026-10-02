@@ -120,11 +120,10 @@ export function useMyParticipatingTicketIds(projectId?: string) {
 
 /**
  * Returns the set of ticket IDs in the given project that are taken by ANOTHER
- * helper — i.e. a `tickets_participants` row exists for a participant who is
- * neither the current user nor the ticket creator (whether they have claimed
- * the ticket or are merely participating in the chat). Used to decide whether
- * a ticket is still "Unclaimed" from the current helper's perspective. Purely
- * derived from existing tables — no backend changes.
+ * helper — i.e. a participant who is neither the current user nor the ticket
+ * creator holds the claim (`claimed = true`). Participants who only chatted,
+ * or an AI agent that handed the ticket back, don't count. Used to decide
+ * whether a ticket is still "Unclaimed" from the current helper's perspective.
  */
 export function useOtherHelperParticipatingTicketIds(projectId?: string) {
     return useQuery({
@@ -154,10 +153,13 @@ export function useOtherHelperParticipatingTicketIds(projectId?: string) {
                 )
             );
 
+            // Only a held claim makes a ticket "taken": an AI agent that
+            // handed a ticket back keeps an unclaimed participant row.
             const { data: rows } = await supabase
                 .from("tickets_participants")
                 .select("ticket_id, participant_id")
-                .in("ticket_id", ids);
+                .in("ticket_id", ids)
+                .eq("claimed", true);
 
             const taken = new Set<string>();
             (rows || []).forEach(
@@ -190,40 +192,26 @@ export function useClaimTicket() {
             ticketId: string;
             participantId: string;
         }) => {
-            // First, check if participant already exists
-            const { data: existing } = await supabase
-                .from("tickets_participants")
-                .select("id")
-                .eq("ticket_id", ticketId)
-                .eq("participant_id", participantId)
-                .single();
-
-            if (existing) {
-                // Update existing participant to set claimed = true
-                const { data, error } = await supabase
-                    .from("tickets_participants")
-                    .update({ claimed: true })
-                    .eq("id", existing.id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                return data;
-            } else {
-                // Insert new participant with claimed = true
-                const { data, error } = await supabase
-                    .from("tickets_participants")
-                    .insert({
-                        ticket_id: ticketId,
-                        participant_id: participantId,
-                        claimed: true,
-                    })
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                return data;
+            // One atomic server step (claim_ticket_as_helper): takes the
+            // ticket only if it is still available — or is already this
+            // helper's — and records the claimer before the status changes.
+            void participantId; // the server claims for the signed-in user
+            const { data, error } = await supabase.rpc("claim_ticket_as_helper", { p_ticket: ticketId });
+            if (error) {
+                const code = error.message?.trim();
+                throw new Error(
+                    code === "ticket_not_available"
+                        ? "Someone else just claimed this ticket."
+                        : code === "ticket_answered_by_agent"
+                        ? "The project's AI agent is answering this ticket."
+                        : code === "customer_waits_for_maintainers"
+                        ? "The customer asked to wait for the project's maintainers."
+                        : code === "not_a_helper_of_this_project"
+                        ? "Only this project's helpers can claim its tickets."
+                        : error.message || "Could not claim the ticket.",
+                );
             }
+            return data as { ticket_id: string; already_claimed: boolean };
         },
         onSuccess: async (data, variables) => {
             // Refresh participants (cancel-then-invalidate, see helper)

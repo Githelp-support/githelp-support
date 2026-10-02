@@ -21,6 +21,15 @@ export const NOTIFICATION_TYPES = [
     "SUPPORT_TICKET",
     "TICKET_MESSAGE",
     "PAYMENT_REQUIRED",
+    "COMPLETION_PROPOSED",
+    "COMPLETION_DECLINED",
+    "COMPLETION_REMINDER",
+    "TICKET_AVAILABLE",
+    "PROJECT_LISTED",
+    "AGENT_ANSWER_DECLINED",
+    "AGENT_ESCALATED",
+    "HELPER_APPLICATION_APPROVED",
+    "HELPER_APPLICATION_REJECTED",
     "INFO",
 ] as const;
 
@@ -34,6 +43,23 @@ export function notificationType(notification: Notification): NotificationType {
     return NOTIFICATION_TYPES.includes(type as NotificationType)
         ? (type as NotificationType)
         : "INFO";
+}
+
+const NOTIFICATION_TYPE_LABELS: Partial<Record<NotificationType, string>> = {
+    COMPLETION_PROPOSED: "Resolved?",
+    COMPLETION_DECLINED: "Not resolved",
+    COMPLETION_REMINDER: "Reminder",
+    TICKET_AVAILABLE: "Ticket available",
+    PROJECT_LISTED: "Support available",
+    AGENT_ANSWER_DECLINED: "Agent answer declined",
+    AGENT_ESCALATED: "Human requested",
+    HELPER_APPLICATION_APPROVED: "Application approved",
+    HELPER_APPLICATION_REJECTED: "Application",
+};
+
+/** Short label shown above a notification ("SUPPORT TICKET", "RESOLVED?", …). */
+export function notificationTypeLabel(type: NotificationType): string {
+    return NOTIFICATION_TYPE_LABELS[type] ?? type.replace(/_/g, " ");
 }
 
 export function useNotifications() {

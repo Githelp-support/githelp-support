@@ -7,6 +7,7 @@ import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
+import { usePublicProjectAgents } from "@/hooks/useApiAccess"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
@@ -15,6 +16,7 @@ import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { CompletionBanner } from "@/components/ticket-chat/completion-banner"
+import { AgentOptIn } from "@/components/ticket-chat/agent-opt-in"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
   buildCustomerThreadMessages,
@@ -41,6 +43,8 @@ import { stripTicketAttachments } from "@/lib/ticket-attachments"
 import { RatesAndDetailsContent } from "@/components/support/rates-and-details-content"
 import { ResourcesContent } from "@/components/support/resources-content"
 import { AboutSupportContent } from "@/components/support/about-support-content"
+import { UnclaimedProjectNotice } from "@/components/unlisted/unclaimed-project-notice"
+import { useProjectUnclaimed } from "@/hooks/useUnlisted"
 
 type TabKey = "get-support" | "rates" | "resources" | "about"
 
@@ -91,6 +95,7 @@ export default function SupportPage() {
   const { data: brandingData } = useProjectBranding(projectId || "")
   const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
   const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(projectId || "")
+  const { data: publicAgents = [] } = usePublicProjectAgents(projectId || null)
 
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
@@ -117,6 +122,7 @@ export default function SupportPage() {
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
   const { data: liveTicket } = useTicket(ticketId)
+  const { data: projectUnclaimed } = useProjectUnclaimed(liveTicket?.project_id)
 
   const isAuthenticated = !!user?.id
 
@@ -206,6 +212,7 @@ export default function SupportPage() {
         buildSessionEndedMessage({
           cancelled,
           agentAnswer: liveTicket?.pricing_mode === "fixed_answer",
+          autoAccepted: list.some((m) => m.paymentMetadata?.kind === "completion_auto_accepted"),
           totalLoggedFormatted,
           chargedLine: describeChargedLine({
             cancelled,
@@ -543,14 +550,19 @@ export default function SupportPage() {
             agentAnswerPriceSmallestUnit={
               liveTicket?.pricing_mode === "fixed_answer" ? liveTicket.fixed_price_smallest_unit ?? 0 : null
             }
+            independentHelpers={projectUnclaimed === true}
             aboveInput={
               liveTicket?.id && user?.id && liveTicket.created_by === user.id ? (
-                <CompletionBanner
-                  ticket={liveTicket}
-                  currentUserId={user.id}
-                  role="customer"
-                  paymentStatus={paymentStatus.status}
-                />
+                <>
+                  <UnclaimedProjectNotice projectId={liveTicket.project_id} />
+                  <AgentOptIn ticket={liveTicket} />
+                  <CompletionBanner
+                    ticket={liveTicket}
+                    currentUserId={user.id}
+                    role="customer"
+                    paymentStatus={paymentStatus.status}
+                  />
+                </>
               ) : undefined
             }
             rightSidebarFooter={
@@ -589,6 +601,7 @@ export default function SupportPage() {
                   after60Price={after60Price}
                   avgResponseSeconds={avgResponseSeconds}
                   avgResponseLoading={avgResponseLoading}
+                  agents={publicAgents}
                 />
               )}
 

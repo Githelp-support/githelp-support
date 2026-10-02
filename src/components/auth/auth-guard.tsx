@@ -11,8 +11,12 @@ interface AuthGuardProps {
   children: React.ReactNode
 }
 
-// Routes that should skip onboarding check
-const SKIP_ONBOARDING_ROUTES = ["/onboarding", "/auth", "/support", "/projects", "/invite"]
+// Routes that should skip onboarding check. "/user" holds a customer's own
+// pages (payment method, API & AI connections, reports): customers who only
+// get support are never project members and must still reach them.
+// /user: personal pages (payment, API keys, requests, helper applications);
+// /staff: GitHelp staff who aren't on any project team.
+const SKIP_ONBOARDING_ROUTES = ["/onboarding", "/auth", "/support", "/projects", "/invite", "/user", "/staff"]
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter()

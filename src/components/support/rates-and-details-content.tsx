@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Clock, Target, HelpCircle } from "lucide-react"
+import { Bot, Clock, Target, HelpCircle } from "lucide-react"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { formatDuration } from "@/lib/format"
 
@@ -16,6 +16,12 @@ interface RatesAndDetailsContentProps {
   /** From useProjectAverageResponseTime; `null` when no ticket has had a response yet. */
   avgResponseSeconds: number | null | undefined
   avgResponseLoading: boolean
+  /** The project's enabled AI agents (get_project_public_agents); hidden when empty. */
+  agents?: Array<{ id: string; name: string; description: string | null; price_per_answer_smallest_unit: number }>
+}
+
+function formatAgentPrice(cents: number): string {
+  return cents <= 0 ? "Free" : `$${(cents / 100).toFixed(2)}`
 }
 
 /**
@@ -30,6 +36,7 @@ export function RatesAndDetailsContent({
   after60Price,
   avgResponseSeconds,
   avgResponseLoading,
+  agents = [],
 }: RatesAndDetailsContentProps) {
   return (
     <div className="space-y-12">
@@ -84,6 +91,31 @@ export function RatesAndDetailsContent({
             </div>
           </div>
         </div>
+
+        {agents.length > 0 && (
+          <div className="mb-12" data-testid="ai-agent-rates">
+            <h3 className="text-[16px] font-semibold text-[#444444] mb-4">AI agent answers</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-[18px]">
+              {agents.map((agent) => (
+                <div key={agent.id} className="bg-white rounded-lg p-6 shadow-none border border-[#E1E1E1]">
+                  <Bot className="h-5 w-5 text-[#444444] mb-2" />
+                  <div className="flex items-baseline justify-between gap-3 mb-2">
+                    <h4 className="text-[14px] font-semibold text-[#444444]">{agent.name}</h4>
+                    <span className="text-lg font-semibold text-[#2d2a49] whitespace-nowrap">
+                      {formatAgentPrice(agent.price_per_answer_smallest_unit)}
+                    </span>
+                  </div>
+                  {agent.description && <p className="text-sm text-[#868c98] mb-2">{agent.description}</p>}
+                  <p className="text-sm text-[#868c98]">
+                    {agent.price_per_answer_smallest_unit > 0
+                      ? "Per accepted answer — you only pay if you accept it. If it can't help, the ticket goes to a human helper."
+                      : "Free AI answers. If it can't help, the ticket goes to a human helper."}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Info cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-[18px] mb-8">

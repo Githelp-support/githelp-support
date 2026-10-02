@@ -76,7 +76,8 @@ function HelpersSortIcon({ field, sortField, sortDirection }: { field: SortField
 const mapCategoryToLabel = {
   core: "Core team",
   extended: "Extended team",
-  community: "Community"
+  community: "Community",
+  agent: "AI agent",
 }
 
 export default function HelpersPage() {
@@ -121,7 +122,8 @@ export default function HelpersPage() {
   // Transform helpers data to match UI format
   const helpers = useMemo(() => {
     if (!helpersData) return []
-    return helpersData.map((helper) => ({
+    // AI agents are managed on Settings → AI agents, not listed as people.
+    return helpersData.filter((helper) => (helper.category as string | null) !== "agent").map((helper) => ({
       id: helper.helper_id,
       // Must match the helper profile page (/helpers/[id]) so avatar colors are consistent
       avatarId: helper.user_id ?? helper.helper_id,

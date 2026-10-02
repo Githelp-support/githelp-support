@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement } from "react";
 
-const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
+const { invoke, rpc } = vi.hoisted(() => ({ invoke: vi.fn(), rpc: vi.fn() }));
 vi.mock("@/lib/supabase/client", () => ({
     supabase: {
         from: vi.fn(() => ({
@@ -23,6 +23,7 @@ vi.mock("@/lib/supabase/client", () => ({
             })),
         })),
         functions: { invoke },
+        rpc,
     },
 }));
 
@@ -38,7 +39,11 @@ function makeWrapper() {
 }
 
 describe("useClaimTicket", () => {
-    beforeEach(() => invoke.mockReset());
+    beforeEach(() => {
+        invoke.mockReset();
+        rpc.mockReset();
+        rpc.mockResolvedValue({ data: { ticket_id: "t", already_claimed: false }, error: null });
+    });
 
     it("invokes payments-authorize-on-claim after the claim row commits", async () => {
         invoke.mockResolvedValueOnce({ data: { status: "authorized" }, error: null });
@@ -50,6 +55,21 @@ describe("useClaimTicket", () => {
                 { body: { ticket_id: "ticket-1" } },
             ),
         );
+    });
+
+    it("claims atomically on the server", async () => {
+        invoke.mockResolvedValueOnce({ data: { status: "authorized" }, error: null });
+        const { result } = renderHook(() => useClaimTicket(), { wrapper: makeWrapper() });
+        await result.current.mutateAsync({ ticketId: "ticket-3", participantId: "helper-1" });
+        expect(rpc).toHaveBeenCalledWith("claim_ticket_as_helper", { p_ticket: "ticket-3" });
+    });
+
+    it("explains a lost race and doesn't authorize payment", async () => {
+        rpc.mockResolvedValueOnce({ data: null, error: { message: "ticket_not_available" } });
+        const { result } = renderHook(() => useClaimTicket(), { wrapper: makeWrapper() });
+        await expect(result.current.mutateAsync({ ticketId: "ticket-4", participantId: "helper-1" }))
+            .rejects.toThrow("Someone else just claimed this ticket.");
+        expect(invoke).not.toHaveBeenCalled();
     });
 
     it("does not throw when authorize-on-claim fails (claim still succeeds)", async () => {

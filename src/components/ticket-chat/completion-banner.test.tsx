@@ -8,7 +8,7 @@ vi.mock("@/hooks/useApiAccess", () => ({
 }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }))
 
-import { CompletionBanner, type CompletionTicket } from "./completion-banner"
+import { CompletionBanner, completionAutoAcceptDate, type CompletionTicket } from "./completion-banner"
 
 const base: CompletionTicket = {
   id: "t1",
@@ -123,5 +123,85 @@ describe("CompletionBanner", () => {
       <CompletionBanner ticket={{ ...base, status: "completed" }} currentUserId="cust" role="customer" />,
     )
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it("tells the customer when an unanswered helper proposal is accepted automatically", () => {
+    const proposedAt = "2026-10-01T10:00:00Z"
+    render(
+      <CompletionBanner
+        ticket={{ ...base, completion_proposed_by: "agent", completion_proposed_at: proposedAt }}
+        currentUserId="cust"
+        role="customer"
+        paymentStatus="authorized"
+      />,
+    )
+    const notice = screen.getByTestId("auto-accept-notice")
+    expect(notice).toHaveTextContent(`accepted automatically on ${completionAutoAcceptDate(proposedAt)}`)
+  })
+
+  it("doesn't treat free human support as payment for a paid agent answer", () => {
+    render(
+      <CompletionBanner
+        ticket={{ ...base, completion_proposed_by: "agent" }}
+        currentUserId="cust"
+        role="customer"
+        paymentStatus="free"
+      />,
+    )
+    expect(screen.getByRole("button", { name: "Accept answer & pay $25.00" })).toBeDisabled()
+  })
+
+  it("doesn't promise auto-acceptance while the payment isn't secured", () => {
+    render(
+      <CompletionBanner
+        ticket={{ ...base, completion_proposed_by: "agent", completion_proposed_at: "2026-10-01T10:00:00Z" }}
+        currentUserId="cust"
+        role="customer"
+        paymentStatus="payment_required"
+      />,
+    )
+    expect(screen.queryByTestId("auto-accept-notice")).not.toBeInTheDocument()
+  })
+
+  it("gives helpers who aren't party to the ticket no propose control", () => {
+    const { container } = render(
+      <CompletionBanner
+        ticket={{ ...base, pricing_mode: "time", fixed_price_smallest_unit: null }}
+        currentUserId="other-helper"
+        role="helper"
+        canPropose={false}
+      />,
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it("doesn't promise auto-acceptance of the customer's own proposal", () => {
+    render(
+      <CompletionBanner
+        ticket={{ ...base, completion_proposed_by: "cust", completion_proposed_at: "2026-10-01T10:00:00Z" }}
+        currentUserId="cust"
+        role="customer"
+      />,
+    )
+    expect(screen.queryByTestId("auto-accept-notice")).not.toBeInTheDocument()
+  })
+})
+
+describe("completionAutoAcceptDate", () => {
+  it("is exactly 72 hours after the proposal (the server's clock)", () => {
+    const expected = new Date(Date.parse("2026-10-24T12:00:00Z") + 72 * 3600_000).toLocaleString(undefined, {
+      weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+    })
+    // Spans the EU DST change on Oct 25.
+    expect(completionAutoAcceptDate("2026-10-24T12:00:00Z")).toBe(expected)
+  })
+
+  it("is three days after the proposal", () => {
+    const expected = new Date("2026-10-04T10:00:00Z").toLocaleString(undefined, {
+      weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+    })
+    expect(completionAutoAcceptDate("2026-10-01T10:00:00Z")).toBe(expected)
+    expect(completionAutoAcceptDate(null)).toBeNull()
+    expect(completionAutoAcceptDate("not a date")).toBeNull()
   })
 })

@@ -111,7 +111,10 @@ export function useDashboardStats(projectId?: string) {
                 .eq("project_id", projectId);
 
             // Calculate helper stats
-            const helperStats: HelperStats[] = helpers.map((helper) => {
+            // AI agents are shown on Settings → AI agents, not as people.
+            const helperStats: HelperStats[] = helpers
+                .filter((helper) => (helper.category as string | null) !== "agent")
+                .map((helper) => {
                 const helperTimeEntries = timeEntries.filter(
                     (entry) => entry.helper_id === helper.helper_id
                 );

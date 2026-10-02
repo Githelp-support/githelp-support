@@ -21,10 +21,42 @@ import {
   type ProjectAgent,
 } from "@/hooks/useApiAccess"
 
+/** Stripe can't charge less than $0.50, so an agent is free or charges at least that. */
+const MIN_PAID_PRICE_CENTS = 50
+
 function dollarsToCents(value: string): number | null {
   const trimmed = value.trim()
   if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null
-  return Math.round(Number(trimmed) * 100)
+  const cents = Math.round(Number(trimmed) * 100)
+  if (cents > 0 && cents < MIN_PAID_PRICE_CENTS) return null
+  return cents
+}
+
+/** Roughly what the project receives per paid answer after Stripe's card fee (2.9% + $0.30). */
+export function netAfterStripeFees(cents: number): number {
+  if (cents <= 0) return 0
+  return Math.max(0, cents - Math.round(cents * 0.029) - 30)
+}
+
+function NetPriceHint({ price }: { price: string }) {
+  const cents = dollarsToCents(price || "0")
+  if (cents === null || cents === 0) return null
+  return (
+    <p className="text-[11px] text-muted-foreground mt-1">
+      You receive ≈ {formatUsd(netAfterStripeFees(cents))} per answer after Stripe fees.
+    </p>
+  )
+}
+
+/** "online" when the agent called GitHelp in the last 2 minutes, else how long ago. */
+export function lastSeenLabel(iso: string | null | undefined, now = Date.now()): string {
+  if (!iso) return "never connected"
+  const minutes = Math.floor((now - Date.parse(iso)) / 60000)
+  if (minutes < 2) return "online"
+  if (minutes < 60) return `last seen ${minutes} min ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 48) return `last seen ${hours} h ago`
+  return `last seen ${Math.floor(hours / 24)} days ago`
 }
 
 export async function copyToClipboard(text: string) {
@@ -158,7 +190,7 @@ function AgentRow({ agent, projectId }: { agent: ProjectAgent; projectId: string
     }
     const cents = dollarsToCents(price)
     if (cents === null) {
-      toast.error("Enter a price in USD, e.g. 5 or 4.99 (0 for free)")
+      toast.error("Enter a price in USD of at least 0.50, e.g. 5 or 4.99 (0 for free)")
       return
     }
     const concurrent = Number(maxConcurrent)
@@ -185,11 +217,41 @@ function AgentRow({ agent, projectId }: { agent: ProjectAgent; projectId: string
     }
   }
 
+  const handleToggle = (checked: boolean) => {
+    if (
+      !checked &&
+      !window.confirm(
+        `Turn off ${agent.name}? Tickets it is working on are handed to your human helpers, and it can't take those tickets back when you turn it on again.`,
+      )
+    ) return
+    updateAgent.mutate(
+      { agentId: agent.id, enabled: checked },
+      {
+        onSuccess: (result) => {
+          const handed = result?.tickets_handed_over ?? 0
+          toast.success(
+            checked
+              ? `${agent.name} is on`
+              : handed
+              ? `${agent.name} is off — ${handed} open ticket${handed === 1 ? "" : "s"} handed to human helpers`
+              : `${agent.name} is off`,
+          )
+        },
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update the agent"),
+      },
+    )
+  }
+
   const handleDelete = async () => {
-    if (!window.confirm(`Delete ${agent.name}? Its API keys and webhooks stop working.`)) return
+    if (
+      !window.confirm(
+        `Delete ${agent.name}? Its API keys and webhooks stop working, and tickets it is working on are handed to your human helpers.`,
+      )
+    ) return
     try {
-      await deleteAgent.mutateAsync(agent.id)
-      toast.success("Agent deleted")
+      const result = await deleteAgent.mutateAsync(agent.id)
+      const handed = result?.tickets_handed_over ?? 0
+      toast.success(handed ? `Agent deleted — ${handed} open ticket${handed === 1 ? "" : "s"} handed to human helpers` : "Agent deleted")
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not delete the agent")
     }
@@ -209,6 +271,14 @@ function AgentRow({ agent, projectId }: { agent: ProjectAgent; projectId: string
                 : `${formatUsd(agent.price_per_answer_smallest_unit)} per accepted answer`}{" "}
               · up to {agent.max_concurrent_tickets} tickets at once
             </p>
+            <p className="text-xs text-muted-foreground truncate">
+              <span className={lastSeenLabel(agent.last_seen_at) === "online" ? "text-status-success-text" : undefined}>
+                {lastSeenLabel(agent.last_seen_at)}
+              </span>
+              {" · "}
+              {agent.open_tickets ?? 0} open · {agent.accepted_count ?? 0} accepted answers ·{" "}
+              {formatUsd(agent.revenue_smallest_unit ?? 0)} earned (before fees)
+            </p>
           </div>
         </button>
         <div className="flex items-center gap-2 shrink-0">
@@ -216,12 +286,7 @@ function AgentRow({ agent, projectId }: { agent: ProjectAgent; projectId: string
             checked={agent.enabled}
             disabled={updateAgent.isPending}
             aria-label={agent.enabled ? "Disable agent" : "Enable agent"}
-            onCheckedChange={(checked) =>
-              updateAgent.mutate(
-                { agentId: agent.id, enabled: checked },
-                { onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update the agent") },
-              )
-            }
+            onCheckedChange={handleToggle}
           />
           <Button variant="ghost" size="sm" onClick={handleDelete} disabled={deleteAgent.isPending}>
             <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -240,6 +305,7 @@ function AgentRow({ agent, projectId }: { agent: ProjectAgent; projectId: string
               <div>
                 <Label className="text-xs mb-1 block">Price per accepted answer (USD)</Label>
                 <Input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" />
+                <NetPriceHint price={price} />
               </div>
             </div>
             <div>
@@ -294,7 +360,7 @@ export function AgentsManager({ projectId }: { projectId: string }) {
     }
     const cents = dollarsToCents(price || "0")
     if (cents === null) {
-      toast.error("Enter a price in USD, e.g. 5 or 4.99 (0 for free)")
+      toast.error("Enter a price in USD of at least 0.50, e.g. 5 or 4.99 (0 for free)")
       return
     }
     const concurrent = Number(maxConcurrent)
@@ -347,6 +413,7 @@ export function AgentsManager({ projectId }: { projectId: string }) {
             <div>
               <Label className="text-xs mb-1 block">Price per accepted answer (USD)</Label>
               <Input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0 = free" inputMode="decimal" />
+              <NetPriceHint price={price} />
             </div>
           </div>
           <div>

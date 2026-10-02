@@ -7,6 +7,7 @@ import { useProject, useProjectBySlug, useProjectPaymentSettings } from "@/hooks
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
+import { usePublicProjectAgents } from "@/hooks/useApiAccess"
 import { RatesAndDetailsContent } from "@/components/support/rates-and-details-content"
 
 export default function UserSupportRatesPage() {
@@ -38,6 +39,7 @@ export default function UserSupportRatesPage() {
   // Format payment values (convert cents to dollars)
   const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
   const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(effectiveProjectId)
+  const { data: publicAgents = [] } = usePublicProjectAgents(effectiveProjectId || null)
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
@@ -56,6 +58,7 @@ export default function UserSupportRatesPage() {
               after60Price={after60Price}
               avgResponseSeconds={avgResponseSeconds}
               avgResponseLoading={avgResponseLoading}
+              agents={publicAgents}
             />
           </div>
         </main>

@@ -21,7 +21,8 @@ const PROTECTED_ROUTES = [
 ]
 
 // Routes that should NOT be protected (support pages, onboarding, public project pages)
-const PUBLIC_ROUTES = ["/support", "/auth", "/onboarding", "/projects", "/invite"]
+// "/r/" keeps its slash: the repository demand pages, not /reports.
+const PUBLIC_ROUTES = ["/support", "/auth", "/onboarding", "/projects", "/invite", "/oauth", "/docs", "/r/"]
 
 export function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const pathname = usePathname()

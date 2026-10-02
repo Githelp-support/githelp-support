@@ -638,6 +638,18 @@ export function useListContributedProjects(providerToken: string | null) {
     });
 }
 
+/**
+ * The repository already has an unclaimed project on GitHelp (people asked
+ * for support before the maintainers joined): the maintainer claims it at
+ * `claimUrl` instead of creating a second project.
+ */
+export class ClaimableProjectError extends Error {
+    constructor(message: string, public readonly claimUrl: string) {
+        super(message);
+        this.name = "ClaimableProjectError";
+    }
+}
+
 export function useCreateProjectFromGitHub() {
     const queryClient = useQueryClient();
 
@@ -650,7 +662,16 @@ export function useCreateProjectFromGitHub() {
                 "create-project-from-github",
                 { body: payload }
             );
-            if (error) throw error;
+            if (error) {
+                const body = await (error as { context?: { json?: () => Promise<unknown> } }).context?.json?.().catch(() => null) as
+                    | { error?: string; code?: string; claim_url?: string }
+                    | null
+                    | undefined;
+                if (body?.code === "claimable" && body.claim_url) {
+                    throw new ClaimableProjectError(body.error ?? "This repository can be claimed.", body.claim_url);
+                }
+                throw new Error(body?.error || error.message || "Failed to create project from GitHub");
+            }
             if (!data?.success) {
                 throw new Error(data?.error || "Failed to create project from GitHub");
             }
