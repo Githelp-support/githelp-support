@@ -363,7 +363,9 @@ describe("ReportsSupportPage", () => {
         // Total across both charges.
         expect(within(row).getByText("30.00")).toBeInTheDocument()
 
-        const toggle = within(row).getByRole("button", { name: /2 charges/ })
+        // The dropdown says "x transactions", not "x charges".
+        const toggle = within(row).getByRole("button", { name: "2 transactions" })
+        expect(within(row).queryByRole("button", { name: /charges?$/ })).not.toBeInTheDocument()
         expect(toggle).toHaveAttribute("aria-expanded", "false")
         fireEvent.click(toggle)
         expect(toggle).toHaveAttribute("aria-expanded", "true")
@@ -390,15 +392,16 @@ describe("ReportsSupportPage", () => {
       mockData([sepSecondPayment(), sepPayment(), augPayment()], [...defaultTransfers(), ...sepTransfers()])
     })
 
-    it("has the columns Helper, Date and 'Helper income (USD)', without Ticket ID, Amount or Status", () => {
+    it("has the columns Helper, Date, Tickets and 'Helper income (USD)', without Ticket ID, Amount or Status", () => {
       render(<ReportsSupportPage />)
       openHelpersTab()
 
+      // The first "Tickets" button is the tab; the column header comes after "Date".
       const headers = screen
         .getAllByRole("button")
         .map((button) => button.textContent?.trim())
-        .filter((label) => ["Helper", "Date", "Helper income (USD)", "Ticket ID", "Amount", "Status"].includes(label ?? ""))
-      expect(headers).toEqual(["Helper", "Date", "Helper income (USD)"])
+        .filter((label) => ["Helper", "Date", "Tickets", "Helper income (USD)", "Ticket ID", "Amount", "Status"].includes(label ?? ""))
+      expect(headers).toEqual(["Tickets", "Helper", "Date", "Tickets", "Helper income (USD)"])
     })
 
     it("shows one row per helper and month, dated on the month's last day, with the amount without 'USD'", () => {
@@ -435,13 +438,29 @@ describe("ReportsSupportPage", () => {
       expect(screen.getAllByRole("button", { name: /^Tickets for / })).toHaveLength(1)
     })
 
-    it("says 'x tickets' instead of 'x payouts', also for a single ticket", () => {
+    it("shows the helper's number of tickets that month in the Tickets column, without an 'x tickets' button", () => {
       render(<ReportsSupportPage />)
       openHelpersTab()
 
-      expect(within(helperRow("Sep Helper", "September 2026")).getByRole("button", { name: "2 tickets" })).toBeInTheDocument()
-      expect(within(helperRow("Aug Helper", "August 2026")).getByRole("button", { name: "1 ticket" })).toBeInTheDocument()
+      // Sep Helper has 3 transactions on 2 tickets.
+      expect(within(helperRow("Sep Helper", "September 2026")).getByText("2")).toBeInTheDocument()
+      expect(within(helperRow("Aug Helper", "August 2026")).getByText("1")).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /^\d+ tickets?$/ })).not.toBeInTheDocument()
       expect(screen.queryByText(/payouts?$/)).not.toBeInTheDocument()
+    })
+
+    it("sorts by the Tickets column", () => {
+      render(<ReportsSupportPage />)
+      openHelpersTab()
+
+      // [0] is the tab, [1] the column header.
+      const header = screen.getAllByRole("button", { name: "Tickets" })[1]
+      const firstRow = () => screen.getAllByRole("button", { name: /^Tickets for / })[0].getAttribute("aria-label")
+
+      fireEvent.click(header)
+      expect(firstRow()).not.toBe("Tickets for Sep Helper, September 2026")
+      fireEvent.click(header)
+      expect(firstRow()).toBe("Tickets for Sep Helper, September 2026")
     })
 
     it("clicking the row opens the tickets list with every transaction: ticket ID, date, income and a Receipt button", () => {
@@ -479,12 +498,12 @@ describe("ReportsSupportPage", () => {
       expect(row).toHaveAttribute("aria-expanded", "false")
     })
 
-    it("the 'x tickets' toggle opens the list too", () => {
+    it("clicking anywhere inside the row, e.g. on the ticket count, opens the list", () => {
       render(<ReportsSupportPage />)
       openHelpersTab()
 
       const row = helperRow("Aug Helper", "August 2026")
-      fireEvent.click(within(row).getByRole("button", { name: "1 ticket" }))
+      fireEvent.click(within(row).getByText("1"))
 
       expect(row).toHaveAttribute("aria-expanded", "true")
       expect(within(within(row).getByRole("list")).getAllByRole("listitem")).toHaveLength(1)

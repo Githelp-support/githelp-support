@@ -44,7 +44,7 @@ type Tab = "monthly" | "tickets" | "helpers"
 type SortDirection = "asc" | "desc"
 type MonthlySortField = "period" | "tickets" | "income" | "status"
 type TicketsSortField = "ticket" | "date" | "income" | "status"
-type HelpersSortField = "helper" | "date" | "amount"
+type HelpersSortField = "helper" | "date" | "tickets" | "amount"
 
 // Tickets: checkbox · Ticket ID · Date · Project income · Status · kebab menu.
 // Every column has a width that does not depend on the row's content.
@@ -53,10 +53,10 @@ type HelpersSortField = "helper" | "date" | "amount"
 const TICKETS_GRID = {
   gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.5fr) 9rem calc(2.75rem + 36px)",
 }
-// Helpers: checkbox · Helper · Date · Helper income · kebab menu.
+// Helpers: checkbox · Helper · Date · Tickets · Helper income · kebab menu.
 // Same fixed widths as the other tabs, so a helper's tickets (each its own grid) line up under the row's columns.
 const HELPERS_GRID = {
-  gridTemplateColumns: "2rem minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) calc(2.75rem + 36px)",
+  gridTemplateColumns: "2rem minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr) calc(2.75rem + 36px)",
 }
 // Monthly reports: every column has a width that does not depend on the row's content.
 // Status: fixed, sized for the status badge.
@@ -385,6 +385,8 @@ export default function ReportsSupportPage() {
           return compare(a.dateRaw, b.dateRaw, direction)
         case "helper":
           return compare(a.helper.toLowerCase(), b.helper.toLowerCase(), direction)
+        case "tickets":
+          return compare(a.ticketCount, b.ticketCount, direction)
         case "amount":
           return compare(a.amountRaw, b.amountRaw, direction)
         default:
@@ -789,7 +791,6 @@ export default function ReportsSupportPage() {
                               expanded={expanded}
                               onToggle={() => toggle(row.id)}
                               panelId={panelId}
-                              noun="charge"
                             />
                           </div>
                         )}
@@ -846,6 +847,9 @@ export default function ReportsSupportPage() {
                     <div className="min-w-0">
                       <SortHeader label="Date" field="date" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
                     </div>
+                    <div className="min-w-0">
+                      <SortHeader label="Tickets" field="tickets" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    </div>
                     <div className="min-w-0 whitespace-nowrap">
                       <SortHeader label="Helper income (USD)" field="amount" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
                     </div>
@@ -867,6 +871,7 @@ export default function ReportsSupportPage() {
                         role="button"
                         tabIndex={0}
                         aria-expanded={expanded}
+                        aria-controls={expanded ? panelId : undefined}
                         aria-label={`Tickets for ${row.helper}, ${row.period}`}
                         className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
                         onClick={() => toggle(row.id)}
@@ -895,6 +900,7 @@ export default function ReportsSupportPage() {
                             </span>
                           </div>
                           <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
+                          <div className="min-w-0 text-sm text-foreground">{row.ticketCount}</div>
                           <div className="min-w-0 text-sm text-foreground">
                             <div className="whitespace-nowrap">{formatPaymentAmount(row.amountRaw, row.currency)}</div>
                             {row.failedSmallestUnit > 0 && (
@@ -927,17 +933,6 @@ export default function ReportsSupportPage() {
                             </DropdownMenu>
                           </div>
                         </div>
-                        <div className="w-fit" onClick={stopRowNavigation}>
-                          <TransactionsToggle
-                            className="ml-12 mt-2"
-                            count={row.ticketCount}
-                            minCount={1}
-                            expanded={expanded}
-                            onToggle={() => toggle(row.id)}
-                            panelId={panelId}
-                            noun="ticket"
-                          />
-                        </div>
                         {expanded && (
                           <div className="cursor-default" onClick={stopRowNavigation}>
                           {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
@@ -964,6 +959,8 @@ export default function ReportsSupportPage() {
                                   )}
                                 </span>
                                 <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
+                                {/* Tickets column: the count belongs to the row above. */}
+                                <span />
                                 <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
                                   {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency)}
                                   {/* Not paid, and not part of the row's income. */}
