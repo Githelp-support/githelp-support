@@ -1,13 +1,20 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type SyntheticEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText } from "lucide-react"
-import { usePaymentTransfers, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
+import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
@@ -31,7 +38,6 @@ import {
 } from "@/lib/helper-payout-reports"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import {
-  TransactionLine,
   TransactionsPanel,
   TransactionsToggle,
   transactionsPanelId,
@@ -39,7 +45,8 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -50,8 +57,6 @@ interface PayoutData {
   ticketTitle: string
   /** ISO date of the latest transfer, used for display and sorting. */
   date: string
-  helper: string
-  helperColor: string
   amountSmallestUnit: number
   /** Transfers that failed (not paid) on top of `amountSmallestUnit`. */
   failedSmallestUnit: number
@@ -70,7 +75,18 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`
 }
 
-type SortField = "ticketId" | "date" | "helper" | "amount" | "status"
+// Payouts: the column header already says "Earnings (USD)", so USD amounts drop the prefix.
+// Any other currency keeps it so it is never silently hidden.
+const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)
+const formatPayoutAmount = (cents: number, currency: string = "usd") =>
+  currency.toLowerCase() === "usd" ? formatAmountValue(cents) : formatAmount(cents, currency)
+
+// Start of the ticket's initial text, shown under the ticket ID.
+const TICKET_TEXT_MAX_LENGTH = 15
+const ticketTextPreview = (text: string) =>
+  text.length > TICKET_TEXT_MAX_LENGTH ? `${text.slice(0, TICKET_TEXT_MAX_LENGTH)}..` : text
+
+type SortField = "ticketId" | "date" | "amount" | "status"
 type MonthlySortField = "period" | "description" | "earnings" | "status"
 type SortDirection = "asc" | "desc"
 
@@ -80,11 +96,41 @@ const STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
   failed: "Failed",
 }
 
-const PREVIEW_HELPER_NAME = "You"
-
-const PAYOUTS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
-const MONTHLY_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
+// Each row (and each transaction line) is its own grid, so every column that must line up has a width that does not depend on the row's content.
+// Status: fixed, sized for the widest status badge.
+// Last: the kebab trigger (2.75rem) plus 36px which, with the 16px grid gap, puts 52px between the Status column and the kebab menu.
+const PAYOUTS_GRID = {
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) 9rem calc(2.75rem + 36px)",
+}
+// Extra 32px after the Ticket ID and Date columns (header, rows and transaction lines alike).
+const COLUMN_SPACING_CLASS = "pr-8"
+// Monthly reports: the fixed tracks add up to the same width as in the payouts grid, so the flexible columns keep their size.
+// The kebab track is just the trigger; the 36px it used to carry sits in the Status track instead.
+const MONTHLY_GRID = {
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,2.5fr) minmax(0,1fr) calc(9rem + 36px) 2.75rem",
+}
+// Monthly reports column offsets (header and rows alike):
+// Description sits 30px closer to Period (142px -> 112px between the texts).
+const MONTHLY_DESCRIPTION_CLASS = "-ml-[30px]"
+// Earnings sits a further 80px closer to Description (180px -> 100px between the texts).
+const MONTHLY_EARNINGS_CLASS = "-ml-[110px]"
+// Status sits 70px closer to the kebab menu (134px -> 64px between the badge and the menu).
+const MONTHLY_STATUS_CLASS = "pl-[70px]"
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
+const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
+
+// Payout rows are clickable; controls inside a row stop the event so they do not navigate.
+const stopRowNavigation = (event: SyntheticEvent) => event.stopPropagation()
+
+/** Start of the ticket's initial text under the ticket ID; nothing when the ticket has no text. */
+function TicketText({ text }: { text: string }) {
+  if (!text) return null
+  return (
+    <div className="text-xs text-muted-foreground truncate" title={text}>
+      {ticketTextPreview(text)}
+    </div>
+  )
+}
 
 function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
   if (sortField !== field) {
@@ -119,21 +165,6 @@ function SortHeader({
       <span className="text-sm font-medium text-foreground">{label}</span>
       <SortIcon field={field} sortField={sortField} sortDirection={sortDirection} />
     </button>
-  )
-}
-
-/** Helper avatar (initial on a coloured tile) + name, as on the admin Support reports. */
-function HelperCell({ name, color }: { name: string; color: string }) {
-  return (
-    <>
-      <div
-        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-        style={{ backgroundColor: color }}
-      >
-        {name.trim().charAt(0).toUpperCase() || "?"}
-      </div>
-      <span className="text-sm font-medium text-foreground">{name}</span>
-    </>
   )
 }
 
@@ -177,9 +208,10 @@ function StatementLink({ transfer }: { transfer: PaymentTransfer }) {
 }
 
 export default function HelperReportsPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<"monthly" | "payouts">("monthly")
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
-  const [selectedMonth, setSelectedMonth] = useState("")
+  // "all", "current", or a month label (Radix Select items cannot have an empty value)
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [monthlySelectedRows, setMonthlySelectedRows] = useState<string[]>([])
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -218,14 +250,19 @@ export default function HelperReportsPage() {
   // Include the selected month even when it's older than the last 12 months,
   // so the Select can still display it (e.g. after clicking an old monthly report row).
   const monthOptions = useMemo(
-    () => (selectedMonth && !months.includes(selectedMonth) ? [...months, selectedMonth] : months),
-    [months, selectedMonth],
+    () =>
+      selectedPeriod !== "all" && selectedPeriod !== "current" && !months.includes(selectedPeriod)
+        ? [...months, selectedPeriod]
+        : months,
+    [months, selectedPeriod],
   )
 
   const targetMonth =
-    selectedFilter === "current" || selectedMonth
-      ? selectedMonth || monthLabel(new Date().toISOString())
-      : null
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? monthLabel(new Date().toISOString())
+        : selectedPeriod
 
   // The month filter applies to individual transfers, then they are grouped per ticket.
   const payouts: PayoutData[] = useMemo(() => {
@@ -241,8 +278,6 @@ export default function HelperReportsPage() {
         ticketShortId: group.ticketId?.slice(0, 7) || "-",
         ticketTitle: first.ticket?.title?.trim() || "",
         date: group.date,
-        helper: getHelperDisplayName(first.helper),
-        helperColor: getAvatarColorHexForId(first.helper?.user_id ?? first.helper_id ?? first.id),
         amountSmallestUnit: group.amountSmallestUnit,
         failedSmallestUnit: group.failedSmallestUnit,
         currency: group.currency,
@@ -258,8 +293,6 @@ export default function HelperReportsPage() {
           return compare(a.ticketShortId, b.ticketShortId, sortDirection)
         case "date":
           return compare(new Date(a.date).getTime(), new Date(b.date).getTime(), sortDirection)
-        case "helper":
-          return compare(a.helper.toLowerCase(), b.helper.toLowerCase(), sortDirection)
         case "amount":
           return compare(a.amountSmallestUnit, b.amountSmallestUnit, sortDirection)
         case "status":
@@ -277,8 +310,8 @@ export default function HelperReportsPage() {
       period: row.period,
       periodRaw: row.periodRaw,
       description: `${row.ticketsClosed} ticket${row.ticketsClosed === 1 ? "" : "s"} · Total time logged: ${formatMinutes(row.minutesLogged)}`,
-      earnings: formatAmount(row.earningsSmallestUnit, row.currency),
-      earningsRaw: row.earningsSmallestUnit,
+      earningsSmallestUnit: row.earningsSmallestUnit,
+      currency: row.currency,
       status:
         row.earningsSmallestUnit > 0 && row.paidOutSmallestUnit === row.earningsSmallestUnit
           ? ("Paid out" as const)
@@ -296,7 +329,7 @@ export default function HelperReportsPage() {
         case "description":
           return compare(a.description.toLowerCase(), b.description.toLowerCase(), monthlySortDirection)
         case "earnings":
-          return compare(a.earningsRaw, b.earningsRaw, monthlySortDirection)
+          return compare(a.earningsSmallestUnit, b.earningsSmallestUnit, monthlySortDirection)
         case "status":
           return compare(a.status.toLowerCase(), b.status.toLowerCase(), monthlySortDirection)
         default:
@@ -329,8 +362,7 @@ export default function HelperReportsPage() {
   /** Open the Payouts tab filtered to the given month (row.period, e.g. "January 2026"). */
   const openMonthPayouts = (period: string) => {
     setActiveTab("payouts")
-    setSelectedMonth(period)
-    setSelectedFilter("all")
+    setSelectedPeriod(period)
   }
 
   const handleRowSelect = (id: string) => {
@@ -441,34 +473,13 @@ export default function HelperReportsPage() {
 
           {/* Filters */}
           <div className="flex gap-2">
-            {activeTab === "payouts" && (
-              <Button
-                variant={selectedFilter === "current" ? "default" : "outline"}
-                size="sm"
-                className={
-                  selectedFilter === "current"
-                    ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                    : `h-9 ${OUTLINE_BUTTON_CLASS}`
-                }
-                onClick={() => {
-                  setSelectedFilter("current")
-                  setSelectedMonth("")
-                }}
-              >
-                Current month
-              </Button>
-            )}
-            <Select
-              value={selectedMonth}
-              onValueChange={(v) => {
-                setSelectedMonth(v)
-                if (v) setSelectedFilter("all")
-              }}
-            >
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
               <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                <SelectValue placeholder="Choose month" />
+                <SelectValue placeholder="Choose period" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
                 {monthOptions.map((month) => (
                   <SelectItem key={month} value={month}>
                     {month}
@@ -476,17 +487,6 @@ export default function HelperReportsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              variant={selectedFilter === "all" && !selectedMonth ? "default" : "outline"}
-              size="sm"
-              className={OUTLINE_BUTTON_CLASS}
-              onClick={() => {
-                setSelectedFilter("all")
-                setSelectedMonth("")
-              }}
-            >
-              All
-            </Button>
             <div className="ml-auto flex gap-2">
               <Button
                 variant="outline"
@@ -542,22 +542,19 @@ export default function HelperReportsPage() {
                       aria-label="Select all payouts"
                     />
                   </div>
-                  <div className="col-span-1">
+                  <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
                     <SortHeader label="Ticket ID" field="ticketId" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-1">
+                  <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
                     <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-3">
-                    <SortHeader label="Helper" field="helper" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                  <div className="min-w-0 whitespace-nowrap">
+                    <SortHeader label="Earnings (USD)" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Earnings" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                  </div>
-                  <div className="col-span-2">
+                  <div className="min-w-0">
                     <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                   </div>
-                  <div className="col-span-2"></div>
+                  <div />
                 </div>
               </div>
 
@@ -571,42 +568,35 @@ export default function HelperReportsPage() {
                         <div className="flex items-center">
                           <Checkbox disabled checked={false} />
                         </div>
-                        <div className="col-span-1">
-                          <span className="text-sm font-medium text-foreground font-mono tabular-nums">
-                            {payout.ticketId}
-                          </span>
+                        <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium text-foreground font-mono tabular-nums">
+                              {payout.ticketId}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                              Preview
+                            </Badge>
+                          </div>
+                          <TicketText text={payout.ticketTitle} />
                         </div>
-                        <div className="col-span-1">
-                          <span className="text-sm text-muted-foreground">{payout.date}</span>
+                        <div className={cn("min-w-0 text-sm text-muted-foreground", COLUMN_SPACING_CLASS)}>{payout.date}</div>
+                        <div className="min-w-0 text-sm text-foreground whitespace-nowrap">
+                          {payout.amount.replace(/^USD\s+/, "")}
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px] flex-wrap">
-                          <HelperCell name={PREVIEW_HELPER_NAME} color={getAvatarColorHexForId(PREVIEW_HELPER_NAME)} />
-                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                            Preview
-                          </Badge>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{payout.amount}</span>
-                        </div>
-                        <div className="col-span-2">
+                        <div className="min-w-0">
                           <PayoutStatusBadge status={payout.status} />
                         </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
+                        <div className="flex items-center justify-end">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Open
-                            </Button>
-                          </span>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <FileText className="w-3.5 h-3.5" />
-                              Statement
-                            </Button>
-                          </span>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className={KEBAB_BUTTON_CLASS}
+                              aria-label="More actions"
+                            >
+                              <MoreVertical className="w-4 h-4" />
                             </Button>
                           </span>
                         </div>
@@ -617,109 +607,172 @@ export default function HelperReportsPage() {
                   <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
                 ) : (
                   payouts.map((payout) => {
+                    const href = payout.ticketId ? `/helper/tickets/${payout.ticketId}` : null
                     const count = payout.transfers.length
                     const expanded = count > 1 && isExpanded(payout.id)
                     const panelId = transactionsPanelId(payout.id)
                     return (
-                    <div key={payout.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                        <div className="flex items-center">
-                          <Checkbox
-                            checked={selectedRows.includes(payout.id)}
-                            onCheckedChange={() => handleRowSelect(payout.id)}
-                            aria-label={`Select payout for ticket ${payout.ticketShortId}`}
-                          />
-                        </div>
-                        <div className="col-span-1 min-w-0">
-                          {payout.ticketId ? (
-                            <Link
-                              href={`/helper/tickets/${payout.ticketId}`}
-                              title={payout.ticketTitle || undefined}
-                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
-                            >
-                              {payout.ticketShortId}
-                            </Link>
-                          ) : (
-                            <span className="text-sm font-medium text-foreground">—</span>
-                          )}
-                          <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(payout.id)} panelId={panelId} noun="payout" />
-                        </div>
-                        <div className="col-span-1">
-                          <span className="text-sm text-muted-foreground">{formatDate(payout.date)}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
-                          <HelperCell name={payout.helper} color={payout.helperColor} />
-                        </div>
-                        <div className="col-span-2">
-                          <div className="text-sm text-foreground">
-                            {formatAmount(payout.amountSmallestUnit, payout.currency)}
-                          </div>
-                          {payout.failedSmallestUnit > 0 && (
-                            <div className="text-xs text-red-700">{formatAmount(payout.failedSmallestUnit, payout.currency)} failed</div>
-                          )}
-                        </div>
-                        <div className="col-span-2">
-                          <PayoutStatusBadge status={payout.status} />
-                        </div>
-                        <div className="col-span-2">
-                          <div className="flex items-center justify-end gap-2 flex-wrap">
-                          {payout.ticketId ? (
-                            <Button asChild variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS}>
-                              <Link href={`/helper/tickets/${payout.ticketId}`}>Open</Link>
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              Open
-                            </Button>
-                          )}
-                          {count > 1 ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              type="button"
-                              className={OUTLINE_BUTTON_CLASS}
-                              aria-expanded={expanded}
-                              aria-controls={expanded ? panelId : undefined}
-                              title="Each payout has its own statement"
-                              onClick={() => toggle(payout.id)}
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                              Statements
-                            </Button>
-                          ) : (
-                            <StatementLink transfer={payout.transfers[0]} />
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title="Download all your payouts on this ticket as a PDF for your accounting"
-                            onClick={() => exportPdf(null, wholeTicket(payout))}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            PDF
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                      {expanded && (
-                        <TransactionsPanel id={panelId}>
-                          {payout.transfers.map((transfer, index) => (
-                            <TransactionLine
-                              key={transfer.id}
-                              index={index}
-                              count={count}
-                              date={formatDate(transferDate(transfer))}
-                              description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
-                              amount={formatAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
-                              status={<PayoutStatusBadge status={transfer.status} />}
-                              actions={<StatementLink transfer={transfer} />}
+                      <div
+                        key={payout.id}
+                        className={cn(
+                          "px-6 py-4 hover:bg-[#f7f9ff]",
+                          href &&
+                            "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
+                        )}
+                        {...(href
+                          ? {
+                              role: "link",
+                              tabIndex: 0,
+                              "aria-label": `Open ticket ${payout.ticketShortId}`,
+                              onClick: () => router.push(href),
+                              // Only when the row itself has focus, not a control inside it.
+                              onKeyDown: (event) => {
+                                if (event.key === "Enter" && event.target === event.currentTarget) {
+                                  router.push(href)
+                                }
+                              },
+                            }
+                          : {})}
+                      >
+                        <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                          <div className="flex items-center">
+                            <Checkbox
+                              checked={selectedRows.includes(payout.id)}
+                              onCheckedChange={() => handleRowSelect(payout.id)}
+                              onClick={stopRowNavigation}
+                              aria-label={`Select payout for ticket ${payout.ticketShortId}`}
                             />
-                          ))}
-                        </TransactionsPanel>
-                      )}
-                    </div>
+                          </div>
+                          <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                            {href ? (
+                              <Link
+                                href={href}
+                                onClick={stopRowNavigation}
+                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              >
+                                {payout.ticketShortId}
+                              </Link>
+                            ) : (
+                              <span className="text-sm font-medium text-foreground">—</span>
+                            )}
+                            <TicketText text={payout.ticketTitle} />
+                          </div>
+                          <div className={cn("min-w-0 text-sm text-muted-foreground", COLUMN_SPACING_CLASS)}>
+                            {formatDate(payout.date)}
+                          </div>
+                          <div className="min-w-0 text-sm text-foreground">
+                            <div className="whitespace-nowrap">
+                              {formatPayoutAmount(payout.amountSmallestUnit, payout.currency)}
+                            </div>
+                            {payout.failedSmallestUnit > 0 && (
+                              <div className="text-xs text-red-700">
+                                {formatPayoutAmount(payout.failedSmallestUnit, payout.currency)} failed
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <PayoutStatusBadge status={payout.status} />
+                          </div>
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={KEBAB_BUTTON_CLASS}
+                                  aria-label={`More actions for ticket ${payout.ticketShortId}`}
+                                  onClick={stopRowNavigation}
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              {/* Portalled, but React events still bubble to the row. */}
+                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                                {count > 1 ? (
+                                  <DropdownMenuItem
+                                    title="Each payout has its own statement"
+                                    onSelect={() => toggle(payout.id)}
+                                  >
+                                    <FileText />
+                                    Statements
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem asChild>
+                                    <Link
+                                      href={`/helper/reports/payouts/${payout.transfers[0].id}`}
+                                      title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
+                                    >
+                                      <FileText />
+                                      Statement
+                                    </Link>
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  title="Download all your payouts on this ticket as a PDF for your accounting"
+                                  onSelect={() => exportPdf(null, wholeTicket(payout))}
+                                >
+                                  <Download />
+                                  PDF
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                        {count > 1 && (
+                          <div className="w-fit" onClick={stopRowNavigation}>
+                            <TransactionsToggle
+                              className="ml-12 mt-2"
+                              count={count}
+                              expanded={expanded}
+                              onToggle={() => toggle(payout.id)}
+                              panelId={panelId}
+                              noun="payout"
+                            />
+                          </div>
+                        )}
+                        {expanded && (
+                          <div className="cursor-default" onClick={stopRowNavigation}>
+                            {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                            <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                              {payout.transfers.map((transfer, index) => {
+                                const reference = payoutReference(transfer)
+                                return (
+                                  <div
+                                    key={transfer.id}
+                                    role="listitem"
+                                    className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                    style={PAYOUTS_GRID}
+                                  >
+                                    <span />
+                                    {/* Index with the statement reference underneath, left-aligned with the ticket ID. */}
+                                    <span className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                                      <span className="block text-xs text-muted-foreground tabular-nums">
+                                        {index + 1} of {count}
+                                      </span>
+                                      <span className="block truncate font-mono text-xs text-foreground" title={reference}>
+                                        {reference}
+                                      </span>
+                                    </span>
+                                    <span className={cn("min-w-0 text-muted-foreground tabular-nums", COLUMN_SPACING_CLASS)}>
+                                      {formatDate(transferDate(transfer))}
+                                    </span>
+                                    <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                      {formatPayoutAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
+                                    </span>
+                                    <span className="min-w-0">
+                                      <PayoutStatusBadge status={transfer.status} />
+                                    </span>
+                                    {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                    <span className="flex items-center justify-end [&>*]:shrink-0">
+                                      <StatementLink transfer={transfer} />
+                                    </span>
+                                  </div>
+                                )
+                              })}
+                            </TransactionsPanel>
+                          </div>
+                        )}
+                      </div>
                     )
                   })
                 )}
@@ -742,19 +795,19 @@ export default function HelperReportsPage() {
                       aria-label="Select all monthly reports"
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="min-w-0">
                     <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-3">
+                  <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
                     <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-2">
-                    <SortHeader label="Earnings" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                  <div className={cn("min-w-0 whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
+                    <SortHeader label="Earnings (USD)" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-2">
+                  <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
                     <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                   </div>
-                  <div className="col-span-2"></div>
+                  <div />
                 </div>
               </div>
               <div className="divide-y divide-border">
@@ -767,34 +820,34 @@ export default function HelperReportsPage() {
                         <div className="flex items-center">
                           <Checkbox disabled checked={false} />
                         </div>
-                        <div className="col-span-2 flex items-center gap-2 flex-wrap">
+                        <div className="min-w-0 flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-foreground">{row.period}</span>
                           <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
-                        <div className="col-span-3">
+                        <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
                           <span className="text-sm text-muted-foreground">{row.description}</span>
                         </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{row.earnings}</span>
+                        <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
+                          {row.earnings.replace(/^USD\s+/, "")}
                         </div>
-                        <div className="col-span-2">
+                        <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
                           <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
                             {row.status}
                           </Badge>
                         </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
+                        <div className="flex items-center justify-end">
                           <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
-                            </Button>
-                          </span>
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                              <FileSpreadsheet className="w-3.5 h-3.5" />
-                              CSV
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              disabled
+                              className={KEBAB_BUTTON_CLASS}
+                              aria-label="More actions"
+                            >
+                              <MoreVertical className="w-4 h-4" />
                             </Button>
                           </span>
                         </div>
@@ -828,49 +881,51 @@ export default function HelperReportsPage() {
                             aria-label={`Select monthly report for ${row.period}`}
                           />
                         </div>
-                        <div className="col-span-2">
+                        <div className="min-w-0">
                           <span className="text-sm font-medium text-foreground">{row.period}</span>
                         </div>
-                        <div className="col-span-3">
+                        <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
                           <span className="text-sm text-muted-foreground">{row.description}</span>
                         </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{row.earnings}</span>
+                        <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
+                          {formatPayoutAmount(row.earningsSmallestUnit, row.currency)}
                         </div>
-                        <div className="col-span-2">
+                        <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
                           <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
                             {row.status}
                           </Badge>
                         </div>
-                        <div className="col-span-2 flex items-center justify-end gap-2 flex-wrap">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title={`Download the ${row.period} payout report as PDF`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              exportPdf(row.period)
-                            }}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            PDF
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            className={OUTLINE_BUTTON_CLASS}
-                            title={`Export the ${row.period} payout report as CSV`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              exportCsv(row.period)
-                            }}
-                          >
-                            <FileSpreadsheet className="w-3.5 h-3.5" />
-                            CSV
-                          </Button>
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={KEBAB_BUTTON_CLASS}
+                                aria-label={`More actions for ${row.period}`}
+                                onClick={stopRowNavigation}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            {/* Portalled, but React events still bubble to the row. */}
+                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                              <DropdownMenuItem
+                                title={`Download the ${row.period} payout report as PDF`}
+                                onSelect={() => exportPdf(row.period)}
+                              >
+                                <Download />
+                                PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                title={`Export the ${row.period} payout report as CSV`}
+                                onSelect={() => exportCsv(row.period)}
+                              >
+                                <FileSpreadsheet />
+                                CSV
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
