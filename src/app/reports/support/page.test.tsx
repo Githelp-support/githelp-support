@@ -528,7 +528,7 @@ describe("ReportsSupportPage", () => {
       expect(row).toHaveAttribute("aria-expanded", "true")
     })
 
-    it("the kebab menu exposes PDF, and opening it does not open the tickets list", () => {
+    it("the kebab menu exposes PDF and, under it, 'See transactions'; opening it does not open the tickets list", () => {
       render(<ReportsSupportPage />)
       openHelpersTab()
 
@@ -537,8 +537,38 @@ describe("ReportsSupportPage", () => {
       expect(helperRow("Sep Helper", "September 2026")).toHaveAttribute("aria-expanded", "false")
 
       // The open menu hides the rest of the page from the accessibility tree.
-      expect(openMenu(kebab)).toEqual(["PDF"])
+      expect(openMenu(kebab)).toEqual(["PDF", "See transactions"])
       expect(screen.queryByRole("list")).not.toBeInTheDocument()
+    })
+
+    it("'See transactions' in the kebab menu opens the helper's transactions list, like clicking the row", () => {
+      render(<ReportsSupportPage />)
+      openHelpersTab()
+
+      openMenu(screen.getByRole("button", { name: "More actions for Sep Helper, September 2026" }))
+      fireEvent.click(screen.getByRole("menuitem", { name: "See transactions" }))
+
+      const row = helperRow("Sep Helper", "September 2026")
+      expect(row).toHaveAttribute("aria-expanded", "true")
+      const lines = within(within(row).getByRole("list")).getAllByRole("listitem")
+      expect(lines.map((line) => within(line).getByRole("link").textContent)).toEqual(["3333333", "2222222", "2222222"])
+      // Only that helper's row opens, and nothing is downloaded or navigated to.
+      expect(helperRow("Aug Helper", "September 2026")).toHaveAttribute("aria-expanded", "false")
+      expect(downloadReportPdf).not.toHaveBeenCalled()
+      expect(push).not.toHaveBeenCalled()
+    })
+
+    it("'See transactions' keeps a list that is already open on screen", () => {
+      render(<ReportsSupportPage />)
+      openHelpersTab()
+
+      fireEvent.click(helperRow("Sep Helper", "September 2026"))
+      openMenu(screen.getByRole("button", { name: "More actions for Sep Helper, September 2026" }))
+      fireEvent.click(screen.getByRole("menuitem", { name: "See transactions" }))
+
+      const row = helperRow("Sep Helper", "September 2026")
+      expect(row).toHaveAttribute("aria-expanded", "true")
+      expect(within(within(row).getByRole("list")).getAllByRole("listitem")).toHaveLength(3)
     })
 
     it("the kebab PDF covers all of the helper's transactions in that month in one document", () => {

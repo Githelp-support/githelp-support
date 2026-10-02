@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet, MoreVertical } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet, List, MoreVertical } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { cn } from "@/lib/utils"
@@ -929,6 +929,16 @@ export default function ReportsSupportPage() {
                                   <Download />
                                   PDF
                                 </DropdownMenuItem>
+                                {/* Opens the same list as clicking the row; an already open list stays open. */}
+                                <DropdownMenuItem
+                                  title={`Show all of ${row.helper}'s transactions in ${row.period}`}
+                                  onSelect={() => {
+                                    if (!expanded) toggle(row.id)
+                                  }}
+                                >
+                                  <List />
+                                  See transactions
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
@@ -945,8 +955,8 @@ export default function ReportsSupportPage() {
                                 style={HELPERS_GRID}
                               >
                                 <span />
-                                {/* Starts where the helper's avatar starts. */}
-                                <span className="min-w-0">
+                                {/* Starts where the helper's name starts: past the avatar (32px) and its gap (18px). */}
+                                <span className="min-w-0 pl-[50px]">
                                   {transfer.ticket_id ? (
                                     <Link
                                       href={`/helper/tickets/${transfer.ticket_id}`}
