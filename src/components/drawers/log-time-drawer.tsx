@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { useState } from "react"
+import type { TimeEntryReviewStatus } from "@/lib/time-entries"
 
 interface LogTimeDrawerProps {
   isOpen: boolean
@@ -21,6 +22,14 @@ export interface TimeEntry {
   hours: number
   minutes: number
   note?: string // Added optional note field
+  /** Customer review of a persisted entry; absent for an entry the drawer just created. */
+  reviewStatus?: TimeEntryReviewStatus
+  declineReason?: string | null
+  autoAccepted?: boolean
+  /** `projects_helpers.helper_id` of whoever logged a persisted entry. */
+  helperId?: string
+  /** User who logged a persisted entry, for the Logged time avatar. */
+  helperUser?: { id: string; name: string; avatarUrl: string | null }
 }
 
 export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps) {

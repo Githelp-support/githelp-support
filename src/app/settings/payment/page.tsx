@@ -91,17 +91,17 @@ export default function PaymentSettingsPage() {
   }
 
   // Team sharing ratios (core_helper_percentage)
-  const [teamMemberRatio, setTeamMemberRatio] = useState([50])
-  const [teamProjectRatio, setTeamProjectRatio] = useState([50])
+  const [teamMemberRatio, setTeamMemberRatio] = useState([100])
+  const [teamProjectRatio, setTeamProjectRatio] = useState([0])
 
   // Community sharing ratios (community_helper_percentage)
-  const [communityHelperRatio, setCommunityHelperRatio] = useState([85])
-  const [communityProjectRatio, setCommunityProjectRatio] = useState([15])
+  const [communityHelperRatio, setCommunityHelperRatio] = useState([100])
+  const [communityProjectRatio, setCommunityProjectRatio] = useState([0])
 
   // External consultant settings (consultant_helper_percentage, extended_contract_type)
-  const [contractType, setContractType] = useState<"ticket" | "outside">("ticket")
-  const [consultantRatio, setConsultantRatio] = useState([70])
-  const [consultantProjectRatio, setConsultantProjectRatio] = useState([30])
+  const [contractType, setContractType] = useState<"ticket" | "outside">("outside")
+  const [consultantRatio, setConsultantRatio] = useState([100])
+  const [consultantProjectRatio, setConsultantProjectRatio] = useState([0])
 
   // Track original values to detect changes
   const [originalValues, setOriginalValues] = useState<{
@@ -140,14 +140,14 @@ export default function PaymentSettingsPage() {
       const corePercentage = paymentSettings.core_helper_percentage
       const communityPercentage = paymentSettings.community_helper_percentage
       const consultantPercentage = paymentSettings.consultant_helper_percentage
-      const contractTypeValue = paymentSettings.extended_contract_type || "ticket"
+      const contractTypeValue = paymentSettings.extended_contract_type || "outside"
       const ticketsEnabled = paymentSettings.tickets_enabled ?? false
       const slaEnabled = paymentSettings.sla_enabled ?? false
 
       // Convert cents to dollars for display (database stores in cents)
-      const startPriceCents = paymentSettings.ticket_start_price ?? 1000
-      const first60Cents = paymentSettings.ticket_price_minute_first_60 ?? 150
-      const after60Cents = paymentSettings.ticket_price_minute_after_60 ?? 100
+      const startPriceCents = paymentSettings.ticket_start_price ?? 0
+      const first60Cents = paymentSettings.ticket_price_minute_first_60 ?? 0
+      const after60Cents = paymentSettings.ticket_price_minute_after_60 ?? 0
 
       setTeamMemberRatio([corePercentage])
       setTeamProjectRatio([100 - corePercentage])
@@ -401,9 +401,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveTeamSettings}
                           disabled={!hasTeamChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -466,9 +465,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveCommunitySettings}
                           disabled={!hasCommunityChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -537,9 +535,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveConsultantSettings}
                           disabled={!hasConsultantChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -686,9 +683,8 @@ export default function PaymentSettingsPage() {
 
                   <div className="flex mt-6">
                     <Button
-                      variant="outline"
+                      variant="lavender"
                       size="sm"
-                      className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                       onClick={handleSaveUserOptions}
                       disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
                     >
@@ -699,9 +695,19 @@ export default function PaymentSettingsPage() {
 
                 {/* Ticket cost Section */}
                 <div className="bg-card rounded-lg p-6">
-                  <div className="flex items-center mb-6">
+                  <div className="flex items-center mb-2">
                     <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
                   </div>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    When a ticket opens, an authorization hold for the estimated time is placed on the
+                    customer&apos;s card and captured when the ticket ends. Time beyond the hold is charged
+                    as a separate transaction, long-running tickets are captured once a week, and a declined
+                    card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
+                    fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
+                    from that charge before the helper and project shares above are applied, so a ticket paid in
+                    two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
+                    what the customer is charged.
+                  </p>
 
                   <div className="space-y-6">
                     <div className="flex flex-col gap-2">
@@ -765,9 +771,8 @@ export default function PaymentSettingsPage() {
 
                     <div className="flex mt-6">
                       <Button
-                        variant="outline"
+                        variant="lavender"
                         size="sm"
-                        className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                         onClick={handleSaveUserSettings}
                         disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
                       >
@@ -786,9 +791,8 @@ export default function PaymentSettingsPage() {
                       <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <Button
-                      variant="outline"
+                      variant="lavender"
                       size="sm"
-                      className="text-muted-foreground border-border bg-transparent"
                       onClick={handleSaveCaps}
                       disabled={!orgId || !hasCapsChanges || updateCaps.isPending}
                     >

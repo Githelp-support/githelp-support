@@ -11,7 +11,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { RequestPdfModal } from "@/components/modals/request-pdf-modal"
 
 interface ReportData {
@@ -453,7 +453,7 @@ export default function ReportsSLAsPage() {
                 {/* Table Body */}
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading reports...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
                   ) : sortedReports.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No reports found</div>
                   ) : (
@@ -489,6 +489,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-2 flex items-center justify-end space-x-2">
                           <Button
+                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"
@@ -571,7 +572,7 @@ export default function ReportsSLAsPage() {
                 {/* Table Body */}
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading tickets...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading tickets...</div>
                   ) : sortedTickets.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
                   ) : (
@@ -619,6 +620,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-2 flex items-center justify-end space-x-2">
                           <Button
+                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground border-border hover:bg-muted bg-transparent"

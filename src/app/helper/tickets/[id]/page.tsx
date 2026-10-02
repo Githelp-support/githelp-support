@@ -6,11 +6,27 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
-import { ImageUploadModal } from "@/components/modals/image-upload-modal"
+import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
-import { useTimeEntries, useCreateTimeEntry, timeMillisecondsToHoursMinutes } from "@/hooks/useTimeEntries"
+import {
+  useTimeEntries,
+  useCreateTimeEntry,
+  useDeleteTimeEntry,
+  isPaymentNotAuthorizedError,
+  getReviewTimeEntryErrorHint,
+  timeMillisecondsToHoursMinutes,
+  getTimeEntryReviewStatus,
+  TIME_ENTRY_AUTO_ACCEPT_HOURS,
+  describeAutoAcceptDeadline,
+  formatTime,
+} from "@/hooks/useTimeEntries"
+import {
+  DeleteTimeEntryDialog,
+  TimeEntryAwaitingApprovalBanner,
+  TimeEntryReviewStatusBadge,
+} from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
@@ -25,8 +41,9 @@ import {
   AtSign,
   Mic,
   Video,
+  Trash2,
 } from "lucide-react"
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
@@ -37,8 +54,10 @@ import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/sidebar-section"
+import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
+import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
@@ -56,6 +75,9 @@ import {
 } from "@/components/ui/dialog"
 import { UserPlus } from "lucide-react"
 import { prepareOutgoingMessage } from "@/lib/code-format"
+import { appendToDraft } from "@/lib/ticket-attachments"
+import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
+import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 
 interface Message {
   id: string
@@ -67,7 +89,13 @@ interface Message {
   senderId?: string
   senderAvatarUrl?: string | null
   type?: "claimed" | "ended"
+  /** `metadata.kind` of a persisted system message (payment_*, time_logged, time_entry_*). */
+  metadataKind?: string
+  /** `metadata.time_entry_id` of a `time_logged` system message. */
+  timeEntryId?: string
 }
+
+const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
 
 export default function TicketDetailPage() {
   const params = useParams()
@@ -84,12 +112,18 @@ export default function TicketDetailPage() {
   const [isAddSelfAsHelperDialogOpen, setIsAddSelfAsHelperDialogOpen] = useState(false)
   const [pendingAction, setPendingAction] = useState<"claim" | "logTime" | null>(null)
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false)
+  // Collapsed state is shared across views via localStorage (see
+  // right-sidebar-collapse.tsx).
+  const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
 
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId)
   const { data: ticketDetails } = useTicketWithDetails(ticketId)
+  // Fetch payment settings (the payment gate needs them: free support opens it)
+  const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
   const paymentGate = useTicketPaymentStatus(ticketId, {
     slaId: (ticketDetails as { sla_id?: string | null } | undefined)?.sla_id ?? null,
+    isFree: isFreeSupport(paymentSettings),
   })
   const { data: messagesData, isLoading: messagesLoading } = useTicketMessages(ticketId)
   const sendMessage = useSendMessage()
@@ -102,13 +136,12 @@ export default function TicketDetailPage() {
   const claimTicket = useClaimTicket()
   const ensureParticipant = useEnsureParticipant()
   
-  // Fetch payment settings
-  const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
-
   // Time entries: load from DB, create via mutation
   const { data: timeEntriesFromDb = [] } = useTimeEntries({ ticketId })
   const currentHelperId = useCurrentHelper(ticket?.project_id ?? undefined).data ?? null
   const createTimeEntry = useCreateTimeEntry()
+  const deleteTimeEntry = useDeleteTimeEntry()
+  const [deletingEntry, setDeletingEntry] = useState<TimeEntry | null>(null)
 
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
@@ -155,15 +188,37 @@ export default function TicketDetailPage() {
           hours,
           minutes,
           note: entry.note ?? undefined,
+          reviewStatus: getTimeEntryReviewStatus(entry),
+          declineReason: entry.decline_reason ?? null,
+          autoAccepted: entry.auto_accepted ?? false,
+          helperId: entry.helper_id,
+          helperUser: entry.helper?.user
+            ? { id: entry.helper.user.id, name: entry.helper.user.name, avatarUrl: entry.helper.user.avatar_url ?? null }
+            : undefined,
         }
       }),
     [timeEntriesFromDb]
   )
+  // Entries the customer still has to accept or decline; the End ticket
+  // drawer refuses to end while any are left (declined time isn't charged).
+  const pendingReviewCount = useMemo(
+    () => timeEntries.filter((entry) => entry.reviewStatus === "pending").length,
+    [timeEntries]
+  )
+  const timeEntriesById = useMemo(() => new Map(timeEntries.map((entry) => [entry.id, entry])), [timeEntries])
+  // Oldest pending entry is the next one the 24h job will auto-accept.
+  const pendingReviewRequestedAt = useMemo(
+    () =>
+      timeEntriesFromDb
+        .filter((entry) => getTimeEntryReviewStatus(entry) === "pending")
+        .map((entry) => entry.review_requested_at)
+        .filter((at): at is string => !!at)
+        .sort()[0] ?? null,
+    [timeEntriesFromDb]
+  )
   
   // Format payment values (convert cents to dollars)
-  const startPrice = paymentSettings?.ticket_start_price ? (paymentSettings.ticket_start_price / 100).toFixed(2) : "10.00"
-  const first60Price = paymentSettings?.ticket_price_minute_first_60 ? (paymentSettings.ticket_price_minute_first_60 / 100).toFixed(2) : "1.50"
-  const after60Price = paymentSettings?.ticket_price_minute_after_60 ? (paymentSettings.ticket_price_minute_after_60 / 100).toFixed(2) : "1.00"
+  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
 
   // Set up real-time subscriptions
   useRealtimeMessages(ticketId)
@@ -206,7 +261,7 @@ export default function TicketDetailPage() {
         created_at: "",
         user: {
           id: creatorId,
-          name: (creatorUser as { name?: string })?.name ?? "Unknown",
+          name: (creatorUser as { name?: string })?.name ?? "User",
           avatar_url: (creatorUser as { avatar_url?: string | null })?.avatar_url ?? null,
         },
       })
@@ -270,7 +325,11 @@ export default function TicketDetailPage() {
       messagesData.map((msg): Message => ({
         id: msg.id,
         sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
-        content: msg.content,
+        // The stored payment_authorized text is worded for the customer; helpers/admins get their own.
+        content:
+          msg.sender_type === "system" && (msg.metadata as { kind?: string } | null | undefined)?.kind === "payment_authorized"
+            ? HELPER_PAYMENT_AUTHORIZED_MESSAGE
+            : msg.content,
         timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
           day: "2-digit",
           month: "2-digit",
@@ -279,10 +338,12 @@ export default function TicketDetailPage() {
           minute: "2-digit",
         }),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
-        senderName: msg.sender?.name || "Unknown",
+        senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
         senderId: msg.sender_id ?? msg.sender?.id,
         senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
+        metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
+        timeEntryId: (msg.metadata as { time_entry_id?: string } | null | undefined)?.time_entry_id,
       }))
     )
   }, [messagesData, isClaimed, claimer])
@@ -321,6 +382,17 @@ export default function TicketDetailPage() {
       timestamp: ticket?.created_at ?? "",
     }
   }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description])
+
+  // Images attached via the toolbar button, paste or drag & drop end up as
+  // markdown in the draft message.
+  const attachmentStoragePrefix = ticket?.project_id ? `${ticket.project_id}/${ticketId}` : undefined
+  const handleImageAttached = useCallback((markdown: string) => {
+    setMessage((prev) => appendToDraft(prev, markdown))
+  }, [])
+  const { uploadFiles, isUploading: imagesUploading } = useTicketAttachmentUpload(
+    attachmentStoragePrefix,
+    handleImageAttached,
+  )
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -468,7 +540,7 @@ export default function TicketDetailPage() {
         {
           onError: (error) =>
             toast.error(`Payment failed: ${error.message}`, {
-              description: "The customer has been asked to update their card. You can also retry below.",
+              description: "The user has been asked to update their card. You can also retry below.",
             }),
         },
       )
@@ -498,13 +570,45 @@ export default function TicketDetailPage() {
         date: dateIso,
       },
       {
-        onError: () => toast.error("Failed to log time. Please try again."),
+        onError: (error) =>
+          isPaymentNotAuthorizedError(error)
+            ? toast.error("Time can't be logged yet", {
+                description: "The payment for this ticket isn't authorized. Ask the user to add a payment method.",
+              })
+            : toast.error("Failed to log time. Please try again."),
       }
     )
   }
 
+  // Own entries on an open ticket, unless the customer already accepted them
+  // (may be captured by a re-hold; the DB guard rejects those too).
+  const canDeleteTimeEntry = (entry: TimeEntry) =>
+    !isTicketEnded && !!currentHelperId && entry.helperId === currentHelperId && entry.reviewStatus !== "accepted"
+
+  const handleDeleteTimeEntry = async () => {
+    if (!deletingEntry || !ticketId) return
+    try {
+      await deleteTimeEntry.mutateAsync({ entryId: deletingEntry.id, ticketId })
+      setDeletingEntry(null)
+      toast.success("Logged time deleted")
+    } catch (error) {
+      const hint = getReviewTimeEntryErrorHint(error)
+      setDeletingEntry(null)
+      toast.error(
+        hint === "accepted_entry_locked"
+          ? "The user already accepted this time, so it can't be deleted."
+          : hint === "ticket_ended"
+            ? "The session has ended, so logged time can't be changed."
+            : hint === "not_entry_owner"
+              ? "You can only delete time you logged yourself."
+              : "Failed to delete logged time. Please try again."
+      )
+    }
+  }
+
   const getTotalLoggedTime = () => {
     const totalMinutes = timeEntries.reduce((acc, entry) => {
+      if (entry.reviewStatus === "declined") return acc
       return acc + entry.hours * 60 + entry.minutes
     }, 0)
     const hours = Math.floor(totalMinutes / 60)
@@ -537,6 +641,8 @@ export default function TicketDetailPage() {
       paymentGate.status === "pending")
   const chargedLabel = isCancelledEnd
     ? "No charge"
+    : paymentGate.status === "free"
+      ? "Free support"
     : paymentSettled && chargedSmallestUnit != null
       ? `$${(chargedSmallestUnit / 100).toFixed(2)}`
       : paymentProcessing
@@ -544,6 +650,13 @@ export default function TicketDetailPage() {
         : paymentFailed
           ? "Failed"
           : "—"
+  // Who got what out of the charge. Shown once the capture has settled.
+  const formatUsd = (smallestUnit: number) => `$${(smallestUnit / 100).toFixed(2)}`
+  const chargeSplits =
+    !isCancelledEnd && paymentSettled && chargedSmallestUnit != null ? paymentGate.capturedSplits : null
+  const billedHelperCount = new Set(
+    timeEntries.filter((e) => e.reviewStatus !== "declined").map((e) => e.helperId),
+  ).size
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
@@ -565,7 +678,17 @@ export default function TicketDetailPage() {
             <div className="flex-1 flex flex-col min-h-0">
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
-                <div className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto">
+                <div
+                  className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                  onLoadCapture={(e) => {
+                    // Images load after the initial scroll and push the thread
+                    // down; keep it pinned to the bottom if it was there.
+                    if (!(e.target instanceof HTMLImageElement)) return
+                    const box = e.currentTarget
+                    const distance = box.scrollHeight - box.scrollTop - box.clientHeight
+                    if (distance <= e.target.offsetHeight + 120) scrollToBottom()
+                  }}
+                >
                   <div className="p-6">
                     <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
@@ -756,12 +879,25 @@ export default function TicketDetailPage() {
                             <div
                               className={
                                 msg.sender === "system"
-                                  ? "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                  ? msg.metadataKind === "time_entry_declined"
+                                    ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                    : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                   : "text-sm"
                               }
                               style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
+                              {msg.metadataKind === "time_logged" &&
+                                msg.timeEntryId &&
+                                (() => {
+                                  const entry = timeEntriesById.get(msg.timeEntryId)
+                                  if (!entry?.reviewStatus) return null
+                                  return (
+                                    <div className="mt-2">
+                                      <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                                    </div>
+                                  )
+                                })()}
                             </div>
                           </div>
                         </>
@@ -811,6 +947,30 @@ export default function TicketDetailPage() {
                                   <span className="text-muted-foreground">Charged</span>
                                   <span className="font-medium text-foreground tabular-nums">{chargedLabel}</span>
                                 </div>
+                                {chargeSplits && (
+                                  <div className="mt-2 pt-2 border-t border-border space-y-1.5">
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">
+                                        {billedHelperCount > 1 ? `Share helpers (${billedHelperCount})` : "Share helper"}
+                                      </span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.helperSmallestUnit)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">Share project</span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.projectSmallestUnit)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-6">
+                                      <span className="text-muted-foreground">Stripe fee</span>
+                                      <span className="font-medium text-foreground tabular-nums">
+                                        {formatUsd(chargeSplits.stripeFeeSmallestUnit)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {paymentFailed && paymentFailureReason && (
@@ -820,7 +980,7 @@ export default function TicketDetailPage() {
                               )}
                               {paymentFailed && (
                                 <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                                  The customer has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
+                                  The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
                               {paymentFailed && (
@@ -831,7 +991,7 @@ export default function TicketDetailPage() {
                                       {
                                         onError: (error) =>
                                           toast.error(`Payment failed: ${error.message}`, {
-                                            description: "The customer has been asked to update their card.",
+                                            description: "The user has been asked to update their card.",
                                           }),
                                       },
                                     )
@@ -866,6 +1026,14 @@ export default function TicketDetailPage() {
             </div>
             </div>
 
+            {!isTicketEnded && (
+              <TimeEntryAwaitingApprovalBanner
+                pendingCount={pendingReviewCount}
+                customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+                autoAcceptHint={describeAutoAcceptDeadline(pendingReviewRequestedAt)}
+              />
+            )}
+
             {endRequested && (
               <EndSessionRequestedHelperBanner
                 requesterName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
@@ -890,11 +1058,17 @@ export default function TicketDetailPage() {
               value={message}
               onChange={setMessage}
               onSend={handleSendMessage}
-              sendDisabled={!message.trim() || isTicketEnded}
+              sendDisabled={!message.trim()}
               placeholder="Message #askanything"
-              onImageClick={ticket?.project_id ? () => setIsImageUploadOpen(true) : undefined}
+              onImageClick={attachmentStoragePrefix ? () => setIsImageUploadOpen(true) : undefined}
+              onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
+              imagesUploading={imagesUploading}
               toolbarEndContent={
-                !isTicketEnded ? (
+                !isClaimed ? (
+                  <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
+                    Claim ticket
+                  </Button>
+                ) : !isTicketEnded ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -907,176 +1081,212 @@ export default function TicketDetailPage() {
               }
             />
 
-            {ticket?.project_id && (
-              <ImageUploadModal
+            {attachmentStoragePrefix && (
+              <AttachImageModal
                 open={isImageUploadOpen}
                 onOpenChange={setIsImageUploadOpen}
-                storagePath={`ticket-attachments/${ticket.project_id}/${ticketId}/${Date.now()}`}
-                onUploadComplete={(url) => {
-                  setMessage((prev) => prev + `\n![attachment](${url})\n`)
-                }}
-                title="Attach Image"
-                description="Upload an image to attach to this ticket"
-                privateBucket
+                storagePrefix={attachmentStoragePrefix}
+                onAttached={handleImageAttached}
               />
             )}
           </div>
+        </main>
+      </div>
 
-          {/* Right Sidebar */}
-          <div className="w-80 bg-white border-l border-border relative z-20 flex flex-col">
-            <div className="flex-1 overflow-y-auto pl-5 pr-4 pt-6 pb-4">
-              {/* People in Chat */}
-              <div>
-                <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
-                {participantsLoading ? (
-                  <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
-                ) : allParticipants.length > 0 ? (
-                  <div className="space-y-2 mb-3">
-                    {allParticipants.map((participant) => {
-                      const isCurrentUser = participant.participant_id === currentUser?.id
-                      return (
-                        <div key={participant.id} className="flex items-center gap-2">
-                          <ProfileAvatar
-                            id={participant.user.id}
-                            name={participant.user.name}
-                            avatarUrl={participant.user.avatar_url ?? null}
-                            size="md"
-                          />
-                          <span className="text-[13px] text-muted-foreground">
-                            {isCurrentUser ? "You" : participant.user.name}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
-                )}
-                {!isTicketEnded && (
-                  <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10">
-                    <Plus className="w-4 h-4" />
-                    Invite other helper
-                  </Button>
-                )}
-              </div>
+      {/* Right Sidebar — sibling of the header column so it spans the full height, like the left sidebar */}
+      <div
+        suppressHydrationWarning
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+      >
+        <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
-              {/* Divider */}
-              <SidebarDivider />
-
-              {/* Other Topics — from ticket keywords */}
-              <div>
-                <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
-                {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
-                  <div className="flex gap-2 flex-wrap">
-                    {ticketDetails.keywords.map((k) => (
-                      <Badge key={k.value} variant="secondary" className="bg-muted text-muted-foreground">
-                        {k.value}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[13px] text-muted-foreground">—</p>
-                )}
-              </div>
-
-              {/* Divider */}
-              <SidebarDivider />
-
-              {/* Logged Time */}
-              <div>
-                <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
-                {timeEntries.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {timeEntries.map((entry) => (
-                      <div key={entry.id} className="py-2 border-b border-border">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                            </div>
-                            <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
-                          </div>
-                          <span className="text-[13px] text-muted-foreground tabular-nums">
-                            {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
-                          </span>
-                        </div>
-                        {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between py-2 font-medium">
-                      <span className="text-[13px] text-foreground">Total</span>
-                      <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
+        {!isCollapsed && (
+        <div className="flex-1 overflow-y-auto px-3 pb-6">
+          {/* People in Chat */}
+          <div>
+            <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
+            {participantsLoading ? (
+              <div className="text-center text-muted-foreground text-[14px] py-4">Loading...</div>
+            ) : allParticipants.length > 0 ? (
+              <div className="space-y-2 mb-3">
+                {allParticipants.map((participant) => {
+                  const isCurrentUser = participant.participant_id === currentUser?.id
+                  return (
+                    <div key={participant.id} className="flex items-center gap-2">
+                      <ProfileAvatar
+                        id={participant.user.id}
+                        name={participant.user.name}
+                        avatarUrl={participant.user.avatar_url ?? null}
+                        size="md"
+                      />
+                      <span className="text-[13px] text-muted-foreground">
+                        {isCurrentUser ? "You" : participant.user.name}
+                      </span>
                     </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+            )}
+            {!isTicketEnded && (
+              <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+                <Plus className="w-4 h-4" />
+                Invite other helper
+              </Button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <SidebarDivider />
+
+          {/* Other Topics — from ticket keywords */}
+          <div>
+            <SidebarSectionHeading info>Other topics in this chat</SidebarSectionHeading>
+            {ticketDetails?.keywords && ticketDetails.keywords.length > 0 ? (
+              <div className="flex gap-2 flex-wrap">
+                {ticketDetails.keywords.map((k) => (
+                  <Badge key={k.value} variant="secondary" className="bg-muted text-muted-foreground">
+                    {k.value}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-muted-foreground">—</p>
+            )}
+          </div>
+
+          {/* Divider */}
+          <SidebarDivider />
+
+          {/* Logged Time */}
+          <div>
+            <SidebarSectionHeading info>Logged time</SidebarSectionHeading>
+            {timeEntries.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {timeEntries.map((entry) => (
+                  <div key={entry.id} className="py-2 border-b border-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        {/* Same size as before (24px); radius scaled from the chat avatars (9.625px at 28px) */}
+                        <ProfileAvatar
+                          id={entry.helperUser?.id ?? entry.helperId}
+                          name={entry.helperUser?.name}
+                          avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                          size="sm"
+                          radius="8.25px"
+                          className="w-6 h-6"
+                        />
+                        <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[13px] text-muted-foreground tabular-nums">
+                          {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
+                        </span>
+                        {canDeleteTimeEntry(entry) && (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingEntry(entry)}
+                            aria-label="Delete logged time"
+                            title="Delete logged time"
+                            className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-muted"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
+                    {entry.reviewStatus && (
+                      <div className="mt-1 ml-8">
+                        <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
+                      </div>
+                    )}
+                    {entry.reviewStatus === "declined" && entry.declineReason && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+                    )}
                   </div>
-                )}
-                {!isTicketEnded && (
-                  <Button
-                    variant="outline"
-                    disabled={!paymentGate.isReady}
-                    title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
-                    className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
-                    onClick={() => {
-                      if (isAdminButNotHelper) {
-                        setPendingAction("logTime")
-                        setIsAddSelfAsHelperDialogOpen(true)
-                      } else {
-                        setIsLogTimeDrawerOpen(true)
-                      }
-                    }}
-                  >
-                    {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
-                  </Button>
-                )}
-              </div>
-
-              {/* Divider */}
-              <SidebarDivider />
-
-              {/* Active Tickets — 3 latest claimed by this helper */}
-              <div>
-                <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-                <div className={`-ml-5 -mr-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
-                  {activeTicketsSidebar.length === 0 ? (
-                    <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
-                  ) : (
-                    activeTicketsSidebar.map((item) => (
-                      <NextLink
-                        key={item.id}
-                        href={`/helper/tickets/${item.id}`}
-                        className={`block w-full border cursor-pointer transition-colors ${
-                          item.current
-                            ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                            : "bg-white border-border hover:bg-muted"
-                        }`}
-                      >
-                        <div className="p-3">
-                          <div className="flex items-start gap-3">
-                            <ProfileAvatar
-                              id={item.creatorId}
-                              name={item.avatarInitial}
-                              avatarUrl={item.avatarUrl}
-                              size="md"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
-                                {item.hasNotification && (
-                                  <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                              <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </NextLink>
-                    ))
-                  )}
+                ))}
+                <div className="flex items-center justify-between py-2 font-medium">
+                  <span className="text-[13px] text-foreground">Total</span>
+                  <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                 </div>
+                {pendingReviewCount > 0 && (
+                  <p className="text-xs text-amber-800">
+                    {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} waiting for the user to
+                    accept or decline. The session can&apos;t end until they have; entries not reviewed within{" "}
+                    {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted automatically.
+                  </p>
+                )}
               </div>
+            )}
+            {!isTicketEnded && (
+              <Button
+                variant="outline"
+                disabled={!paymentGate.isReady}
+                title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
+                className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => {
+                  if (isAdminButNotHelper) {
+                    setPendingAction("logTime")
+                    setIsAddSelfAsHelperDialogOpen(true)
+                  } else {
+                    setIsLogTimeDrawerOpen(true)
+                  }
+                }}
+              >
+                {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
+              </Button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <SidebarDivider />
+
+          {/* Active Tickets — 3 latest claimed by this helper */}
+          <div>
+            <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
+            <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+              {activeTicketsSidebar.length === 0 ? (
+                <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+              ) : (
+                activeTicketsSidebar.map((item) => (
+                  <NextLink
+                    key={item.id}
+                    href={`/helper/tickets/${item.id}`}
+                    className={`block w-full border cursor-pointer transition-colors ${
+                      item.current
+                        ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
+                        : "bg-white border-border hover:bg-muted"
+                    }`}
+                  >
+                    <div className="p-3">
+                      <div className="flex items-start gap-3">
+                        <ProfileAvatar
+                          id={item.creatorId}
+                          name={item.avatarInitial}
+                          avatarUrl={item.avatarUrl}
+                          size="md"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                            {item.hasNotification && (
+                              <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
+                          <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </NextLink>
+                ))
+              )}
             </div>
           </div>
-        </main>
+        </div>
+        )}
       </div>
 
       {/* AI Rephrase Modal */}
@@ -1099,6 +1309,16 @@ export default function TicketDetailPage() {
         isOpen={isLogTimeDrawerOpen}
         onClose={() => setIsLogTimeDrawerOpen(false)}
         onLogTime={handleLogTime}
+      />
+
+      <DeleteTimeEntryDialog
+        open={!!deletingEntry}
+        onOpenChange={(open) => !open && setDeletingEntry(null)}
+        onConfirm={handleDeleteTimeEntry}
+        pending={deleteTimeEntry.isPending}
+        durationLabel={
+          deletingEntry ? formatTime((deletingEntry.hours * 3600 + deletingEntry.minutes * 60) * 1000) : null
+        }
       />
 
       {/* Add myself as helper - required for admin before claiming or logging time */}
