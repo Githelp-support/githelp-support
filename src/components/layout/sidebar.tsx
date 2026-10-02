@@ -143,12 +143,13 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         { name: "Payout", href: "/helper/settings/payout", icon: "fi-rr-credit-card" },
         { name: "Profile", href: "/helper/settings/profile", icon: "fi-rr-user" },
         { name: "Availability", href: "/helper/settings/availability", icon: "fi-rr-list-check" },
+        { name: "Notifications", href: "/helper/settings/notifications", icon: "fi-rr-bell" },
       ],
     },
   ]
 
   const userNavigationItems: NavigationItem[] = [
-    { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
+    { name: "Overview", href: "/user/overview", icon: "fi-rr-apps" },
     {
       name: "Support",
       href: "#",
@@ -160,6 +161,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         { name: "About support", href: `/support/about${supportQuery}`, icon: "fi-rr-info" },
       ],
     },
+    { name: "Tickets", href: "/support/tickets", icon: "fi-rr-list" },
     { name: "Reports", href: "/user/reports", icon: "fi-rr-document" },
     {
       name: "Settings",
