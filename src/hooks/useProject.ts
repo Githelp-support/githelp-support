@@ -118,6 +118,59 @@ export function useProjectBySlug(slug: string) {
     });
 }
 
+export const PROJECT_SEARCH_MIN_CHARS = 3;
+
+export type ProjectSearchResult = Pick<
+    Project,
+    "project_id" | "name" | "slug" | "logo_url"
+>;
+
+/**
+ * Escape a user-supplied string for use inside a PostgREST `ilike` pattern
+ * within an `.or()` filter. Strips the characters that delimit `.or()`
+ * clauses (`,` `(` `)`) and escapes LIKE wildcards so they match literally.
+ */
+export function escapeProjectSearchTerm(term: string): string {
+    return term
+        .replace(/[,()]/g, " ")
+        .replace(/[\\%_]/g, (c) => `\\${c}`)
+        .trim();
+}
+
+/**
+ * Search projects by name or slug (case-insensitive substring). Disabled until
+ * the query has at least PROJECT_SEARCH_MIN_CHARS characters. Excludes deleted
+ * and sandbox projects since those cannot be joined.
+ */
+export function useSearchProjects(query: string, options?: { limit?: number }) {
+    const term = query.trim();
+    const limit = options?.limit ?? 10;
+
+    return useQuery({
+        queryKey: ["project-search", term, limit],
+        queryFn: async () => {
+            const pattern = `%${escapeProjectSearchTerm(term)}%`;
+            const { data, error } = await supabase
+                .from("projects")
+                .select("project_id, name, slug, logo_url")
+                .is("deleted_at", null)
+                .eq("sandbox", false)
+                .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+                .order("name", { ascending: true })
+                .limit(limit);
+
+            if (error) throw error;
+            return (data ?? []) as ProjectSearchResult[];
+        },
+        enabled: term.length >= PROJECT_SEARCH_MIN_CHARS,
+        retry: false,
+        staleTime: 60000,
+        placeholderData: (prev) => prev,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+    });
+}
+
 export function useProjectResources(projectId: string) {
     return useQuery({
         queryKey: ["project-resources", projectId],
