@@ -37,6 +37,7 @@ export function TransactionsToggle({
   onToggle,
   panelId,
   noun = "transaction",
+  minCount = 2,
   className,
 }: {
   count: number
@@ -44,9 +45,11 @@ export function TransactionsToggle({
   onToggle: () => void
   panelId: string
   noun?: string
+  /** Smallest count the toggle is shown for. 2 by default: a ticket's only transaction is already the row itself. */
+  minCount?: number
   className?: string
 }) {
-  if (count < 2) return null
+  if (count < minCount) return null
   return (
     <button
       type="button"
