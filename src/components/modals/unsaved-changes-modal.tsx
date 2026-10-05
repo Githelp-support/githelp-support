@@ -1,6 +1,5 @@
 "use client"
 
-import { AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -33,17 +32,17 @@ export function UnsavedChangesModal({ open, message, onStay, onLeave }: UnsavedC
     <Dialog open={open} onOpenChange={(next) => !next && onStay()}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="size-5 text-destructive" aria-hidden="true" />
-            Unsaved changes
-          </DialogTitle>
+          <DialogTitle>Unsaved changes</DialogTitle>
           <DialogDescription className="mt-[3px]">{message ?? DEFAULT_MESSAGE}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="mt-[3px]">
+        <DialogFooter className="mt-[3px] sm:justify-start">
           <Button variant="outline" onClick={onStay}>
             Stay on page
           </Button>
-          <Button variant="destructive" onClick={onLeave}>
+          <Button
+            className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm"
+            onClick={onLeave}
+          >
             Leave without saving
           </Button>
         </DialogFooter>
