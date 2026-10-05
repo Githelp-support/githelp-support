@@ -7,6 +7,7 @@ import { useUser } from "@/contexts/user-context"
 import { useRouter } from "next/navigation"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context"
 import { cn } from "@/lib/utils"
 
 interface HeaderProps {
@@ -32,6 +33,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
   const { data: projectRoleFromProject } = useProjectRole(selectedProjectId ?? undefined)
   const { setProjectRole } = useUser()
   const router = useRouter()
+  const { confirmNavigation } = useUnsavedChanges()
 
   // Sync project role from selected project when on project-scoped pages (not support).
   // Support pages set their own projectRole from the support project.
@@ -44,12 +46,16 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     }
   }, [pathname, selectedProjectId, projectRoleFromProject, setProjectRole])
 
+  // Routed through the unsaved-changes guard so the back button is intercepted
+  // like link clicks are.
   const handleBackClick = () => {
-    if (backButtonHref) {
-      router.push(backButtonHref)
-    } else {
-      router.back()
-    }
+    confirmNavigation(() => {
+      if (backButtonHref) {
+        router.push(backButtonHref)
+      } else {
+        router.back()
+      }
+    })
   }
 
   return (

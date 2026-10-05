@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
 import { Checkbox } from "@/components/ui/checkbox"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -121,6 +122,20 @@ export default function HelperProfilePage() {
     setSyncedKeywordIds(selectedKeywordIds)
     setSelectedKeywords(selectedKeywordIds)
   }
+
+  // Warn before navigating away while any independently-saved section differs from its last-synced data
+  const contactDirty =
+    !!syncedHelperData &&
+    (name !== (syncedHelperData.user?.name ?? "") ||
+      email !== (syncedHelperData.user?.email ?? ""))
+  const categoryDirty =
+    !!syncedHelperData && category !== (syncedHelperData.category ?? "community")
+  const keywordsDirty =
+    syncedKeywordIds !== undefined &&
+    [...selectedKeywords].sort((a, b) => a - b).join(",") !==
+      [...syncedKeywordIds].sort((a, b) => a - b).join(",")
+  const isDirty = contactDirty || categoryDirty || keywordsDirty
+  useUnsavedChangesGuard(isDirty)
 
   const handleSaveProfile = async () => {
     if (!user?.id) return
