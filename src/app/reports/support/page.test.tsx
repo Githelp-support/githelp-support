@@ -250,6 +250,16 @@ describe("ReportsSupportPage", () => {
       expect(push).not.toHaveBeenCalled()
     })
 
+    it("activating a monthly row with the keyboard applies the same month filter", () => {
+      render(<ReportsSupportPage />)
+
+      fireEvent.keyDown(monthRow("September 2026"), { key: "Enter" })
+
+      expect(ticketRow("2222222")).toBeInTheDocument()
+      expect(screen.queryByRole("link", { name: "Open ticket 1111111" })).not.toBeInTheDocument()
+      expect(screen.getByRole("combobox")).toHaveTextContent("September 2026")
+    })
+
     it("shows 'Project income (USD)' and no 'Charged' or 'Payouts & fees' header", () => {
       render(<ReportsSupportPage />)
 
