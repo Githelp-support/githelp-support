@@ -86,11 +86,16 @@ export default function UserOverviewPage() {
       spentByCurrency.set(currency, (spentByCurrency.get(currency) ?? 0) + row.amountSmallestUnit)
     }
 
+    // The card label already states the currency, so USD amounts are shown as
+    // a bare number; any other currency keeps its code to avoid mislabelling.
+    const formatSpent = (amount: number, currency: string) =>
+      currency === "usd" ? (amount / 100).toFixed(2) : formatAmount(amount, currency)
+
     const totalSpent =
       spentByCurrency.size === 0
-        ? formatAmount(0)
+        ? formatSpent(0, "usd")
         : Array.from(spentByCurrency.entries())
-            .map(([currency, amount]) => formatAmount(amount, currency))
+            .map(([currency, amount]) => formatSpent(amount, currency))
             .join(" + ")
 
     return { totalTickets, completedTickets, totalSpent }
@@ -103,7 +108,7 @@ export default function UserOverviewPage() {
   const stats = [
     { label: "Number of tickets", value: isLoading ? "-" : keyStats.totalTickets },
     { label: "Tickets completed", value: isLoading ? "-" : keyStats.completedTickets },
-    { label: "Total amount spent", value: isSpendLoading ? "-" : keyStats.totalSpent },
+    { label: "Total amount spent (USD)", value: isSpendLoading ? "-" : keyStats.totalSpent },
   ]
 
   return (
@@ -216,7 +221,10 @@ export default function UserOverviewPage() {
                                 <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
                                   {projectName}
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p
+                                  className="text-xs text-muted-foreground truncate"
+                                  title={ticket.title?.trim() || "Untitled ticket"}
+                                >
                                   {ticket.title?.trim() || "Untitled ticket"}
                                 </p>
                                 <div className="flex items-center gap-1 mt-1">

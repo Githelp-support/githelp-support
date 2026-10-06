@@ -139,7 +139,8 @@ describe("UserOverviewPage", () => {
     expect(periodSelect()).toHaveTextContent("All")
     expect(statValue("Number of tickets")).toHaveTextContent("4")
     expect(statValue("Tickets completed")).toHaveTextContent("3")
-    expect(statValue("Total amount spent")).toHaveTextContent("USD 35.00")
+    expect(statValue("Total amount spent (USD)")).toHaveTextContent("35.00")
+    expect(statValue("Total amount spent (USD)")).not.toHaveTextContent("USD")
   })
 
   it("restricts key stats to the current month when chosen in the period select", () => {
@@ -150,7 +151,7 @@ describe("UserOverviewPage", () => {
     expect(periodSelect()).toHaveTextContent("Current month")
     expect(statValue("Number of tickets")).toHaveTextContent("2")
     expect(statValue("Tickets completed")).toHaveTextContent("2")
-    expect(statValue("Total amount spent")).toHaveTextContent("USD 25.00")
+    expect(statValue("Total amount spent (USD)")).toHaveTextContent("25.00")
   })
 
   it("shows only the Ticket, Status and Last interaction columns", () => {
@@ -188,6 +189,15 @@ describe("UserOverviewPage", () => {
     expect(within(rows[1]).getByText("16:30")).toBeInTheDocument()
   })
 
+  it("formats the ticket text like the Reports page (small, truncated, with a tooltip)", () => {
+    render(<UserOverviewPage />)
+
+    const ticketText = within(recentTicketLinks()[0]).getByText("Ticket t2")
+    expect(ticketText).toHaveClass("text-xs", "text-muted-foreground", "truncate")
+    expect(ticketText).not.toHaveClass("text-sm")
+    expect(ticketText).toHaveAttribute("title", "Ticket t2")
+  })
+
   it("links to the full ticket list", () => {
     render(<UserOverviewPage />)
 
@@ -206,7 +216,7 @@ describe("UserOverviewPage", () => {
 
     expect(screen.getByText("No tickets to show")).toBeInTheDocument()
     expect(statValue("Number of tickets")).toHaveTextContent("0")
-    expect(statValue("Total amount spent")).toHaveTextContent("USD 0.00")
+    expect(statValue("Total amount spent (USD)")).toHaveTextContent("0.00")
   })
 
   it("prompts signed-out visitors to sign in", () => {
