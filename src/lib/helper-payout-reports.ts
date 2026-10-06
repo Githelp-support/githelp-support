@@ -329,3 +329,55 @@ export function groupTransfersByTicket(
         })
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 }
+
+/** One helper's payouts in one calendar month, for the admin Helpers report. */
+export interface HelperMonthPayouts {
+    /** Stable key: helper plus month, e.g. "helper-1:2026-09". */
+    key: string
+    /** "September 2026" — the same label the period filter uses. */
+    period: string
+    /** Last day of the month (ISO): only once it has passed is the helper's month complete. */
+    monthEnd: string
+    /** Distinct tickets with a payout in the month. */
+    ticketCount: number
+    /** Ticket by ticket (latest activity first), a ticket's transfers oldest first. */
+    transfers: PaymentTransfer[]
+    /** The helper's income for the month: failed transfers are left out unless every transfer failed. */
+    amountSmallestUnit: number
+    /** Transfers Stripe could not complete (nothing was paid for these). */
+    failedSmallestUnit: number
+    currency: string
+}
+
+/**
+ * One record per helper and month, newest month first. A helper only gets a
+ * record for months they have transfers in. Expects helper transfers only.
+ */
+export function groupTransfersByHelperMonth(transfers: PaymentTransfer[]): HelperMonthPayouts[] {
+    const buckets = new Map<string, { monthEnd: Date; items: PaymentTransfer[] }>()
+    for (const transfer of transfers) {
+        const date = new Date(transferDate(transfer))
+        const key = `${transfer.helper_id ?? transfer.helper?.user_id ?? "unknown"}:${monthKey(date)}`
+        let bucket = buckets.get(key)
+        if (!bucket) {
+            // Day 0 of the next month is the last day of this one.
+            bucket = { monthEnd: new Date(date.getFullYear(), date.getMonth() + 1, 0), items: [] }
+            buckets.set(key, bucket)
+        }
+        bucket.items.push(transfer)
+    }
+    return Array.from(buckets, ([key, { monthEnd, items }]) => {
+        const tickets = groupTransfersByTicket(items)
+        const { amountSmallestUnit, failedSmallestUnit, currency } = summarizeTransfers(items)
+        return {
+            key,
+            period: monthLabel(monthEnd.toISOString()),
+            monthEnd: monthEnd.toISOString(),
+            ticketCount: tickets.length,
+            transfers: tickets.flatMap((ticket) => ticket.items),
+            amountSmallestUnit,
+            failedSmallestUnit,
+            currency,
+        }
+    }).sort((a, b) => new Date(b.monthEnd).getTime() - new Date(a.monthEnd).getTime())
+}
