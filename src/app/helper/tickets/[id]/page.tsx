@@ -192,6 +192,9 @@ export default function TicketDetailPage() {
           declineReason: entry.decline_reason ?? null,
           autoAccepted: entry.auto_accepted ?? false,
           helperId: entry.helper_id,
+          helperUser: entry.helper?.user
+            ? { id: entry.helper.user.id, name: entry.helper.user.name, avatarUrl: entry.helper.user.avatar_url ?? null }
+            : undefined,
         }
       }),
     [timeEntriesFromDb]
@@ -1103,7 +1106,7 @@ export default function TicketDetailPage() {
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
             {participantsLoading ? (
-              <div className="text-center text-muted-foreground text-[13px] py-4">Loading...</div>
+              <div className="text-center text-muted-foreground text-[14px] py-4">Loading...</div>
             ) : allParticipants.length > 0 ? (
               <div className="space-y-2 mb-3">
                 {allParticipants.map((participant) => {
@@ -1165,9 +1168,15 @@ export default function TicketDetailPage() {
                   <div key={entry.id} className="py-2 border-b border-border">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                        </div>
+                        {/* Same size as before (24px); radius scaled from the chat avatars (9.625px at 28px) */}
+                        <ProfileAvatar
+                          id={entry.helperUser?.id ?? entry.helperId}
+                          name={entry.helperUser?.name}
+                          avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                          size="sm"
+                          radius="8.25px"
+                          className="w-6 h-6"
+                        />
                         <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                       </div>
                       <div className="flex items-center gap-1">

@@ -51,6 +51,12 @@ export function SidebarDivider() {
 }
 
 /** Placeholder for an empty section ("-" / "Loading..."). */
-export function SidebarEmpty({ children = "-" }: { children?: ReactNode }) {
-  return <div className="text-center text-muted-foreground text-[13px] py-4">{children}</div>
+export function SidebarEmpty({
+  children = "-",
+  className,
+}: {
+  children?: ReactNode
+  className?: string
+}) {
+  return <div className={cn("text-center text-muted-foreground text-[13px] py-4", className)}>{children}</div>
 }

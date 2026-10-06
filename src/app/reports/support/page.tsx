@@ -1,31 +1,37 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type SyntheticEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet, List, MoreVertical } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
-import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
+import { groupTransfersByHelperMonth, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import {
   aggregateProjectIncomeMonthly,
   groupProjectIncomeByTicket,
   PROJECT_INCOME_STATUS_LABELS,
   toProjectTicketIncomeRow,
   type ProjectIncomeStatus,
-  type ProjectTicketIncomeRow,
 } from "@/lib/project-income-reports"
 import {
-  TransactionLine,
   TransactionsPanel,
   TransactionsToggle,
   transactionsPanelId,
@@ -36,26 +42,65 @@ import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 
 type Tab = "monthly" | "tickets" | "helpers"
 type SortDirection = "asc" | "desc"
-type MonthlySortField = "period" | "tickets" | "charged" | "payouts" | "income" | "status"
-type TicketsSortField = "ticket" | "date" | "charged" | "payouts" | "income" | "status"
-type HelpersSortField = "ticketId" | "date" | "helper" | "amount" | "status"
+type MonthlySortField = "period" | "tickets" | "income" | "status"
+type TicketsSortField = "ticket" | "date" | "income" | "status"
+type HelpersSortField = "helper" | "date" | "tickets" | "amount"
 
-/** Ticket ID · Date · Charged · Payouts & fees · Income · Status · Actions (+ checkbox column). */
-const INCOME_GRID = { gridTemplateColumns: "2rem repeat(12, 1fr)" }
-/** The helper payouts table keeps its original 11-column layout. */
-const HELPERS_GRID = { gridTemplateColumns: "2rem repeat(11, 1fr)" }
+// Tickets: checkbox · Ticket ID · Date · Project income · Status · kebab menu.
+// Every column has a width that does not depend on the row's content.
+// Status: fixed, sized for the widest status badge ("No project share").
+// Last: the kebab trigger (2.75rem) plus 36px which, with the 16px grid gap, puts 52px between the Status column and the kebab menu.
+const TICKETS_GRID = {
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.5fr) 9rem calc(2.75rem + 36px)",
+}
+// Helpers: checkbox · Helper · Date · Tickets · Helper income · kebab menu.
+// Same fixed widths as the other tabs, so a helper's tickets (each its own grid) line up under the row's columns.
+const HELPERS_GRID = {
+  gridTemplateColumns: "2rem minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr) calc(2.75rem + 36px)",
+}
+// Monthly reports: every column has a width that does not depend on the row's content.
+// Status: fixed, sized for the status badge.
+// Last: the kebab trigger (2.75rem) plus 36px which, with the 16px grid gap, puts 52px between the Status column and the kebab menu.
+const MONTHLY_GRID = {
+  gridTemplateColumns: "2rem minmax(0,2fr) minmax(0,1fr) minmax(0,1.5fr) 9rem calc(2.75rem + 36px)",
+}
+const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
+
+// The column headers already say "Project income (USD)" / "Helper income (USD)",
+// so USD amounts drop the prefix. Any other currency keeps it so it is never silently hidden.
+const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)
+const formatPaymentAmount = (cents: number, currency: string = "usd") =>
+  currency.toLowerCase() === "usd" ? formatAmountValue(cents) : formatAmount(cents, currency)
+
+// Rows are clickable; controls inside a row stop the event so they do not trigger the row's action.
+const stopRowNavigation = (event: SyntheticEvent) => event.stopPropagation()
+
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 
+// Same Badge classes as User reports: design-token colours from getStatusBadgeClass.
+const statusBadgeClass = (label: string) =>
+  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
+
+// "Received" and "Awaiting payment" are not known to getStatusBadgeClass,
+// so they use the key Monthly reports uses for the same meaning.
 const INCOME_BADGE_CLASS: Record<ProjectIncomeStatus, string> = {
-  received: "bg-green-100 text-green-800 hover:bg-green-100",
-  pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  no_share: "bg-muted text-muted-foreground hover:bg-muted",
-  on_hold: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-  awaiting_payment: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  action_required: "bg-orange-100 text-orange-800 hover:bg-orange-100",
-  failed: "bg-red-100 text-red-800 hover:bg-red-100",
-  cancelled: "bg-muted text-muted-foreground hover:bg-muted",
+  received: statusBadgeClass("paid out"),
+  pending: statusBadgeClass("pending"),
+  no_share: statusBadgeClass("no project share"),
+  on_hold: statusBadgeClass("on hold"),
+  awaiting_payment: statusBadgeClass("pending"),
+  action_required: statusBadgeClass("action required"),
+  failed: statusBadgeClass("failed"),
+  cancelled: statusBadgeClass("cancelled"),
 }
+
+const TICKET_PREVIEW_LENGTH = 15
+/** Start of the user's initial message: the first 15 characters followed by "..", or the whole text when it is no longer than that. */
+const ticketPreview = (text: string) =>
+  text.length > TICKET_PREVIEW_LENGTH ? `${text.slice(0, TICKET_PREVIEW_LENGTH)}..` : text
+
+const RECEIPT_AVAILABLE_TITLE = "Open the Stripe receipt for this charge"
+const RECEIPT_UNAVAILABLE_TITLE = "A receipt becomes available once the payment has been captured"
 
 function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
   if (!active) return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
@@ -143,15 +188,11 @@ interface SingleExport {
   ticketId: string | null
   /** Specific customer charges; when empty the whole ticket is exported. */
   paymentIds?: string[]
+  /** Whole tickets to cover on top of `paymentIds`, for an export that spans several tickets. */
+  ticketIds?: string[]
   /** Specific helper payouts; when set, only these (plus the project's own share of the same charges) are exported. */
   transfers?: PaymentTransfer[]
   title: string
-}
-
-const TRANSFER_STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
-  completed: "Completed",
-  pending: "Pending",
-  failed: "Failed",
 }
 
 function ReceiptButton({ url }: { url: string | null }) {
@@ -175,41 +216,34 @@ function ReceiptButton({ url }: { url: string | null }) {
   )
 }
 
-function TransferStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
-  const label = TRANSFER_STATUS_LABEL[status]
-  if (status === "pending") {
+/** "Receipt" entry of the row's kebab menu, for a ticket with a single charge. */
+function ReceiptMenuItem({ url }: { url: string | null }) {
+  if (url) {
     return (
-      <Badge className={`${getStatusBadgeClass("pending")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-        <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-          <circle cx="6" cy="6" r="2" fill="currentColor" />
-        </svg>
-        {label}
-      </Badge>
+      <DropdownMenuItem asChild>
+        <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
+          <ExternalLink />
+          Receipt
+        </a>
+      </DropdownMenuItem>
     )
   }
-  if (status === "failed") {
-    return <Badge className={`${getStatusBadgeClass("failed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>{label}</Badge>
-  }
+  // Disabled items ignore pointer events, so the explanation sits on a wrapper.
   return (
-    <Badge className={`${getStatusBadgeClass("completed")} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
-      <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-        <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      {label}
-    </Badge>
+    <span title={RECEIPT_UNAVAILABLE_TITLE} className="block">
+      <DropdownMenuItem disabled>
+        <ExternalLink />
+        Receipt
+      </DropdownMenuItem>
+    </span>
   )
 }
 
-/** "USD 12.00 project · USD 30.00 helper · USD 3.00 fee" for one captured charge. */
-function chargeSplitLabel(row: ProjectTicketIncomeRow): string {
-  if (!row.captured) return "Not captured yet"
-  return `${formatAmount(row.projectIncomeSmallestUnit, row.currency)} project · ${formatAmount(row.helperShareSmallestUnit, row.currency)} helper · ${formatAmount(row.platformFeeSmallestUnit, row.currency)} fee`
-}
-
 export default function ReportsSupportPage() {
+  const router = useRouter()
   const [activeTab, setActiveTabState] = useState<Tab>("monthly")
-  const [selectedMonth, setSelectedMonth] = useState("")
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
+  // "all", "current", or a month label from `monthOptions` (Radix Select items cannot have an empty value)
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [monthlySort, setMonthlySort] = useState<{ field: MonthlySortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
   const [ticketsSort, setTicketsSort] = useState<{ field: TicketsSortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
@@ -251,13 +285,19 @@ export default function ReportsSupportPage() {
   // Include the selected month even when it's older than the last 12 months,
   // so the Select can still display it (e.g. after clicking an old monthly report row).
   const monthOptions = useMemo(
-    () => (selectedMonth && !months.includes(selectedMonth) ? [...months, selectedMonth] : months),
-    [months, selectedMonth],
+    () =>
+      selectedPeriod !== "all" && selectedPeriod !== "current" && !months.includes(selectedPeriod)
+        ? [...months, selectedPeriod]
+        : months,
+    [months, selectedPeriod],
   )
 
-  // "Current month" only exists on the per-row tabs; the monthly tab filters by the dropdown alone.
   const targetMonth =
-    selectedMonth || (activeTab !== "monthly" && selectedFilter === "current" ? getMonthYear(new Date().toISOString()) : null)
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? getMonthYear(new Date().toISOString())
+        : selectedPeriod
 
   // Project income per ticket (every payment row, with the project's own transfer status).
   const incomeRows = useMemo(
@@ -278,10 +318,6 @@ export default function ReportsSupportPage() {
           return compare(a.ticketShortId, b.ticketShortId, direction)
         case "date":
           return compare(new Date(a.date).getTime(), new Date(b.date).getTime(), direction)
-        case "charged":
-          return compare(a.chargedSmallestUnit, b.chargedSmallestUnit, direction)
-        case "payouts":
-          return compare(a.helperShareSmallestUnit + a.platformFeeSmallestUnit, b.helperShareSmallestUnit + b.platformFeeSmallestUnit, direction)
         case "income":
           return compare(a.projectIncomeSmallestUnit, b.projectIncomeSmallestUnit, direction)
         case "status":
@@ -295,7 +331,7 @@ export default function ReportsSupportPage() {
   // Monthly: captured income only, so the figures are bookable.
   const monthlyRows = useMemo(() => {
     let list = aggregateProjectIncomeMonthly(incomeRows)
-    if (selectedMonth) list = list.filter((row) => row.period === selectedMonth)
+    if (targetMonth) list = list.filter((row) => row.period === targetMonth)
     const { field, direction } = monthlySort
     if (!field) return list // already newest first
     return [...list].sort((a, b) => {
@@ -304,10 +340,6 @@ export default function ReportsSupportPage() {
           return compare(a.periodRaw, b.periodRaw, direction)
         case "tickets":
           return compare(a.ticketCount, b.ticketCount, direction)
-        case "charged":
-          return compare(a.chargedSmallestUnit, b.chargedSmallestUnit, direction)
-        case "payouts":
-          return compare(a.helperShareSmallestUnit + a.platformFeeSmallestUnit, b.helperShareSmallestUnit + b.platformFeeSmallestUnit, direction)
         case "income":
           return compare(a.projectIncomeSmallestUnit, b.projectIncomeSmallestUnit, direction)
         case "status":
@@ -316,53 +348,50 @@ export default function ReportsSupportPage() {
           return 0
       }
     })
-  }, [incomeRows, selectedMonth, monthlySort])
+  }, [incomeRows, targetMonth, monthlySort])
 
-  // Helpers: payouts per ticket and helper, with each transfer underneath
-  // when a ticket was paid out more than once. The project's own cut is also
-  // a payments_transfers row (transfer_user_type "project", no helper) and
-  // is reported on the other tabs instead.
+  // Helpers: one row per helper and month, with every transfer of that month
+  // underneath. A helper without transfers in a month has no row for it. The
+  // project's own cut is also a payments_transfers row (transfer_user_type
+  // "project", no helper) and is reported on the other tabs instead.
   const helperRows = useMemo(() => {
     if (!transfersData) return []
     let transfers = transfersData.filter((t) => t.transfer_user_type === "helper")
     if (targetMonth) transfers = transfers.filter((t) => getMonthYear(transferDate(t)) === targetMonth)
-    const list = groupTransfersByTicket(transfers, { byHelper: true }).map((group) => {
-      const first = group.items[0]
+    const list = groupTransfersByHelperMonth(transfers).map((group) => {
+      const first = group.transfers[0]
       const helperName = getHelperDisplayName(first.helper)
       const { initial, color } = getHelperInitialAndColor(helperName, first.helper?.user_id ?? first.helper_id)
       return {
         id: group.key,
-        ticketId: group.ticketId,
-        date: formatDate(group.date),
-        dateRaw: group.date,
+        period: group.period,
+        // The month's last day: only then is it known which tickets the helper worked on that month.
+        date: formatDate(group.monthEnd),
+        dateRaw: new Date(group.monthEnd).getTime(),
         helper: helperName,
         helperInitial: initial,
         helperColor: color,
-        amount: formatAmount(group.amountSmallestUnit, group.currency),
         amountRaw: group.amountSmallestUnit,
         failedSmallestUnit: group.failedSmallestUnit,
         currency: group.currency,
-        status: TRANSFER_STATUS_LABEL[group.status],
-        statusType: group.status,
-        transfers: group.items,
+        ticketCount: group.ticketCount,
+        transfers: group.transfers,
       }
     })
     const { field, direction } = helpersSort
-    if (!field) return list
     return list.sort((a, b) => {
       switch (field) {
-        case "ticketId":
-          return compare((a.ticketId ?? "").toLowerCase(), (b.ticketId ?? "").toLowerCase(), direction)
         case "date":
-          return compare(new Date(a.dateRaw).getTime(), new Date(b.dateRaw).getTime(), direction)
+          return compare(a.dateRaw, b.dateRaw, direction)
         case "helper":
           return compare(a.helper.toLowerCase(), b.helper.toLowerCase(), direction)
+        case "tickets":
+          return compare(a.ticketCount, b.ticketCount, direction)
         case "amount":
           return compare(a.amountRaw, b.amountRaw, direction)
-        case "status":
-          return compare(a.status.toLowerCase(), b.status.toLowerCase(), direction)
         default:
-          return 0
+          // Newest month first, helpers alphabetically within a month.
+          return compare(a.dateRaw, b.dateRaw, "desc") || compare(a.helper.toLowerCase(), b.helper.toLowerCase(), "asc")
       }
     })
   }, [transfersData, targetMonth, helpersSort])
@@ -382,13 +411,17 @@ export default function ReportsSupportPage() {
   /**
    * Accounting export for the project: customer charges with their split,
    * the project's own share and helper payouts. A single ticket (or a
-   * helper's payouts on it) exports every charge and transfer involved, so
+   * helper's payouts) exports every charge and transfer involved, so
    * the document reconciles with itself and shows the ticket as one record.
    */
   const buildExport = (period: string | null, single?: SingleExport): ReportDocument => {
     const paymentIds = single?.paymentIds ?? []
+    const ticketIds = single?.ticketIds ?? []
     const sameCharge = (row: { payment_id?: string | null; ticket_id: string | null }) =>
-      paymentIds.length > 0 ? !!row.payment_id && paymentIds.includes(row.payment_id) : row.ticket_id === single?.ticketId
+      (!!row.ticket_id && ticketIds.includes(row.ticket_id)) ||
+      (paymentIds.length > 0
+        ? !!row.payment_id && paymentIds.includes(row.payment_id)
+        : ticketIds.length === 0 && row.ticket_id === single?.ticketId)
     let transfers = transfersData ?? []
     let payments = paymentsData ?? []
     if (single) {
@@ -396,7 +429,7 @@ export default function ReportsSupportPage() {
       transfers = transfers.filter((t) =>
         single.transfers ? transferIds.has(t.id) || (t.transfer_user_type === "project" && sameCharge(t)) : sameCharge(t),
       )
-      payments = payments.filter((p) => (paymentIds.length > 0 ? paymentIds.includes(p.id) : p.ticket_id === single.ticketId))
+      payments = payments.filter((p) => sameCharge({ payment_id: p.id, ticket_id: p.ticket_id }))
     }
     return buildProjectPayoutReport({
       transfers,
@@ -413,13 +446,30 @@ export default function ReportsSupportPage() {
     const report = buildExport(period, single)
     downloadCsv(report.fileName, reportToCsv(report))
   }
-  const exportPeriod = activeTab === "monthly" ? selectedMonth || null : targetMonth
+  const exportPeriod = targetMonth
+
+  /** One helper payout with its customer charge: the "Receipt" of a transaction on the Helpers tab. */
+  const payoutExport = (transfer: PaymentTransfer): SingleExport => ({
+    ticketId: transfer.ticket_id,
+    // Legacy payouts without payment_id fall back to the whole ticket.
+    paymentIds: transfer.payment_id ? [transfer.payment_id] : undefined,
+    transfers: [transfer],
+    title: `Payout ${payoutReference(transfer)}`,
+  })
+  /** All of a helper's payouts in one month, with their customer charges, as one document. */
+  const helperMonthExport = (row: (typeof helperRows)[number]): SingleExport => ({
+    ticketId: null,
+    paymentIds: row.transfers.map((t) => t.payment_id).filter((id): id is string => !!id),
+    // Legacy payouts without payment_id fall back to their whole ticket.
+    ticketIds: row.transfers.filter((t) => !t.payment_id).map((t) => t.ticket_id).filter((id): id is string => !!id),
+    transfers: row.transfers,
+    title: `${row.helper} · ${row.period}`,
+  })
 
   /** Open the Tickets tab filtered to the given month (row.period, e.g. "January 2026"). */
   const openMonthTickets = (period: string) => {
     setActiveTab("tickets")
-    setSelectedMonth(period)
-    setSelectedFilter("all")
+    setSelectedPeriod(period)
   }
 
   const tabButton = (tab: Tab, label: string) => (
@@ -455,34 +505,13 @@ export default function ReportsSupportPage() {
             </div>
 
             <div className="flex gap-2 mb-6">
-              {activeTab !== "monthly" && (
-                <Button
-                  variant={selectedFilter === "current" ? "default" : "outline"}
-                  size="sm"
-                  className={
-                    selectedFilter === "current"
-                      ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                      : `h-9 ${OUTLINE_BUTTON_CLASS}`
-                  }
-                  onClick={() => {
-                    setSelectedFilter("current")
-                    setSelectedMonth("")
-                  }}
-                >
-                  Current month
-                </Button>
-              )}
-              <Select
-                value={selectedMonth}
-                onValueChange={(v) => {
-                  setSelectedMonth(v)
-                  if (v) setSelectedFilter("all")
-                }}
-              >
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                 <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                  <SelectValue placeholder="Choose month" />
+                  <SelectValue placeholder="Choose period" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="current">Current month</SelectItem>
                   {monthOptions.map((month) => (
                     <SelectItem key={month} value={month}>
                       {month}
@@ -490,17 +519,6 @@ export default function ReportsSupportPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant={selectedFilter === "all" && !selectedMonth ? "default" : "outline"}
-                size="sm"
-                className={OUTLINE_BUTTON_CLASS}
-                onClick={() => {
-                  setSelectedFilter("all")
-                  setSelectedMonth("")
-                }}
-              >
-                All
-              </Button>
               <div className="ml-auto flex gap-2">
                 <Button
                   variant="outline"
@@ -537,39 +555,31 @@ export default function ReportsSupportPage() {
             {activeTab === "monthly" && (
               <div className="bg-white rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid gap-4 items-center" style={INCOME_GRID}>
+                  <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                     <div>
                       <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all months" />
                     </div>
-                    <div className="col-span-2">
+                    <div className="min-w-0">
                       <SortHeader label="Period" field="period" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
                     </div>
-                    <div className="col-span-1">
+                    <div className="min-w-0">
                       <SortHeader label="Tickets" field="tickets" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Charged" field="charged" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                    <div className="min-w-0 whitespace-nowrap">
+                      <SortHeader label="Project income (USD)" field="income" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Payouts & fees" field="payouts" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
-                    </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Project income" field="income" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
-                    </div>
-                    <div className="col-span-1">
+                    <div className="min-w-0">
                       <SortHeader label="Status" field="status" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2 flex items-center justify-end">
-                      <span className="text-sm font-medium text-foreground">Actions</span>
-                    </div>
+                    <div />
                   </div>
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
                   ) : monthlyRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
-                      {selectedMonth ? `No income found for ${selectedMonth}` : "No income found"}
+                      {targetMonth ? `No income found for ${targetMonth}` : "No income found"}
                     </div>
                   ) : (
                     monthlyRows.map((row) => (
@@ -588,57 +598,53 @@ export default function ReportsSupportPage() {
                           }
                         }}
                       >
-                        <div className="grid gap-4 items-center" style={INCOME_GRID}>
-                          <div onClick={(e) => e.stopPropagation()}>
+                        <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                          <div onClick={stopRowNavigation}>
                             <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.period}`} />
                           </div>
-                          <div className="col-span-2">
+                          <div className="min-w-0">
                             <span className="text-sm font-medium text-foreground">{row.period}</span>
                           </div>
-                          <div className="col-span-1 text-sm text-foreground">{row.ticketCount}</div>
-                          <div className="col-span-2 text-sm text-foreground">{formatAmount(row.chargedSmallestUnit, row.currency)}</div>
-                          <div className="col-span-2 text-sm text-foreground">
-                            <div>{formatAmount(row.helperShareSmallestUnit, row.currency)}</div>
-                            <div className="text-xs text-muted-foreground">{formatAmount(row.platformFeeSmallestUnit, row.currency)} platform fees</div>
+                          <div className="min-w-0 text-sm text-foreground">{row.ticketCount}</div>
+                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
+                            {formatPaymentAmount(row.projectIncomeSmallestUnit, row.currency)}
                           </div>
-                          <div className="col-span-2 text-sm text-foreground">
-                            <div className="font-medium">{formatAmount(row.projectIncomeSmallestUnit, row.currency)}</div>
-                            {row.receivedSmallestUnit !== row.projectIncomeSmallestUnit && (
-                              <div className="text-xs text-muted-foreground">{formatAmount(row.receivedSmallestUnit, row.currency)} received</div>
-                            )}
-                          </div>
-                          <div className="col-span-1">
+                          <div className="min-w-0">
                             <Badge className={`${getStatusBadgeClass(row.allReceived ? "paid out" : "pending")} hover:opacity-90 text-[13px] px-3 py-1`}>
                               {row.allReceived ? "Received" : "Pending"}
                             </Badge>
                           </div>
-                          <div className="col-span-2 flex items-center justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={OUTLINE_BUTTON_CLASS}
-                              title={`Download the ${row.period} project report as PDF`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                exportPdf(row.period)
-                              }}
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={OUTLINE_BUTTON_CLASS}
-                              title={`Export the ${row.period} project report as CSV`}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                exportCsv(row.period)
-                              }}
-                            >
-                              <FileSpreadsheet className="w-3.5 h-3.5" />
-                              CSV
-                            </Button>
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={KEBAB_BUTTON_CLASS}
+                                  aria-label={`More actions for ${row.period}`}
+                                  onClick={stopRowNavigation}
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              {/* Portalled, but React events still bubble to the row. */}
+                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                                <DropdownMenuItem
+                                  title={`Download the ${row.period} project report as PDF`}
+                                  onSelect={() => exportPdf(row.period)}
+                                >
+                                  <Download />
+                                  PDF
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  title={`Export the ${row.period} project report as CSV`}
+                                  onSelect={() => exportCsv(row.period)}
+                                >
+                                  <FileSpreadsheet />
+                                  CSV
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                       </div>
@@ -652,36 +658,28 @@ export default function ReportsSupportPage() {
             {activeTab === "tickets" && (
               <div className="bg-white rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid gap-4 items-center" style={INCOME_GRID}>
+                  <div className="grid gap-4 items-center" style={TICKETS_GRID}>
                     <div>
                       <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
                     </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Ticket" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    <div className="min-w-0">
+                      <SortHeader label="Ticket ID" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
                     </div>
-                    <div className="col-span-1">
+                    <div className="min-w-0">
                       <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Charged" field="charged" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    <div className="min-w-0 whitespace-nowrap">
+                      <SortHeader label="Project income (USD)" field="income" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Payouts & fees" field="payouts" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                    </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Project income" field="income" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                    </div>
-                    <div className="col-span-1">
+                    <div className="min-w-0">
                       <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2 flex items-center justify-end">
-                      <span className="text-sm font-medium text-foreground">Actions</span>
-                    </div>
+                    <div />
                   </div>
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
                   ) : ticketRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("ticket payments")}</div>
                   ) : (
@@ -689,97 +687,143 @@ export default function ReportsSupportPage() {
                       const count = row.transactions.length
                       const expanded = count > 1 && isExpanded(row.id)
                       const panelId = transactionsPanelId(row.id)
+                      const ticketHref = row.ticketId ? `/helper/tickets/${row.ticketId}` : null
                       return (
-                      <div key={row.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                        <div className="grid gap-4 items-center" style={INCOME_GRID}>
-                          <div>
-                            <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ticket ${row.ticketShortId}`} />
+                      <div
+                        key={row.id}
+                        className={cn(
+                          "px-6 py-4 hover:bg-[#f7f9ff]",
+                          ticketHref &&
+                            "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
+                        )}
+                        {...(ticketHref
+                          ? {
+                              role: "link",
+                              tabIndex: 0,
+                              "aria-label": `Open ticket ${getShortTicketId(row.ticketId)}`,
+                              onClick: () => router.push(ticketHref),
+                              // Only when the row itself has focus, not a control inside it.
+                              onKeyDown: (event) => {
+                                if (event.key === "Enter" && event.target === event.currentTarget) {
+                                  router.push(ticketHref)
+                                }
+                              },
+                            }
+                          : {})}
+                      >
+                        <div className="grid gap-4 items-center" style={TICKETS_GRID}>
+                          <div className="flex items-center">
+                            <Checkbox
+                              checked={selectedRows.includes(row.id)}
+                              onCheckedChange={() => handleRowSelect(row.id)}
+                              onClick={stopRowNavigation}
+                              aria-label={`Select ticket ${row.ticketShortId}`}
+                            />
                           </div>
-                          <div className="col-span-2 min-w-0">
-                            {row.ticketId ? (
-                              <Link href={`/helper/tickets/${row.ticketId}`} className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums">
+                          <div className="min-w-0">
+                            {ticketHref ? (
+                              <Link
+                                href={ticketHref}
+                                onClick={stopRowNavigation}
+                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              >
                                 {getShortTicketId(row.ticketId)}
                               </Link>
                             ) : (
                               <span className="text-sm font-medium text-foreground">—</span>
                             )}
-                            <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
-                              {row.ticketTitle}
+                            <div className="text-xs text-muted-foreground" title={row.ticketTitle}>
+                              {ticketPreview(row.ticketTitle)}
                             </div>
-                            <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(row.id)} panelId={panelId} noun="charge" />
                           </div>
-                          <div className="col-span-1 text-sm text-muted-foreground">{formatDate(row.date)}</div>
-                          <div className="col-span-2 text-sm text-foreground">
-                            <div>{formatAmount(row.chargedSmallestUnit, row.currency)}</div>
-                            {!row.captured && <div className="text-xs text-muted-foreground">not captured yet</div>}
-                            {row.uncapturedSmallestUnit > 0 && (
-                              <div className="text-xs text-muted-foreground">+ {formatAmount(row.uncapturedSmallestUnit, row.currency)} not captured yet</div>
-                            )}
+                          <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
+                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
+                            {formatPaymentAmount(row.projectIncomeSmallestUnit, row.currency)}
                           </div>
-                          <div className="col-span-2 text-sm text-foreground">
-                            <div>{formatAmount(row.helperShareSmallestUnit, row.currency)}</div>
-                            <div className="text-xs text-muted-foreground">{formatAmount(row.platformFeeSmallestUnit, row.currency)} platform {count > 1 ? "fees" : "fee"}</div>
+                          <div className="min-w-0">
+                            <Badge className={INCOME_BADGE_CLASS[row.status]}>{PROJECT_INCOME_STATUS_LABELS[row.status]}</Badge>
                           </div>
-                          <div className="col-span-2 text-sm font-medium text-foreground">{formatAmount(row.projectIncomeSmallestUnit, row.currency)}</div>
-                          <div className="col-span-1">
-                            <Badge variant="secondary" className={`${INCOME_BADGE_CLASS[row.status]} text-xs`}>
-                              {PROJECT_INCOME_STATUS_LABELS[row.status]}
-                            </Badge>
-                          </div>
-                          <div className="col-span-2 flex items-center justify-end space-x-2">
-                            {count > 1 ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className={OUTLINE_BUTTON_CLASS}
-                                aria-expanded={expanded}
-                                aria-controls={expanded ? panelId : undefined}
-                                title="Each charge has its own Stripe receipt"
-                                onClick={() => toggle(row.id)}
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                Receipts
-                              </Button>
-                            ) : (
-                              <ReceiptButton url={row.receiptUrl} />
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={OUTLINE_BUTTON_CLASS}
-                              title="Download this ticket's charges, payouts and project income as a PDF"
-                              onClick={() =>
-                                exportPdf(null, {
-                                  ticketId: row.ticketId,
-                                  paymentIds: row.ticketId ? undefined : row.transactions.map((t) => t.id),
-                                  title: `Ticket ${row.ticketShortId}`,
-                                })
-                              }
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
-                            </Button>
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={KEBAB_BUTTON_CLASS}
+                                  aria-label={`More actions for ticket ${row.ticketShortId}`}
+                                  onClick={stopRowNavigation}
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              {/* Portalled, but React events still bubble to the row. */}
+                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                                {count > 1 ? (
+                                  <DropdownMenuItem title="Each charge has its own Stripe receipt" onSelect={() => toggle(row.id)}>
+                                    <ExternalLink />
+                                    Receipts
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <ReceiptMenuItem url={row.receiptUrl} />
+                                )}
+                                <DropdownMenuItem
+                                  title="Download this ticket's charges, payouts and project income as a PDF"
+                                  onSelect={() =>
+                                    exportPdf(null, {
+                                      ticketId: row.ticketId,
+                                      paymentIds: row.ticketId ? undefined : row.transactions.map((t) => t.id),
+                                      title: `Ticket ${row.ticketShortId}`,
+                                    })
+                                  }
+                                >
+                                  <Download />
+                                  PDF
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
+                        {count > 1 && (
+                          <div className="w-fit" onClick={stopRowNavigation}>
+                            <TransactionsToggle
+                              className="ml-12 mt-2"
+                              count={count}
+                              expanded={expanded}
+                              onToggle={() => toggle(row.id)}
+                              panelId={panelId}
+                            />
+                          </div>
+                        )}
                         {expanded && (
-                          <TransactionsPanel id={panelId}>
+                          <div className="cursor-default" onClick={stopRowNavigation}>
+                          {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                          <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
                             {row.transactions.map((charge, index) => (
-                              <TransactionLine
+                              <div
                                 key={charge.id}
-                                index={index}
-                                count={count}
-                                date={formatDate(charge.date)}
-                                description={<span title={charge.stripeTransferId ?? undefined}>{chargeSplitLabel(charge)}</span>}
-                                amount={formatAmount(charge.chargedSmallestUnit, charge.currency)}
-                                status={
-                                  <Badge variant="secondary" className={`${INCOME_BADGE_CLASS[charge.status]} text-xs`}>
-                                    {PROJECT_INCOME_STATUS_LABELS[charge.status]}
-                                  </Badge>
-                                }
-                                actions={<ReceiptButton url={charge.receiptUrl} />}
-                              />
+                                role="listitem"
+                                className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                style={TICKETS_GRID}
+                              >
+                                <span />
+                                <span className="min-w-0 text-xs text-muted-foreground tabular-nums">
+                                  {index + 1} of {count}
+                                </span>
+                                <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(charge.date)}</span>
+                                <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                  {formatPaymentAmount(charge.projectIncomeSmallestUnit, charge.currency)}
+                                </span>
+                                <span className="min-w-0">
+                                  <Badge className={INCOME_BADGE_CLASS[charge.status]}>{PROJECT_INCOME_STATUS_LABELS[charge.status]}</Badge>
+                                </span>
+                                {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                <span className="flex items-center justify-end [&>*]:shrink-0">
+                                  <ReceiptButton url={charge.receiptUrl} />
+                                </span>
+                              </div>
                             ))}
                           </TransactionsPanel>
+                          </div>
                         )}
                       </div>
                       )
@@ -789,148 +833,167 @@ export default function ReportsSupportPage() {
               </div>
             )}
 
-            {/* Helpers: payouts to each helper per ticket */}
+            {/* Helpers: each helper's income per month, with that month's tickets underneath */}
             {activeTab === "helpers" && (
               <div className="bg-white rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid gap-4 items-center" style={HELPERS_GRID}>
                     <div>
-                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all payouts" />
+                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all helpers" />
                     </div>
-                    <div className="col-span-1">
-                      <SortHeader label="Ticket ID" field="ticketId" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
-                    </div>
-                    <div className="col-span-1">
-                      <SortHeader label="Date" field="date" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
-                    </div>
-                    <div className="col-span-3">
+                    <div className="min-w-0">
                       <SortHeader label="Helper" field="helper" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Amount" field="amount" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    <div className="min-w-0">
+                      <SortHeader label="Date" field="date" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2">
-                      <SortHeader label="Status" field="status" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                    <div className="min-w-0">
+                      <SortHeader label="Tickets" field="tickets" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
                     </div>
-                    <div className="col-span-2 flex items-center justify-end">
-                      <span className="text-sm font-medium text-foreground">Actions</span>
+                    <div className="min-w-0 whitespace-nowrap">
+                      <SortHeader label="Helper income (USD)" field="amount" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
                     </div>
+                    <div />
                   </div>
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
                   ) : helperRows.length === 0 ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("helper payouts")}</div>
                   ) : (
-                    helperRows.map((ticket) => {
-                      const count = ticket.transfers.length
-                      const expanded = count > 1 && isExpanded(ticket.id)
-                      const panelId = transactionsPanelId(ticket.id)
-                      // The PDF covers all of this helper's payouts on the ticket, not only the filtered month's.
-                      const allTransfers = ticket.ticketId
-                        ? (transfersData ?? []).filter(
-                            (t) =>
-                              t.transfer_user_type === "helper" &&
-                              t.ticket_id === ticket.ticketId &&
-                              (t.helper_id ?? t.helper?.user_id ?? "unknown") ===
-                                (ticket.transfers[0].helper_id ?? ticket.transfers[0].helper?.user_id ?? "unknown"),
-                          )
-                        : ticket.transfers
-                      const paymentIds = allTransfers.map((t) => t.payment_id).filter((id): id is string => !!id)
+                    helperRows.map((row) => {
+                      const expanded = isExpanded(row.id)
+                      const panelId = transactionsPanelId(row.id)
                       return (
-                      <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div
+                        key={row.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={expanded}
+                        aria-controls={expanded ? panelId : undefined}
+                        aria-label={`Tickets for ${row.helper}, ${row.period}`}
+                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        onClick={() => toggle(row.id)}
+                        onKeyDown={(e) => {
+                          // Only when the row itself has focus, not a control inside it.
+                          if (e.target !== e.currentTarget) return
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            toggle(row.id)
+                          }
+                        }}
+                      >
                         <div className="grid gap-4 items-center" style={HELPERS_GRID}>
-                          <div>
-                            <Checkbox checked={selectedRows.includes(ticket.id)} onCheckedChange={() => handleRowSelect(ticket.id)} aria-label={`Select payout ${ticket.id}`} />
+                          <div onClick={stopRowNavigation}>
+                            <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.helper}, ${row.period}`} />
                           </div>
-                          <div className="col-span-1 min-w-0">
-                            {ticket.ticketId ? (
-                              <Link
-                                href={`/helper/tickets/${ticket.ticketId}`}
-                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
-                              >
-                                {getShortTicketId(ticket.ticketId)}
-                              </Link>
-                            ) : (
-                              <span className="text-sm font-medium text-foreground">—</span>
-                            )}
-                            <div>
-                              <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(ticket.id)} panelId={panelId} noun="payout" />
-                            </div>
-                          </div>
-                          <div className="col-span-1">
-                            <span className="text-sm text-muted-foreground">{ticket.date}</span>
-                          </div>
-                          <div className="col-span-3 flex items-center gap-[18px]">
+                          <div className="min-w-0 flex items-center gap-[18px]">
                             <div
                               className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                              style={{ backgroundColor: ticket.helperColor }}
+                              style={{ backgroundColor: row.helperColor }}
                             >
-                              {ticket.helperInitial}
+                              {row.helperInitial}
                             </div>
-                            <span className="text-sm font-medium text-foreground">{ticket.helper}</span>
+                            <span className="min-w-0 truncate text-sm font-medium text-foreground" title={row.helper}>
+                              {row.helper}
+                            </span>
                           </div>
-                          <div className="col-span-2">
-                            <span className="text-sm text-foreground">{ticket.amount}</span>
-                            {ticket.failedSmallestUnit > 0 && (
-                              <div className="text-xs text-red-700">{formatAmount(ticket.failedSmallestUnit, ticket.currency)} failed</div>
+                          <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
+                          <div className="min-w-0 text-sm text-foreground">{row.ticketCount}</div>
+                          <div className="min-w-0 text-sm text-foreground">
+                            <div className="whitespace-nowrap">{formatPaymentAmount(row.amountRaw, row.currency)}</div>
+                            {row.failedSmallestUnit > 0 && (
+                              <div className="text-xs text-red-700">{formatPaymentAmount(row.failedSmallestUnit, row.currency)} failed</div>
                             )}
                           </div>
-                          <div className="col-span-2">
-                            <TransferStatusBadge status={ticket.statusType} />
-                          </div>
-                          <div className="col-span-2 flex items-center justify-end space-x-2">
-                            {ticket.ticketId ? (
-                              <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
-                                <Link href={`/helper/tickets/${ticket.ticketId}`}>Open</Link>
-                              </Button>
-                            ) : (
-                              <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
-                                Open
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className={OUTLINE_BUTTON_CLASS}
-                              title={
-                                count > 1
-                                  ? "Download these payouts and their customer charges as a PDF"
-                                  : "Download this payout and its customer charge as a PDF"
-                              }
-                              onClick={() =>
-                                exportPdf(null, {
-                                  ticketId: ticket.ticketId,
-                                  // Legacy payouts without payment_id fall back to the whole ticket.
-                                  paymentIds: paymentIds.length === allTransfers.length ? paymentIds : undefined,
-                                  transfers: allTransfers,
-                                  title:
-                                    allTransfers.length > 1
-                                      ? `Ticket ${getShortTicketId(ticket.ticketId)} · ${ticket.helper}`
-                                      : `Payout ${payoutReference(allTransfers[0])}`,
-                                })
-                              }
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              PDF
-                            </Button>
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={KEBAB_BUTTON_CLASS}
+                                  aria-label={`More actions for ${row.helper}, ${row.period}`}
+                                  onClick={stopRowNavigation}
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              {/* Portalled, but React events still bubble to the row. */}
+                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                                <DropdownMenuItem
+                                  title={`Download all of ${row.helper}'s transactions in ${row.period} as one PDF`}
+                                  onSelect={() => exportPdf(null, helperMonthExport(row))}
+                                >
+                                  <Download />
+                                  PDF
+                                </DropdownMenuItem>
+                                {/* Opens the same list as clicking the row; an already open list stays open. */}
+                                <DropdownMenuItem
+                                  title={`Show all of ${row.helper}'s transactions in ${row.period}`}
+                                  onSelect={() => {
+                                    if (!expanded) toggle(row.id)
+                                  }}
+                                >
+                                  <List />
+                                  See transactions
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                         {expanded && (
-                          <TransactionsPanel id={panelId}>
-                            {ticket.transfers.map((transfer, index) => (
-                              <TransactionLine
+                          <div className="cursor-default" onClick={stopRowNavigation}>
+                          {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                          <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                            {row.transfers.map((transfer) => (
+                              <div
                                 key={transfer.id}
-                                index={index}
-                                count={count}
-                                date={formatDate(transferDate(transfer))}
-                                description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
-                                amount={formatAmount(transfer.amount_smallest_unit, transfer.currency)}
-                                status={<TransferStatusBadge status={transfer.status} />}
-                              />
+                                role="listitem"
+                                className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                style={HELPERS_GRID}
+                              >
+                                <span />
+                                {/* Starts where the helper's name starts: past the avatar (32px) and its gap (18px). */}
+                                <span className="min-w-0 pl-[50px]">
+                                  {transfer.ticket_id ? (
+                                    <Link
+                                      href={`/helper/tickets/${transfer.ticket_id}`}
+                                      className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                                    >
+                                      {getShortTicketId(transfer.ticket_id)}
+                                    </Link>
+                                  ) : (
+                                    <span className="text-sm font-medium text-foreground">—</span>
+                                  )}
+                                </span>
+                                <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
+                                {/* Tickets column: the count belongs to the row above. */}
+                                <span />
+                                <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                  {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency)}
+                                  {/* Not paid, and not part of the row's income. */}
+                                  {transfer.status === "failed" && <span className="ml-2 text-xs text-red-700">failed</span>}
+                                </span>
+                                {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                <span className="flex items-center justify-end [&>*]:shrink-0">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    type="button"
+                                    className={OUTLINE_BUTTON_CLASS}
+                                    title="Download this transaction and its customer charge as a PDF"
+                                    onClick={() => exportPdf(null, payoutExport(transfer))}
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    Receipt
+                                  </Button>
+                                </span>
+                              </div>
                             ))}
                           </TransactionsPanel>
+                          </div>
                         )}
                       </div>
                       )

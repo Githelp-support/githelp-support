@@ -3,7 +3,7 @@
 import { Bell, ChevronDown, Check, Plus } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { logoutUser } from "@/lib/supabase/auth"
@@ -20,6 +20,7 @@ import { NotificationsPanel } from "./notifications-panel"
 import type { Notification } from "@/hooks/useNotifications"
 import { useUser, type UserRole } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
 import {
   useProjectAvailableRoles,
@@ -77,9 +78,11 @@ const ProjectLogo = ({
 
 export function TopBar() {
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
   const { user, switchRole } = useUser()
   const { selectedProjectId, setSelectedProjectId } = useProjectSelection()
+  const { confirmNavigation } = useUnsavedChanges()
   const { data: userProjects = [], isLoading: projectsLoading } = useUserProjects()
   const { data: userRoles, isSuccess: userRolesLoaded } = useUserRoles()
 
@@ -150,29 +153,42 @@ export function TopBar() {
     return role.charAt(0).toUpperCase() + role.slice(1)
   }
 
+  // Both the role change and the redirect run inside the unsaved-changes
+  // guard so choosing "Stay" leaves the current role and page untouched.
   const handleSwitchRole = (role: UserRole) => {
-    switchRole(role)
-    routeForRole(role)
+    confirmNavigation(() => {
+      switchRole(role)
+      routeForRole(role)
+    })
   }
 
   const isSignedIn = Boolean(user.id)
 
-  const handleAuthClick = async () => {
-    if (isSignedIn) {
-      try {
-        await logoutUser()
-        // Force a clean reload to /auth/signin so no partially-viewable
-        // portal remains, regardless of the user's role.
-        if (typeof window !== "undefined") {
-          window.location.href = "/auth/signin"
-        } else {
-          router.push("/auth/signin")
-        }
-      } catch (error) {
-        console.error("Sign out failed:", error)
+  const signOut = async () => {
+    try {
+      await logoutUser()
+      // Force a clean reload to /auth/signin so no partially-viewable
+      // portal remains, regardless of the user's role. The hard redirect is
+      // covered by the guard's beforeunload handler.
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth/signin"
+      } else {
+        router.push("/auth/signin")
       }
+    } catch (error) {
+      console.error("Sign out failed:", error)
+    }
+  }
+
+  // Guarded so an unsaved page prompts before the session is torn down or
+  // the user is sent to the sign-in page.
+  const handleAuthClick = () => {
+    if (isSignedIn) {
+      confirmNavigation(() => {
+        void signOut()
+      })
     } else {
-      router.push("/auth/signin")
+      confirmNavigation(() => router.push("/auth/signin"))
     }
   }
 
@@ -209,6 +225,15 @@ export function TopBar() {
   }, [isSignedIn, rolesResolved, availableRoles, user.role])
 
   if (!isSignedIn) return null
+
+  // The "I am acting as" role chooser is part of the login flow — the user
+  // has not picked a role yet, so the nav banner must not be shown there.
+  if (pathname === "/auth/role" || pathname?.startsWith("/auth/role/")) return null
+
+  // Hide the top bar on the invite acceptance flow (/invite/[token]) so its
+  // full-screen centered cards render without the role/project/notifications
+  // banner.
+  if (pathname?.startsWith("/invite")) return null
 
   return (
     <>

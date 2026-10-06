@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
 import { Checkbox } from "@/components/ui/checkbox"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -121,6 +122,20 @@ export default function HelperProfilePage() {
     setSyncedKeywordIds(selectedKeywordIds)
     setSelectedKeywords(selectedKeywordIds)
   }
+
+  // Warn before navigating away while any independently-saved section differs from its last-synced data
+  const contactDirty =
+    !!syncedHelperData &&
+    (name !== (syncedHelperData.user?.name ?? "") ||
+      email !== (syncedHelperData.user?.email ?? ""))
+  const categoryDirty =
+    !!syncedHelperData && category !== (syncedHelperData.category ?? "community")
+  const keywordsDirty =
+    syncedKeywordIds !== undefined &&
+    [...selectedKeywords].sort((a, b) => a - b).join(",") !==
+      [...syncedKeywordIds].sort((a, b) => a - b).join(",")
+  const isDirty = contactDirty || categoryDirty || keywordsDirty
+  useUnsavedChangesGuard(isDirty)
 
   const handleSaveProfile = async () => {
     if (!user?.id) return
@@ -273,8 +288,7 @@ export default function HelperProfilePage() {
               <Button
                 onClick={handleSaveProfile}
                 disabled={updateUserProfile.isPending}
-                variant="outline"
-                className="border-border"
+                variant="lavender"
                 style={{ marginTop: "22px" }}
               >
                 {updateUserProfile.isPending ? (
@@ -307,8 +321,7 @@ export default function HelperProfilePage() {
               <Button
                 onClick={handleSaveCategory}
                 disabled={updateHelper.isPending}
-                variant="outline"
-                className="border-border"
+                variant="lavender"
               >
                 {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
               </Button>
@@ -346,8 +359,8 @@ export default function HelperProfilePage() {
             <Button
               onClick={handleSaveKeywords}
               disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
-              variant="outline"
-              className="border-border mt-[22px]"
+              variant="lavender"
+              className="mt-[22px]"
             >
               {setHelperKeywords.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

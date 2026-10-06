@@ -129,9 +129,10 @@ export default function AuthConfirmedPage() {
       void ensureUserOrganization("admin")
     }
 
-    // If there's a specific redirect and user doesn't need onboarding, go there
+    // If there's a specific redirect and user doesn't need onboarding,
+    // go through the role chooser first (it skips itself for single-role accounts)
     if (redirectTo && !onboardingStatus.needsOnboarding && onboardingStatus.isMember) {
-      router.push(redirectTo)
+      router.push(`/auth/role?redirect=${encodeURIComponent(redirectTo)}`)
       return
     }
 
@@ -146,15 +147,15 @@ export default function AuthConfirmedPage() {
       return
     }
 
-    // Default: go to dashboard or redirect URL
-    router.push(redirectTo || "/")
+    // Default: go through the role chooser, forwarding any redirect URL
+    router.push(redirectTo ? `/auth/role?redirect=${encodeURIComponent(redirectTo)}` : "/auth/role")
   }, [isProcessing, onboardingLoading, onboardingStatus, router, searchParams])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
       <div className="text-center">
         <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">Completing sign in...</p>
+        <p className="text-[14px] text-muted-foreground">Completing sign in...</p>
       </div>
     </div>
   )

@@ -17,6 +17,7 @@ import { connectStatusLabel } from "@/lib/payment-status"
 import { formatCapDollars, parseCapDollars } from "@/lib/cap-format"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 import { cn } from "@/lib/utils"
 
 // Org-level spending caps are temporarily hidden from the admin Payments page.
@@ -206,6 +207,16 @@ export default function PaymentSettingsPage() {
     originalValues.sla_enabled !== null &&
     (paymentByTicket !== originalValues.tickets_enabled ||
       paymentBySLA !== originalValues.sla_enabled)
+
+  // Warn before navigating away while any payment section has unsaved edits
+  useUnsavedChangesGuard(
+    hasTeamChanges ||
+      hasCommunityChanges ||
+      hasConsultantChanges ||
+      hasUserChanges ||
+      hasUserOptionsChanges ||
+      hasCapsChanges
+  )
 
   // Compute 1-hour support cost for distribution preview (start price + 60 min at first-60 rate)
   const oneHourTotal = (() => {
@@ -401,9 +412,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveTeamSettings}
                           disabled={!hasTeamChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -466,9 +476,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveCommunitySettings}
                           disabled={!hasCommunityChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -537,9 +546,8 @@ export default function PaymentSettingsPage() {
                           <Info className="w-4 h-4 text-muted-foreground" />
                         </div>
                         <Button
-                          variant="outline"
+                          variant="lavender"
                           size="sm"
-                          className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                           onClick={handleSaveConsultantSettings}
                           disabled={!hasConsultantChanges || updatePaymentSettings.isPending || settingsLoading}
                         >
@@ -686,9 +694,8 @@ export default function PaymentSettingsPage() {
 
                   <div className="flex mt-6">
                     <Button
-                      variant="outline"
+                      variant="lavender"
                       size="sm"
-                      className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                       onClick={handleSaveUserOptions}
                       disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
                     >
@@ -775,9 +782,8 @@ export default function PaymentSettingsPage() {
 
                     <div className="flex mt-6">
                       <Button
-                        variant="outline"
+                        variant="lavender"
                         size="sm"
-                        className="text-muted-foreground border-[rgba(0,0,0,0.1)] bg-transparent"
                         onClick={handleSaveUserSettings}
                         disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
                       >
@@ -796,9 +802,8 @@ export default function PaymentSettingsPage() {
                       <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <Button
-                      variant="outline"
+                      variant="lavender"
                       size="sm"
-                      className="text-muted-foreground border-border bg-transparent"
                       onClick={handleSaveCaps}
                       disabled={!orgId || !hasCapsChanges || updateCaps.isPending}
                     >

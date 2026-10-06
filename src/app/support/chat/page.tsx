@@ -425,7 +425,7 @@ export default function UserSupportChatPage() {
         <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
           <Sidebar />
           <main className="flex-1 flex items-center justify-center">
-            <div className="text-muted-foreground">Loading your support…</div>
+            <div className="text-[14px] text-muted-foreground">Loading your support…</div>
           </main>
         </div>
       )
@@ -506,7 +506,7 @@ export default function UserSupportChatPage() {
       <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
         <Sidebar projectPageHref={projectPageHref} />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-muted-foreground">Loading ticket…</div>
+          <div className="text-[14px] text-muted-foreground">Loading ticket…</div>
         </main>
       </div>
     )
