@@ -10,6 +10,8 @@ import {
     groupTransfersByTicket,
     normalizeTransferStatus,
     payoutReference,
+    ticketClosedAt,
+    transferReportDate,
     transferTicketType,
 } from "./helper-payout-reports"
 
@@ -39,6 +41,7 @@ function entry(overrides: Partial<HelperTimeEntry> = {}): HelperTimeEntry {
         time_milliseconds: 30 * 60000,
         date: "2026-08-11",
         created_at: "2026-08-11T12:00:00.000Z",
+        ticket_closed_at: "2026-08-20T12:00:00.000Z",
         ...overrides,
     }
 }
@@ -130,6 +133,33 @@ describe("formatMinutes", () => {
     })
 })
 
+describe("ticketClosedAt", () => {
+    it("is the completion (else cancellation) time, and null while the ticket is open", () => {
+        expect(ticketClosedAt({ status: "completed", completed_at: "2026-08-20T12:00:00.000Z" })).toBe("2026-08-20T12:00:00.000Z")
+        expect(ticketClosedAt({ status: "cancelled", cancelled_at: "2026-08-21T12:00:00.000Z" })).toBe("2026-08-21T12:00:00.000Z")
+        // Reopened: the old completed_at no longer counts.
+        expect(ticketClosedAt({ status: "in-progress", completed_at: "2026-08-20T12:00:00.000Z" })).toBeNull()
+        expect(ticketClosedAt({ completed_at: "2026-08-20T12:00:00.000Z" })).toBe("2026-08-20T12:00:00.000Z")
+        expect(ticketClosedAt(null)).toBeNull()
+    })
+})
+
+describe("transferReportDate", () => {
+    const ticket = { id: "ticket-1", title: "T" }
+    it("follows the ticket's close, else the payout's own date", () => {
+        // Ticket closed 30 September; Stripe settled the transfer on 2 October.
+        const late = transfer({
+            created_at: "2026-09-30T13:00:00.000Z",
+            completed_at: "2026-10-02T12:00:00.000Z",
+            ticket: { ...ticket, status: "completed", completed_at: "2026-09-30T12:00:00.000Z" },
+        })
+        expect(transferReportDate(late)).toBe("2026-09-30T12:00:00.000Z")
+        // Interim payout on a ticket that is still open.
+        expect(transferReportDate(transfer({ ticket: { ...ticket, status: "in-progress" } }))).toBe("2026-08-12T12:00:00.000Z")
+        expect(transferReportDate(transfer())).toBe("2026-08-12T12:00:00.000Z")
+    })
+})
+
 describe("aggregateHelperMonthly", () => {
     it("groups payouts and logged time per month, ignores failed, newest first", () => {
         const rows = aggregateHelperMonthly(
@@ -139,9 +169,9 @@ describe("aggregateHelperMonthly", () => {
                 transfer({ id: "c", amount_smallest_unit: 999, status: "failed" }),
                 transfer({ id: "d", ticket_id: "ticket-3", completed_at: "2026-09-01T12:00:00.000Z", amount_smallest_unit: 300 }),
             ],
-            [entry(), entry({ id: "e-2", time_milliseconds: 40 * 60000 }), entry({ id: "e-3", date: "2026-07-31", time_milliseconds: 60000 })],
+            [entry(), entry({ id: "e-2", time_milliseconds: 40 * 60000 })],
         )
-        expect(rows.map((r) => r.id)).toEqual(["2026-09", "2026-08", "2026-07"])
+        expect(rows.map((r) => r.id)).toEqual(["2026-09", "2026-08"])
         expect(rows[1]).toMatchObject({
             ticketsClosed: 2,
             minutesLogged: 70,
@@ -149,7 +179,28 @@ describe("aggregateHelperMonthly", () => {
             paidOutSmallestUnit: 1000,
         })
         expect(rows[0]).toMatchObject({ ticketsClosed: 1, minutesLogged: 0, earningsSmallestUnit: 300 })
-        expect(rows[2]).toMatchObject({ ticketsClosed: 0, minutesLogged: 1, earningsSmallestUnit: 0 })
+    })
+
+    it("reports a ticket's time and payouts in the month the ticket closed", () => {
+        const closed = { id: "ticket-1", title: "T", status: "completed", completed_at: "2026-09-30T12:00:00.000Z" }
+        const rows = aggregateHelperMonthly(
+            // Settled by Stripe in October, but the ticket closed in September.
+            [transfer({ created_at: "2026-09-30T13:00:00.000Z", completed_at: "2026-10-02T12:00:00.000Z", ticket: closed })],
+            [
+                // Logged in July and August on the same ticket.
+                entry({ date: "2026-07-15", ticket_closed_at: closed.completed_at }),
+                entry({ id: "e-2", date: "2026-08-03", ticket_closed_at: closed.completed_at, time_milliseconds: 60 * 60000 }),
+                // Still-open ticket: not reported yet.
+                entry({ id: "e-3", ticket_id: "ticket-open", ticket_closed_at: null, time_milliseconds: 600 * 60000 }),
+            ],
+        )
+        expect(rows).toHaveLength(1)
+        expect(rows[0]).toMatchObject({ id: "2026-09", ticketsClosed: 1, minutesLogged: 90, earningsSmallestUnit: 1000 })
+    })
+
+    it("counts a closed ticket with time but no payout (free support)", () => {
+        const rows = aggregateHelperMonthly([], [entry({ ticket_id: "free-ticket" })])
+        expect(rows).toEqual([expect.objectContaining({ id: "2026-08", ticketsClosed: 1, minutesLogged: 30, earningsSmallestUnit: 0 })])
     })
 })
 
@@ -232,6 +283,16 @@ describe("groupTransfersByHelperMonth", () => {
         expect(group.amountSmallestUnit).toBe(1000)
         expect(group.failedSmallestUnit).toBe(250)
         expect(group.ticketCount).toBe(2)
+    })
+
+    it("files a ticket's transfers under the month the ticket closed", () => {
+        const [group] = groupTransfersByHelperMonth([
+            transfer({
+                completed_at: "2026-10-02T12:00:00.000Z",
+                ticket: { id: "ticket-1", title: "T", status: "completed", completed_at: "2026-09-30T12:00:00.000Z" },
+            }),
+        ])
+        expect(group.key).toBe("helper-1:2026-09")
     })
 
     it("returns nothing for a helper without transfers", () => {

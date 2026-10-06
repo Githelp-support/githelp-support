@@ -62,6 +62,7 @@ export const SUPPORT_TICKET_PREVIEW_CARDS: SupportTicketPreviewCard[] = [
 export type PayoutPreviewRow = {
     id: string
     ticketId: string
+    ticketTitle: string
     date: string
     ticketType: string
     amount: string
@@ -72,6 +73,7 @@ export const PAYOUT_PREVIEW_ROWS: PayoutPreviewRow[] = [
     {
         id: "preview-payout-1",
         ticketId: "a1b2c3d",
+        ticketTitle: "Login page throws 500 after password reset",
         date: "01/05/2026",
         ticketType: "Bug",
         amount: "USD 42.00",
@@ -80,6 +82,7 @@ export const PAYOUT_PREVIEW_ROWS: PayoutPreviewRow[] = [
     {
         id: "preview-payout-2",
         ticketId: "e4f5g6h",
+        ticketTitle: "How do webhooks retry on failure?",
         date: "28/04/2026",
         ticketType: "Question",
         amount: "USD 18.50",
@@ -88,6 +91,7 @@ export const PAYOUT_PREVIEW_ROWS: PayoutPreviewRow[] = [
     {
         id: "preview-payout-3",
         ticketId: "i7j8k9l",
+        ticketTitle: "Export tickets to CSV",
         date: "15/04/2026",
         ticketType: "General",
         amount: "USD 120.00",
@@ -96,6 +100,7 @@ export const PAYOUT_PREVIEW_ROWS: PayoutPreviewRow[] = [
     {
         id: "preview-payout-4",
         ticketId: "m0n1o2p",
+        ticketTitle: "Sidebar collapses on navigation",
         date: "02/04/2026",
         ticketType: "Bug",
         amount: "USD 65.25",

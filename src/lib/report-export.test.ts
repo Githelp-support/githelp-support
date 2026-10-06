@@ -69,6 +69,7 @@ function entry(overrides: Partial<HelperTimeEntry> = {}): HelperTimeEntry {
         time_milliseconds: 90 * 60000,
         date: "2026-08-11",
         created_at: "2026-08-11T12:00:00.000Z",
+        ticket_closed_at: "2026-08-12T10:00:00.000Z",
         ...overrides,
     }
 }
@@ -101,9 +102,10 @@ describe("buildHelperPayoutReport", () => {
         ],
         timeEntries: [
             entry(),
-            entry({ id: "e-2", date: "2026-09-03", time_milliseconds: 30 * 60000 }),
-            entry({ id: "e-3", date: "2026-08-01", time_milliseconds: 15 * 60000 }),
-            entry({ id: "e-4", date: "2026-09-01", time_milliseconds: 45 * 60000 }),
+            entry({ id: "e-2", ticket_id: "sep-ticket", date: "2026-09-03", ticket_closed_at: "2026-09-03T12:00:00.000Z", time_milliseconds: 30 * 60000 }),
+            entry({ id: "e-3", date: "2026-07-28", time_milliseconds: 15 * 60000 }),
+            entry({ id: "e-4", ticket_id: "sep-ticket", date: "2026-08-30", ticket_closed_at: "2026-09-03T12:00:00.000Z", time_milliseconds: 45 * 60000 }),
+            entry({ id: "e-5", ticket_id: "open-ticket", date: "2026-08-15", ticket_closed_at: null, time_milliseconds: 120 * 60000 }),
         ],
         period: "August 2026",
         helper: { name: "Ada", email: "ada@example.com" },
@@ -152,6 +154,22 @@ describe("buildHelperPayoutReport", () => {
         expect(report.sections[0].rows).toHaveLength(5)
         expect(report.sections[1].rows.map((r) => r[0])).toEqual(["September 2026", "August 2026"])
         expect(report.fileName).toBe("githelp-helper-payouts-acme-payout-tr-1")
+    })
+
+    it("puts a transfer Stripe settled after month end in the month its ticket closed", () => {
+        const report = buildHelperPayoutReport({
+            ...input(),
+            transfers: [
+                transfer({
+                    created_at: "2026-08-31T13:00:00.000Z",
+                    completed_at: "2026-09-02T12:00:00.000Z",
+                    ticket: { id: "abcdef0-ticket", title: "Login broken", status: "completed", completed_at: "2026-08-31T12:00:00.000Z" },
+                }),
+            ],
+        })
+        expect(report.sections[0].rows).toHaveLength(1)
+        expect(report.sections[1].rows).toEqual([["August 2026", "1", "1h 45m", "USD 10.00", "USD 10.00"]])
+        expect(buildHelperPayoutReport({ ...input(), period: "September 2026" }).sections[1].rows[0][2]).toBe("1h 15m")
     })
 
     it("produces empty sections with messages rather than failing", () => {

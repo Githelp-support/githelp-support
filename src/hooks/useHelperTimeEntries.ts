@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { ticketClosedAt } from "@/lib/helper-payout-reports"
 
 export interface HelperTimeEntry {
   id: string
@@ -12,6 +13,11 @@ export interface HelperTimeEntry {
   created_at: string
   /** Customer review; rows the customer declined are filtered out by the hook. */
   review_status?: "pending" | "accepted" | "declined" | null
+  /**
+   * When the entry's ticket was closed (completed, else cancelled); null while
+   * it is still open. Reports count the time in the month the ticket closed.
+   */
+  ticket_closed_at?: string | null
 }
 
 /**
@@ -27,7 +33,7 @@ export function useHelperTimeEntries(helperId?: string | null, projectId?: strin
       if (!helperId) return []
       let query = supabase
         .from("tickets_time_entries")
-        .select("id, ticket_id, helper_id, type, time_milliseconds, date, created_at, review_status, ticket:tickets!inner(project_id)")
+        .select("id, ticket_id, helper_id, type, time_milliseconds, date, created_at, review_status, ticket:tickets!inner(project_id, status, completed_at, cancelled_at)")
         .eq("helper_id", helperId)
         .order("date", { ascending: false })
       if (projectId) {
@@ -37,8 +43,8 @@ export function useHelperTimeEntries(helperId?: string | null, projectId?: strin
       if (error) throw error
       return (data || [])
         .map((row: any) => {
-          const { ticket: _ticket, ...entry } = row
-          return entry as HelperTimeEntry
+          const { ticket, ...entry } = row
+          return { ...entry, ticket_closed_at: ticketClosedAt(ticket) } as HelperTimeEntry
         })
         .filter((entry) => entry.review_status !== "declined")
     },

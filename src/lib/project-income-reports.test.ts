@@ -120,6 +120,18 @@ describe("aggregateProjectIncomeMonthly", () => {
         expect(monthly[0]).toMatchObject({ ticketCount: 1, projectIncomeSmallestUnit: 1500, receivedSmallestUnit: 0, allReceived: false })
     })
 
+    it("files a ticket's charges under the month the ticket closed", () => {
+        const row = toProjectTicketIncomeRow(
+            payment({
+                completed_at: "2026-09-01T00:30:00.000Z",
+                ticket: { id: "abcdef0-ticket", title: "Login broken", status: "completed", completed_at: "2026-08-31T23:50:00.000Z" },
+            }),
+            [],
+        )
+        expect(row.date).toBe("2026-09-01T00:30:00.000Z")
+        expect(row.reportDate).toBe("2026-08-31T23:50:00.000Z")
+    })
+
     it("treats a month with no outstanding project share as fully received", () => {
         const rows = [toProjectTicketIncomeRow(payment({ amount_project_smallest_unit: 0 }), [])]
         expect(aggregateProjectIncomeMonthly(rows)[0].allReceived).toBe(true)
