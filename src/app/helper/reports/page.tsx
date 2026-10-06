@@ -35,6 +35,7 @@ import {
   monthLabel,
   payoutReference,
   transferDate,
+  transferReportDate,
 } from "@/lib/helper-payout-reports"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import {
@@ -264,11 +265,12 @@ export default function HelperReportsPage() {
         ? monthLabel(new Date().toISOString())
         : selectedPeriod
 
-  // The month filter applies to individual transfers, then they are grouped per ticket.
+  // The month filter applies to individual transfers (by the month their ticket
+  // closed, same as the monthly reports), then they are grouped per ticket.
   const payouts: PayoutData[] = useMemo(() => {
     let transfers = transfersData ?? []
     if (targetMonth) {
-      transfers = transfers.filter((transfer) => monthLabel(transferDate(transfer)) === targetMonth)
+      transfers = transfers.filter((transfer) => monthLabel(transferReportDate(transfer)) === targetMonth)
     }
     const list: PayoutData[] = groupTransfersByTicket(transfers).map((group) => {
       const first = group.items[0]

@@ -2,8 +2,13 @@
  * Pure helpers for the helper ("Helper" role) Reports page and the admin
  * Support reports: payout rows come from `payments_transfers`, hours from
  * `tickets_time_entries`.
+ *
+ * A ticket's money and time are reported in the month the ticket closed,
+ * however far back the time was logged or whenever Stripe settled the
+ * transfer, so a monthly report always pairs payouts with the time they pay
+ * for. See `transferReportDate` and `HelperTimeEntry.ticket_closed_at`.
  */
-import type { PaymentTransfer } from "@/hooks/usePayments"
+import type { PaymentTransfer, TicketClosure } from "@/hooks/usePayments"
 import type { HelperTimeEntry } from "@/hooks/useHelperTimeEntries"
 import { groupByTicket, sortByDateAsc, sumOf, type TicketGroup } from "@/lib/ticket-groups"
 
@@ -13,11 +18,11 @@ export interface HelperMonthlyReportRow {
     /** Label matching the month filter, e.g. "September 2026". */
     period: string
     periodRaw: number
-    /** Distinct tickets with a payout row dated in this month. */
+    /** Distinct tickets closed in this month (with a payout or logged time). */
     ticketsClosed: number
-    /** Total logged time in this month, in minutes. */
+    /** Time logged on tickets closed in this month, whenever it was logged, in minutes. */
     minutesLogged: number
-    /** Sum of non-failed payout rows dated in this month. */
+    /** Sum of non-failed payout rows reported in this month. */
     earningsSmallestUnit: number
     /** Portion of `earningsSmallestUnit` already transferred (status completed). */
     paidOutSmallestUnit: number
@@ -58,6 +63,30 @@ export function parseCalendarDay(day: string): Date {
 /** The date a payout row belongs to: when it settled, else when it was created. */
 export function transferDate(transfer: Pick<PaymentTransfer, "completed_at" | "created_at">): string {
     return transfer.completed_at || transfer.created_at
+}
+
+/**
+ * When the ticket was closed: completed, else cancelled. Null while it is
+ * open, including a reopened ticket that still carries an old `completed_at`.
+ */
+export function ticketClosedAt(ticket: TicketClosure | null | undefined): string | null {
+    if (!ticket) return null
+    if (ticket.status === "completed") return ticket.completed_at ?? null
+    if (ticket.status === "cancelled") return ticket.cancelled_at ?? null
+    if (ticket.status) return null
+    return ticket.completed_at ?? ticket.cancelled_at ?? null
+}
+
+/**
+ * The date that decides which month a payout is reported in: when its ticket
+ * closed, so it lands with the ticket's time even if Stripe settled it later.
+ * A payout on a ticket that is still open (an interim capture of a long
+ * ticket) falls back to its own date until the ticket closes.
+ */
+export function transferReportDate(
+    transfer: Pick<PaymentTransfer, "completed_at" | "created_at" | "ticket">,
+): string {
+    return ticketClosedAt(transfer.ticket) ?? transferDate(transfer)
 }
 
 function capitalise(value: string): string {
@@ -190,8 +219,10 @@ function groupFor(groups: Map<string, Group>, date: Date, currency: string): Gro
 }
 
 /**
- * One row per calendar month, newest first. Failed payouts are ignored. A
- * month with logged time but no payout (or the reverse) still gets a row.
+ * One row per calendar month, newest first, keyed on when each ticket closed
+ * (`transferReportDate`, `ticket_closed_at`). Failed payouts are ignored.
+ * Time on tickets that are still open is left out until they close. A month
+ * with closed-ticket time but no payout (free support) still gets a row.
  */
 export function aggregateHelperMonthly(
     transfers: PaymentTransfer[],
@@ -201,7 +232,7 @@ export function aggregateHelperMonthly(
 
     for (const transfer of transfers) {
         if (transfer.status === "failed") continue
-        const group = groupFor(groups, new Date(transferDate(transfer)), transfer.currency || "usd")
+        const group = groupFor(groups, new Date(transferReportDate(transfer)), transfer.currency || "usd")
         group.earningsSmallestUnit += transfer.amount_smallest_unit
         if (transfer.status === "completed") group.paidOutSmallestUnit += transfer.amount_smallest_unit
         group.tickets.add(transfer.ticket_id ?? transfer.id)
@@ -209,8 +240,11 @@ export function aggregateHelperMonthly(
     }
 
     for (const entry of timeEntries) {
-        const group = groupFor(groups, parseCalendarDay(entry.date), "usd")
+        if (!entry.ticket_closed_at) continue
+        const group = groupFor(groups, new Date(entry.ticket_closed_at), "usd")
         group.minutesLogged += Math.round((entry.time_milliseconds || 0) / 60000)
+        group.tickets.add(entry.ticket_id)
+        group.ticketsClosed = group.tickets.size
     }
 
     return Array.from(groups.values())
@@ -242,7 +276,7 @@ export function aggregateProjectMonthly(transfers: PaymentTransfer[]): ProjectMo
 
     for (const transfer of transfers) {
         if (transfer.status === "failed") continue
-        const date = new Date(transferDate(transfer))
+        const date = new Date(transferReportDate(transfer))
         const key = monthKey(date)
         let group = groups.get(key)
         if (!group) {
@@ -350,13 +384,14 @@ export interface HelperMonthPayouts {
 }
 
 /**
- * One record per helper and month, newest month first. A helper only gets a
- * record for months they have transfers in. Expects helper transfers only.
+ * One record per helper and month (the month each ticket closed, see
+ * `transferReportDate`), newest month first. A helper only gets a record for
+ * months they have transfers in. Expects helper transfers only.
  */
 export function groupTransfersByHelperMonth(transfers: PaymentTransfer[]): HelperMonthPayouts[] {
     const buckets = new Map<string, { monthEnd: Date; items: PaymentTransfer[] }>()
     for (const transfer of transfers) {
-        const date = new Date(transferDate(transfer))
+        const date = new Date(transferReportDate(transfer))
         const key = `${transfer.helper_id ?? transfer.helper?.user_id ?? "unknown"}:${monthKey(date)}`
         let bucket = buckets.get(key)
         if (!bucket) {

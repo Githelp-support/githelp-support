@@ -6,7 +6,7 @@
  * transferred to the project's Stripe account yet.
  */
 import type { Payment, PaymentTransfer } from "@/hooks/usePayments"
-import { monthLabel } from "@/lib/helper-payout-reports"
+import { monthLabel, ticketClosedAt } from "@/lib/helper-payout-reports"
 import { toDisplayStatus } from "@/lib/user-payment-reports"
 import { groupByTicket, sortByDateAsc, sumOf } from "@/lib/ticket-groups"
 
@@ -44,6 +44,11 @@ export interface ProjectTicketIncomeRow {
     ticketTitle: string
     /** ISO timestamp: when captured, else when the payment was created. */
     date: string
+    /**
+     * Decides the report month: when the ticket closed, else `date`, so a
+     * ticket's charges land in the same month as its helper payouts.
+     */
+    reportDate: string
     /** True once the customer has actually been charged. */
     captured: boolean
     /** What the customer was (or will be) charged. */
@@ -85,12 +90,14 @@ export function toProjectTicketIncomeRow(payment: Payment, transfers: PaymentTra
     const transfer = projectTransferFor(payment, transfers)
     const captured = toDisplayStatus(payment.status) === "paid"
     const projectIncome = captured ? payment.amount_project_smallest_unit || 0 : 0
+    const date = (captured && payment.completed_at) || payment.created_at
     return {
         id: payment.id,
         ticketId: payment.ticket_id,
         ticketShortId: payment.ticket_id?.slice(0, 7) || "-",
         ticketTitle: payment.ticket?.title?.trim() || "Untitled ticket",
-        date: (captured && payment.completed_at) || payment.created_at,
+        date,
+        reportDate: ticketClosedAt(payment.ticket) ?? date,
         captured,
         chargedSmallestUnit: payment.captured_amount_smallest_unit ?? payment.amount_smallest_unit,
         platformFeeSmallestUnit: captured ? payment.amount_platform_smallest_unit || 0 : 0,
@@ -130,7 +137,7 @@ export function aggregateProjectIncomeMonthly(rows: ProjectTicketIncomeRow[]): P
     const groups = new Map<string, ProjectIncomeMonthlyRow & { tickets: Set<string>; outstanding: number }>()
     for (const row of rows) {
         if (!row.captured) continue
-        const date = new Date(row.date)
+        const date = new Date(row.reportDate)
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
         let group = groups.get(key)
         if (!group) {

@@ -3,6 +3,13 @@ import { supabase } from "@/lib/supabase/client"
 import type { PaymentRowStatus, UserPaymentRecord } from "@/lib/user-payment-reports"
 import { normalizeTransferStatus } from "@/lib/helper-payout-reports"
 
+/** Ticket fields that decide which month a ticket's money and time are reported in. */
+export interface TicketClosure {
+  status?: string | null
+  completed_at?: string | null
+  cancelled_at?: string | null
+}
+
 export interface Payment {
   id: string
   project_id: string | null
@@ -20,7 +27,7 @@ export interface Payment {
   captured_amount_smallest_unit?: number | null
   amount_helper_smallest_unit?: number | null
   stripe_payment_intent_id?: string | null
-  ticket?: { id: string; title: string } | null
+  ticket?: ({ id: string; title: string } & TicketClosure) | null
   /**
    * Stripe-hosted receipt page for the charge. Ticket charges are plain
    * PaymentIntents (no Stripe Invoice), so this is the document to link the
@@ -55,7 +62,7 @@ export interface PaymentTransfer {
       email: string | null
     }
   }
-  ticket?: {
+  ticket?: TicketClosure & {
     id: string
     title: string
     sla?: { name: string }
@@ -71,7 +78,7 @@ export function usePayments(projectId?: string) {
     queryFn: async () => {
       let query = supabase
         .from("payments")
-        .select("*, ticket:tickets(id, title)")
+        .select("*, ticket:tickets(id, title, status, completed_at, cancelled_at)")
         .order("created_at", { ascending: false })
 
       if (projectId) {
@@ -112,6 +119,9 @@ export function usePaymentTransfers(filters?: {
           ticket:tickets(
             id,
             title,
+            status,
+            completed_at,
+            cancelled_at,
             sla:slas(name),
             categories:tickets_help_categories(
               help_category:projects_help_categories(value)
@@ -184,6 +194,9 @@ export function usePaymentTransfer(transferId?: string) {
           ticket:tickets(
             id,
             title,
+            status,
+            completed_at,
+            cancelled_at,
             sla:slas(name),
             categories:tickets_help_categories(
               help_category:projects_help_categories(value)
