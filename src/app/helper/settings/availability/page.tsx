@@ -11,6 +11,7 @@ import { Header } from "@/components/layout/header"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProjectSelection } from "@/contexts/project-context"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 
 // TODO: Replace local state with backend-persisted settings once a helper_settings
 // table (or equivalent) exists in the database schema.
@@ -20,6 +21,13 @@ interface AvailabilitySettings {
   workingHoursEnabled: boolean
   workingHoursStart: string
   workingHoursEnd: string
+}
+
+const DEFAULT_AVAILABILITY: AvailabilitySettings = {
+  available: true,
+  workingHoursEnabled: false,
+  workingHoursStart: "09:00",
+  workingHoursEnd: "17:00",
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
@@ -34,19 +42,25 @@ export default function HelperSettingsPage() {
   const { data: helperId, isLoading: currentHelperLoading } = useCurrentHelper(projectId)
 
   // TODO: Load from backend
-  const [availability, setAvailability] = useState<AvailabilitySettings>({
-    available: true,
-    workingHoursEnabled: false,
-    workingHoursStart: "09:00",
-    workingHoursEnd: "17:00",
-  })
+  const [availability, setAvailability] = useState<AvailabilitySettings>(DEFAULT_AVAILABILITY)
+  // Snapshot of the last-saved settings, used to detect unsaved changes
+  const [savedAvailability, setSavedAvailability] = useState<AvailabilitySettings>(DEFAULT_AVAILABILITY)
 
   const [isSavingAvailability, setIsSavingAvailability] = useState(false)
+
+  // Warn before navigating away while availability differs from the last-saved snapshot
+  const isDirty =
+    availability.available !== savedAvailability.available ||
+    availability.workingHoursEnabled !== savedAvailability.workingHoursEnabled ||
+    availability.workingHoursStart !== savedAvailability.workingHoursStart ||
+    availability.workingHoursEnd !== savedAvailability.workingHoursEnd
+  useUnsavedChangesGuard(isDirty)
 
   const handleSaveAvailability = async () => {
     setIsSavingAvailability(true)
     // TODO: Persist availability settings to backend
     await new Promise((resolve) => setTimeout(resolve, 500)) // simulate async
+    setSavedAvailability(availability)
     setIsSavingAvailability(false)
   }
 

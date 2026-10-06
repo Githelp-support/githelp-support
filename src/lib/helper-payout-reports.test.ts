@@ -6,6 +6,7 @@ import {
     aggregateProjectMonthly,
     buildPayoutStatement,
     formatMinutes,
+    groupTransfersByHelperMonth,
     groupTransfersByTicket,
     normalizeTransferStatus,
     payoutReference,
@@ -200,6 +201,41 @@ describe("groupTransfersByTicket", () => {
             ["ticket:ticket-1:helper-1", "pending", 2000],
             ["ticket:ticket-1:helper-2", "completed", 1000],
         ])
+    })
+})
+
+describe("groupTransfersByHelperMonth", () => {
+    it("gives one record per helper and month, dated on the month's last day", () => {
+        const groups = groupTransfersByHelperMonth([
+            transfer({ id: "aug" }),
+            transfer({ id: "sep-1", ticket_id: "ticket-2", completed_at: "2026-09-05T12:00:00.000Z", amount_smallest_unit: 2000 }),
+            transfer({ id: "sep-2", ticket_id: "ticket-2", completed_at: "2026-09-07T12:00:00.000Z", amount_smallest_unit: 500 }),
+            transfer({ id: "sep-3", ticket_id: "ticket-3", completed_at: "2026-09-20T12:00:00.000Z", amount_smallest_unit: 1500 }),
+            transfer({ id: "other", helper_id: "helper-2", completed_at: "2026-09-10T12:00:00.000Z" }),
+        ])
+        expect(groups.map((g) => [g.key, g.period, g.ticketCount, g.amountSmallestUnit])).toEqual([
+            ["helper-1:2026-09", "September 2026", 2, 4000],
+            ["helper-2:2026-09", "September 2026", 1, 1000],
+            ["helper-1:2026-08", "August 2026", 1, 1000],
+        ])
+        const monthEnd = new Date(groups[0].monthEnd)
+        expect([monthEnd.getFullYear(), monthEnd.getMonth() + 1, monthEnd.getDate()]).toEqual([2026, 9, 30])
+        // A ticket's transfers stay together, oldest first.
+        expect(groups[0].transfers.map((t) => t.id)).toEqual(["sep-3", "sep-1", "sep-2"])
+    })
+
+    it("leaves failed transfers out of the income and reports them separately", () => {
+        const [group] = groupTransfersByHelperMonth([
+            transfer({ id: "ok" }),
+            transfer({ id: "failed", ticket_id: "ticket-2", status: "failed", completed_at: null, amount_smallest_unit: 250 }),
+        ])
+        expect(group.amountSmallestUnit).toBe(1000)
+        expect(group.failedSmallestUnit).toBe(250)
+        expect(group.ticketCount).toBe(2)
+    })
+
+    it("returns nothing for a helper without transfers", () => {
+        expect(groupTransfersByHelperMonth([])).toEqual([])
     })
 })
 

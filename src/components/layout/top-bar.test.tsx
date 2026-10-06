@@ -28,12 +28,17 @@ vi.mock("@/hooks/useProject", () => ({
 vi.mock("@/hooks/useProjectRole", () => ({
   useProjectAvailableRoles: () => ({ data: undefined }),
   projectAvailableRolesQueryOptions: vi.fn(),
+  useUserRoles: () => ({ data: undefined, isSuccess: false }),
 }))
 
 vi.mock("@/hooks/useNotifications", () => ({
   useNotifications: () => ({ data: [] }),
   useMarkNotificationRead: () => ({ mutateAsync: vi.fn() }),
   useMarkAllNotificationsRead: () => ({ mutateAsync: vi.fn() }),
+}))
+
+vi.mock("@/hooks/useRealtimeNotifications", () => ({
+  useRealtimeNotifications: vi.fn(),
 }))
 
 vi.mock("@/lib/supabase/auth", () => ({
@@ -58,6 +63,12 @@ describe("TopBar", () => {
 
   it("renders null on the invite acceptance route", () => {
     usePathname.mockReturnValue("/invite/some-token")
+    const { container } = render(<TopBar />)
+    expect(container.firstChild).toBeNull()
+  })
+
+  it("renders null on the role chooser route", () => {
+    usePathname.mockReturnValue("/auth/role")
     const { container } = render(<TopBar />)
     expect(container.firstChild).toBeNull()
   })

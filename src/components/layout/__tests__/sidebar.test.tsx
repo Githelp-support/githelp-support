@@ -111,6 +111,36 @@ describe("Sidebar — Support sub-categories", () => {
   })
 })
 
+describe("Sidebar — user-role menu order", () => {
+  it("renders Overview, Support, Tickets, Reports, Settings in order with Overview active on /user/overview", () => {
+    usePathname.mockReturnValue("/user/overview")
+
+    const { container } = render(<Sidebar />)
+
+    const nav = container.querySelector("nav")
+    expect(nav).not.toBeNull()
+    const topLevelLabels = Array.from(nav!.firstElementChild!.children).map(
+      (el) => el.textContent?.trim(),
+    )
+    expect(topLevelLabels).toEqual([
+      "Overview",
+      "Support",
+      "Tickets",
+      "Reports",
+      "Settings",
+    ])
+
+    const overviewRow = screen.getByText("Overview")
+    expect(overviewRow.closest("a")).toHaveAttribute("href", "/user/overview")
+    expect(overviewRow.className).toContain("text-brand-primary")
+
+    // Other top-level items are not highlighted.
+    expect(screen.getByText("Tickets").className).not.toContain(
+      "text-brand-primary",
+    )
+  })
+})
+
 describe("PublicSupportSidebar — 'Open my user portal' link", () => {
   const renderPublicSidebar = () =>
     render(
@@ -125,7 +155,7 @@ describe("PublicSupportSidebar — 'Open my user portal' link", () => {
 
     const link = screen.getByText("Open my user portal").closest("a")
     expect(link).toBeInTheDocument()
-    expect(link).toHaveAttribute("href", "/support/tickets")
+    expect(link).toHaveAttribute("href", "/support/chat")
     expect(link).toHaveAttribute("target", "_blank")
   })
 

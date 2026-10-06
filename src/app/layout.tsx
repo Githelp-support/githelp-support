@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { UserProvider } from "@/contexts/user-context"
 import { ProjectProvider } from "@/contexts/project-context"
+import { UnsavedChangesProvider } from "@/contexts/unsaved-changes-context"
 import { ReactQueryProvider } from "@/lib/react-query/provider"
 import { ProtectedLayout } from "@/components/layout/protected-layout"
 import { TopBar } from "@/components/layout/top-bar"
@@ -43,10 +44,12 @@ export default function RootLayout({
             <UserProvider>
               <ProjectProvider>
                 <ProtectedLayout>
-                  <div className="flex flex-col h-screen">
-                    <TopBar />
-                    {children}
-                  </div>
+                  <UnsavedChangesProvider>
+                    <div className="flex flex-col h-screen">
+                      <TopBar />
+                      {children}
+                    </div>
+                  </UnsavedChangesProvider>
                   <Toaster position="top-right" richColors closeButton />
                 </ProtectedLayout>
               </ProjectProvider>

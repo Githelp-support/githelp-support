@@ -17,6 +17,7 @@ import { connectStatusLabel } from "@/lib/payment-status"
 import { formatCapDollars, parseCapDollars } from "@/lib/cap-format"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 import { cn } from "@/lib/utils"
 
 // Org-level spending caps are temporarily hidden from the admin Payments page.
@@ -206,6 +207,16 @@ export default function PaymentSettingsPage() {
     originalValues.sla_enabled !== null &&
     (paymentByTicket !== originalValues.tickets_enabled ||
       paymentBySLA !== originalValues.sla_enabled)
+
+  // Warn before navigating away while any payment section has unsaved edits
+  useUnsavedChangesGuard(
+    hasTeamChanges ||
+      hasCommunityChanges ||
+      hasConsultantChanges ||
+      hasUserChanges ||
+      hasUserOptionsChanges ||
+      hasCapsChanges
+  )
 
   // Compute 1-hour support cost for distribution preview (start price + 60 min at first-60 rate)
   const oneHourTotal = (() => {

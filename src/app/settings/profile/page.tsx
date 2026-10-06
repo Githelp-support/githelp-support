@@ -14,6 +14,7 @@ import { useUser } from "@/contexts/user-context"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -48,6 +49,13 @@ export default function ProfileSettingsPage() {
     setName(helperData.user?.name ?? "")
     setEmail(helperData.user?.email ?? "")
   }
+
+  // Warn before navigating away while the editable fields differ from the last-synced helper data
+  const isDirty =
+    !!syncedHelperData &&
+    (name !== (syncedHelperData.user?.name ?? "") ||
+      email !== (syncedHelperData.user?.email ?? ""))
+  useUnsavedChangesGuard(isDirty)
 
   // GitHub connection status, display username, and auto-sync to users_public when empty
   useEffect(() => {

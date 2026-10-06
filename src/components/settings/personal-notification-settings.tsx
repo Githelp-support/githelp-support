@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { NotificationChannelsManager } from "@/components/settings/notification-channels-manager"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 import {
   useNotificationPreferences,
   useSaveNotificationPreferences,
@@ -39,6 +40,8 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
   const savePreferences = useSaveNotificationPreferences()
 
   const [emailToggles, setEmailToggles] = useState<EmailToggles>(DEFAULT_EMAIL_TOGGLES)
+  // Snapshot of the last saved/hydrated toggles, used to detect unsaved edits.
+  const [savedToggles, setSavedToggles] = useState<EmailToggles>(DEFAULT_EMAIL_TOGGLES)
   const hydratedRef = useRef(false)
 
   // Hydrate from saved global overrides ONCE (no row = default on). Later
@@ -53,7 +56,11 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
       }
     }
     setEmailToggles(next)
+    setSavedToggles(next)
   }, [preferences])
+
+  const isDirty = emailGroups.some((group) => emailToggles[group.key] !== savedToggles[group.key])
+  useUnsavedChangesGuard(isDirty)
 
   const handleSave = async () => {
     try {
@@ -64,6 +71,7 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
           enabled: emailToggles[group.key],
         })),
       )
+      setSavedToggles(emailToggles)
       toast.success("Notification preferences saved")
     } catch {
       toast.error("Could not save preferences — please try again")

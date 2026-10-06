@@ -167,7 +167,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       {isAuthenticated && (
         <div className="px-3 pb-3 shrink-0">
           <a
-            href="/support/tickets"
+            href="/support/chat"
             target="_blank"
             rel="noopener noreferrer"
             title={isCollapsed ? "Open my user portal" : undefined}

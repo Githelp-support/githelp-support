@@ -11,6 +11,7 @@ import { useUserProjects, useProjectBranding, useUpdateProjectBranding } from "@
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { toast } from "sonner"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 
 export default function BrandingSettingsPage() {
   const [editedColor, setEditedColor] = useState<string | null>(null)
@@ -25,6 +26,11 @@ export default function BrandingSettingsPage() {
   const updateBranding = useUpdateProjectBranding()
 
   const primaryColor = editedColor ?? brandingData?.primary_color ?? "#554abf"
+
+  // Only the primary colour is an explicit-save field. Logo upload saves
+  // immediately via the modal, so it never counts as dirty.
+  const isDirty = editedColor !== null && editedColor !== (brandingData?.primary_color ?? "#554abf")
+  useUnsavedChangesGuard(isDirty)
 
   const handleLogoUploadComplete = async (url: string) => {
     if (!projectId) return
