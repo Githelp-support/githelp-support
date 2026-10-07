@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, ChevronDown, Check, Plus } from "lucide-react"
+import { Bell, ChevronDown, Check, Plus, Lock } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { usePathname, useRouter } from "next/navigation"
@@ -76,6 +76,15 @@ const ProjectLogo = ({
   )
 }
 
+// Avatar-sized stand-in for the private user context in the project control.
+const PrivateContextIcon = ({ size }: { size: string }) => (
+  <span
+    className={`${size} ${sizeRadiusMap[size] || "rounded-[9px]"} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
+  >
+    <Lock className="w-3 h-3" strokeWidth={2.2} />
+  </span>
+)
+
 export function TopBar() {
   const router = useRouter()
   const pathname = usePathname()
@@ -130,7 +139,10 @@ export function TopBar() {
   }
 
   const handleProjectSelect = async (project: Project) => {
-    const isDifferentProject = project.project_id !== selectedProjectId
+    // Acting as User means the "Private" pseudo project is current, even if a
+    // real project is still remembered as selected — so leaving the private
+    // context always counts as a project change.
+    const isDifferentProject = user.role === "user" || project.project_id !== selectedProjectId
     setSelectedProjectId(project.project_id)
     if (!isDifferentProject) return
 
@@ -192,22 +204,26 @@ export function TopBar() {
     }
   }
 
-  // Roles are scoped to the SELECTED project (keyed by the persisted selected
-  // project id — not the per-page projectRole, which gets cleared/lowered on
-  // /support pages), and limited to the role categories the profile is
-  // ACTUALLY registered for (no implied "user" role for e.g. a freshly
-  // registered helper). Ordered admin → helper → user.
+  // Admin/helper are scoped to the SELECTED project (keyed by the persisted
+  // selected project id — not the per-page projectRole, which gets
+  // cleared/lowered on /support pages), and limited to the role categories
+  // the profile is ACTUALLY registered for. "User" is always offered: every
+  // account has a private user context to act in. Ordered admin → helper → user.
   const availableRoles: UserRole[] = useMemo(() => {
     const registered = userRolesLoaded && userRoles && userRoles.length > 0 ? userRoles : null
+    let roles: UserRole[]
     if (!projectAvailableRoles) {
       // No projects at all (support-only users) or queries still loading:
       // fall back to the global registrations, then to the active role so
       // the dropdown is never empty.
-      return registered ?? [user.role]
+      roles = registered ?? [user.role]
+    } else if (!registered) {
+      roles = projectAvailableRoles
+    } else {
+      const scoped = projectAvailableRoles.filter((role) => registered.includes(role))
+      roles = scoped.length > 0 ? scoped : projectAvailableRoles
     }
-    if (!registered) return projectAvailableRoles
-    const scoped = projectAvailableRoles.filter((role) => registered.includes(role))
-    return scoped.length > 0 ? scoped : projectAvailableRoles
+    return roles.includes("user") ? roles : [...roles, "user"]
   }, [userRolesLoaded, userRoles, projectAvailableRoles, user.role])
 
   const rolesResolved =
@@ -220,6 +236,10 @@ export function TopBar() {
   // roles through the project dropdown's "Add new" instead.
   const isUserOnly =
     userRolesLoaded && !!userRoles && userRoles.length === 1 && userRoles[0] === "user"
+
+  // Acting as User = acting in the private user context (the "Private" pseudo
+  // project), whatever projects the account belongs to.
+  const isPrivateContext = user.role === "user"
 
   const goToAddRole = () => {
     if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
@@ -293,27 +313,27 @@ export function TopBar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Project dropdown — only available to Admin and Helper roles.
-              Users don't have a project context: a user-only account shows a
-              greyed-out "Private" placeholder, anyone else acting as User gets
-              no project control at all. */}
-          {user.role === "user" ? (
-            isUserOnly ? (
-              <button
-                type="button"
-                disabled
-                aria-label="Private — your personal context. Add a role to work on projects."
-                title="Your personal context. Add a role to work on projects."
-                className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg opacity-60 cursor-not-allowed"
-              >
-                <span className="font-sans text-[14px] font-[550] text-muted-foreground">Private</span>
-                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              </button>
-            ) : null
-          ) : projectsLoading ? (
+          {/* Project control. Acting as User means acting in the private user
+              context, shown as a pseudo project called "Private". An account
+              with no projects gets it as a greyed-out placeholder; otherwise
+              the dropdown lists Private first and then the account's projects.
+              Picking a project switches to the highest role held there, and
+              picking Private switches back to User. */}
+          {projectsLoading ? (
             <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
               <div className="font-sans text-[14px] text-muted-foreground">Loading projects...</div>
             </div>
+          ) : isPrivateContext && userProjects.length === 0 ? (
+            <button
+              type="button"
+              disabled
+              aria-label="Private — your personal context. Add a role to work on projects."
+              title="Your personal context. Add a role to work on projects."
+              className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg opacity-60 cursor-not-allowed"
+            >
+              <span className="font-sans text-[14px] font-[550] text-muted-foreground">Private</span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </button>
           ) : userProjects.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -322,14 +342,23 @@ export function TopBar() {
                   className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <ProjectLogo
-                      logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
-                      projectName={selectedProject?.name || ""}
-                      size="w-[22px] h-[22px]"
-                      primaryColor={selectedProjectBranding?.primary_color}
-                    />
-                    <span className="font-sans text-[14px] font-[550] text-sidebar-foreground truncate">
-                      {selectedProject?.name || "Select Project"}
+                    {isPrivateContext ? (
+                      <PrivateContextIcon size="w-[22px] h-[22px]" />
+                    ) : (
+                      <ProjectLogo
+                        logoUrl={getProjectLogo(selectedProject, selectedProjectBranding)}
+                        projectName={selectedProject?.name || ""}
+                        size="w-[22px] h-[22px]"
+                        primaryColor={selectedProjectBranding?.primary_color}
+                      />
+                    )}
+                    <span
+                      className={cn(
+                        "font-sans text-[14px] font-[550] truncate",
+                        isPrivateContext ? "text-muted-foreground" : "text-sidebar-foreground"
+                      )}
+                    >
+                      {isPrivateContext ? "Private" : selectedProject?.name || "Select Project"}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -343,8 +372,23 @@ export function TopBar() {
                 {/* Scrollable project list — capped at three rows (3 × 32px) so the
                     separator and "Add new" below always stay visible. */}
                 <div className={cn("max-h-24 overflow-y-auto")}>
+                  <DropdownMenuItem
+                    onClick={() => handleSwitchRole("user")}
+                    className={`group gap-2 ${isPrivateContext ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
+                  >
+                    <PrivateContextIcon size="w-5 h-5" />
+                    <span
+                      className={`font-sans truncate text-[14px] ${
+                        isPrivateContext
+                          ? "font-[500]"
+                          : "font-medium text-[#55555E] group-focus:text-sidebar-foreground"
+                      }`}
+                    >
+                      Private
+                    </span>
+                  </DropdownMenuItem>
                   {userProjects.map((project) => {
-                    const isSelected = selectedProject?.project_id === project.project_id
+                    const isSelected = !isPrivateContext && selectedProject?.project_id === project.project_id
                     return (
                       <ProjectLogoWithBranding
                         key={project.project_id}

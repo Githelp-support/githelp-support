@@ -20,8 +20,9 @@ vi.mock("@/contexts/project-context", () => ({
   useProjectSelection: () => ({ selectedProjectId: null, setSelectedProjectId: vi.fn() }),
 }))
 
+const useUserProjects = vi.fn()
 vi.mock("@/hooks/useProject", () => ({
-  useUserProjects: () => ({ data: [], isLoading: false }),
+  useUserProjects: () => useUserProjects(),
   useProjectBranding: () => ({ data: null }),
 }))
 
@@ -61,6 +62,7 @@ describe("TopBar", () => {
     vi.clearAllMocks()
     useUser.mockReturnValue({ user: signedInUser, switchRole: vi.fn() })
     useUserRoles.mockReturnValue({ data: undefined, isSuccess: false })
+    useUserProjects.mockReturnValue({ data: [], isLoading: false })
   })
 
   it("renders null on the invite acceptance route", () => {
@@ -91,15 +93,23 @@ describe("TopBar", () => {
     expect(placeholder).toBeDisabled()
   })
 
-  it("hides the Private placeholder when the account also holds helper or admin", () => {
+  it("shows Private as the current project when acting as User with projects, and keeps the dropdown enabled", () => {
     usePathname.mockReturnValue("/support/chat")
     useUserRoles.mockReturnValue({ data: ["helper", "user"], isSuccess: true })
+    useUserProjects.mockReturnValue({
+      data: [{ project_id: "p1", name: "Alpha", slug: "alpha", logo_url: null }],
+      isLoading: false,
+    })
     render(<TopBar />)
-    expect(screen.queryByRole("button", { name: /private/i })).not.toBeInTheDocument()
+    const trigger = screen.getByRole("button", { name: /private/i })
+    expect(trigger).not.toBeDisabled()
+    expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
   })
 
-  it("does not show the Private placeholder while roles are still loading", () => {
-    usePathname.mockReturnValue("/support/chat")
+  it("does not show the Private placeholder when acting as Admin", () => {
+    usePathname.mockReturnValue("/tickets")
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "admin" as const }, switchRole: vi.fn() })
+    useUserRoles.mockReturnValue({ data: ["admin"], isSuccess: true })
     render(<TopBar />)
     expect(screen.queryByText("Private")).not.toBeInTheDocument()
   })

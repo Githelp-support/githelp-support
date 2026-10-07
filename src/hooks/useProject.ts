@@ -221,6 +221,8 @@ export function useCreateProject() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         },
     });
@@ -697,6 +699,8 @@ export function useCreateProjectFromGitHub() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         },
     });
@@ -764,6 +768,8 @@ export function useCreateSandboxProject() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
             queryClient.invalidateQueries({ queryKey: ["has-sandbox"] });
         },
@@ -794,6 +800,8 @@ export function useAcceptProjectInvite() {
             // Invalidate relevant queries
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({
                 queryKey: ["project", data.project_id],
             });
