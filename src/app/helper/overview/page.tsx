@@ -1,10 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -15,37 +13,34 @@ import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useHelperDashboardStats } from "@/hooks/useHelperDashboardStats"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
+import { monthLabel } from "@/lib/user-payment-reports"
 
 export default function HelperOverviewPage() {
-  const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
-  const [selectedMonth, setSelectedMonth] = useState<string>("")
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [issueFilter, setIssueFilter] = useState<"all" | "applied">("all")
   const [ticketFilter, setTicketFilter] = useState<"all" | "last24h">("all")
   const [now] = useState(() => Date.now())
 
   const [issueSort, setIssueSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
 
-  const generateMonthOptions = () => {
-    const months = []
-    const now = new Date()
-
-    for (let i = 1; i <= 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthName = date.toLocaleDateString("en-US", { month: "long" })
-      const year = date.getFullYear()
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-
-      months.push({
-        value,
-        label: `${monthName} ${year}`,
-        monthYear: `${monthName} ${year}`,
-      })
+  // Last 12 months for the period filter dropdown
+  const months = useMemo(() => {
+    const result: string[] = []
+    const currentDate = new Date()
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+      result.push(date.toLocaleDateString("en-US", { month: "long", year: "numeric" }))
     }
+    return result
+  }, [])
 
-    return months
-  }
-
-  const monthOptions = generateMonthOptions()
+  // null = no period restriction ("All")
+  const targetMonth =
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? monthLabel(new Date().toISOString())
+        : selectedPeriod
 
   const { selectedProjectId } = useProjectSelection()
   const projectId = selectedProjectId ?? undefined
@@ -63,6 +58,11 @@ export default function HelperOverviewPage() {
 
   const inProgressTickets = helperStats?.inProgressTickets || []
   const keyStats = helperStats?.keyStats || { totalTicketsSolved: 0, totalTimeSpent: "-", percentageSolved: 0 }
+
+  const completedTickets = helperStats?.completedTickets || []
+  const ticketsSolvedInPeriod = completedTickets.filter(
+    (ticket) => !targetMonth || monthLabel(ticket.completed_at ?? ticket.created_at) === targetMonth
+  ).length
 
   const filteredIssueTypes = issueFilter === "all" ? allIssueTypes : allIssueTypes.filter((issue) => issue.applied)
 
@@ -133,64 +133,22 @@ export default function HelperOverviewPage() {
         <Header title="Overview" subtitle="Stats and insight" />
 
         <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
-          {/* Time Filters */}
+          {/* Filters */}
           <div className="flex gap-2">
-            <Button
-              variant={timeFilter === "current" ? "neutral" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-sm font-medium",
-                timeFilter !== "current" && "text-muted-foreground"
-              )}
-              onClick={() => {
-                setTimeFilter("current")
-                setSelectedMonth("")
-              }}
-            >
-              Current month
-            </Button>
-            <div className="relative">
-              <Select
-                value={selectedMonth}
-                onValueChange={(value) => {
-                  setSelectedMonth(value)
-                  setTimeFilter("choose")
-                }}
-              >
-                <SelectTrigger
-                  size="sm"
-                  variant={timeFilter === "choose" ? "neutral" : "outline"}
-                  className="w-[160px] rounded-lg text-sm font-medium"
-                >
-                  <SelectValue placeholder="Choose month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((month) => (
-                    <SelectItem
-                      key={month.value}
-                      value={month.value}
-                      className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium"
-                    >
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              variant={timeFilter === "all" ? "neutral" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-sm font-medium",
-                timeFilter !== "all" && "text-muted-foreground"
-              )}
-              onClick={() => {
-                setTimeFilter("all")
-                setSelectedMonth("")
-              }}
-            >
-              All time
-            </Button>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+                <SelectValue placeholder="Choose period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Key Stats */}
@@ -206,7 +164,7 @@ export default function HelperOverviewPage() {
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{ticketsSolvedInPeriod}</div>
                 </CardContent>
               </Card>
               <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
@@ -255,7 +213,7 @@ export default function HelperOverviewPage() {
                           onClick={() => handleIssueSort("name")}
                           className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
                         >
-                          <span className="text-sm font-medium text-foreground">Name</span>
+                          <span className="text-sm font-medium text-foreground">Type</span>
                           {getSortIcon("name", issueSort)}
                         </button>
                       </div>
