@@ -213,6 +213,18 @@ export function TopBar() {
   const rolesResolved =
     userRolesLoaded && !projectsLoading && (!selectedProject || projectRolesLoaded)
 
+  // An account that is registered as nothing but "user" has no project of its
+  // own yet — it lives in a private user context. It gets a greyed-out
+  // "Private" project placeholder and a "+ New role" entry in the role
+  // dropdown. Anyone holding admin or helper (anywhere) adds projects and
+  // roles through the project dropdown's "Add new" instead.
+  const isUserOnly =
+    userRolesLoaded && !!userRoles && userRoles.length === 1 && userRoles[0] === "user"
+
+  const goToAddRole = () => {
+    if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
+  }
+
   // Once roles are resolved, if the current role isn't one the profile holds,
   // switch to the first available role (e.g. a freshly registered helper
   // lands in the Helper view instead of the default User view).
@@ -266,12 +278,39 @@ export function TopBar() {
                   })}
                 </>
               ) : null}
+              {isUserOnly && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer font-sans text-[14px] text-brand-primary"
+                    onClick={goToAddRole}
+                  >
+                    <Plus className="w-4 h-4" />
+                    New role
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Project dropdown — only available to Admin and Helper roles.
-              Users don't have a project context, so we hide it for the User role. */}
-          {user.role === "user" ? null : projectsLoading ? (
+              Users don't have a project context: a user-only account shows a
+              greyed-out "Private" placeholder, anyone else acting as User gets
+              no project control at all. */}
+          {user.role === "user" ? (
+            isUserOnly ? (
+              <button
+                type="button"
+                disabled
+                aria-label="Private — your personal context. Add a role to work on projects."
+                title="Your personal context. Add a role to work on projects."
+                className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg opacity-60 cursor-not-allowed"
+              >
+                <span className="font-sans text-[14px] font-[550] text-muted-foreground">Private</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              </button>
+            ) : null
+          ) : projectsLoading ? (
             <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
               <div className="font-sans text-[14px] text-muted-foreground">Loading projects...</div>
             </div>
@@ -319,9 +358,7 @@ export function TopBar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
-                  onClick={() => {
-                    if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
-                  }}
+                  onClick={goToAddRole}
                 >
                   <Plus className="w-4 h-4" />
                   Add new

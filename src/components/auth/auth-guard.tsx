@@ -75,7 +75,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return
     }
 
-    if (onboardingStatus.onboardingCompleted && !onboardingStatus.isMember) {
+    // Only helpers awaiting approval are parked on the waiting page. Someone
+    // who onboarded as a plain "User" has no project and no request and uses
+    // the app from their private user context.
+    if (onboardingStatus.needsWaiting) {
       router.push("/onboarding/waiting")
       return
     }

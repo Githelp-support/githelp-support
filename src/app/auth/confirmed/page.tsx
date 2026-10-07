@@ -142,7 +142,7 @@ export default function AuthConfirmedPage() {
       return
     }
 
-    if (onboardingStatus.onboardingCompleted && !onboardingStatus.isMember) {
+    if (onboardingStatus.needsWaiting) {
       router.push("/onboarding/waiting")
       return
     }
