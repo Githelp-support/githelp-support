@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
-import { isBillableTimeEntry, type TimeEntry, type TimeEntryReviewStatus } from "@/lib/time-entries";
+import type { TimeEntry } from "@/lib/time-entries";
 
 // Types and pure helpers live in @/lib/time-entries; re-exported here so existing imports keep working.
 export * from "@/lib/time-entries";
@@ -199,17 +199,10 @@ export function useDeleteTimeEntry() {
     });
 }
 
-export interface ReviewTimeEntryInput {
-    entryId: string;
-    ticketId: string;
-    decision: Exclude<TimeEntryReviewStatus, "pending">;
-    /** Required when declining; shared with the helper in the ticket chat. */
-    reason?: string;
-}
-
 /**
- * `hint` of the error raised by the `review_time_entry` RPC, e.g.
- * "reason_required", "already_reviewed", "ticket_ended", "not_ticket_creator".
+ * `hint` of the error raised by the time-entry RPCs and guard triggers, e.g.
+ * "reason_required", "nothing_to_confirm", "already_requested", "ticket_ended",
+ * "not_ticket_creator", "accepted_entry_locked".
  */
 export function getReviewTimeEntryErrorHint(error: unknown): string | null {
     if (typeof error !== "object" || error === null) return null;
@@ -217,36 +210,73 @@ export function getReviewTimeEntryErrorHint(error: unknown): string | null {
     return typeof hint === "string" ? hint : null;
 }
 
+const invalidateTicketTimeQueries = (queryClient: ReturnType<typeof useQueryClient>, ticketId: string) => {
+    queryClient.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === "time-entries" && q.queryKey[2] === ticketId,
+    });
+    queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] });
+    queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] });
+    queryClient.invalidateQueries({ queryKey: ["ticket-with-details", ticketId] });
+};
+
 /**
- * Ticket creator accepts or declines one logged entry via the
- * `review_time_entry` RPC. The RPC also posts a system message into the chat
- * (with the decline reason), so both the time entries and the message thread
- * are refreshed afterwards.
+ * Helper sends the logged-time summary to the customer for confirmation
+ * (`request_time_entry_review` RPC, migration
+ * 20261008120000_time_entries_summary_confirmation). Sets
+ * `tickets.time_review_requested_at` and posts a `time_review_requested`
+ * system message. Errors: "nothing_to_confirm", "already_requested",
+ * "ticket_ended", "not_ticket_helper".
  */
-export function useReviewTimeEntry() {
+export function useRequestTimeEntryReview() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (input: ReviewTimeEntryInput) => {
-            const reason = input.reason?.trim() ?? "";
-            if (input.decision === "declined" && !reason) {
+        mutationFn: async (input: { ticketId: string }) => {
+            const { error } = await supabase.rpc("request_time_entry_review", { p_ticket_id: input.ticketId });
+            if (error) throw error;
+        },
+        onSettled: (_data, _error, input) => invalidateTicketTimeQueries(queryClient, input.ticketId),
+    });
+}
+
+export interface TimeEntryDecline {
+    entryId: string;
+    /** Required; shared with the helper in the ticket chat. */
+    reason: string;
+}
+
+export interface ConfirmTimeEntriesInput {
+    ticketId: string;
+    /** Entries the customer does not accept. Everything else pending is accepted. */
+    declines?: TimeEntryDecline[];
+}
+
+/**
+ * Ticket creator confirms the logged-time summary in one go via the
+ * `confirm_time_entries` RPC: every pending entry on the ticket is accepted
+ * except the listed declines, which need a reason. The RPC posts one
+ * `time_entries_confirmed` system message (with the declines and reasons) and
+ * clears the helper's request, so the entries, messages and ticket row are
+ * all refreshed afterwards. Resolves to the number of entries accepted.
+ */
+export function useConfirmTimeEntries() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: ConfirmTimeEntriesInput) => {
+            const declines = (input.declines ?? []).map((d) => ({ entry_id: d.entryId, reason: d.reason.trim() }));
+            if (declines.some((d) => !d.reason)) {
                 throw Object.assign(new Error("Please explain why you declined the logged time."), {
                     hint: "reason_required",
                 });
             }
-            const { data, error } = await supabase.rpc("review_time_entry", {
-                p_entry_id: input.entryId,
-                p_decision: input.decision,
-                p_reason: input.decision === "declined" ? reason : null,
+            const { data, error } = await supabase.rpc("confirm_time_entries", {
+                p_ticket_id: input.ticketId,
+                p_declines: declines,
             });
             if (error) throw error;
-            return data as TimeEntry;
+            return (data as number | null) ?? 0;
         },
-        onSettled: (_data, _error, input) => {
-            queryClient.invalidateQueries({
-                predicate: (q) => q.queryKey[0] === "time-entries" && q.queryKey[2] === input.ticketId,
-            });
-            queryClient.invalidateQueries({ queryKey: ["ticket-messages", input.ticketId] });
-        },
+        onSettled: (_data, _error, input) => invalidateTicketTimeQueries(queryClient, input.ticketId),
     });
 }
