@@ -14,12 +14,13 @@ import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-s
 import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "./right-sidebar-collapse"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import {
-  DeclineTimeEntryDialog,
-  TimeEntryReviewActions,
-  TimeEntryReviewBanner,
   TimeEntryReviewStatusBadge,
+  TimeEntrySummaryBanner,
+  TimeEntrySummaryDialog,
+  type TimeEntrySummaryDecline,
+  type TimeEntrySummaryItem,
 } from "@/components/ticket-chat/time-entry-review"
-import { describeAutoAcceptDeadline, formatTime, type TimeEntryReviewStatus } from "@/lib/time-entries"
+import { describeAutoAcceptDeadline, type TimeEntryReviewStatus } from "@/lib/time-entries"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
@@ -39,9 +40,13 @@ export type PaymentSystemMessageKind =
  * `metadata.kind` of persisted system messages. Payment kinds are written by
  * the payments edge functions; `time_logged` is written by the DB trigger on
  * `tickets_time_entries` (migration 20260908120000_time_logged_system_messages);
- * `time_entry_accepted` / `time_entry_declined` by the `review_time_entry` RPC
- * (migration 20260925120000_time_entries_customer_review); `time_entry_deleted`
- * by the delete trigger (migration 20260927120000_time_entries_helper_delete_own).
+ * `time_entry_deleted` by the delete trigger (migration
+ * 20260927120000_time_entries_helper_delete_own); `time_review_requested` /
+ * `time_entries_confirmed` by the `request_time_entry_review` /
+ * `confirm_time_entries` RPCs (migration
+ * 20261008120000_time_entries_summary_confirmation). `time_entry_accepted` /
+ * `time_entry_declined` come from the per-entry `review_time_entry` RPC, which
+ * the web app no longer calls (older tickets and the MCP agent API still do).
  */
 export type SystemMessageKind =
   | PaymentSystemMessageKind
@@ -49,17 +54,17 @@ export type SystemMessageKind =
   | "time_entry_accepted"
   | "time_entry_declined"
   | "time_entry_deleted"
+  | "time_review_requested"
+  | "time_entries_confirmed"
 
 /** Current review state of one logged entry, keyed by `tickets_time_entries.id`. */
 export type TicketChatTimeEntryReview = {
   status: TimeEntryReviewStatus
   declineReason?: string | null
-  /** Drives the "accepted automatically in about N hours" hint while pending. */
+  /** When the entry was logged and became pending. */
   reviewRequestedAt?: string | null
   autoAccepted?: boolean
 }
-
-export type TimeEntryReviewDecision = Exclude<TimeEntryReviewStatus, "pending">
 
 export type TicketChatMessage = {
   id: string
@@ -126,16 +131,28 @@ export interface TicketChatProps {
   endSessionRequestPending?: boolean
 
   /**
-   * Customer-side review of logged time. `timeEntryReviews` maps a time entry
-   * id (from `time_logged` metadata) to its current status; when
-   * `onReviewTimeEntry` is set, pending entries get Accept / Decline actions
-   * in their bubble and a banner above the input counts what is still open.
-   * Declining opens a dialog that requires an explanation. Omit the handler
-   * on the helper side (statuses are still shown).
+   * Review state of logged time. `timeEntryReviews` maps a time entry id
+   * (from `time_logged` metadata) to its current status so confirmed /
+   * declined entries are marked in their bubble; pending ones show nothing,
+   * since confirmation happens once, at the end of the session.
    */
   timeEntryReviews?: Record<string, TicketChatTimeEntryReview>
-  onReviewTimeEntry?: (input: { entryId: string; decision: TimeEntryReviewDecision; reason?: string }) => void | Promise<void>
-  timeEntryReviewPending?: boolean
+
+  /**
+   * Customer-side confirmation of the logged-time summary. When the helper
+   * has sent it (`timeReviewRequestedAt` set on the ticket) and
+   * `onConfirmTimeEntries` is provided, a banner above the input opens the
+   * summary dialog (it also opens by itself when the request arrives). The
+   * dialog lists `timeEntrySummary` and confirms everything pending in one
+   * go, with optional per-entry declines that need a reason. Omit the handler
+   * on the helper side.
+   */
+  timeReviewRequestedAt?: string | null
+  timeEntrySummary?: TimeEntrySummaryItem[]
+  onConfirmTimeEntries?: (declines: TimeEntrySummaryDecline[]) => void | Promise<void>
+  timeEntryConfirmPending?: boolean
+  /** Name shown in the summary banner ("Ada is ready to end the session…"). */
+  timeReviewHelperName?: string | null
 
   /**
    * When provided, enables image attachments (toolbar button, paste, drag & drop).
@@ -181,8 +198,11 @@ export function TicketChat(props: TicketChatProps) {
     endSessionRequestedAt,
     endSessionRequestPending,
     timeEntryReviews,
-    onReviewTimeEntry,
-    timeEntryReviewPending,
+    timeReviewRequestedAt,
+    timeEntrySummary,
+    onConfirmTimeEntries,
+    timeEntryConfirmPending,
+    timeReviewHelperName,
     attachmentStoragePrefix,
     rightSidebarFooter,
     onPaymentCtaClick,
@@ -196,32 +216,19 @@ export function TicketChat(props: TicketChatProps) {
   const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
 
-  // Logged entry the customer is about to decline (opens the reason dialog).
-  const [decliningEntry, setDecliningEntry] = useState<{
-    entryId: string
-    durationLabel: string | null
-    helperName: string | null
-  } | null>(null)
-  const canReviewTimeEntries = !!onReviewTimeEntry && !isEnded
-  const pendingTimeEntryReviewCount = useMemo(() => {
-    if (!canReviewTimeEntries || !timeEntryReviews) return 0
-    return Object.values(timeEntryReviews).filter((r) => r.status === "pending").length
-  }, [canReviewTimeEntries, timeEntryReviews])
-  // The page handlers toast and rethrow; swallow here so a failed review
-  // (e.g. already reviewed in another tab) is not an unhandled rejection.
-  const reviewTimeEntry = async (input: {
-    entryId: string
-    decision: TimeEntryReviewDecision
-    reason?: string
-  }): Promise<boolean> => {
-    if (!onReviewTimeEntry) return false
-    try {
-      await onReviewTimeEntry(input)
-      return true
-    } catch {
-      return false
-    }
-  }
+  // Logged-time summary the customer confirms before the session ends. The
+  // helper's request lives on the ticket row (realtime), so the dialog is
+  // derived from it: open for an outstanding request until the customer
+  // dismisses that particular request (keyed by its timestamp), and
+  // reopenable from the banner. A later request opens it again.
+  const summaryRequested = !!timeReviewRequestedAt && !isEnded && !!onConfirmTimeEntries
+  const [summaryDismissedFor, setSummaryDismissedFor] = useState<string | null>(null)
+  const summaryOpen = summaryRequested && summaryDismissedFor !== timeReviewRequestedAt
+  const setSummaryOpen = (open: boolean) => setSummaryDismissedFor(open ? null : (timeReviewRequestedAt ?? null))
+  const summaryPendingCount = useMemo(
+    () => (timeEntrySummary ?? []).filter((e) => e.reviewStatus === "pending").length,
+    [timeEntrySummary],
+  )
   const timeEntryReviewFor = (msg: TicketChatMessage): TicketChatTimeEntryReview | null => {
     if (msg.paymentMetadata?.kind !== "time_logged") return null
     const entryId = msg.paymentMetadata.time_entry_id
@@ -387,7 +394,10 @@ export function TicketChat(props: TicketChatProps) {
                                           : msg.paymentMetadata?.kind === "payment_failed"
                                             ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                             : msg.paymentMetadata?.kind === "time_entry_declined" ||
-                                                msg.paymentMetadata?.kind === "payment_hold_declined"
+                                                msg.paymentMetadata?.kind === "payment_hold_declined" ||
+                                                (msg.paymentMetadata?.kind === "time_entries_confirmed" &&
+                                                  Array.isArray(msg.paymentMetadata?.declined) &&
+                                                  msg.paymentMetadata.declined.length > 0)
                                               ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                               : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm"
@@ -405,31 +415,15 @@ export function TicketChat(props: TicketChatProps) {
                                     msg.paymentMetadata?.kind === "time_logged" &&
                                     (() => {
                                       const review = timeEntryReviewFor(msg)
-                                      if (!review) return null
-                                      const entryId = msg.paymentMetadata?.time_entry_id as string
-                                      if (review.status === "pending" && canReviewTimeEntries) {
-                                        const ms = msg.paymentMetadata?.time_milliseconds
-                                        return (
-                                          <TimeEntryReviewActions
-                                            pending={timeEntryReviewPending}
-                                            autoAcceptHint={describeAutoAcceptDeadline(review.reviewRequestedAt)}
-                                            onAccept={() => void reviewTimeEntry({ entryId, decision: "accepted" })}
-                                            onDecline={() =>
-                                              setDecliningEntry({
-                                                entryId,
-                                                durationLabel: typeof ms === "number" ? formatTime(ms) : null,
-                                                helperName: (msg.paymentMetadata?.helper_name as string | undefined) ?? null,
-                                              })
-                                            }
-                                          />
-                                        )
-                                      }
+                                      // Pending is the normal state during a session; only a
+                                      // decision is worth marking on the bubble.
+                                      if (!review || review.status === "pending") return null
                                       return (
                                         <div className="mt-2">
                                           <TimeEntryReviewStatusBadge
                                             status={review.status}
                                             auto={review.autoAccepted}
-                                            perspective={onReviewTimeEntry ? "customer" : "helper"}
+                                            perspective={onConfirmTimeEntries ? "customer" : "helper"}
                                           />
                                         </div>
                                       )
@@ -497,7 +491,14 @@ export function TicketChat(props: TicketChatProps) {
             </div>
           </div>
 
-          {pendingTimeEntryReviewCount > 0 && <TimeEntryReviewBanner pendingCount={pendingTimeEntryReviewCount} />}
+          {summaryRequested && (
+            <TimeEntrySummaryBanner
+              pendingCount={summaryPendingCount}
+              helperName={timeReviewHelperName}
+              autoAcceptHint={describeAutoAcceptDeadline(timeReviewRequestedAt)}
+              onReview={() => setSummaryOpen(true)}
+            />
+          )}
 
           {endSessionRequested && (
             <EndSessionRequestedBanner
@@ -543,20 +544,21 @@ export function TicketChat(props: TicketChatProps) {
             />
           )}
 
-          {onReviewTimeEntry && (
-            <DeclineTimeEntryDialog
-              open={!!decliningEntry}
-              onOpenChange={(open) => {
-                if (!open) setDecliningEntry(null)
-              }}
-              pending={timeEntryReviewPending}
-              durationLabel={decliningEntry?.durationLabel}
-              helperName={decliningEntry?.helperName}
-              onConfirm={async (reason) => {
-                if (!decliningEntry) return
-                // Stays open on failure so the explanation isn't lost.
-                if (await reviewTimeEntry({ entryId: decliningEntry.entryId, decision: "declined", reason })) {
-                  setDecliningEntry(null)
+          {onConfirmTimeEntries && (
+            <TimeEntrySummaryDialog
+              open={summaryOpen}
+              onOpenChange={setSummaryOpen}
+              entries={timeEntrySummary ?? []}
+              pending={timeEntryConfirmPending}
+              autoAcceptHint={describeAutoAcceptDeadline(timeReviewRequestedAt)}
+              onConfirm={async (declines) => {
+                // The page handler toasts and rethrows; stay open on failure
+                // so the decline reasons aren't lost.
+                try {
+                  await onConfirmTimeEntries(declines)
+                  setSummaryOpen(false)
+                } catch {
+                  /* handled by the page */
                 }
               }}
             />

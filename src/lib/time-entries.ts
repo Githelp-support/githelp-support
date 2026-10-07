@@ -4,11 +4,13 @@
  */
 
 /**
- * Customer review of a logged entry (migration
- * 20260925120000_time_entries_customer_review.sql). Every entry starts out
- * `pending`; the ticket creator accepts or declines it before the helper can
- * end the session. Declined entries are not billed and are left out of the
- * logged-time totals.
+ * Customer review of a logged entry (migrations
+ * 20260925120000_time_entries_customer_review.sql and
+ * 20261008120000_time_entries_summary_confirmation.sql). Every entry starts
+ * out `pending` and stays that way during the session. When the helper is
+ * ready to end they send the logged-time summary; the ticket creator confirms
+ * it once (`confirm_time_entries`), optionally declining single entries with a
+ * reason. Declined entries are not billed and are left out of the totals.
  */
 export type TimeEntryReviewStatus = "pending" | "accepted" | "declined";
 
@@ -22,7 +24,7 @@ export interface TimeEntry {
     date: string;
     created_at: string;
     review_status?: TimeEntryReviewStatus | null;
-    /** When the current review was requested; auto-accepted TIME_ENTRY_AUTO_ACCEPT_HOURS after this. */
+    /** When the entry was logged and became pending. */
     review_requested_at?: string | null;
     reviewed_at?: string | null;
     reviewed_by?: string | null;
@@ -31,12 +33,16 @@ export interface TimeEntry {
     auto_accepted?: boolean | null;
 }
 
-/** Pending entries are accepted automatically this long after `review_requested_at` (DB job). */
+/**
+ * Once the helper has sent the summary (`tickets.time_review_requested_at`),
+ * pending entries are accepted automatically this long after it (DB job).
+ */
 export const TIME_ENTRY_AUTO_ACCEPT_HOURS = 24;
 
 /**
- * "in about 5 hours" / "in less than an hour" / "any moment now" — when a
- * pending entry will be accepted automatically. Null when the deadline is unknown.
+ * "in about 5 hours" / "in less than an hour" / "any moment now" — when the
+ * outstanding summary will be accepted automatically, counted from
+ * `tickets.time_review_requested_at`. Null when there is no request.
  */
 export function describeAutoAcceptDeadline(
     reviewRequestedAt: string | null | undefined,

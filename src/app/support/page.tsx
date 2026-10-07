@@ -23,7 +23,8 @@ import {
   formatChatTimestamp,
 } from "@/lib/customer-chat-messages"
 import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
-import { useReviewTimeEntry, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
+import { useConfirmTimeEntries, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
+import type { TimeEntrySummaryDecline } from "@/components/ticket-chat/time-entry-review"
 import { useCreateCheckoutForTicket } from "@/hooks/useCreateCheckoutForTicket"
 import { useRetryTicketPayment } from "@/hooks/useRetryTicketPayment"
 import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
@@ -135,25 +136,33 @@ export default function SupportPage() {
   } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
   const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, user?.id)
 
-  // Accept / decline logged time — same flow as /support/chat.
-  const reviewTimeEntry = useReviewTimeEntry()
-  const canReviewTimeEntries = !!ticketId && !!user?.id && liveTicket?.created_by === user.id
-  const handleReviewTimeEntry = async (input: { entryId: string; decision: "accepted" | "declined"; reason?: string }) => {
+  // Confirm the logged-time summary the helper sent (one action for every
+  // pending entry; declines carry a reason the RPC posts into the chat).
+  // Only the ticket creator may confirm — the RPC enforces it too.
+  const confirmTimeEntries = useConfirmTimeEntries()
+  const canConfirmTimeEntries = !!ticketId && !!user?.id && liveTicket?.created_by === user.id
+  const handleConfirmTimeEntries = async (declines: TimeEntrySummaryDecline[]) => {
     if (!ticketId) return
     try {
-      await reviewTimeEntry.mutateAsync({ ...input, ticketId })
-      toast.success(input.decision === "accepted" ? "Logged time accepted." : "Logged time declined. The helper has been told why.")
+      const accepted = await confirmTimeEntries.mutateAsync({ ticketId: ticketId, declines })
+      toast.success(
+        declines.length > 0
+          ? `Logged time confirmed. ${declines.length === 1 ? "1 entry was" : `${declines.length} entries were`} declined and the helper has been told why.`
+          : accepted > 0
+            ? "Logged time confirmed. The helper can now end the session."
+            : "Nothing was left to confirm.",
+      )
     } catch (error) {
-      console.error("Failed to review time entry:", error)
+      console.error("Failed to confirm time entries:", error)
       const hint = getReviewTimeEntryErrorHint(error)
       toast.error(
         hint === "reason_required"
           ? "Please explain why you declined the logged time."
-          : hint === "already_reviewed"
-            ? "This entry has already been reviewed."
+          : hint === "nothing_to_confirm"
+            ? "There is no logged time waiting for your confirmation."
             : hint === "ticket_ended"
               ? "The session has already ended."
-              : "Couldn't save your decision. Please try again.",
+              : "Couldn't save your confirmation. Please try again.",
       )
       throw error
     }
@@ -523,8 +532,11 @@ export default function SupportPage() {
             endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
             endSessionRequestPending={requestEndSession.isPending}
             timeEntryReviews={timeEntryReviews}
-            onReviewTimeEntry={canReviewTimeEntries ? handleReviewTimeEntry : undefined}
-            timeEntryReviewPending={reviewTimeEntry.isPending}
+            timeReviewRequestedAt={liveTicket?.time_review_requested_at ?? null}
+            timeEntrySummary={timeEntriesDisplay}
+            onConfirmTimeEntries={canConfirmTimeEntries ? handleConfirmTimeEntries : undefined}
+            timeEntryConfirmPending={confirmTimeEntries.isPending}
+            timeReviewHelperName={claimer?.name ?? null}
             // Before the first message there is no ticket yet: uploads go to the
             // user's own folder (see lib/ticket-attachments).
             attachmentStoragePrefix={user?.id && projectId ? `${projectId}/${ticketId || user.id}` : undefined}
