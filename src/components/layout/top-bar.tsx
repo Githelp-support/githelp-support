@@ -316,9 +316,10 @@ export function TopBar() {
           {/* Project control. Acting as User means acting in the private user
               context, shown as a pseudo project called "Private". An account
               with no projects gets it as a greyed-out placeholder; otherwise
-              the dropdown lists Private first and then the account's projects.
-              Picking a project switches to the highest role held there, and
-              picking Private switches back to User. */}
+              the dropdown shows Private as the current entry (only while
+              acting as User) followed by the account's projects. Picking a
+              project switches to the highest role held there; getting back to
+              Private is done by switching role to User. */}
           {projectsLoading ? (
             <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
               <div className="font-sans text-[14px] text-muted-foreground">Loading projects...</div>
@@ -372,21 +373,15 @@ export function TopBar() {
                 {/* Scrollable project list — capped at three rows (3 × 32px) so the
                     separator and "Add new" below always stay visible. */}
                 <div className={cn("max-h-24 overflow-y-auto")}>
-                  <DropdownMenuItem
-                    onClick={() => handleSwitchRole("user")}
-                    className={`group gap-2 ${isPrivateContext ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
-                  >
-                    <PrivateContextIcon size="w-5 h-5" />
-                    <span
-                      className={`font-sans truncate text-[14px] ${
-                        isPrivateContext
-                          ? "font-[500]"
-                          : "font-medium text-[#55555E] group-focus:text-sidebar-foreground"
-                      }`}
-                    >
-                      Private
-                    </span>
-                  </DropdownMenuItem>
+                  {/* "Private" is only listed while acting as User (where it is
+                      the current selection). Admins and helpers reach it by
+                      switching role to User, not from the project list. */}
+                  {isPrivateContext && (
+                    <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
+                      <PrivateContextIcon size="w-5 h-5" />
+                      <span className="font-sans truncate text-[14px] font-[500]">Private</span>
+                    </DropdownMenuItem>
+                  )}
                   {userProjects.map((project) => {
                     const isSelected = !isPrivateContext && selectedProject?.project_id === project.project_id
                     return (
