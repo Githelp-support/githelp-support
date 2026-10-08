@@ -194,6 +194,8 @@ export type Database = {
                     first_response_at: string | null;
                     end_requested_at: string | null;
                     end_requested_by: string | null;
+                    time_review_requested_at: string | null;
+                    time_review_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -218,6 +220,8 @@ export type Database = {
                     first_response_at: string | null;
                     end_requested_at: string | null;
                     end_requested_by: string | null;
+                    time_review_requested_at: string | null;
+                    time_review_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;
@@ -242,6 +246,8 @@ export type Database = {
                     first_response_at: string | null;
                     end_requested_at: string | null;
                     end_requested_by: string | null;
+                    time_review_requested_at: string | null;
+                    time_review_requested_by: string | null;
                     project_id: string;
                     created_by: string | null;
                     title: string;

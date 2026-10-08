@@ -17,12 +17,20 @@ interface MessageChangePayload {
 /**
  * System messages that mean the ticket's time entries changed: `time_logged`
  * is written by the DB trigger on `tickets_time_entries` (migration
- * 20260908120000_time_logged_system_messages) and the two review kinds by the
- * `review_time_entry` RPC (migration 20260925120000_time_entries_customer_review);
- * `time_entry_deleted` by the delete trigger (migration
- * 20260927120000_time_entries_helper_delete_own).
+ * 20260908120000_time_logged_system_messages); `time_entry_deleted` by the
+ * delete trigger (migration 20260927120000_time_entries_helper_delete_own);
+ * `time_entries_confirmed` by the `confirm_time_entries` RPC and the auto-accept
+ * job (migration 20261008120000_time_entries_summary_confirmation). The two
+ * per-entry review kinds come from the `review_time_entry` RPC, which only the
+ * MCP agent API still calls.
  */
-const TIME_ENTRY_MESSAGE_KINDS = new Set(['time_logged', 'time_entry_accepted', 'time_entry_declined', 'time_entry_deleted'])
+const TIME_ENTRY_MESSAGE_KINDS = new Set([
+  'time_logged',
+  'time_entry_accepted',
+  'time_entry_declined',
+  'time_entry_deleted',
+  'time_entries_confirmed',
+])
 
 /** True for an INSERT of any of the time-entry system messages above. */
 export const isTimeEntryMessage = (payload: unknown): boolean => {
