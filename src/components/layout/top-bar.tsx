@@ -213,6 +213,16 @@ export function TopBar() {
   const rolesResolved =
     userRolesLoaded && !projectsLoading && (!selectedProject || projectRolesLoaded)
 
+  // "Add new role" is only offered to profiles registered as User and nothing
+  // else. Derived from the account-wide registrations (useUserRoles), not
+  // availableRoles, which can be scoped to the selected project.
+  const isUserOnly =
+    rolesResolved &&
+    userRolesLoaded &&
+    Array.isArray(userRoles) &&
+    userRoles.length === 1 &&
+    userRoles[0] === "user"
+
   // Once roles are resolved, if the current role isn't one the profile holds,
   // switch to the first available role (e.g. a freshly registered helper
   // lands in the Helper view instead of the default User view).
@@ -264,6 +274,20 @@ export function TopBar() {
                       </DropdownMenuItem>
                     )
                   })}
+                  {isUserOnly && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="font-sans text-[14px] text-brand-primary cursor-pointer"
+                        onClick={() => {
+                          if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add new role
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </>
               ) : null}
             </DropdownMenuContent>
