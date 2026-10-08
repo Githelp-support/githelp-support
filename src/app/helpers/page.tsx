@@ -537,7 +537,7 @@ export default function HelpersPage() {
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
               <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
-              <Switch defaultChecked className="h-[22px] w-[38px] p-[3px] border-0 data-[state=checked]:bg-[#4AA19E]" />
+              <Switch defaultChecked title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="h-[22px] w-[38px] p-[3px] border-0 data-[state=checked]:bg-[#4AA19E]" />
             </div>
           </div>
 
@@ -548,7 +548,7 @@ export default function HelpersPage() {
               {currentView === "invited" ? (
                 <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                   <div>
-                    <input type="checkbox" className="rounded border-border" />
+                    <input type="checkbox" className="rounded border-border" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                   </div>
                   <div className="col-span-2">
                     <span className="text-sm font-medium text-foreground">Helper</span>
@@ -569,7 +569,7 @@ export default function HelpersPage() {
               ) : (
                 <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                   <div>
-                    <input type="checkbox" className="rounded border-border" />
+                    <input type="checkbox" className="rounded border-border" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                   </div>
                   <div className="col-span-3 flex items-center space-x-2">
                     <button type="button"
@@ -623,7 +623,7 @@ export default function HelpersPage() {
                       <div key={invite.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
                         <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                           <div>
-                            <input type="checkbox" className="rounded border-border" />
+                            <input type="checkbox" className="rounded border-border" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                           </div>
                           <div className="col-span-2 flex items-center space-x-2">
                             <span className="text-sm font-medium text-foreground">
@@ -700,7 +700,7 @@ export default function HelpersPage() {
                     <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
-                          <input type="checkbox" className="rounded border-border" />
+                          <input type="checkbox" className="rounded border-border" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                         </div>
                         <div className="col-span-3 flex items-center gap-[18px]">
                           <ProfileAvatar
@@ -787,7 +787,7 @@ export default function HelpersPage() {
                     <div key={request.user_id || index} className="px-6 py-4 hover:bg-[#f7f9ff]">
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
-                          <input type="checkbox" className="rounded border-border" />
+                          <input type="checkbox" className="rounded border-border" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                         </div>
                         <div className="col-span-3 flex items-center gap-[18px]">
                           <ProfileAvatar

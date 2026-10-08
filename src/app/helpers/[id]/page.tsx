@@ -15,7 +15,7 @@ import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeE
 import { usePaymentTransfers, usePayments, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import {
@@ -377,7 +377,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                       <tr className="border-b border-border bg-muted/60">
                         <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
                           <div className="flex items-center gap-3">
-                            <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
+                            <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                              <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
+                            </span>
                             Ticket ID
                           </div>
                         </th>
@@ -421,7 +423,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                         <tr className={cn("border-b border-border last:border-b-0 hover:bg-muted/40 transition-colors", expanded && "border-b-0")}>
                           <td className="px-4 py-3 align-top">
                             <div className="flex items-center gap-3">
-                              <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
+                              <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                                <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
+                              </span>
                               {ticket.id ? (
                                 <Link
                                   href={`/helper/tickets/${ticket.id}`}
