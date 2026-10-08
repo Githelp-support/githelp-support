@@ -6,12 +6,13 @@ import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { Sidebar } from "@/components/layout/sidebar"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
-import { Search } from "lucide-react"
+import { Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects } from "@/hooks/useProject"
+import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects, PROJECT_SEARCH_MIN_LENGTH } from "@/hooks/useProject"
+import { useRequestProjectSupport } from "@/hooks/useRequestProjectSupport"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useCreateTicket, useRequestEndSession } from "@/hooks/useTickets"
 import { useConfirmTimeEntries, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
@@ -72,6 +73,11 @@ export default function UserSupportChatPage() {
   const [topics] = useState<string[]>([])
   const [helpType] = useState<string[]>([])
   const [projectSearch, setProjectSearch] = useState("")
+  // Short search terms only run when the user presses Search / Enter.
+  const [projectSearchSubmitted, setProjectSearchSubmitted] = useState(false)
+  // Project name the user asked us to reach out to (shows the confirmation).
+  const [requestedProjectName, setRequestedProjectName] = useState<string | null>(null)
+  const requestProjectSupport = useRequestProjectSupport()
   // Sign-in options open in a modal so the visitor keeps the page (and its
   // project context in the URL); the modal redirects back here after auth.
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
@@ -439,10 +445,36 @@ export default function UserSupportChatPage() {
     }
 
     // No tickets (or not signed in) → let the user pick a project to get
-    // support from.
-    const filteredProjects = allProjects.filter((p) =>
-      p.name.toLowerCase().includes(projectSearch.trim().toLowerCase()),
-    )
+    // support from. Results only show once the term is long enough, or the
+    // user explicitly pressed Search for a shorter one.
+    const projectTerm = projectSearch.trim()
+    const canSearchProjects =
+      projectTerm.length >= PROJECT_SEARCH_MIN_LENGTH ||
+      (projectSearchSubmitted && projectTerm.length > 0)
+    const filteredProjects = canSearchProjects
+      ? allProjects.filter((p) => p.name.toLowerCase().includes(projectTerm.toLowerCase()))
+      : []
+    const requestAlreadySent =
+      !!requestedProjectName && requestedProjectName.toLowerCase() === projectTerm.toLowerCase()
+
+    const handleProjectSearchChange = (value: string) => {
+      setProjectSearch(value)
+      setProjectSearchSubmitted(false)
+    }
+
+    const handleRequestProjectSupport = async () => {
+      if (!isAuthenticated) {
+        setIsSignInModalOpen(true)
+        return
+      }
+      try {
+        await requestProjectSupport.mutateAsync({ projectName: projectTerm })
+        setRequestedProjectName(projectTerm)
+      } catch (error: unknown) {
+        console.error("Failed to request project support:", error)
+        toast.error(error instanceof Error ? error.message : "Failed to send your request. Please try again.")
+      }
+    }
 
     return (
       <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
@@ -458,27 +490,69 @@ export default function UserSupportChatPage() {
                 : "Pick a project to start a new support conversation."}
             </p>
 
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search projects"
-                value={projectSearch}
-                onChange={(e) => setProjectSearch(e.target.value)}
-                className="pl-10"
-                autoFocus
-              />
+            <div className="flex gap-2 mb-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search projects"
+                  value={projectSearch}
+                  onChange={(e) => handleProjectSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && projectTerm) setProjectSearchSubmitted(true)
+                  }}
+                  className="pl-10"
+                  autoFocus
+                />
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setProjectSearchSubmitted(true)}
+                disabled={!projectTerm || canSearchProjects}
+              >
+                Search
+              </Button>
             </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              {canSearchProjects
+                ? "Pick a project below to start a conversation."
+                : `Type at least ${PROJECT_SEARCH_MIN_LENGTH} characters, or press Search.`}
+            </p>
 
             <div className="bg-white rounded-lg border border-border overflow-hidden">
               {allProjectsLoading ? (
                 <div className="px-4 py-6 text-sm text-muted-foreground">
                   Loading projects…
                 </div>
-              ) : filteredProjects.length === 0 ? (
+              ) : !canSearchProjects ? (
                 <div className="px-4 py-6 text-sm text-muted-foreground">
-                  No projects match &ldquo;{projectSearch}&rdquo;.
+                  Start typing the name of the project you need help with.
                 </div>
+              ) : filteredProjects.length === 0 ? (
+                requestAlreadySent ? (
+                  <div className="px-4 py-6 text-sm">
+                    <p className="font-medium text-foreground">We&rsquo;re on it!</p>
+                    <p className="text-muted-foreground mt-1">
+                      {projectTerm} isn&rsquo;t on Githelp yet. We&rsquo;re reaching out to them for you, and
+                      you&rsquo;ll be notified as soon as you can get support for it here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="px-4 py-6 space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      No projects match &ldquo;{projectTerm}&rdquo;. It may not be on Githelp yet &mdash; we can
+                      reach out to them for you.
+                    </p>
+                    <Button
+                      onClick={handleRequestProjectSupport}
+                      disabled={requestProjectSupport.isPending}
+                      className="bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                    >
+                      {requestProjectSupport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      Request to get help
+                    </Button>
+                  </div>
+                )
               ) : (
                 <ul className="divide-y divide-border">
                   {filteredProjects.map((p) => (
@@ -501,6 +575,7 @@ export default function UserSupportChatPage() {
             </div>
           </div>
         </main>
+        <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
       </div>
     )
   }
