@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseTimeDisplayToMinutes, formatRelativeTime, formatDuration } from "./format"
+import { parseTimeDisplayToMinutes, formatRelativeTime, formatDuration, truncateText } from "./format"
 
 describe("parseTimeDisplayToMinutes", () => {
   it("returns 0 for dash placeholder", () => {
@@ -67,5 +67,35 @@ describe("formatDuration", () => {
     expect(formatDuration(20)).toBe("<1m")
     expect(formatDuration(-5)).toBe("<1m")
     expect(formatDuration(Number.NaN)).toBe("<1m")
+  })
+})
+
+describe("truncateText", () => {
+  it("returns a 30-character string unchanged", () => {
+    const exact = "a".repeat(30)
+    expect(truncateText(exact)).toBe(exact)
+    expect(truncateText(exact)).toHaveLength(30)
+  })
+
+  it("returns a string under 30 characters unchanged", () => {
+    expect(truncateText("Short title")).toBe("Short title")
+  })
+
+  it("truncates strings over 30 characters to 30 chars plus a single ellipsis", () => {
+    const long = "This is a long ticket title that exceeds thirty characters"
+    const result = truncateText(long)
+    expect(result).toBe(long.slice(0, 30) + "…")
+    expect(result).toHaveLength(31)
+    expect(result.endsWith("…")).toBe(true)
+    expect(result.endsWith("……")).toBe(false)
+  })
+
+  it("returns an empty string unchanged", () => {
+    expect(truncateText("")).toBe("")
+  })
+
+  it("respects a custom maxLength", () => {
+    expect(truncateText("abcdef", 3)).toBe("abc…")
+    expect(truncateText("abc", 3)).toBe("abc")
   })
 })

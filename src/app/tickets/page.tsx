@@ -8,10 +8,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { Clock, MessageCircle, User, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
+import { Clock, MessageCircle, User, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates } from "@/lib/ticket-pricing"
+import { truncateText } from "@/lib/format"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } from "@/hooks/useTicketParticipants"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -384,21 +385,16 @@ export default function TicketsPage() {
 
           {/* Filters */}
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">Filters:</span>
-            </div>
-
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger
                 size="sm"
                 variant={statusFilter !== "all" ? "neutral" : "outline"}
                 className="w-[140px] rounded-lg text-sm font-medium"
               >
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Status</SelectItem>
+                <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Statuses</SelectItem>
                 <SelectItem value="available" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Unclaimed</SelectItem>
                 <SelectItem value="in-progress" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">In Progress</SelectItem>
                 <SelectItem value="completed" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Completed</SelectItem>
@@ -679,7 +675,7 @@ export default function TicketsPage() {
                               <h4 className="text-sm font-medium text-foreground truncate">
                                 {ticket.user.name}
                               </h4>
-                              <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                              <p className="text-sm text-muted-foreground">{truncateText(ticket.title)}</p>
                               <div className="flex items-center gap-1 mt-1">
                                 <MessageCircle className="w-3 h-3 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
@@ -758,7 +754,7 @@ export default function TicketsPage() {
 
                 return (
               <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
-                <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-4">
                     <div className="flex items-start gap-[18px]">
                       <div
@@ -773,7 +769,7 @@ export default function TicketsPage() {
                             {ticket.user.name}
                           </h4>
                         </Link>
-                        <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                        <p className="text-sm text-muted-foreground">{truncateText(ticket.title)}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <MessageCircle className="w-3 h-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
@@ -792,7 +788,7 @@ export default function TicketsPage() {
                     </Badge>
                   </div>
                   <div className="col-span-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-start gap-2">
                       <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
                         {getStatusLabel(ticket.status)}
                       </Badge>
