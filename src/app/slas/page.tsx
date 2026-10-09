@@ -128,7 +128,7 @@ export default function SLAsPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Your SLAs" subtitle="Manage your Service Level Agreements" />
+        <Header title="Your SLAs" subtitle="Manage your Support Level Agreements" />
 
         {/* Content */}
         <main className="flex-1 p-6 overflow-y-auto">
