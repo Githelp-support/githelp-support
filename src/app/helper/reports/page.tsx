@@ -568,7 +568,9 @@ export default function HelperReportsPage() {
                     <div key={payout.id} role="presentation" className="px-6 py-4 opacity-80">
                       <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                         <div className="flex items-center">
-                          <Checkbox disabled checked={false} />
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Checkbox disabled checked={false} />
+                          </span>
                         </div>
                         <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
                           <div className="flex items-center gap-2 flex-wrap">
@@ -820,7 +822,9 @@ export default function HelperReportsPage() {
                     <div key={row.id} role="presentation" className="px-6 py-4 opacity-80">
                       <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                         <div className="flex items-center">
-                          <Checkbox disabled checked={false} />
+                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                            <Checkbox disabled checked={false} />
+                          </span>
                         </div>
                         <div className="min-w-0 flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-foreground">{row.period}</span>

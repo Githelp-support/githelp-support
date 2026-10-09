@@ -575,7 +575,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <thead>
                       <tr className="border-b border-border bg-brand-primary/10">
                         <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                          <input type="checkbox" className="mr-3" />
+                          <input type="checkbox" className="mr-3" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                           Ticket ID
                         </th>
                         <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
@@ -610,7 +610,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                             <tr key={ticket.id} className="border-b border-border hover:bg-muted">
                               <td className="p-4">
                                 <div className="flex items-center gap-3">
-                                  <input type="checkbox" />
+                                  <input type="checkbox" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                                   <span className="text-sm text-foreground font-medium font-mono tabular-nums">{ticket.id.slice(0, 8)}</span>
                                 </div>
                               </td>

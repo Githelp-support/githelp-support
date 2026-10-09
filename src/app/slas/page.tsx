@@ -199,7 +199,7 @@ export default function SLAsPage() {
             <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
               <div className="grid grid-cols-12 gap-4 items-center">
                 <div className="col-span-1">
-                  <input type="checkbox" className="rounded border-border" />
+                  <input type="checkbox" className="rounded border-border" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                 </div>
                 <div className="col-span-4 flex items-center space-x-2">
                   <button
@@ -241,7 +241,7 @@ export default function SLAsPage() {
                 <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
-                      <input type="checkbox" className="rounded border-border" />
+                      <input type="checkbox" className="rounded border-border" title={ILLUSTRATIVE_BUTTON_TOOLTIP} />
                     </div>
                     <div className="col-span-4 flex items-center space-x-3">
                       <div
