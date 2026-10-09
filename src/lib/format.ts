@@ -50,3 +50,12 @@ export function formatDuration(totalSeconds: number): string {
   if (minutes > 0) parts.push(`${minutes}m`)
   return parts.join(" ")
 }
+
+/**
+ * Truncate text to `maxLength` characters, appending a single "…" (U+2026)
+ * when the original is longer. Text at or under the limit is returned unchanged.
+ */
+export function truncateText(text: string, maxLength = 30): string {
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength) + "…"
+}
