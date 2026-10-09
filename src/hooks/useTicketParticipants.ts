@@ -341,6 +341,9 @@ export function useUpdateLastReadMessage() {
             queryClient.invalidateQueries({
                 queryKey: ["helper-claimed-tickets-sidebar"],
             });
+            queryClient.invalidateQueries({
+                queryKey: ["helper-recent-ticket-interactions"],
+            });
         },
     });
 }
