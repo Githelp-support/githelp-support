@@ -55,10 +55,6 @@ const formatDate = (dateString: string) => {
   return `${day}.${month}.${year}, ${hours}:${minutes}`
 }
 
-// Helper function to truncate text with an ellipsis
-const truncateText = (text: string, max = 30) =>
-  text.length > max ? text.slice(0, max) + '…' : text
-
 type SortField = "title" | "createdAt" | "priority" | "status" | "type"
 type SortDirection = "asc" | "desc"
 
