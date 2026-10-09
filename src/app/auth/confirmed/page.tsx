@@ -130,7 +130,7 @@ export default function AuthConfirmedPage() {
     }
 
     // If there's a specific redirect and user doesn't need onboarding,
-    // go through the role chooser first (it skips itself for single-role accounts)
+    // let /auth/role resolve the role to act as and forward to it
     if (redirectTo && !onboardingStatus.needsOnboarding && onboardingStatus.isMember) {
       router.push(`/auth/role?redirect=${encodeURIComponent(redirectTo)}`)
       return
@@ -142,12 +142,13 @@ export default function AuthConfirmedPage() {
       return
     }
 
-    if (onboardingStatus.onboardingCompleted && !onboardingStatus.isMember) {
+    if (onboardingStatus.needsWaiting) {
       router.push("/onboarding/waiting")
       return
     }
 
-    // Default: go through the role chooser, forwarding any redirect URL
+    // Default: /auth/role resolves the role to act as (last used, else
+    // highest held) and lands in the app, forwarding any redirect URL
     router.push(redirectTo ? `/auth/role?redirect=${encodeURIComponent(redirectTo)}` : "/auth/role")
   }, [isProcessing, onboardingLoading, onboardingStatus, router, searchParams])
 

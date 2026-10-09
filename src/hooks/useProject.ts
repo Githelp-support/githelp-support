@@ -221,6 +221,8 @@ export function useCreateProject() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         },
     });
@@ -638,6 +640,44 @@ export function useListContributedProjects(providerToken: string | null) {
     });
 }
 
+export type ProjectSearchResult = Pick<
+    Project,
+    "project_id" | "name" | "slug" | "logo_url" | "open_for_new_helpers"
+>;
+
+/** Characters the onboarding project-name field needs before it suggests matches. */
+export const PROJECT_SEARCH_MIN_LENGTH = 5;
+
+const escapeIlike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * Name search over projects already on Githelp, used by the onboarding
+ * "What is the name of the project" step. Sandbox and deleted projects are
+ * excluded. `projects` is readable by every signed-in user, so this is a
+ * plain select; the caller decides when the term is long enough to search.
+ */
+export function useSearchProjects(term: string, options?: { enabled?: boolean }) {
+    const trimmed = term.trim();
+    return useQuery({
+        queryKey: ["project-search", trimmed.toLowerCase()],
+        queryFn: async (): Promise<ProjectSearchResult[]> => {
+            const { data, error } = await supabase
+                .from("projects")
+                .select("project_id, name, slug, logo_url, open_for_new_helpers")
+                .is("deleted_at", null)
+                .eq("sandbox", false)
+                .ilike("name", `%${escapeIlike(trimmed)}%`)
+                .order("name")
+                .limit(8);
+            if (error) throw error;
+            return (data ?? []) as ProjectSearchResult[];
+        },
+        enabled: (options?.enabled ?? true) && trimmed.length > 0,
+        staleTime: 60000,
+        placeholderData: (previous) => previous,
+    });
+}
+
 export function useCreateProjectFromGitHub() {
     const queryClient = useQueryClient();
 
@@ -659,6 +699,8 @@ export function useCreateProjectFromGitHub() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         },
     });
@@ -726,6 +768,8 @@ export function useCreateSandboxProject() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
             queryClient.invalidateQueries({ queryKey: ["has-sandbox"] });
         },
@@ -756,6 +800,8 @@ export function useAcceptProjectInvite() {
             // Invalidate relevant queries
             queryClient.invalidateQueries({ queryKey: ["projects"] });
             queryClient.invalidateQueries({ queryKey: ["user-projects"] });
+            queryClient.invalidateQueries({ queryKey: ["user-roles"] });
+            queryClient.invalidateQueries({ queryKey: ["account-roles"] });
             queryClient.invalidateQueries({
                 queryKey: ["project", data.project_id],
             });

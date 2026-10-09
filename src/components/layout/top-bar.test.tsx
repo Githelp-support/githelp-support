@@ -20,15 +20,17 @@ vi.mock("@/contexts/project-context", () => ({
   useProjectSelection: () => ({ selectedProjectId: null, setSelectedProjectId: vi.fn() }),
 }))
 
+const useUserProjects = vi.fn()
 vi.mock("@/hooks/useProject", () => ({
-  useUserProjects: () => ({ data: [], isLoading: false }),
+  useUserProjects: () => useUserProjects(),
   useProjectBranding: () => ({ data: null }),
 }))
 
+const useUserRoles = vi.fn()
 vi.mock("@/hooks/useProjectRole", () => ({
   useProjectAvailableRoles: () => ({ data: undefined }),
   projectAvailableRolesQueryOptions: vi.fn(),
-  useUserRoles: () => ({ data: undefined, isSuccess: false }),
+  useUserRoles: () => useUserRoles(),
 }))
 
 vi.mock("@/hooks/useNotifications", () => ({
@@ -59,6 +61,8 @@ describe("TopBar", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     useUser.mockReturnValue({ user: signedInUser, switchRole: vi.fn() })
+    useUserRoles.mockReturnValue({ data: undefined, isSuccess: false })
+    useUserProjects.mockReturnValue({ data: [], isLoading: false })
   })
 
   it("renders null on the invite acceptance route", () => {
@@ -79,5 +83,33 @@ describe("TopBar", () => {
     expect(container.firstChild).not.toBeNull()
     expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument()
     expect(screen.getByText("User")).toBeInTheDocument()
+  })
+
+  it("shows the Private context dropdown for a user-only account", () => {
+    usePathname.mockReturnValue("/support/chat")
+    useUserRoles.mockReturnValue({ data: ["user"], isSuccess: true })
+    render(<TopBar />)
+    expect(screen.getByRole("button", { name: /private/i })).not.toBeDisabled()
+  })
+
+  it("shows Private as the current context when acting as User with projects", () => {
+    usePathname.mockReturnValue("/support/chat")
+    useUserRoles.mockReturnValue({ data: ["helper", "user"], isSuccess: true })
+    useUserProjects.mockReturnValue({
+      data: [{ project_id: "p1", name: "Alpha", slug: "alpha", logo_url: null }],
+      isLoading: false,
+    })
+    render(<TopBar />)
+    const trigger = screen.getByRole("button", { name: /private/i })
+    expect(trigger).not.toBeDisabled()
+    expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
+  })
+
+  it("does not show the Private placeholder when acting as Admin", () => {
+    usePathname.mockReturnValue("/tickets")
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "admin" as const }, switchRole: vi.fn() })
+    useUserRoles.mockReturnValue({ data: ["admin"], isSuccess: true })
+    render(<TopBar />)
+    expect(screen.queryByText("Private")).not.toBeInTheDocument()
   })
 })

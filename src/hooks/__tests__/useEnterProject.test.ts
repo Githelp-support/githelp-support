@@ -69,7 +69,11 @@ describe("useEnterProject", () => {
         const role = await result.current("project-1");
 
         expect(queryClient.refetchQueries).toHaveBeenCalledWith({ queryKey: ["user-projects"] });
-        expect(order).toEqual(["refetch", "select"]);
+        // Role registrations are refreshed too — the top bar reads them to
+        // decide whether the switched-to role is one the account holds.
+        expect(queryClient.refetchQueries).toHaveBeenCalledWith({ queryKey: ["user-roles"] });
+        expect(queryClient.refetchQueries).toHaveBeenCalledWith({ queryKey: ["account-roles"] });
+        expect(order).toEqual(["refetch", "refetch", "refetch", "select"]);
         expect(role).toBe("helper");
     });
 
