@@ -85,15 +85,14 @@ describe("TopBar", () => {
     expect(screen.getByText("User")).toBeInTheDocument()
   })
 
-  it("shows a disabled Private project placeholder for a user-only account", () => {
+  it("shows the Private context dropdown for a user-only account", () => {
     usePathname.mockReturnValue("/support/chat")
     useUserRoles.mockReturnValue({ data: ["user"], isSuccess: true })
     render(<TopBar />)
-    const placeholder = screen.getByRole("button", { name: /private/i })
-    expect(placeholder).toBeDisabled()
+    expect(screen.getByRole("button", { name: /private/i })).not.toBeDisabled()
   })
 
-  it("shows Private as the current project when acting as User with projects, and keeps the dropdown enabled", () => {
+  it("shows Private as the current context when acting as User with projects", () => {
     usePathname.mockReturnValue("/support/chat")
     useUserRoles.mockReturnValue({ data: ["helper", "user"], isSuccess: true })
     useUserProjects.mockReturnValue({
