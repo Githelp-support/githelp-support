@@ -19,7 +19,9 @@ import {
     groupTransfersByTicket,
     monthLabel,
     parseCalendarDay,
+    ticketClosedAt,
     transferDate,
+    transferReportDate,
     transferTicketType,
 } from "@/lib/helper-payout-reports"
 import { groupByTicket, sortByDateAsc, sumOf, transactionCountLabel } from "@/lib/ticket-groups"
@@ -268,9 +270,10 @@ export interface HelperPayoutReportInput {
 export function buildHelperPayoutReport(input: HelperPayoutReportInput): ReportDocument {
     const generatedAt = input.generatedAt ?? new Date()
     const transfers = input.transfers
-        .filter((t) => t.transfer_user_type === "helper" && inPeriod(transferDate(t), input.period))
+        .filter((t) => t.transfer_user_type === "helper" && inPeriod(transferReportDate(t), input.period))
         .sort(byDateAsc(transferDate))
-    const entries = input.timeEntries.filter((e) => dayInPeriod(e.date, input.period))
+    // Time counts in the month its ticket closed; open tickets' time is not reported yet.
+    const entries = input.timeEntries.filter((e) => !!e.ticket_closed_at && inPeriod(e.ticket_closed_at, input.period))
     const currency = currencyOf(transfers)
 
     const paidOut = sumBy(transfers.filter((t) => t.status === "completed"), (t) => t.amount_smallest_unit)
@@ -377,8 +380,12 @@ export function chargedAmount(payment: Payment): number {
 export function buildProjectPayoutReport(input: ProjectPayoutReportInput): ReportDocument {
     const generatedAt = input.generatedAt ?? new Date()
     const paymentDate = (p: Payment) => p.completed_at || p.created_at
-    const payments = input.payments.filter((p) => inPeriod(paymentDate(p), input.period)).sort(byDateAsc(paymentDate))
-    const transfers = input.transfers.filter((t) => inPeriod(transferDate(t), input.period)).sort(byDateAsc(transferDate))
+    const payments = input.payments
+        .filter((p) => inPeriod(ticketClosedAt(p.ticket) ?? paymentDate(p), input.period))
+        .sort(byDateAsc(paymentDate))
+    const transfers = input.transfers
+        .filter((t) => inPeriod(transferReportDate(t), input.period))
+        .sort(byDateAsc(transferDate))
     const helperTransfers = transfers.filter((t) => t.transfer_user_type === "helper")
     const projectTransfers = transfers.filter((t) => t.transfer_user_type === "project")
     const currency = currencyOf(payments, currencyOf(transfers))

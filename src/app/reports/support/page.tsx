@@ -23,7 +23,7 @@ import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, t
 import { useProject } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers"
-import { groupTransfersByHelperMonth, payoutReference, transferDate } from "@/lib/helper-payout-reports"
+import { groupTransfersByHelperMonth, payoutReference, transferDate, transferReportDate } from "@/lib/helper-payout-reports"
 import {
   aggregateProjectIncomeMonthly,
   groupProjectIncomeByTicket,
@@ -308,7 +308,7 @@ export default function ReportsSupportPage() {
   const ticketRows = useMemo(() => {
     // One record per ticket; the month filter applies to the individual charges.
     const list = groupProjectIncomeByTicket(
-      targetMonth ? incomeRows.filter((row) => getMonthYear(row.date) === targetMonth) : incomeRows,
+      targetMonth ? incomeRows.filter((row) => getMonthYear(row.reportDate) === targetMonth) : incomeRows,
     )
     const { field, direction } = ticketsSort
     if (!field) return list
@@ -357,7 +357,7 @@ export default function ReportsSupportPage() {
   const helperRows = useMemo(() => {
     if (!transfersData) return []
     let transfers = transfersData.filter((t) => t.transfer_user_type === "helper")
-    if (targetMonth) transfers = transfers.filter((t) => getMonthYear(transferDate(t)) === targetMonth)
+    if (targetMonth) transfers = transfers.filter((t) => getMonthYear(transferReportDate(t)) === targetMonth)
     const list = groupTransfersByHelperMonth(transfers).map((group) => {
       const first = group.transfers[0]
       const helperName = getHelperDisplayName(first.helper)

@@ -1,13 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useUser } from "@/contexts/user-context"
 import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -17,6 +15,7 @@ import Link from "next/link"
 import { useProjectSelection } from "@/contexts/project-context"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
 import { homeRouteForRole } from "@/lib/roles"
+import { monthLabel } from "@/lib/user-payment-reports"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -53,38 +52,36 @@ export default function Dashboard() {
     router,
   ])
 
-  const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
-  const [selectedMonth, setSelectedMonth] = useState<string>("")
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [helperFilter, setHelperFilter] = useState<"all" | "core" | "extended" | "community">("all")
   const [issueFilter, setIssueFilter] = useState<"all" | "applied">("all")
 
   const [helperSort, setHelperSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
   const [issueSort, setIssueSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(null)
 
-  const generateMonthOptions = () => {
-    const months = []
-    const now = new Date()
-
-    for (let i = 1; i <= 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthName = date.toLocaleDateString("en-US", { month: "long" })
-      const year = date.getFullYear()
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-
-      months.push({
-        value,
-        label: `${monthName} ${year}`,
-        monthYear: `${monthName} ${year}`,
-      })
+  // Last 12 months for the period filter dropdown
+  const months = useMemo(() => {
+    const result: string[] = []
+    const currentDate = new Date()
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+      result.push(date.toLocaleDateString("en-US", { month: "long", year: "numeric" }))
     }
+    return result
+  }, [])
 
-    return months
-  }
+  // Period the stats are aggregated for: null = "All", otherwise a
+  // monthLabel() string ("October 2026") matching the dropdown labels. A
+  // ticket belongs to the month it closed in.
+  const targetMonth =
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? monthLabel(new Date().toISOString())
+        : selectedPeriod
 
-  const monthOptions = generateMonthOptions()
-
-  // Fetch dashboard stats
-  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats(projectId)
+  // Fetch dashboard stats (raw data is fetched once; the period is applied in memory)
+  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats(projectId, targetMonth)
 
   const allHelpers = dashboardStats?.helperStats || []
   const allIssueTypes = dashboardStats?.issueTypeStats || []
@@ -197,64 +194,22 @@ export default function Dashboard() {
         <Header title="Overview" subtitle="Stats and insight" />
 
         <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
-          {/* Time Filters */}
+          {/* Filters */}
           <div className="flex gap-2">
-            <Button
-              variant={timeFilter === "current" ? "neutral" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-sm font-medium",
-                timeFilter !== "current" && "text-muted-foreground"
-              )}
-              onClick={() => {
-                setTimeFilter("current")
-                setSelectedMonth("")
-              }}
-            >
-              Current month
-            </Button>
-            <div className="relative">
-              <Select
-                value={selectedMonth}
-                onValueChange={(value) => {
-                  setSelectedMonth(value)
-                  setTimeFilter("choose")
-                }}
-              >
-                <SelectTrigger
-                  size="sm"
-                  variant={timeFilter === "choose" ? "neutral" : "outline"}
-                  className="w-[160px] rounded-lg text-sm font-medium"
-                >
-                  <SelectValue placeholder="Choose month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((month) => (
-                    <SelectItem
-                      key={month.value}
-                      value={month.value}
-                      className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium"
-                    >
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              variant={timeFilter === "all" ? "neutral" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-sm font-medium",
-                timeFilter !== "all" && "text-muted-foreground"
-              )}
-              onClick={() => {
-                setTimeFilter("all")
-                setSelectedMonth("")
-              }}
-            >
-              All time
-            </Button>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+                <SelectValue placeholder="Choose period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Key Stats */}
@@ -385,7 +340,7 @@ export default function Dashboard() {
                         className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
                         onClick={() => handleIssueSort("name")}
                       >
-                        Name
+                        Type
                         {getSortIcon("name", issueSort)}
                       </div>
                       <div

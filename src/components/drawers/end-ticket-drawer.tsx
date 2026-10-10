@@ -8,7 +8,7 @@ import { Clock, Info } from "lucide-react"
 import { useState } from "react"
 import type { TimeEntry } from "./log-time-drawer"
 import { TimeEntryReviewStatusBadge } from "@/components/ticket-chat/time-entry-review"
-import { TIME_ENTRY_AUTO_ACCEPT_HOURS } from "@/lib/time-entries"
+import { TIME_ENTRY_AUTO_ACCEPT_HOURS, describeAutoAcceptDeadline } from "@/lib/time-entries"
 
 interface EndTicketDrawerProps {
   isOpen: boolean
@@ -17,9 +17,27 @@ interface EndTicketDrawerProps {
   timeEntries?: TimeEntry[]
   /** Set when the customer has asked to end the session — shown as a reminder to log remaining time first. */
   userRequestedEnd?: boolean
+  /**
+   * Set while the logged-time summary is waiting for the customer's
+   * confirmation (`tickets.time_review_requested_at`). While entries are
+   * pending and no summary has been sent, the primary action sends it via
+   * `onRequestTimeReview` instead of ending.
+   */
+  timeReviewRequestedAt?: string | null
+  onRequestTimeReview?: () => void | Promise<void>
+  requestTimeReviewPending?: boolean
 }
 
-export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = [], userRequestedEnd }: EndTicketDrawerProps) {
+export function EndTicketDrawer({
+  isOpen,
+  onClose,
+  onEndTicket,
+  timeEntries = [],
+  userRequestedEnd,
+  timeReviewRequestedAt,
+  onRequestTimeReview,
+  requestTimeReviewPending,
+}: EndTicketDrawerProps) {
   const [supportOutcome, setSupportOutcome] = useState("")
 
   const formatTimeEntry = (entry: TimeEntry) => {
@@ -30,10 +48,15 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
     }
   }
 
-  // Entries the user is still to accept or decline. Ending is blocked until
-  // they have: the charge is computed from what the user accepted.
+  // Entries the user has not confirmed yet. Ending is blocked until they
+  // have confirmed the summary: the charge is computed from what they
+  // accepted. Until the summary is sent, the primary action sends it.
   const pendingReview = timeEntries.filter((entry) => entry.reviewStatus === "pending")
+  const summaryRequested = !!timeReviewRequestedAt
+  const needsSummary = pendingReview.length > 0 && !summaryRequested && !!onRequestTimeReview
+  const waitingForUser = pendingReview.length > 0 && !needsSummary
   const canEnd = !!supportOutcome && pendingReview.length === 0
+  const autoAcceptHint = summaryRequested ? describeAutoAcceptDeadline(timeReviewRequestedAt) : null
 
   const getTotalTime = () => {
     const totalMinutes = timeEntries.reduce((acc, entry) => {
@@ -63,15 +86,27 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cancel
           </Button>
-          <Button
-            onClick={handleEndTicket}
-            disabled={!canEnd}
-            title={pendingReview.length > 0 ? "Waiting for the user to accept or decline the logged time" : undefined}
-            variant="default"
-            className="flex-1"
-          >
-            {pendingReview.length > 0 ? "Waiting for user review" : "End ticket"}
-          </Button>
+          {needsSummary ? (
+            <Button
+              onClick={() => void onRequestTimeReview?.()}
+              disabled={requestTimeReviewPending}
+              title="The user confirms all logged time at once before the session ends"
+              variant="default"
+              className="flex-1"
+            >
+              {requestTimeReviewPending ? "Sending…" : "Send summary to user"}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleEndTicket}
+              disabled={!canEnd}
+              title={waitingForUser ? "Waiting for the user to confirm the logged time" : undefined}
+              variant="default"
+              className="flex-1"
+            >
+              {waitingForUser ? "Waiting for user confirmation" : "End ticket"}
+            </Button>
+          )}
         </div>
       }
     >
@@ -84,18 +119,32 @@ export function EndTicketDrawer({ isOpen, onClose, onEndTicket, timeEntries = []
             </p>
           </div>
         )}
-        {pendingReview.length > 0 && (
+        {needsSummary && (
+          <div role="status" className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-foreground">
+            <p className="font-medium flex items-center gap-2">
+              <Clock className="h-4 w-4 text-brand-primary" />
+              {pendingReview.length === 1
+                ? "1 logged entry needs the user's confirmation."
+                : `${pendingReview.length} logged entries need the user's confirmation.`}
+            </p>
+            <p className="text-muted-foreground mt-1">
+              Make sure all your time is logged, then send the summary. The user confirms it in one go (they can
+              decline single entries with a reason) and you can end the ticket right after. If they don&apos;t respond
+              within {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours it is confirmed automatically. Declined time is not charged.
+            </p>
+          </div>
+        )}
+        {waitingForUser && (
           <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
             <p className="font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-amber-700" />
-              {pendingReview.length === 1
-                ? "The user hasn't reviewed your logged time yet."
-                : `The user hasn't reviewed ${pendingReview.length} of your logged entries yet.`}
+              Waiting for the user to confirm the logged time.
             </p>
             <p className="text-muted-foreground mt-1">
-              They have to accept or decline every logged entry before the session can end. You can remind them in
-              the chat. Entries they don&apos;t review within {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted
-              automatically. Declined time is not charged.
+              You sent the summary ({pendingReview.length === 1 ? "1 entry" : `${pendingReview.length} entries`}). The
+              ticket can end once they confirm it
+              {autoAcceptHint ? `; it is confirmed automatically ${autoAcceptHint} otherwise` : ""}. You can remind them
+              in the chat. Declined time is not charged.
             </p>
           </div>
         )}

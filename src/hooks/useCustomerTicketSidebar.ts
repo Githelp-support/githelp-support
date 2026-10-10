@@ -21,6 +21,8 @@ export interface CustomerTimeEntryDisplay {
     reviewStatus: TimeEntryReviewStatus;
     declineReason?: string | null;
     autoAccepted?: boolean;
+    /** Helper who logged it; shown in the confirmation summary. */
+    helperName?: string | null;
 }
 
 /**
@@ -86,6 +88,7 @@ export function useCustomerTicketSidebar(
                 reviewStatus,
                 declineReason: entry.decline_reason ?? null,
                 autoAccepted: entry.auto_accepted ?? false,
+                helperName: entry.helper?.user?.name ?? null,
             };
         });
         // Declined entries stay listed (with their status) but don't count.
@@ -109,7 +112,7 @@ export function useCustomerTicketSidebar(
         claimer,
         timeEntriesDisplay,
         totalLoggedFormatted,
-        /** Review state per entry id, for the Accept / Decline actions in the chat. */
+        /** Review state per entry id, for the status marks on the chat bubbles. */
         timeEntryReviews,
         pendingReviewCount,
         activeTicketsSidebar: activeTicketsSidebarData?.items ?? [],

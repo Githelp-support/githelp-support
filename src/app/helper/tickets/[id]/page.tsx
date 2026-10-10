@@ -16,6 +16,7 @@ import {
   useTimeEntries,
   useCreateTimeEntry,
   useDeleteTimeEntry,
+  useRequestTimeEntryReview,
   isPaymentNotAuthorizedError,
   getReviewTimeEntryErrorHint,
   timeMillisecondsToHoursMinutes,
@@ -94,6 +95,8 @@ interface Message {
   type?: "claimed" | "ended"
   /** `metadata.kind` of a persisted system message (payment_*, time_logged, time_entry_*). */
   metadataKind?: string
+  /** `time_entries_confirmed` message in which the user declined at least one entry. */
+  hasDeclines?: boolean
   /** `metadata.time_entry_id` of a `time_logged` system message. */
   timeEntryId?: string
   /** "AI agent" / "via AI assistant" for messages posted through the GitHelp API. */
@@ -146,6 +149,7 @@ export default function TicketDetailPage() {
   const currentHelperId = useCurrentHelper(ticket?.project_id ?? undefined).data ?? null
   const createTimeEntry = useCreateTimeEntry()
   const deleteTimeEntry = useDeleteTimeEntry()
+  const requestTimeEntryReview = useRequestTimeEntryReview()
   const [deletingEntry, setDeletingEntry] = useState<TimeEntry | null>(null)
 
   // Admin but not yet registered as helper - must add self before claiming or logging time
@@ -205,23 +209,15 @@ export default function TicketDetailPage() {
       }),
     [timeEntriesFromDb]
   )
-  // Entries the customer still has to accept or decline; the End ticket
-  // drawer refuses to end while any are left (declined time isn't charged).
+  // Entries the customer has not confirmed yet. Pending is the normal state
+  // during a session: the helper sends the summary from the End ticket drawer
+  // and the drawer refuses to end until the customer has confirmed it
+  // (declined time isn't charged).
   const pendingReviewCount = useMemo(
     () => timeEntries.filter((entry) => entry.reviewStatus === "pending").length,
     [timeEntries]
   )
   const timeEntriesById = useMemo(() => new Map(timeEntries.map((entry) => [entry.id, entry])), [timeEntries])
-  // Oldest pending entry is the next one the 24h job will auto-accept.
-  const pendingReviewRequestedAt = useMemo(
-    () =>
-      timeEntriesFromDb
-        .filter((entry) => getTimeEntryReviewStatus(entry) === "pending")
-        .map((entry) => entry.review_requested_at)
-        .filter((at): at is string => !!at)
-        .sort()[0] ?? null,
-    [timeEntriesFromDb]
-  )
   
   // Format payment values (convert cents to dollars)
   const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
@@ -303,6 +299,43 @@ export default function TicketDetailPage() {
     }
   }, [endRequestedAt, isTicketEnded, isFixedAnswer])
 
+  // Logged-time summary sent for confirmation (tickets.time_review_requested_at,
+  // realtime via useRealtimeTicket). Cleared by the customer's confirmation,
+  // the 24h auto-confirm, or the ticket ending.
+  const timeReviewRequestedAt = ticket?.time_review_requested_at ?? null
+  const timeReviewRequested = !!timeReviewRequestedAt && !isTicketEnded
+  const prevTimeReviewRequestedAtRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    const prev = prevTimeReviewRequestedAtRef.current
+    prevTimeReviewRequestedAtRef.current = timeReviewRequestedAt
+    if (prev === undefined || isTicketEnded) return
+    if (prev && !timeReviewRequestedAt) {
+      toast.info("The logged time summary has been resolved.", {
+        description: "Check the chat for the outcome, then end the session from End ticket.",
+      })
+    }
+  }, [timeReviewRequestedAt, isTicketEnded])
+
+  const handleRequestTimeEntryReview = async () => {
+    if (!ticketId) return
+    try {
+      await requestTimeEntryReview.mutateAsync({ ticketId })
+      toast.success("Summary sent. The user has been asked to confirm the logged time.")
+    } catch (error) {
+      console.error("Failed to request time entry review:", error)
+      const hint = getReviewTimeEntryErrorHint(error)
+      toast.error(
+        hint === "already_requested"
+          ? "The summary has already been sent; waiting for the user."
+          : hint === "nothing_to_confirm"
+            ? "There is no logged time waiting for confirmation."
+            : hint === "ticket_ended"
+              ? "The session has already ended."
+              : "Couldn't send the summary. Please try again.",
+      )
+    }
+  }
+
   const isClaimed =
     justClaimedLocal ||
     (participants && currentUser?.id && participants.some((p) => p.participant_id === currentUser.id && p.claimed === true)) ||
@@ -354,6 +387,7 @@ export default function TicketDetailPage() {
         senderAvatarUrl: msg.sender?.avatar_url ?? null,
         type: undefined,
         metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
+        hasDeclines: ((msg.metadata as { declined?: unknown[] } | null | undefined)?.declined?.length ?? 0) > 0,
         timeEntryId: (msg.metadata as { time_entry_id?: string } | null | undefined)?.time_entry_id,
         apiBadge: apiSenderBadge({
           senderType: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -536,7 +570,14 @@ export default function TicketDetailPage() {
       await updateTicket.mutateAsync({
         id: ticketId,
         // Ending also resolves any outstanding customer "end session" request.
-        updates: { status, completed_at: completedAt, end_requested_at: null, end_requested_by: null },
+        updates: {
+          status,
+          completed_at: completedAt,
+          end_requested_at: null,
+          end_requested_by: null,
+          time_review_requested_at: null,
+          time_review_requested_by: null,
+        },
         onlyIfStatusIn: ["claimed", "in-progress"],
       })
     } catch (error) {
@@ -915,7 +956,9 @@ export default function TicketDetailPage() {
                             <div
                               className={
                                 msg.sender === "system"
-                                  ? msg.metadataKind === "time_entry_declined" || msg.metadataKind === "completion_declined"
+                                  ? msg.metadataKind === "time_entry_declined" ||
+                                    msg.metadataKind === "completion_declined" ||
+                                    (msg.metadataKind === "time_entries_confirmed" && msg.hasDeclines)
                                     ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                     : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                   : "text-sm"
@@ -1062,11 +1105,11 @@ export default function TicketDetailPage() {
             </div>
             </div>
 
-            {!isTicketEnded && (
+            {timeReviewRequested && (
               <TimeEntryAwaitingApprovalBanner
                 pendingCount={pendingReviewCount}
                 customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
-                autoAcceptHint={describeAutoAcceptDeadline(pendingReviewRequestedAt)}
+                autoAcceptHint={describeAutoAcceptDeadline(timeReviewRequestedAt)}
               />
             )}
 
@@ -1298,10 +1341,12 @@ export default function TicketDetailPage() {
                   <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                 </div>
                 {pendingReviewCount > 0 && (
-                  <p className="text-xs text-amber-800">
-                    {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} waiting for the user to
-                    accept or decline. The session can&apos;t end until they have; entries not reviewed within{" "}
-                    {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours are accepted automatically.
+                  <p className="text-xs text-muted-foreground">
+                    {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} not yet confirmed by the
+                    user.{" "}
+                    {timeReviewRequested
+                      ? `You sent the summary; the session can end once they confirm it (automatically after ${TIME_ENTRY_AUTO_ACCEPT_HOURS} hours).`
+                      : "When you're done, send the summary from End ticket so they can confirm it in one go."}
                   </p>
                 )}
               </div>
@@ -1389,6 +1434,9 @@ export default function TicketDetailPage() {
         onEndTicket={handleEndTicket}
         userRequestedEnd={endRequested}
         timeEntries={timeEntries}
+        timeReviewRequestedAt={timeReviewRequested ? timeReviewRequestedAt : null}
+        onRequestTimeReview={handleRequestTimeEntryReview}
+        requestTimeReviewPending={requestTimeEntryReview.isPending}
       />
 
       <LogTimeDrawer

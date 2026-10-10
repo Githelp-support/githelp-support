@@ -87,25 +87,10 @@ const getSlaInitialAndColor = (slaName: string, slaId: string | null | undefined
   }
 }
 
-const months = [
-  "January 2025",
-  "February 2025",
-  "March 2025",
-  "April 2025",
-  "May 2025",
-  "June 2025",
-  "July 2025",
-  "August 2025",
-  "September 2025",
-  "October 2025",
-  "November 2025",
-  "December 2025",
-]
-
 export default function ReportsSLAsPage() {
   const [activeTab, setActiveTab] = useState<"monthly" | "tickets">("monthly")
-  const [selectedMonth, setSelectedMonth] = useState("March 2025")
-  const [selectedFilter, setSelectedFilter] = useState("all")
+  // "all", "current", or a month label from `monthOptions` (Radix Select items cannot have an empty value)
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [selectedTicketRows, setSelectedTicketRows] = useState<string[]>([])
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
@@ -119,10 +104,35 @@ export default function ReportsSLAsPage() {
 
   // Fetch SLAs and payment transfers
   const { data: slasData } = useSLAs(projectId)
-  const { data: transfersData, isLoading } = usePaymentTransfers({
-    projectId,
-    status: selectedFilter !== "all" ? selectedFilter : undefined,
-  })
+  const { data: transfersData, isLoading } = usePaymentTransfers({ projectId })
+
+  // Generate months for dropdown
+  const months = useMemo(() => {
+    const result: string[] = []
+    const currentDate = new Date()
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+      result.push(date.toLocaleDateString("en-US", { month: "long", year: "numeric" }))
+    }
+    return result
+  }, [])
+
+  // Include the selected month even when it's older than the last 12 months,
+  // so the Select can still display it.
+  const monthOptions = useMemo(
+    () =>
+      selectedPeriod !== "all" && selectedPeriod !== "current" && !months.includes(selectedPeriod)
+        ? [...months, selectedPeriod]
+        : months,
+    [months, selectedPeriod],
+  )
+
+  const targetMonth =
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? getMonthYear(new Date().toISOString())
+        : selectedPeriod
 
   // Aggregate monthly reports by SLA and period
   const reports: ReportData[] = useMemo(() => {
@@ -151,7 +161,9 @@ export default function ReportsSLAsPage() {
     })
 
     // Convert to report format
-    return Array.from(grouped.entries()).map(([key, data]) => {
+    return Array.from(grouped.entries())
+      .filter(([, data]) => !targetMonth || data.month === targetMonth)
+      .map(([key, data]) => {
       const { initial, color } = getSlaInitialAndColor((data.sla as any)?.name || "Unknown", (data.sla as any)?.id)
       return {
         id: key,
@@ -164,8 +176,8 @@ export default function ReportsSLAsPage() {
         amountRaw: data.total,
         status: "paid-out" as const,
       }
-    })
-  }, [transfersData, slasData])
+      })
+  }, [transfersData, slasData, targetMonth])
 
   // Transform ticket transfers to ticket data
   const tickets: TicketData[] = useMemo(() => {
@@ -173,6 +185,7 @@ export default function ReportsSLAsPage() {
 
     return transfersData
       .filter((transfer) => transfer.ticket_id && transfer.completed_at)
+      .filter((transfer) => !targetMonth || getMonthYear(transfer.completed_at!) === targetMonth)
       .map((transfer) => {
         const { initial, color } = getSlaInitialAndColor(
           (transfer.sla as any)?.name || "Unknown",
@@ -190,7 +203,9 @@ export default function ReportsSLAsPage() {
           status: transfer.status === "completed" ? "completed" : "pending",
         }
       })
-  }, [transfersData, slasData])
+  }, [transfersData, slasData, targetMonth])
+
+  const emptyMessage = (what: string) => (targetMonth ? `No ${what} found for ${targetMonth}` : `No ${what} found`)
 
   const sortedReports = useMemo(() => {
     if (!monthlySortField) return reports
@@ -344,52 +359,20 @@ export default function ReportsSLAsPage() {
           <div className="max-w-7xl space-y-6">
             {/* Filters */}
             <div className="flex gap-2 mb-6">
-              {activeTab === "tickets" && (
-                <Button
-                  variant={selectedFilter === "current" ? "default" : "outline"}
-                  size="sm"
-                  className={
-                    selectedFilter === "current"
-                      ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                      : "h-9 text-muted-foreground border-border hover:bg-muted bg-transparent"
-                  }
-                  onClick={() => {
-                    setSelectedFilter("current")
-                    setSelectedMonth("")
-                  }}
-                >
-                  Current month
-                </Button>
-              )}
-              <Select
-                value={selectedMonth}
-                onValueChange={(v) => {
-                  setSelectedMonth(v)
-                  if (v) setSelectedFilter("all")
-                }}
-              >
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                 <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                  <SelectValue placeholder="Choose month" />
+                  <SelectValue placeholder="Choose period" />
                 </SelectTrigger>
                 <SelectContent>
-                  {months.map((month) => (
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="current">Current month</SelectItem>
+                  {monthOptions.map((month) => (
                     <SelectItem key={month} value={month}>
                       {month}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant={selectedFilter === "all" ? "default" : "outline"}
-                size="sm"
-                className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                onClick={() => {
-                  setSelectedFilter("all")
-                  setSelectedMonth("")
-                }}
-              >
-                All
-              </Button>
             </div>
 
             {/* Monthly Reports Table */}
@@ -455,7 +438,7 @@ export default function ReportsSLAsPage() {
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
                   ) : sortedReports.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No reports found</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("reports")}</div>
                   ) : (
                     sortedReports.map((report) => (
                     <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
@@ -574,7 +557,7 @@ export default function ReportsSLAsPage() {
                   {isLoading ? (
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading tickets...</div>
                   ) : sortedTickets.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("tickets")}</div>
                   ) : (
                     sortedTickets.map((ticket) => (
                     <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
