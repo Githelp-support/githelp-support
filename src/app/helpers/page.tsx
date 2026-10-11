@@ -492,8 +492,8 @@ export default function HelpersPage() {
               )}
               {isAdmin && (
                 <Button
-                  variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  variant="ghost"
+                  className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
                   onClick={handleCopyInvitationLink}
                   disabled={!projectId}
                   title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
