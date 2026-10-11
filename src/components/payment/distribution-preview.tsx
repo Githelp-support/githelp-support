@@ -1,5 +1,8 @@
 "use client"
 
+import { Info } from "lucide-react"
+import { cn } from "@/lib/utils"
+
 /**
  * Stripe fee: 2.9% + $0.30 per transaction (US). Charged on every card
  * transaction, not once per ticket — see the note rendered under the preview.
@@ -55,7 +58,7 @@ export function DistributionPreview({
     { label: "Helper", amount: helperAmount },
     { label: "Project", amount: projectAmount },
     { label: "Githelp", amount: githelpAmount },
-    { label: "Stripe (per transaction)", amount: stripeFee },
+    { label: "Stripe fee", amount: stripeFee, isFee: true },
   ]
 
   const sumMoney = formatCurrency(oneHourTotal)
@@ -66,14 +69,26 @@ export function DistributionPreview({
         1st hour of support - Distribution
       </h4>
       <div className="space-y-3">
-        {rows.map(({ label, amount }) => {
+        {rows.map(({ label, amount, isFee }) => {
           const money = formatCurrency(amount)
           return (
             <div
               key={label}
               className="grid grid-cols-3 items-center text-[14px]"
             >
-              <span className="col-span-2 pl-[10px] text-muted-foreground">{label}</span>
+              <span
+                className={cn(
+                  "col-span-2 pl-[10px] text-muted-foreground",
+                  isFee && "flex flex-col leading-tight"
+                )}
+              >
+                {label}
+                {isFee && (
+                  <span className="text-[12px] text-muted-foreground/80">
+                    per card transaction
+                  </span>
+                )}
+              </span>
               <span className="text-foreground font-medium tabular-nums">
                 <span className="mr-[3px]">{money.symbol}</span>
                 {money.amount}
@@ -89,14 +104,17 @@ export function DistributionPreview({
           {sumMoney.amount}
         </span>
       </div>
-      <p className="mt-3 text-[12px] leading-snug text-muted-foreground">
-        Stripe charges a fee (typically 2.9% + $0.30 for US cards) on every
-        card transaction. This preview
-        assumes one transaction; a ticket charged in several transactions
-        (extra time beyond the hold, weekly captures on long tickets, a retry
-        after a declined card) pays the Stripe fee on each of them, which is
-        deducted from that charge before the helper and project split.
-      </p>
+      <div className="border-t border-border mt-3 pt-3">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Info className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+          <span className="text-[12px] font-semibold text-foreground">Stripe fee</span>
+        </div>
+        <ul className="list-disc pl-4 space-y-1 text-[12px] leading-snug text-muted-foreground">
+          <li>2.9% + $0.30 per card transaction.</li>
+          <li>Deducted from each charge before the Helper / Project split.</li>
+          <li>A ticket paid in multiple transactions pays the fee each time.</li>
+        </ul>
+      </div>
     </div>
   )
 }
