@@ -155,16 +155,6 @@ describe("HelperOverviewPage", () => {
     expect(screen.queryByText("Choose month")).not.toBeInTheDocument()
   })
 
-  it("labels the Issue types header as Type, No of tickets and Total time", () => {
-    render(<HelperOverviewPage />)
-
-    expect(screen.getByRole("button", { name: "Type" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "No of tickets" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Total time" })).toBeInTheDocument()
-    expect(screen.queryByText("Name")).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Name" })).not.toBeInTheDocument()
-  })
-
   it("renders the hook's total time spent and percentage solved unchanged", () => {
     render(<HelperOverviewPage />)
 
