@@ -63,6 +63,10 @@ export function getAvatarColorHexForId(id: string | null | undefined): string {
 /** Tooltip (native `title`) for buttons that are not wired to any functionality yet. */
 export const ILLUSTRATIVE_BUTTON_TOOLTIP = "This button is currently just illustrative"
 
+/** Tooltip shown when pressing "Confirm creation" in the SLA setup flow, which is not wired to any backend yet. */
+export const SLA_CREATION_UNAVAILABLE_TOOLTIP =
+  "Creating SLAs is not available yet. This setup flow is shown for illustration only."
+
 /** Slug of Githelp's own project — its public support landing page lives at /support/[slug] */
 export const GITHELP_SUPPORT_SLUG = "githelp"
 
