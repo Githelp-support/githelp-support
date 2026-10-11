@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, ChevronDown, Check, Plus, Lock } from "lucide-react"
+import { ChevronDown, Check, Plus, Lock } from "lucide-react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
@@ -481,7 +481,7 @@ export function TopBar() {
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
             className="relative p-1 mt-[2px] hover:bg-muted rounded-md transition-colors cursor-pointer"
           >
-            <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
+            <i className="fi fi-rr-bell inline-flex items-center justify-center leading-none text-[18px] text-[#55555E]" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
                 {unreadCount > 9 ? "9+" : unreadCount}
