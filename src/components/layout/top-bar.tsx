@@ -336,7 +336,7 @@ export function TopBar() {
           <button
             type="button"
             onClick={handleAuthClick}
-            className="font-sans text-[14px] text-muted-foreground hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
+            className="font-sans text-[13px] text-muted-foreground hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
           >
             {isSignedIn ? "Sign out" : "Sign in"}
           </button>
