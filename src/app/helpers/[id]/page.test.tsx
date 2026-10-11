@@ -52,7 +52,14 @@ vi.mock("@/hooks/usePayments", async (importOriginal) => {
 })
 
 vi.mock("@/components/layout/sidebar", () => ({ Sidebar: () => null }))
-vi.mock("@/components/layout/header", () => ({ Header: () => null }))
+vi.mock("@/components/layout/header", () => ({
+  Header: ({ title, aboveTitle }: { title: string; aboveTitle?: ReactNode }) => (
+    <header>
+      {aboveTitle}
+      <h1>{title}</h1>
+    </header>
+  ),
+}))
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
     <a href={href} {...props}>
@@ -184,8 +191,8 @@ function mockData({
 
 const renderPage = () => render(<HelperProfilePage params={params(HELPER_ID)} />)
 
-const ticketRow = (shortId: string) => screen.getByRole("link", { name: `Open ticket ${shortId}` })
-const queryTicketRow = (shortId: string) => screen.queryByRole("link", { name: `Open ticket ${shortId}` })
+const ticketRow = (shortId: string) => screen.getByRole("button", { name: `Transactions for ticket ${shortId}` })
+const queryTicketRow = (shortId: string) => screen.queryByRole("button", { name: `Transactions for ticket ${shortId}` })
 
 const periodSelect = () => screen.getByRole("combobox")
 const openPeriodSelect = () => fireEvent.keyDown(periodSelect(), { key: "ArrowDown" })
@@ -206,11 +213,24 @@ describe("HelperProfilePage", () => {
     vi.useRealTimers()
   })
 
-  it("renders a 'Helpers' back link to /helpers", () => {
+  it("renders a 'Helpers' back link to /helpers above the 'Helper Details' heading", () => {
     renderPage()
 
     const back = screen.getByRole("link", { name: "Helpers" })
     expect(back).toHaveAttribute("href", "/helpers")
+
+    const heading = screen.getByRole("heading", { level: 1, name: "Helper Details" })
+    expect(heading.closest("header")).toContainElement(back)
+    expect(back.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it("labels the amount column 'Helper income (USD)' and shows USD amounts without the prefix", () => {
+    mockData({ tickets: [allStatusTickets()[0]], transfers: [transfer({ amount_smallest_unit: 1234 })] })
+    renderPage()
+
+    expect(screen.getByRole("button", { name: "Helper income (USD)" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Amount" })).not.toBeInTheDocument()
+    expect(within(ticketRow("1111111")).getByText("12.34")).toBeInTheDocument()
   })
 
   describe("ticket statuses", () => {
@@ -289,7 +309,7 @@ describe("HelperProfilePage", () => {
       const row = ticketRow("1111111")
       expect(within(row).getByText("Completed")).toBeInTheDocument()
       // Sum of both payouts.
-      expect(within(row).getByText("USD 15.00")).toBeInTheDocument()
+      expect(within(row).getByText("15.00")).toBeInTheDocument()
       expect(within(row).queryByText("Received")).not.toBeInTheDocument()
       expect(within(row).queryByText("Pending")).not.toBeInTheDocument()
 
@@ -301,16 +321,89 @@ describe("HelperProfilePage", () => {
       const payouts = within(within(row).getByRole("list")).getAllByRole("listitem")
       expect(payouts).toHaveLength(2)
       expect(payouts[0]).toHaveTextContent("1 of 2")
-      expect(payouts[0]).toHaveTextContent("USD 10.00")
+      expect(payouts[0]).toHaveTextContent("10.00")
       expect(within(payouts[0]).getByText("Received")).toBeInTheDocument()
       expect(payouts[1]).toHaveTextContent("2 of 2")
-      expect(payouts[1]).toHaveTextContent("USD 5.00")
+      expect(payouts[1]).toHaveTextContent("5.00")
       expect(within(payouts[1]).getByText("Pending")).toBeInTheDocument()
 
       // The row keeps its own status.
       expect(within(row).getByText("Completed")).toBeInTheDocument()
       // Expanding is not a navigation.
       expect(push).not.toHaveBeenCalled()
+    })
+
+    it("tapping the row shows the ticket's transactions, as on Reports → Helpers", () => {
+      renderPage()
+
+      const row = ticketRow("1111111")
+      expect(row).toHaveAttribute("aria-expanded", "false")
+      expect(within(row).queryByRole("list")).not.toBeInTheDocument()
+
+      fireEvent.click(row)
+
+      expect(row).toHaveAttribute("aria-expanded", "true")
+      expect(within(within(row).getByRole("list")).getAllByRole("listitem")).toHaveLength(2)
+      expect(push).not.toHaveBeenCalled()
+
+      fireEvent.click(row)
+      expect(row).toHaveAttribute("aria-expanded", "false")
+      expect(within(row).queryByRole("list")).not.toBeInTheDocument()
+    })
+
+    it("Enter and Space on a focused row toggle its transactions", () => {
+      renderPage()
+
+      const row = ticketRow("1111111")
+      fireEvent.keyDown(row, { key: "Enter" })
+      expect(row).toHaveAttribute("aria-expanded", "true")
+      fireEvent.keyDown(row, { key: " " })
+      expect(row).toHaveAttribute("aria-expanded", "false")
+    })
+
+    it("the kebab menu's 'See transactions' opens the list and the Ticket ID still links to the ticket", () => {
+      renderPage()
+
+      const row = ticketRow("1111111")
+      expect(within(row).getByRole("link", { name: "1111111" })).toHaveAttribute("href", `/helper/tickets/${COMPLETED_TICKET}`)
+
+      // Radix opens the menu on Enter; the kebab must not toggle the row.
+      const kebab = within(row).getByRole("button", { name: "More actions for ticket 1111111" })
+      fireEvent.click(kebab)
+      expect(row).toHaveAttribute("aria-expanded", "false")
+      fireEvent.keyDown(kebab, { key: "Enter" })
+      fireEvent.click(screen.getByRole("menuitem", { name: "See transactions" }))
+      expect(row).toHaveAttribute("aria-expanded", "true")
+      expect(push).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("ticket with a single transfer", () => {
+    it("tapping the row shows that one transaction", () => {
+      mockData({ tickets: [allStatusTickets()[0]], transfers: [transfer()] })
+      renderPage()
+
+      const row = ticketRow("1111111")
+      expect(within(row).queryByRole("button", { name: /payout/ })).not.toBeInTheDocument()
+
+      fireEvent.click(row)
+
+      const payouts = within(within(row).getByRole("list")).getAllByRole("listitem")
+      expect(payouts).toHaveLength(1)
+      expect(payouts[0]).toHaveTextContent("1 of 1")
+      expect(within(payouts[0]).getByText("Received")).toBeInTheDocument()
+    })
+  })
+
+  describe("ticket without transfers", () => {
+    it("tapping the row explains that there are no transactions yet", () => {
+      mockData({ tickets: [allStatusTickets()[1]], transfers: [] })
+      renderPage()
+
+      const row = ticketRow("2222222")
+      fireEvent.click(row)
+
+      expect(within(row).getByText("No transactions for this ticket yet.")).toBeInTheDocument()
     })
   })
 })

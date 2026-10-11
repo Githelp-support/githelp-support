@@ -11,10 +11,10 @@ import {
   ArrowLeft,
   HelpCircle,
   ExternalLink,
+  List,
   MoreVertical,
 } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -35,7 +35,6 @@ import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { cn } from "@/lib/utils"
 import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import { monthLabel } from "@/lib/user-payment-reports"
 import {
@@ -66,7 +65,7 @@ const TRANSFER_STATUS_BADGE_CLASS: Record<PaymentTransfer["status"], string> = {
   failed: statusBadgeClass("failed"),
 }
 
-// All tickets: checkbox · Ticket ID · Date · Amount (helper payout) · Status · kebab menu.
+// All tickets: checkbox · Ticket ID · Date · Helper income (the helper's payouts on the ticket) · Status · kebab menu.
 // Same construction as Reports → Tickets: every column has a width that does not depend on the row's content.
 // Status: fixed, sized for the widest status badge.
 // Last: the kebab trigger (2.75rem) plus 36px which, with the 16px grid gap, puts 52px between the Status column and the kebab menu.
@@ -75,6 +74,12 @@ const HELPER_TICKETS_GRID = {
 }
 const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
+
+// As on Reports: the column header already says "Helper income (USD)", so USD
+// amounts drop the prefix. Any other currency keeps it so it is never silently hidden.
+const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)
+const formatPaymentAmount = (cents: number, currency: string = "usd") =>
+  currency.toLowerCase() === "usd" ? formatAmountValue(cents) : formatAmount(cents, currency)
 
 // Rows are clickable; controls inside a row stop the event so they do not trigger the row's action.
 const stopRowNavigation = (event: SyntheticEvent) => event.stopPropagation()
@@ -226,7 +231,6 @@ const GithubIcon = ({ className }: { className?: string }) => (
 )
 
 export default function HelperProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const router = useRouter()
   const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [ticketsSort, setTicketsSort] = useState<{ field: TicketsSortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
@@ -338,7 +342,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               title: "—",
               dateIso: group.date || null,
               amountRaw: group.amountSmallestUnit as number | null,
-              amount: formatAmount(group.amountSmallestUnit, group.currency),
+              currency: group.currency,
               status: group.status === "completed" ? "Completed" : "In progress",
               receipts: receiptsFor(group.ticketId),
               transfers: group.items,
@@ -354,7 +358,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 title: ticket.title?.trim() || "—",
                 dateIso: ticket.completed_at ?? ticket.created_at ?? null,
                 amountRaw: group ? group.amountSmallestUnit : null,
-                amount: group ? formatAmount(group.amountSmallestUnit, group.currency) : "—",
+                currency: group?.currency ?? "usd",
                 status: TICKET_STATUS_LABEL[ticket.status],
                 receipts: receiptsFor(ticket.id),
                 transfers: group?.items ?? [],
@@ -392,12 +396,23 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   const receiptForTransfer = (transfer: PaymentTransfer) =>
     (transfer.payment_id && paymentsData?.find((p) => p.id === transfer.payment_id)?.stripe_receipt_url) || null
 
+  // Back to the list, shown above the page title.
+  const backLink = (
+    <Link
+      href="/helpers"
+      className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none"
+    >
+      <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+      Helpers
+    </Link>
+  )
+
   if (helperLoading) {
     return (
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Helper Details" />
+          <Header title="Helper Details" aboveTitle={backLink} />
           <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
             <div className="text-[14px]">Loading helper...</div>
           </main>
@@ -411,7 +426,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Helper Details" />
+          <Header title="Helper Details" aboveTitle={backLink} />
           <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
             <div>Helper not found</div>
           </main>
@@ -439,18 +454,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Helper Details" />
+        <Header title="Helper Details" aboveTitle={backLink} />
 
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
-          {/* Back link */}
-          <Link
-            href="/helpers"
-            className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-            Helpers
-          </Link>
-
           {/* Profile header + Contact information */}
           <Card className="border-0 rounded-lg shadow-none py-0">
             <CardContent className="px-0 py-[30px] space-y-5">
@@ -561,7 +567,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                     <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
                   </div>
                   <div className="min-w-0 whitespace-nowrap">
-                    <SortHeader label="Amount" field="amount" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                    <SortHeader label="Helper income (USD)" field="amount" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
                   </div>
                   <div className="min-w-0">
                     <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
@@ -577,7 +583,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 ) : (
                   helper.tickets.map((ticket) => {
                     const count = ticket.transfers.length
-                    const expanded = count > 1 && isExpanded(ticket.key)
+                    const expanded = isExpanded(ticket.key)
                     const panelId = transactionsPanelId(ticket.key)
                     const ticketHref = ticket.id ? `/helper/tickets/${ticket.id}` : null
                     // Receipts per payout need each payout linked to its charge;
@@ -586,25 +592,21 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                     return (
                       <div
                         key={ticket.key}
-                        className={cn(
-                          "px-6 py-4 hover:bg-[#f7f9ff]",
-                          ticketHref &&
-                            "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
-                        )}
-                        {...(ticketHref
-                          ? {
-                              role: "link",
-                              tabIndex: 0,
-                              "aria-label": `Open ticket ${ticket.shortId}`,
-                              onClick: () => router.push(ticketHref),
-                              // Only when the row itself has focus, not a control inside it.
-                              onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
-                                if (event.key === "Enter" && event.target === event.currentTarget) {
-                                  router.push(ticketHref)
-                                }
-                              },
-                            }
-                          : {})}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={expanded}
+                        aria-controls={expanded ? panelId : undefined}
+                        aria-label={`Transactions for ticket ${ticket.shortId}`}
+                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        onClick={() => toggle(ticket.key)}
+                        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+                          // Only when the row itself has focus, not a control inside it.
+                          if (event.target !== event.currentTarget) return
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            toggle(ticket.key)
+                          }
+                        }}
                       >
                         <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
                           <div className="flex items-center">
@@ -632,7 +634,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                             </div>
                           </div>
                           <div className="min-w-0 text-sm text-muted-foreground">{ticket.dateIso ? formatDate(ticket.dateIso) : "—"}</div>
-                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">{ticket.amount}</div>
+                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
+                            {ticket.amountRaw === null ? "—" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
+                          </div>
                           <div className="min-w-0">
                             <Badge className={statusBadgeClass(ticket.status)}>{ticket.status}</Badge>
                           </div>
@@ -664,6 +668,16 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                     Open
                                   </DropdownMenuItem>
                                 )}
+                                {/* Opens the same list as clicking the row; an already open list stays open. */}
+                                <DropdownMenuItem
+                                  title={`Show the transactions on ticket ${ticket.shortId}`}
+                                  onSelect={() => {
+                                    if (!expanded) toggle(ticket.key)
+                                  }}
+                                >
+                                  <List />
+                                  See transactions
+                                </DropdownMenuItem>
                                 {receiptsPerPayout ? (
                                   <DropdownMenuItem title="Each payout links to the receipt of the charge it came from" onSelect={() => toggle(ticket.key)}>
                                     <ExternalLink />
@@ -696,6 +710,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                           <div className="cursor-default" onClick={stopRowNavigation}>
                             {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
                             <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                              {count === 0 && (
+                                <div className="px-[11px] py-2 text-sm text-muted-foreground">No transactions for this ticket yet.</div>
+                              )}
                               {ticket.transfers.map((transfer, index) => (
                                 <div
                                   key={transfer.id}
@@ -709,7 +726,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                   </span>
                                   <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
                                   <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
-                                    {formatAmount(transfer.amount_smallest_unit, transfer.currency)}
+                                    {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency || ticket.currency)}
                                   </span>
                                   <span className="min-w-0">
                                     <Badge className={TRANSFER_STATUS_BADGE_CLASS[transfer.status]}>{TRANSFER_STATUS_LABEL[transfer.status]}</Badge>
