@@ -194,7 +194,7 @@ export function NotificationChannelsManager({
         <div className="mt-4 p-4 border border-border rounded-lg space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs mb-1 block">Type</Label>
+              <Label className="text-xs mb-1 block font-[550]">Type</Label>
               <Select value={type} onValueChange={(value) => setType(value as ChannelType)}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -207,12 +207,12 @@ export function NotificationChannelsManager({
               </Select>
             </div>
             <div>
-              <Label className="text-xs mb-1 block">Name</Label>
+              <Label className="text-xs mb-1 block font-[550]">Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="#support-alerts" />
             </div>
           </div>
           <div>
-            <Label className="text-xs mb-1 block">Webhook URL</Label>
+            <Label className="text-xs mb-1 block font-[550]">Webhook URL</Label>
             <Input
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
@@ -220,7 +220,7 @@ export function NotificationChannelsManager({
             />
           </div>
           <div>
-            <Label className="text-xs mb-2 block">Send these notification types</Label>
+            <Label className="text-xs mb-2 block font-[550]">Send these notification types</Label>
             <div className="flex flex-wrap gap-3">
               {GROUP_OPTIONS.map((group) => (
                 <label key={group.key} className="flex items-center gap-1.5 text-sm text-[#737373] cursor-pointer">
@@ -235,7 +235,7 @@ export function NotificationChannelsManager({
               ))}
             </div>
           </div>
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-[10px]">
             <Button onClick={handleCreate} disabled={createChannel.isPending} variant="lavender" size="sm">
               {createChannel.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Connect channel"}
             </Button>
