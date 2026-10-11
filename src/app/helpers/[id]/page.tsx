@@ -1,13 +1,31 @@
 "use client"
 
-import { Fragment, useState, useMemo, use } from "react"
-import { MessageCircle, Mail, Info, ChevronsUpDown, ArrowLeft, HelpCircle, ExternalLink } from "lucide-react"
+import { useState, useMemo, use, type KeyboardEvent, type SyntheticEvent } from "react"
+import {
+  MessageCircle,
+  Mail,
+  Info,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ArrowLeft,
+  HelpCircle,
+  ExternalLink,
+  List,
+  MoreVertical,
+} from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
@@ -16,24 +34,190 @@ import { usePaymentTransfers, usePayments, formatAmount, type PaymentTransfer } 
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getAvatarColorHexForId } from "@/lib/constants"
-import { cn } from "@/lib/utils"
+import { getStatusBadgeClass } from "@/lib/status-colors"
 import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
+import { monthLabel } from "@/lib/user-payment-reports"
 import {
-  TransactionLine,
   TransactionsPanel,
   TransactionsToggle,
   transactionsPanelId,
   useExpandedRows,
 } from "@/components/reports/ticket-transactions"
 
+type SortDirection = "asc" | "desc"
+type TicketsSortField = "ticket" | "date" | "amount" | "status"
+
+// Same Badge classes as Reports: design-token colours from getStatusBadgeClass.
+const statusBadgeClass = (label: string) =>
+  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
+
+// A payout line reads "Received" once the money has reached the helper; the
+// ticket row itself keeps "Completed".
 const TRANSFER_STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
-  completed: "Paid out",
+  completed: "Received",
   pending: "Pending",
   failed: "Failed",
 }
+// "Received" is not known to getStatusBadgeClass, so it uses the key Reports uses for the same meaning.
+const TRANSFER_STATUS_BADGE_CLASS: Record<PaymentTransfer["status"], string> = {
+  completed: statusBadgeClass("paid out"),
+  pending: statusBadgeClass("pending"),
+  failed: statusBadgeClass("failed"),
+}
 
-const ROW_BUTTON_CLASS =
-  "rounded-lg border-border text-muted-foreground text-[13px] font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+// All tickets: checkbox · Ticket ID · Date · Helper income (the helper's payouts on the ticket) · Status · kebab menu.
+// Same construction as Reports → Tickets: every column has a width that does not depend on the row's content.
+// Status: fixed, sized for the widest status badge.
+// Last: the kebab trigger (2.75rem) plus 36px which, with the 16px grid gap, puts 52px between the Status column and the kebab menu.
+const HELPER_TICKETS_GRID = {
+  gridTemplateColumns: "2rem minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.5fr) 9rem calc(2.75rem + 36px)",
+}
+const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
+const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
+
+// As on Reports: the column header already says "Helper income (USD)", so USD
+// amounts drop the prefix. Any other currency keeps it so it is never silently hidden.
+const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)
+const formatPaymentAmount = (cents: number, currency: string = "usd") =>
+  currency.toLowerCase() === "usd" ? formatAmountValue(cents) : formatAmount(cents, currency)
+
+// Rows are clickable; controls inside a row stop the event so they do not trigger the row's action.
+const stopRowNavigation = (event: SyntheticEvent) => event.stopPropagation()
+
+const TICKET_PREVIEW_LENGTH = 15
+/** Start of the ticket title: the first 15 characters followed by "..", or the whole text when it is no longer than that. */
+const ticketPreview = (text: string) =>
+  text.length > TICKET_PREVIEW_LENGTH ? `${text.slice(0, TICKET_PREVIEW_LENGTH)}..` : text
+
+const RECEIPT_AVAILABLE_TITLE = "Open the Stripe receipt for this charge"
+const RECEIPT_UNAVAILABLE_TITLE = "A receipt becomes available once the payment has been captured"
+
+function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
+  if (!active) return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
+  return direction === "asc" ? (
+    <ChevronUp className="w-4 h-4 text-brand-primary" />
+  ) : (
+    <ChevronDown className="w-4 h-4 text-brand-primary" />
+  )
+}
+
+function SortHeader<T extends string>({
+  label,
+  field,
+  sortField,
+  sortDirection,
+  onSort,
+}: {
+  label: string
+  field: T
+  sortField: T | null
+  sortDirection: SortDirection
+  onSort: (field: T) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+    >
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <SortIcon active={sortField === field} direction={sortDirection} />
+    </button>
+  )
+}
+
+function compare(a: string | number, b: string | number, direction: SortDirection) {
+  if (a < b) return direction === "asc" ? -1 : 1
+  if (a > b) return direction === "asc" ? 1 : -1
+  return 0
+}
+
+/** Three-state sort: asc → desc → off, matching the Reports pages. */
+function cycleSort<T extends string>(
+  field: T,
+  current: T | null,
+  direction: SortDirection,
+  set: (field: T | null, direction: SortDirection) => void,
+) {
+  if (current !== field) set(field, "asc")
+  else if (direction === "asc") set(field, "desc")
+  else set(null, "asc")
+}
+
+function formatDate(dateString: string) {
+  const date = new Date(dateString)
+  const day = String(date.getDate()).padStart(2, "0")
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const year = date.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
+/** Extract a short ticket ID for display (e.g. from uuid 02735023-... to 2735023) */
+function getShortTicketId(ticketId: string | null): string {
+  if (!ticketId) return "—"
+  const first = ticketId.split("-")[0] || ""
+  return first.replace(/^0+/, "") || first.slice(0, 8)
+}
+
+function ReceiptButton({ url }: { url: string | null }) {
+  if (url) {
+    return (
+      <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
+        <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
+          <ExternalLink className="w-3.5 h-3.5" />
+          Receipt
+        </a>
+      </Button>
+    )
+  }
+  return (
+    <span title={RECEIPT_UNAVAILABLE_TITLE} className="inline-flex">
+      <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
+        <ExternalLink className="w-3.5 h-3.5" />
+        Receipt
+      </Button>
+    </span>
+  )
+}
+
+/** "Receipt" entry of the row's kebab menu, for a ticket with a single charge. */
+function ReceiptMenuItem({ url, label = "Receipt" }: { url: string | null; label?: string }) {
+  if (url) {
+    return (
+      <DropdownMenuItem asChild>
+        <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
+          <ExternalLink />
+          {label}
+        </a>
+      </DropdownMenuItem>
+    )
+  }
+  // Disabled items ignore pointer events, so the explanation sits on a wrapper.
+  return (
+    <span title={RECEIPT_UNAVAILABLE_TITLE} className="block">
+      <DropdownMenuItem disabled>
+        <ExternalLink />
+        {label}
+      </DropdownMenuItem>
+    </span>
+  )
+}
+
+// Only tickets the helper has actually worked on are listed; 'available'
+// (unclaimed) and 'cancelled' tickets are excluded from the list and stats.
+const HELPER_TICKET_STATUSES = ["completed", "in-progress", "claimed"] as const
+type HelperTicketStatus = (typeof HELPER_TICKET_STATUSES)[number]
+
+const TICKET_STATUS_LABEL: Record<HelperTicketStatus, string> = {
+  completed: "Completed",
+  "in-progress": "In progress",
+  claimed: "Claimed",
+}
+
+const isHelperTicket = <T extends { status: string }>(
+  ticket: T
+): ticket is T & { status: HelperTicketStatus } =>
+  (HELPER_TICKET_STATUSES as readonly string[]).includes(ticket.status)
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -47,8 +231,9 @@ const GithubIcon = ({ className }: { className?: string }) => (
 )
 
 export default function HelperProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const [timeFilter, setTimeFilter] = useState<"current" | "choose" | "all">("current")
-  const [selectedMonth, setSelectedMonth] = useState<string>("")
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
+  const [selectedRows, setSelectedRows] = useState<string[]>([])
+  const [ticketsSort, setTicketsSort] = useState<{ field: TicketsSortField | null; direction: SortDirection }>({ field: null, direction: "asc" })
 
   // Unwrap params Promise
   const { id } = use(params)
@@ -58,45 +243,62 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
   // Fetch helper data
   const { data: helperData, isLoading: helperLoading } = useHelper(id)
-  const { data: helperTicketsData } = useHelperTickets(id, projectId)
+  const { data: helperTicketsData, isLoading: helperTicketsLoading } = useHelperTickets(id, projectId)
   const { data: timeEntriesData } = useTimeEntries({
     helperId: id,
     projectId,
   })
-  const { data: transfersData } = usePaymentTransfers({
+  const { data: transfersData, isLoading: transfersLoading } = usePaymentTransfers({
     helperId: id,
     projectId,
   })
+  const ticketsLoading = helperTicketsLoading || transfersLoading
   // Customer-side charges for this project — the source of the Stripe receipt
   // link shown on each ticket row.
   const { data: paymentsData } = usePayments(projectId)
 
-  const generateMonthOptions = () => {
-    const months = []
-    const now = new Date()
-
-    for (let i = 1; i <= 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthName = date.toLocaleDateString("en-US", { month: "long" })
-      const year = date.getFullYear()
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
-
-      months.push({
-        value,
-        label: `${monthName} ${year}`,
-        monthYear: `${monthName} ${year}`,
-      })
+  // Last 12 months for the period filter dropdown
+  const months = useMemo(() => {
+    const result: string[] = []
+    const currentDate = new Date()
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+      result.push(date.toLocaleDateString("en-US", { month: "long", year: "numeric" }))
     }
+    return result
+  }, [])
 
-    return months
-  }
+  // Period the stats and ticket list are shown for: null = "All", otherwise a
+  // monthLabel() string ("October 2026") matching the dropdown labels. A
+  // ticket belongs to the month it closed in (created_at when not completed).
+  const targetMonth =
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? monthLabel(new Date().toISOString())
+        : selectedPeriod
 
-  const monthOptions = generateMonthOptions()
+  // The hooks fetch everything once; the status and period filters are
+  // applied in memory. Both the ticket list and the Key stats derive from
+  // this, so they always agree.
+  const periodTickets = useMemo(() => {
+    const all = (helperTicketsData ?? []).filter(isHelperTicket)
+    if (!targetMonth) return all
+    return all.filter((ticket) => monthLabel(ticket.completed_at ?? ticket.created_at) === targetMonth)
+  }, [helperTicketsData, targetMonth])
+
+  const periodTimeEntries = useMemo(() => {
+    const all = timeEntriesData ?? []
+    if (!targetMonth) return all
+    const ticketIds = new Set(periodTickets.map((ticket) => ticket.id))
+    return all.filter((entry) => ticketIds.has(entry.ticket_id))
+  }, [timeEntriesData, periodTickets, targetMonth])
+
   const { isExpanded, toggle } = useExpandedRows()
 
   const stats = useMemo(() => {
-    const totalTime = timeEntriesData ? calculateTotalTime(timeEntriesData) : 0
-    const tickets = helperTicketsData ?? []
+    const totalTime = calculateTotalTime(periodTimeEntries)
+    const tickets = periodTickets
     const completedCount = tickets.filter((t) => t.status === "completed").length
 
     return {
@@ -107,7 +309,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           ? Math.round((completedCount / tickets.length) * 100)
           : 0,
     }
-  }, [timeEntriesData, helperTicketsData])
+  }, [periodTimeEntries, periodTickets])
 
   // Transform helper tickets to ticket list. A ticket can be paid out to
   // the helper in several transfers (hold capture + overage, weekly
@@ -128,59 +330,89 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
     const groups = groupTransfersByTicket(transfersData ?? [])
 
-    if (!helperTicketsData || helperTicketsData.length === 0) {
-      // Fallback to transfers if no tickets found via participants
-      return groups.map((group) => ({
-        key: group.key,
-        id: group.ticketId ?? "",
-        displayId: group.ticketId?.slice(0, 5) || "-",
-        date: group.date ? new Date(group.date).toLocaleDateString("en-GB") : "-",
-        type: "Bug", // TODO: Get from ticket
-        amount: formatAmount(group.amountSmallestUnit, group.currency),
-        status: group.status === "completed" ? "Completed" : "In progress",
-        receipts: receiptsFor(group.ticketId),
-        transfers: group.items,
-      }))
-    }
+    const list =
+      !helperTicketsData || helperTicketsData.length === 0
+        ? // Fallback to transfers if no tickets found via participants
+          groups
+            .filter((group) => !targetMonth || (group.date && monthLabel(group.date) === targetMonth))
+            .map((group) => ({
+              key: group.key,
+              id: group.ticketId ?? "",
+              shortId: getShortTicketId(group.ticketId),
+              title: "—",
+              dateIso: group.date || null,
+              amountRaw: group.amountSmallestUnit as number | null,
+              currency: group.currency,
+              status: group.status === "completed" ? "Completed" : "In progress",
+              receipts: receiptsFor(group.ticketId),
+              transfers: group.items,
+            }))
+        : (() => {
+            const groupsByTicket = new Map(groups.filter((g) => g.ticketId).map((group) => [group.ticketId as string, group]))
+            return periodTickets.map((ticket) => {
+              const group = groupsByTicket.get(ticket.id)
+              return {
+                key: ticket.id,
+                id: ticket.id,
+                shortId: getShortTicketId(ticket.id),
+                title: ticket.title?.trim() || "—",
+                dateIso: ticket.completed_at ?? ticket.created_at ?? null,
+                amountRaw: group ? group.amountSmallestUnit : null,
+                currency: group?.currency ?? "usd",
+                status: TICKET_STATUS_LABEL[ticket.status],
+                receipts: receiptsFor(ticket.id),
+                transfers: group?.items ?? [],
+              }
+            })
+          })()
 
-    const groupsByTicket = new Map(groups.filter((g) => g.ticketId).map((group) => [group.ticketId as string, group]))
-
-    return helperTicketsData.map((ticket) => {
-      const group = groupsByTicket.get(ticket.id)
-      return {
-        key: ticket.id,
-        id: ticket.id,
-        displayId: ticket.id.slice(0, 5),
-        date: ticket.completed_at
-          ? new Date(ticket.completed_at).toLocaleDateString("en-GB")
-          : ticket.created_at
-            ? new Date(ticket.created_at).toLocaleDateString("en-GB")
-            : "-",
-        type: "Bug", // TODO: Get from ticket help category
-        amount: group ? formatAmount(group.amountSmallestUnit, group.currency) : "-",
-        status:
-          ticket.status === "completed"
-            ? "Completed"
-            : ticket.status === "in-progress"
-              ? "In progress"
-              : ticket.status === "available"
-                ? "Available"
-                : "Unknown",
-        receipts: receiptsFor(ticket.id),
-        transfers: group?.items ?? [],
+    const { field, direction } = ticketsSort
+    if (!field) return list
+    return list.sort((a, b) => {
+      switch (field) {
+        case "ticket":
+          return compare(a.shortId, b.shortId, direction)
+        case "date":
+          return compare(a.dateIso ? new Date(a.dateIso).getTime() : 0, b.dateIso ? new Date(b.dateIso).getTime() : 0, direction)
+        case "amount":
+          return compare(a.amountRaw ?? -1, b.amountRaw ?? -1, direction)
+        case "status":
+          return compare(a.status, b.status, direction)
+        default:
+          return 0
       }
     })
-  }, [helperTicketsData, transfersData, paymentsData])
+  }, [helperTicketsData, periodTickets, targetMonth, transfersData, paymentsData, ticketsSort])
+
+  const visibleKeys = tickets.map((ticket) => ticket.key)
+  const allSelected = visibleKeys.length > 0 && selectedRows.length === visibleKeys.length
+  const handleRowSelect = (key: string) => {
+    setSelectedRows((prev) => (prev.includes(key) ? prev.filter((r) => r !== key) : [...prev, key]))
+  }
+  const handleSelectAll = () => {
+    setSelectedRows((prev) => (prev.length === visibleKeys.length ? [] : visibleKeys))
+  }
 
   const receiptForTransfer = (transfer: PaymentTransfer) =>
     (transfer.payment_id && paymentsData?.find((p) => p.id === transfer.payment_id)?.stripe_receipt_url) || null
+
+  // Back to the list, shown above the page title.
+  const backLink = (
+    <Link
+      href="/helpers"
+      className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none"
+    >
+      <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+      Helpers
+    </Link>
+  )
 
   if (helperLoading) {
     return (
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Helper Details" />
+          <Header title="Helper Details" aboveTitle={backLink} />
           <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
             <div className="text-[14px]">Loading helper...</div>
           </main>
@@ -194,7 +426,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Helper Details" />
+          <Header title="Helper Details" aboveTitle={backLink} />
           <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
             <div>Helper not found</div>
           </main>
@@ -222,18 +454,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Helper Details" />
+        <Header title="Helper Details" aboveTitle={backLink} />
 
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
-          {/* Back link */}
-          <Link
-            href="/helpers"
-            className="inline-flex items-center text-brand-primary hover:text-brand-primary/80 text-sm font-medium"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to list of helpers
-          </Link>
-
           {/* Profile header + Contact information */}
           <Card className="border-0 rounded-lg shadow-none py-0">
             <CardContent className="px-0 py-[30px] space-y-5">
@@ -273,60 +496,22 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
-          {/* Time period filters */}
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button
-              variant={timeFilter === "current" ? "neutral" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-[13px] font-medium",
-                timeFilter !== "current" && "text-muted-foreground"
-              )}
-              onClick={() => {
-                setTimeFilter("current")
-                setSelectedMonth("")
-              }}
-            >
-              Current month
-            </Button>
-            <div className="relative">
-              <Select
-                value={selectedMonth}
-                onValueChange={(value) => {
-                  setSelectedMonth(value)
-                  setTimeFilter("choose")
-                }}
-              >
-                <SelectTrigger
-                  size="sm"
-                  variant={timeFilter === "choose" ? "neutral" : "outline"}
-                  className="w-[160px] rounded-lg text-[13px] font-medium"
-                >
-                  <SelectValue placeholder="Choose month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              variant={timeFilter === "all" ? "neutral" : "outline"}
-              size="sm"
-              className={cn(
-                "rounded-lg px-4 text-[13px] font-medium",
-                timeFilter !== "all" && "text-muted-foreground"
-              )}
-              onClick={() => {
-                setTimeFilter("all")
-                setSelectedMonth("")
-              }}
-            >
-              All time
-            </Button>
+          {/* Filters */}
+          <div className="flex gap-2">
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+                <SelectValue placeholder="Choose period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Key stats */}
@@ -369,192 +554,202 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           {/* All tickets */}
           <div className="space-y-4">
             <h2 className="text-base font-semibold text-foreground">All tickets</h2>
-            <Card className="border-border rounded-xl shadow-none py-0 overflow-hidden">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/60">
-                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                          <div className="flex items-center gap-3">
-                            <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
-                            Ticket ID
-                          </div>
-                        </th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            Date
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                        </th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            Ticket type
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                        </th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            Amount
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                        </th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            Status
-                            <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                        </th>
-                        <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {helper.tickets.map((ticket) => {
-                        const count = ticket.transfers.length
-                        const expanded = count > 1 && isExpanded(ticket.key)
-                        const panelId = transactionsPanelId(ticket.key)
-                        // Receipts per payout need each payout linked to its charge;
-                        // older payouts aren't, so keep the per-ticket receipt list then.
-                        const receiptsPerPayout = count > 1 && ticket.transfers.every((t) => !!t.payment_id)
-                        return (
-                        <Fragment key={ticket.key}>
-                        <tr className={cn("border-b border-border last:border-b-0 hover:bg-muted/40 transition-colors", expanded && "border-b-0")}>
-                          <td className="px-4 py-3 align-top">
-                            <div className="flex items-center gap-3">
-                              <Checkbox className="border-muted-foreground/40 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary" />
-                              {ticket.id ? (
-                                <Link
-                                  href={`/helper/tickets/${ticket.id}`}
-                                  className="text-sm text-foreground font-semibold hover:text-brand-primary font-mono tabular-nums"
-                                >
-                                  {ticket.displayId}
-                                </Link>
-                              ) : (
-                                <span className="text-sm text-foreground font-semibold font-mono tabular-nums">{ticket.displayId}</span>
-                              )}
-                            </div>
-                            <div className="pl-7">
-                              <TransactionsToggle count={count} expanded={expanded} onToggle={() => toggle(ticket.key)} panelId={panelId} noun="payout" />
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground tabular-nums">{ticket.date}</td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{ticket.type}</td>
-                          <td className="px-4 py-3 text-sm text-foreground font-medium tabular-nums">{ticket.amount}</td>
-                          <td className="px-4 py-3">
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "text-xs font-medium px-2.5 py-0.5 rounded-full border-0",
-                                ticket.status === "Completed"
-                                  ? "bg-status-success-bg text-status-success-text"
-                                  : "bg-status-warning-bg text-status-warning-text"
-                              )}
-                            >
-                              {ticket.status === "Completed" && "✓ "}
-                              {ticket.status}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2 justify-end">
-                              {ticket.id ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="rounded-lg border-border text-foreground text-[13px] font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
-                                  asChild
-                                >
-                                  <Link href={`/helper/tickets/${ticket.id}`}>Open</Link>
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="rounded-lg border-border text-foreground text-[13px] font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
-                                  disabled
-                                >
-                                  Open
-                                </Button>
-                              )}
-                              {receiptsPerPayout ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={ROW_BUTTON_CLASS}
-                                  aria-expanded={expanded}
-                                  aria-controls={expanded ? panelId : undefined}
-                                  title="Each payout links to the receipt of the charge it came from"
-                                  onClick={() => toggle(ticket.key)}
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  Receipts
-                                </Button>
-                              ) : ticket.receipts.length === 0 ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={ROW_BUTTON_CLASS}
-                                  disabled
-                                  title="No Stripe receipt yet — available once the ticket has been charged"
-                                >
-                                  View receipt
-                                </Button>
-                              ) : (
-                                ticket.receipts.map((url, index) => (
-                                  <Button key={`${index}-${url}`} variant="outline" size="sm" className={ROW_BUTTON_CLASS} asChild>
-                                    <a href={url} target="_blank" rel="noopener noreferrer">
-                                      <ExternalLink className="w-3.5 h-3.5" />
-                                      {ticket.receipts.length === 1 ? "View receipt" : `Receipt ${index + 1}`}
-                                    </a>
-                                  </Button>
-                                ))
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                        {expanded && (
-                          <tr className="border-b border-border last:border-b-0">
-                            <td colSpan={6} className="px-4 pb-3 pt-0">
-                              <TransactionsPanel id={panelId} className="mt-0">
-                                {ticket.transfers.map((transfer, index) => {
-                                  const receipt = receiptForTransfer(transfer)
-                                  return (
-                                    <TransactionLine
-                                      key={transfer.id}
-                                      index={index}
-                                      count={count}
-                                      date={new Date(transferDate(transfer)).toLocaleDateString("en-GB")}
-                                      description={<span className="font-mono text-xs">{payoutReference(transfer)}</span>}
-                                      amount={formatAmount(transfer.amount_smallest_unit, transfer.currency)}
-                                      status={<span className="text-xs text-muted-foreground">{TRANSFER_STATUS_LABEL[transfer.status]}</span>}
-                                      actions={
-                                        !receiptsPerPayout ? undefined : receipt ? (
-                                          <Button variant="outline" size="sm" className={ROW_BUTTON_CLASS} asChild>
-                                            <a href={receipt} target="_blank" rel="noopener noreferrer">
-                                              <ExternalLink className="w-3.5 h-3.5" />
-                                              Receipt
-                                            </a>
-                                          </Button>
-                                        ) : (
-                                          <Button variant="outline" size="sm" className={ROW_BUTTON_CLASS} disabled title="No Stripe receipt for this charge yet">
-                                            Receipt
-                                          </Button>
-                                        )
-                                      }
-                                    />
-                                  )
-                                })}
-                              </TransactionsPanel>
-                            </td>
-                          </tr>
-                        )}
-                        </Fragment>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+            <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
+                  <div>
+                    <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Ticket ID" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0 whitespace-nowrap">
+                    <SortHeader label="Helper income (USD)" field="amount" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="divide-y divide-border">
+                {ticketsLoading ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
+                ) : helper.tickets.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets for this period.</div>
+                ) : (
+                  helper.tickets.map((ticket) => {
+                    const count = ticket.transfers.length
+                    const expanded = isExpanded(ticket.key)
+                    const panelId = transactionsPanelId(ticket.key)
+                    const ticketHref = ticket.id ? `/helper/tickets/${ticket.id}` : null
+                    // Receipts per payout need each payout linked to its charge;
+                    // older payouts aren't, so keep the per-ticket receipt list then.
+                    const receiptsPerPayout = count > 1 && ticket.transfers.every((t) => !!t.payment_id)
+                    return (
+                      <div
+                        key={ticket.key}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={expanded}
+                        aria-controls={expanded ? panelId : undefined}
+                        aria-label={`Transactions for ticket ${ticket.shortId}`}
+                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        onClick={() => toggle(ticket.key)}
+                        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+                          // Only when the row itself has focus, not a control inside it.
+                          if (event.target !== event.currentTarget) return
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            toggle(ticket.key)
+                          }
+                        }}
+                      >
+                        <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
+                          <div className="flex items-center">
+                            <Checkbox
+                              checked={selectedRows.includes(ticket.key)}
+                              onCheckedChange={() => handleRowSelect(ticket.key)}
+                              onClick={stopRowNavigation}
+                              aria-label={`Select ticket ${ticket.shortId}`}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            {ticketHref ? (
+                              <Link
+                                href={ticketHref}
+                                onClick={stopRowNavigation}
+                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              >
+                                {ticket.shortId}
+                              </Link>
+                            ) : (
+                              <span className="text-sm font-medium text-foreground">—</span>
+                            )}
+                            <div className="text-xs text-muted-foreground" title={ticket.title}>
+                              {ticketPreview(ticket.title)}
+                            </div>
+                          </div>
+                          <div className="min-w-0 text-sm text-muted-foreground">{ticket.dateIso ? formatDate(ticket.dateIso) : "—"}</div>
+                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
+                            {ticket.amountRaw === null ? "—" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
+                          </div>
+                          <div className="min-w-0">
+                            <Badge className={statusBadgeClass(ticket.status)}>{ticket.status}</Badge>
+                          </div>
+                          <div className="flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={KEBAB_BUTTON_CLASS}
+                                  aria-label={`More actions for ticket ${ticket.shortId}`}
+                                  onClick={stopRowNavigation}
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              {/* Portalled, but React events still bubble to the row. */}
+                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                                {ticketHref ? (
+                                  <DropdownMenuItem asChild>
+                                    <Link href={ticketHref}>
+                                      <ExternalLink />
+                                      Open
+                                    </Link>
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem disabled>
+                                    <ExternalLink />
+                                    Open
+                                  </DropdownMenuItem>
+                                )}
+                                {/* Opens the same list as clicking the row; an already open list stays open. */}
+                                <DropdownMenuItem
+                                  title={`Show the transactions on ticket ${ticket.shortId}`}
+                                  onSelect={() => {
+                                    if (!expanded) toggle(ticket.key)
+                                  }}
+                                >
+                                  <List />
+                                  See transactions
+                                </DropdownMenuItem>
+                                {receiptsPerPayout ? (
+                                  <DropdownMenuItem title="Each payout links to the receipt of the charge it came from" onSelect={() => toggle(ticket.key)}>
+                                    <ExternalLink />
+                                    Receipts
+                                  </DropdownMenuItem>
+                                ) : ticket.receipts.length > 1 ? (
+                                  ticket.receipts.map((url, index) => (
+                                    <ReceiptMenuItem key={`${index}-${url}`} url={url} label={`Receipt ${index + 1}`} />
+                                  ))
+                                ) : (
+                                  <ReceiptMenuItem url={ticket.receipts[0] ?? null} />
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                        {count > 1 && (
+                          <div className="w-fit" onClick={stopRowNavigation}>
+                            <TransactionsToggle
+                              className="ml-12 mt-2"
+                              count={count}
+                              expanded={expanded}
+                              onToggle={() => toggle(ticket.key)}
+                              panelId={panelId}
+                              noun="payout"
+                            />
+                          </div>
+                        )}
+                        {expanded && (
+                          <div className="cursor-default" onClick={stopRowNavigation}>
+                            {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                            <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                              {count === 0 && (
+                                // Same grid as the payout lines so the text lines up under the ticket ID.
+                                <div className="grid items-center gap-4 px-[11px] py-2 text-sm" style={HELPER_TICKETS_GRID}>
+                                  <span />
+                                  <span className="col-[2/-1] min-w-0 text-muted-foreground">No transactions for this ticket yet.</span>
+                                </div>
+                              )}
+                              {ticket.transfers.map((transfer, index) => (
+                                <div
+                                  key={transfer.id}
+                                  role="listitem"
+                                  className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                  style={HELPER_TICKETS_GRID}
+                                >
+                                  <span />
+                                  <span className="min-w-0 text-xs text-muted-foreground tabular-nums" title={payoutReference(transfer)}>
+                                    {index + 1} of {count}
+                                  </span>
+                                  <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
+                                  <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                    {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency || ticket.currency)}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <Badge className={TRANSFER_STATUS_BADGE_CLASS[transfer.status]}>{TRANSFER_STATUS_LABEL[transfer.status]}</Badge>
+                                  </span>
+                                  {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                  <span className="flex items-center justify-end [&>*]:shrink-0">
+                                    <ReceiptButton url={receiptForTransfer(transfer)} />
+                                  </span>
+                                </div>
+                              ))}
+                            </TransactionsPanel>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
           </div>
         </main>
 

@@ -639,6 +639,7 @@ export default function UserSupportChatPage() {
 
       <TicketChat
         headerTitle={`Ticket with ${projectName}`}
+        headerTitleClassName="text-xl"
         headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
         showBackButton={false}
         intro={

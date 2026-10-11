@@ -675,7 +675,7 @@ export default function TicketsPage() {
                               <h4 className="text-sm font-medium text-foreground truncate">
                                 {ticket.user.name}
                               </h4>
-                              <p className="text-sm text-muted-foreground">{truncateText(ticket.title)}</p>
+                              <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                               <div className="flex items-center gap-1 mt-1">
                                 <MessageCircle className="w-3 h-3 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
@@ -769,7 +769,7 @@ export default function TicketsPage() {
                             {ticket.user.name}
                           </h4>
                         </Link>
-                        <p className="text-sm text-muted-foreground">{truncateText(ticket.title)}</p>
+                        <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <MessageCircle className="w-3 h-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
