@@ -103,8 +103,8 @@ const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted
 
 export default function ReportsSLAsPage() {
   const [activeTab, setActiveTab] = useState<"monthly" | "tickets">("monthly")
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "current">("all")
-  const [selectedMonth, setSelectedMonth] = useState("")
+  // "all", "current", or a month label. Radix Select items cannot use an empty value.
+  const [selectedPeriod, setSelectedPeriod] = useState("all")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
   const [selectedTicketRows, setSelectedTicketRows] = useState<string[]>([])
   const [monthlySortField, setMonthlySortField] = useState<MonthlySortField | null>(null)
@@ -130,8 +130,21 @@ export default function ReportsSLAsPage() {
     return result
   }, [])
 
+  // Keep a selected month visible even when it falls outside the last 12 months.
+  const monthOptions = useMemo(
+    () =>
+      selectedPeriod !== "all" && selectedPeriod !== "current" && !months.includes(selectedPeriod)
+        ? [...months, selectedPeriod]
+        : months,
+    [months, selectedPeriod],
+  )
+
   const targetMonth =
-    selectedFilter === "current" || selectedMonth ? selectedMonth || monthLabelOf(new Date().toISOString()) : null
+    selectedPeriod === "all"
+      ? null
+      : selectedPeriod === "current"
+        ? monthLabelOf(new Date().toISOString())
+        : selectedPeriod
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -293,51 +306,21 @@ export default function ReportsSLAsPage() {
 
           <div className="max-w-7xl space-y-6">
             {/* Filters */}
-            <div className="flex gap-2">
-              <Button
-                variant={selectedFilter === "current" ? "default" : "outline"}
-                size="sm"
-                className={
-                  selectedFilter === "current"
-                    ? "h-9 text-brand-primary border-brand-primary hover:bg-brand-primary/10 bg-brand-primary/10"
-                    : `h-9 ${OUTLINE_BUTTON_CLASS}`
-                }
-                onClick={() => {
-                  setSelectedFilter("current")
-                  setSelectedMonth("")
-                }}
-              >
-                Current month
-              </Button>
-              <Select
-                value={selectedMonth}
-                onValueChange={(v) => {
-                  setSelectedMonth(v)
-                  if (v) setSelectedFilter("all")
-                }}
-              >
+            <div className="flex gap-2 mb-6">
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                 <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                  <SelectValue placeholder="Choose month" />
+                  <SelectValue placeholder="Choose period" />
                 </SelectTrigger>
                 <SelectContent>
-                  {months.map((month) => (
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="current">Current month</SelectItem>
+                  {monthOptions.map((month) => (
                     <SelectItem key={month} value={month}>
                       {month}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant={selectedFilter === "all" && !selectedMonth ? "default" : "outline"}
-                size="sm"
-                className={OUTLINE_BUTTON_CLASS}
-                onClick={() => {
-                  setSelectedFilter("all")
-                  setSelectedMonth("")
-                }}
-              >
-                All
-              </Button>
             </div>
 
             {!projectId && (

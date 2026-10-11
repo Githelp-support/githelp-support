@@ -1,16 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import type { TimeEntry } from "@/lib/time-entries";
 
-export interface TimeEntry {
-    id: string;
-    ticket_id: string;
-    helper_id: string;
-    type: "together" | "solo";
-    time_milliseconds: number;
-    note: string | null;
-    date: string;
-    created_at: string;
-}
+// Types and pure helpers live in @/lib/time-entries; re-exported here so existing imports keep working.
+export * from "@/lib/time-entries";
 
 export interface TimeEntryWithDetails extends TimeEntry {
     ticket?: {
@@ -20,7 +13,9 @@ export interface TimeEntryWithDetails extends TimeEntry {
     };
     helper?: {
         user?: {
+            id: string;
             name: string;
+            avatar_url?: string | null;
         };
     };
 }
@@ -53,7 +48,7 @@ export function useTimeEntries(
           *,
           ticket:tickets(id, title, project_id),
           helper:projects_helpers(
-            user:users_public(name)
+            user:users_public(id, name, avatar_url)
           )
         `
                 )
@@ -107,29 +102,6 @@ export function useTimeEntries(
     });
 }
 
-// Helper function to format milliseconds to human-readable time
-export function formatTime(milliseconds: number): string {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-    if (hours > 0) {
-        return `${hours}h ${minutes}min`;
-    }
-    return `${minutes}min`;
-}
-
-// Helper function to calculate total time from entries
-export function calculateTotalTime(entries: TimeEntry[]): number {
-    return entries.reduce((total, entry) => total + entry.time_milliseconds, 0);
-}
-
-/** Convert time_milliseconds to { hours, minutes } for display */
-export function timeMillisecondsToHoursMinutes(ms: number): { hours: number; minutes: number } {
-    const totalMinutes = Math.floor(ms / 60000);
-    return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
-}
-
 export interface CreateTimeEntryInput {
     ticketId: string;
     helperId: string;
@@ -137,6 +109,20 @@ export interface CreateTimeEntryInput {
     timeMilliseconds: number;
     note: string | null;
     date: string; // YYYY-MM-DD
+}
+
+/**
+ * True when an insert was rejected by the database payment gate (trigger
+ * `tickets_time_entries_payment_gate`, backend migration
+ * 20260918130000_time_entries_payment_gate): the ticket is neither SLA-covered
+ * nor free support and has no authorized payment hold.
+ */
+export function isPaymentNotAuthorizedError(error: unknown): boolean {
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        (error as { hint?: unknown }).hint === "payment_not_authorized"
+    );
 }
 
 export function useCreateTimeEntry() {
@@ -163,5 +149,134 @@ export function useCreateTimeEntry() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["time-entries"] });
         },
+        onError: (error, input) => {
+            // The database disagreed with the UI's payment gate, so whatever the
+            // gate was based on is stale (typically cached payment settings after
+            // a project switched from free to paid). Refetch both so it closes.
+            if (isPaymentNotAuthorizedError(error)) {
+                queryClient.invalidateQueries({ queryKey: ["project-payment-settings"] });
+                queryClient.invalidateQueries({ queryKey: ["ticket-payment-status", input.ticketId] });
+            }
+        },
+    });
+}
+
+export interface DeleteTimeEntryInput {
+    entryId: string;
+    ticketId: string;
+}
+
+/**
+ * Helper deletes one of their own entries. RLS (tickets_time_entries_delete_own)
+ * limits this to the helper's own rows; a trigger rejects it on an ended
+ * ticket (hint "ticket_ended") or for an accepted entry ("accepted_entry_locked"),
+ * and otherwise posts a `time_entry_deleted` system message into the chat.
+ */
+export function useDeleteTimeEntry() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: DeleteTimeEntryInput) => {
+            const { data, error } = await supabase
+                .from("tickets_time_entries")
+                .delete()
+                .eq("id", input.entryId)
+                .select("id");
+            if (error) throw error;
+            // RLS filters rows silently: nothing deleted means it wasn't ours.
+            if (!data || data.length === 0) {
+                throw Object.assign(new Error("You can only delete time you logged yourself."), {
+                    hint: "not_entry_owner",
+                });
+            }
+        },
+        onSettled: (_data, _error, input) => {
+            queryClient.invalidateQueries({
+                predicate: (q) => q.queryKey[0] === "time-entries" && q.queryKey[2] === input.ticketId,
+            });
+            queryClient.invalidateQueries({ queryKey: ["ticket-messages", input.ticketId] });
+        },
+    });
+}
+
+/**
+ * `hint` of the error raised by the time-entry RPCs and guard triggers, e.g.
+ * "reason_required", "nothing_to_confirm", "already_requested", "ticket_ended",
+ * "not_ticket_creator", "accepted_entry_locked".
+ */
+export function getReviewTimeEntryErrorHint(error: unknown): string | null {
+    if (typeof error !== "object" || error === null) return null;
+    const hint = (error as { hint?: unknown }).hint;
+    return typeof hint === "string" ? hint : null;
+}
+
+const invalidateTicketTimeQueries = (queryClient: ReturnType<typeof useQueryClient>, ticketId: string) => {
+    queryClient.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === "time-entries" && q.queryKey[2] === ticketId,
+    });
+    queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] });
+    queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] });
+    queryClient.invalidateQueries({ queryKey: ["ticket-with-details", ticketId] });
+};
+
+/**
+ * Helper sends the logged-time summary to the customer for confirmation
+ * (`request_time_entry_review` RPC, migration
+ * 20261008120000_time_entries_summary_confirmation). Sets
+ * `tickets.time_review_requested_at` and posts a `time_review_requested`
+ * system message. Errors: "nothing_to_confirm", "already_requested",
+ * "ticket_ended", "not_ticket_helper".
+ */
+export function useRequestTimeEntryReview() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: { ticketId: string }) => {
+            const { error } = await supabase.rpc("request_time_entry_review", { p_ticket_id: input.ticketId });
+            if (error) throw error;
+        },
+        onSettled: (_data, _error, input) => invalidateTicketTimeQueries(queryClient, input.ticketId),
+    });
+}
+
+export interface TimeEntryDecline {
+    entryId: string;
+    /** Required; shared with the helper in the ticket chat. */
+    reason: string;
+}
+
+export interface ConfirmTimeEntriesInput {
+    ticketId: string;
+    /** Entries the customer does not accept. Everything else pending is accepted. */
+    declines?: TimeEntryDecline[];
+}
+
+/**
+ * Ticket creator confirms the logged-time summary in one go via the
+ * `confirm_time_entries` RPC: every pending entry on the ticket is accepted
+ * except the listed declines, which need a reason. The RPC posts one
+ * `time_entries_confirmed` system message (with the declines and reasons) and
+ * clears the helper's request, so the entries, messages and ticket row are
+ * all refreshed afterwards. Resolves to the number of entries accepted.
+ */
+export function useConfirmTimeEntries() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: ConfirmTimeEntriesInput) => {
+            const declines = (input.declines ?? []).map((d) => ({ entry_id: d.entryId, reason: d.reason.trim() }));
+            if (declines.some((d) => !d.reason)) {
+                throw Object.assign(new Error("Please explain why you declined the logged time."), {
+                    hint: "reason_required",
+                });
+            }
+            const { data, error } = await supabase.rpc("confirm_time_entries", {
+                p_ticket_id: input.ticketId,
+                p_declines: declines,
+            });
+            if (error) throw error;
+            return (data as number | null) ?? 0;
+        },
+        onSettled: (_data, _error, input) => invalidateTicketTimeQueries(queryClient, input.ticketId),
     });
 }

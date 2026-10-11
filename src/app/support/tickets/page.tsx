@@ -292,7 +292,7 @@ export default function SupportTicketsPage() {
 
               {/* Loading / Empty / Table */}
               {isLoading ? (
-                <div className="py-8 text-center text-muted-foreground">Loading your tickets...</div>
+                <div className="py-8 text-center text-[14px] text-muted-foreground">Loading your tickets...</div>
               ) : tickets.length === 0 ? (
                 <Card className="border-border">
                   <CardContent className="p-8 text-center">
@@ -400,7 +400,7 @@ export default function SupportTicketsPage() {
                                   <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
                                     {ticket.project.name}
                                   </h4>
-                                  <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                                  <p className="text-xs text-muted-foreground">{ticket.title}</p>
                                   <div className="flex items-center gap-1 mt-1">
                                     <MessageCircle className="w-3 h-3 text-muted-foreground" />
                                     <span className="text-xs text-muted-foreground">

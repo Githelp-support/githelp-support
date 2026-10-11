@@ -10,13 +10,17 @@ export function getStatusBadgeClass(status: string): string {
     case "completed":
     case "resolved":
     case "paid out":
+    case "paid":
       return "bg-status-success-bg text-status-success-text"
     case "claimed":
     case "in progress":
     case "pending":
+    case "on hold":
+    case "action required":
       return "bg-status-warning-bg text-status-warning-text"
     case "failed":
       return "bg-status-high-bg text-status-high-text"
+    case "cancelled":
     default:
       return "bg-muted text-muted-foreground"
   }

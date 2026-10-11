@@ -7,6 +7,7 @@ import { useUser } from "@/contexts/user-context"
 import { useRouter } from "next/navigation"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context"
 import { cn } from "@/lib/utils"
 
 interface HeaderProps {
@@ -21,9 +22,13 @@ interface HeaderProps {
   className?: string
   /** Optional CSS background color to apply to the header container. Overrides the default `bg-background`. */
   backgroundColor?: string
+  /** Optional classes merged onto the title <h1>. */
+  titleClassName?: string
+  /** Rendered above the title, e.g. a back link to the list the page was opened from. */
+  aboveTitle?: ReactNode
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -32,6 +37,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
   const { data: projectRoleFromProject } = useProjectRole(selectedProjectId ?? undefined)
   const { setProjectRole } = useUser()
   const router = useRouter()
+  const { confirmNavigation } = useUnsavedChanges()
 
   // Sync project role from selected project when on project-scoped pages (not support).
   // Support pages set their own projectRole from the support project.
@@ -44,12 +50,16 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     }
   }, [pathname, selectedProjectId, projectRoleFromProject, setProjectRole])
 
+  // Routed through the unsaved-changes guard so the back button is intercepted
+  // like link clicks are.
   const handleBackClick = () => {
-    if (backButtonHref) {
-      router.push(backButtonHref)
-    } else {
-      router.back()
-    }
+    confirmNavigation(() => {
+      if (backButtonHref) {
+        router.push(backButtonHref)
+      } else {
+        router.back()
+      }
+    })
   }
 
   return (
@@ -77,8 +87,9 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           )}
           {leadingIcon && <div className="shrink-0 self-center">{leadingIcon}</div>}
           <div>
+            {aboveTitle && <div className="mb-2">{aboveTitle}</div>}
             <div ref={titleRowRef} className="flex items-center gap-[13px]">
-              <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
+              <h1 className={cn("text-2xl font-semibold tracking-[0.005em] text-foreground", titleClassName)}>{title}</h1>
               {info && (
                 <div className="relative group">
                   <Info className="w-5 h-5 text-muted-foreground cursor-help" />

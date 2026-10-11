@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
 
-export type CaptureTicketStatus = "distributing" | "completed" | "failed"
+/** `free`: the project offers free support, so nothing was charged. */
+export type CaptureTicketStatus = "distributing" | "completed" | "failed" | "free"
 
 interface CaptureArgs {
   ticketId: string

@@ -15,6 +15,7 @@ export function useCurrentHelper(projectId?: string) {
                 .select("helper_id")
                 .eq("user_id", user.id)
                 .eq("project_id", projectId)
+                .is("deleted_at", null)
                 .limit(1)
                 .single();
 

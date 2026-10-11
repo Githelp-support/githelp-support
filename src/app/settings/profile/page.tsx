@@ -14,6 +14,7 @@ import { useUser } from "@/contexts/user-context"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
+import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -42,12 +43,19 @@ export default function ProfileSettingsPage() {
   const updateUserProfile = useUpdateUserProfile()
 
   // Sync local form state when helper data loads
-  useEffect(() => {
-    if (helperData) {
-      setName(helperData.user?.name ?? "")
-      setEmail(helperData.user?.email ?? "")
-    }
-  }, [helperData])
+  const [syncedHelperData, setSyncedHelperData] = useState<typeof helperData>(undefined)
+  if (helperData && helperData !== syncedHelperData) {
+    setSyncedHelperData(helperData)
+    setName(helperData.user?.name ?? "")
+    setEmail(helperData.user?.email ?? "")
+  }
+
+  // Warn before navigating away while the editable fields differ from the last-synced helper data
+  const isDirty =
+    !!syncedHelperData &&
+    (name !== (syncedHelperData.user?.name ?? "") ||
+      email !== (syncedHelperData.user?.email ?? ""))
+  useUnsavedChangesGuard(isDirty)
 
   // GitHub connection status, display username, and auto-sync to users_public when empty
   useEffect(() => {
@@ -128,7 +136,7 @@ export default function ProfileSettingsPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="My profile" subtitle="Helper profile for the selected project" />
           <main className="flex-1 overflow-auto px-8 py-6">
-            <p className="text-muted-foreground">You are not registered as a helper in this project.</p>
+            <p className="text-sm text-muted-foreground">You are not registered as a helper in this project.</p>
           </main>
         </div>
       </div>
@@ -219,8 +227,7 @@ export default function ProfileSettingsPage() {
               <Button
                 onClick={handleSaveProfile}
                 disabled={updateUserProfile.isPending}
-                variant="outline"
-                className="border-[rgba(0,0,0,0.06)]"
+                variant="lavender"
                 style={{ marginTop: "22px" }}
               >
                 {updateUserProfile.isPending ? (

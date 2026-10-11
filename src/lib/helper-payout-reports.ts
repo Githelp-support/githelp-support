@@ -2,9 +2,15 @@
  * Pure helpers for the helper ("Helper" role) Reports page and the admin
  * Support reports: payout rows come from `payments_transfers`, hours from
  * `tickets_time_entries`.
+ *
+ * A ticket's money and time are reported in the month the ticket closed,
+ * however far back the time was logged or whenever Stripe settled the
+ * transfer, so a monthly report always pairs payouts with the time they pay
+ * for. See `transferReportDate` and `HelperTimeEntry.ticket_closed_at`.
  */
-import type { PaymentTransfer } from "@/hooks/usePayments"
+import type { PaymentTransfer, TicketClosure } from "@/hooks/usePayments"
 import type { HelperTimeEntry } from "@/hooks/useHelperTimeEntries"
+import { groupByTicket, sortByDateAsc, sumOf, type TicketGroup } from "@/lib/ticket-groups"
 
 export interface HelperMonthlyReportRow {
     /** Stable key, e.g. "2026-09". */
@@ -12,15 +18,27 @@ export interface HelperMonthlyReportRow {
     /** Label matching the month filter, e.g. "September 2026". */
     period: string
     periodRaw: number
-    /** Distinct tickets with a payout row dated in this month. */
+    /** Distinct tickets closed in this month (with a payout or logged time). */
     ticketsClosed: number
-    /** Total logged time in this month, in minutes. */
+    /** Time logged on tickets closed in this month, whenever it was logged, in minutes. */
     minutesLogged: number
-    /** Sum of non-failed payout rows dated in this month. */
+    /** Sum of non-failed payout rows reported in this month. */
     earningsSmallestUnit: number
     /** Portion of `earningsSmallestUnit` already transferred (status completed). */
     paidOutSmallestUnit: number
     currency: string
+}
+
+/**
+ * Collapse the database `transfer_status` enum to the three states the
+ * Reports show. Rows start as `processing` and only turn `completed` when
+ * Stripe's `transfer.created` webhook confirms them, so `processing` is
+ * still pending; `cancelled` was never paid.
+ */
+export function normalizeTransferStatus(status: string | null | undefined): PaymentTransfer["status"] {
+    if (status === "completed") return "completed"
+    if (status === "failed" || status === "cancelled") return "failed"
+    return "pending"
 }
 
 /** "September 2026" — the same label the month filter dropdown uses. */
@@ -47,6 +65,30 @@ export function transferDate(transfer: Pick<PaymentTransfer, "completed_at" | "c
     return transfer.completed_at || transfer.created_at
 }
 
+/**
+ * When the ticket was closed: completed, else cancelled. Null while it is
+ * open, including a reopened ticket that still carries an old `completed_at`.
+ */
+export function ticketClosedAt(ticket: TicketClosure | null | undefined): string | null {
+    if (!ticket) return null
+    if (ticket.status === "completed") return ticket.completed_at ?? null
+    if (ticket.status === "cancelled") return ticket.cancelled_at ?? null
+    if (ticket.status) return null
+    return ticket.completed_at ?? ticket.cancelled_at ?? null
+}
+
+/**
+ * The date that decides which month a payout is reported in: when its ticket
+ * closed, so it lands with the ticket's time even if Stripe settled it later.
+ * A payout on a ticket that is still open (an interim capture of a long
+ * ticket) falls back to its own date until the ticket closes.
+ */
+export function transferReportDate(
+    transfer: Pick<PaymentTransfer, "completed_at" | "created_at" | "ticket">,
+): string {
+    return ticketClosedAt(transfer.ticket) ?? transferDate(transfer)
+}
+
 function capitalise(value: string): string {
     return value ? value.charAt(0).toUpperCase() + value.slice(1) : value
 }
@@ -55,6 +97,92 @@ function capitalise(value: string): string {
 export function transferTicketType(transfer: Pick<PaymentTransfer, "ticket">): string {
     const value = transfer.ticket?.categories?.find((c) => c.help_category?.value)?.help_category?.value
     return value ? capitalise(value) : "Support"
+}
+
+/**
+ * Everything the helper's payout statement (their payment proof) shows for one
+ * `payments_transfers` row. Helpers are paid by Stripe transfer to their own
+ * connected account, which has no Stripe-hosted receipt, so the platform
+ * issues this statement instead.
+ */
+export interface PayoutStatement {
+    /** Human-facing reference: the Stripe transfer id, else a short form of the payout id. */
+    reference: string
+    /** ISO timestamp: when the money moved, else when the payout was recorded. */
+    date: string
+    status: PaymentTransfer["status"]
+    statusLabel: string
+    statusNote: string
+    payee: {
+        name: string
+        email: string | null
+        /** Stripe connected account the transfer was sent to (acct_...). */
+        stripeAccountId: string | null
+    }
+    projectName: string
+    ticketId: string | null
+    ticketShortId: string
+    ticketTitle: string
+    ticketType: string
+    slaName: string | null
+    amountSmallestUnit: number
+    currency: string
+    payoutId: string
+    stripeTransferId: string | null
+    /** The customer's `payments` row this payout was split from. */
+    paymentId: string | null
+    failureReason: string | null
+}
+
+const STATEMENT_STATUS: Record<PaymentTransfer["status"], { label: string; note: string }> = {
+    completed: {
+        label: "Paid out",
+        note: "The amount has been transferred to your connected Stripe account. Stripe pays it out to your bank according to your payout schedule.",
+    },
+    pending: {
+        label: "Pending",
+        note: "The transfer has been scheduled and is sent once the customer's payment has settled.",
+    },
+    failed: {
+        label: "Failed",
+        note: "Stripe could not complete this transfer, so nothing has been paid for it. Contact the project admin or Githelp support to have it re-sent.",
+    },
+}
+
+/** Short, uppercase form of a payout row id used when no Stripe transfer id exists yet. */
+export function payoutReference(transfer: Pick<PaymentTransfer, "id" | "transfer_id">): string {
+    if (transfer.transfer_id) return transfer.transfer_id
+    return `GH-${transfer.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`
+}
+
+export function buildPayoutStatement(transfer: PaymentTransfer): PayoutStatement {
+    const user = transfer.helper?.user
+    const status = STATEMENT_STATUS[transfer.status] ?? STATEMENT_STATUS.pending
+    const ticketId = transfer.ticket?.id ?? transfer.ticket_id
+    return {
+        reference: payoutReference(transfer),
+        date: transferDate(transfer),
+        status: transfer.status,
+        statusLabel: status.label,
+        statusNote: status.note,
+        payee: {
+            name: user?.name?.trim() || user?.username?.trim() || user?.email?.trim() || "Helper",
+            email: user?.email?.trim() || null,
+            stripeAccountId: transfer.destination_account_id || null,
+        },
+        projectName: transfer.project?.name?.trim() || "Project",
+        ticketId,
+        ticketShortId: ticketId?.slice(0, 7) || "-",
+        ticketTitle: transfer.ticket?.title?.trim() || (ticketId ? "Untitled ticket" : "Payout"),
+        ticketType: transferTicketType(transfer),
+        slaName: transfer.ticket?.sla?.name?.trim() || transfer.sla?.name?.trim() || null,
+        amountSmallestUnit: transfer.amount_smallest_unit,
+        currency: transfer.currency || "usd",
+        payoutId: transfer.id,
+        stripeTransferId: transfer.transfer_id || null,
+        paymentId: transfer.payment_id || null,
+        failureReason: transfer.status === "failed" ? transfer.failure_reason || null : null,
+    }
 }
 
 export function formatMinutes(minutes: number): string {
@@ -91,8 +219,10 @@ function groupFor(groups: Map<string, Group>, date: Date, currency: string): Gro
 }
 
 /**
- * One row per calendar month, newest first. Failed payouts are ignored. A
- * month with logged time but no payout (or the reverse) still gets a row.
+ * One row per calendar month, newest first, keyed on when each ticket closed
+ * (`transferReportDate`, `ticket_closed_at`). Failed payouts are ignored.
+ * Time on tickets that are still open is left out until they close. A month
+ * with closed-ticket time but no payout (free support) still gets a row.
  */
 export function aggregateHelperMonthly(
     transfers: PaymentTransfer[],
@@ -102,7 +232,7 @@ export function aggregateHelperMonthly(
 
     for (const transfer of transfers) {
         if (transfer.status === "failed") continue
-        const group = groupFor(groups, new Date(transferDate(transfer)), transfer.currency || "usd")
+        const group = groupFor(groups, new Date(transferReportDate(transfer)), transfer.currency || "usd")
         group.earningsSmallestUnit += transfer.amount_smallest_unit
         if (transfer.status === "completed") group.paidOutSmallestUnit += transfer.amount_smallest_unit
         group.tickets.add(transfer.ticket_id ?? transfer.id)
@@ -110,8 +240,11 @@ export function aggregateHelperMonthly(
     }
 
     for (const entry of timeEntries) {
-        const group = groupFor(groups, parseCalendarDay(entry.date), "usd")
+        if (!entry.ticket_closed_at) continue
+        const group = groupFor(groups, new Date(entry.ticket_closed_at), "usd")
         group.minutesLogged += Math.round((entry.time_milliseconds || 0) / 60000)
+        group.tickets.add(entry.ticket_id)
+        group.ticketsClosed = group.tickets.size
     }
 
     return Array.from(groups.values())
@@ -143,7 +276,7 @@ export function aggregateProjectMonthly(transfers: PaymentTransfer[]): ProjectMo
 
     for (const transfer of transfers) {
         if (transfer.status === "failed") continue
-        const date = new Date(transferDate(transfer))
+        const date = new Date(transferReportDate(transfer))
         const key = monthKey(date)
         let group = groups.get(key)
         if (!group) {
@@ -175,4 +308,111 @@ export function aggregateProjectMonthly(transfers: PaymentTransfer[]): ProjectMo
     return Array.from(groups.values())
         .map(({ tickets: _tickets, pending, ...rest }) => ({ ...rest, allPaidOut: pending === 0 }))
         .sort((a, b) => b.periodRaw - a.periodRaw)
+}
+
+/** A ticket's payouts (to one payee) summarised as one record. */
+export interface TransferGroupSummary {
+    /** Everything owed on the ticket: failed transfers are left out unless every transfer failed. */
+    amountSmallestUnit: number
+    /** Transfers Stripe could not complete (nothing was paid for these). */
+    failedSmallestUnit: number
+    /** A failed transfer wins (money is missing), then pending, then completed. */
+    status: PaymentTransfer["status"]
+    /** Latest transfer date. */
+    date: string
+    currency: string
+}
+
+export function summarizeTransfers(transfers: PaymentTransfer[]): TransferGroupSummary {
+    const failed = transfers.filter((t) => t.status === "failed")
+    const counting = transfers.filter((t) => t.status !== "failed")
+    const status: PaymentTransfer["status"] = failed.length > 0
+        ? "failed"
+        : transfers.some((t) => t.status === "pending")
+          ? "pending"
+          : "completed"
+    const dates = transfers.map(transferDate).sort()
+    return {
+        amountSmallestUnit: sumOf(counting.length > 0 ? counting : transfers, (t) => t.amount_smallest_unit),
+        failedSmallestUnit: counting.length > 0 ? sumOf(failed, (t) => t.amount_smallest_unit) : 0,
+        status,
+        date: dates[dates.length - 1] ?? "",
+        currency: transfers.find((t) => t.currency)?.currency || "usd",
+    }
+}
+
+export interface TransferTicketGroup extends TicketGroup<PaymentTransfer>, TransferGroupSummary {}
+
+/**
+ * One record per ticket (and per helper when `byHelper`), transfers oldest
+ * first inside each, groups newest activity first.
+ */
+export function groupTransfersByTicket(
+    transfers: PaymentTransfer[],
+    options: { byHelper?: boolean } = {},
+): TransferTicketGroup[] {
+    return groupByTicket(
+        transfers,
+        (t) => t.ticket_id ?? t.ticket?.id,
+        (t) => t.id,
+        options.byHelper ? (t) => t.helper_id ?? t.helper?.user_id ?? "unknown" : undefined,
+    )
+        .map((group) => {
+            const items = sortByDateAsc(group.items, transferDate)
+            return { ...group, items, ...summarizeTransfers(items) }
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+}
+
+/** One helper's payouts in one calendar month, for the admin Helpers report. */
+export interface HelperMonthPayouts {
+    /** Stable key: helper plus month, e.g. "helper-1:2026-09". */
+    key: string
+    /** "September 2026" — the same label the period filter uses. */
+    period: string
+    /** Last day of the month (ISO): only once it has passed is the helper's month complete. */
+    monthEnd: string
+    /** Distinct tickets with a payout in the month. */
+    ticketCount: number
+    /** Ticket by ticket (latest activity first), a ticket's transfers oldest first. */
+    transfers: PaymentTransfer[]
+    /** The helper's income for the month: failed transfers are left out unless every transfer failed. */
+    amountSmallestUnit: number
+    /** Transfers Stripe could not complete (nothing was paid for these). */
+    failedSmallestUnit: number
+    currency: string
+}
+
+/**
+ * One record per helper and month (the month each ticket closed, see
+ * `transferReportDate`), newest month first. A helper only gets a record for
+ * months they have transfers in. Expects helper transfers only.
+ */
+export function groupTransfersByHelperMonth(transfers: PaymentTransfer[]): HelperMonthPayouts[] {
+    const buckets = new Map<string, { monthEnd: Date; items: PaymentTransfer[] }>()
+    for (const transfer of transfers) {
+        const date = new Date(transferReportDate(transfer))
+        const key = `${transfer.helper_id ?? transfer.helper?.user_id ?? "unknown"}:${monthKey(date)}`
+        let bucket = buckets.get(key)
+        if (!bucket) {
+            // Day 0 of the next month is the last day of this one.
+            bucket = { monthEnd: new Date(date.getFullYear(), date.getMonth() + 1, 0), items: [] }
+            buckets.set(key, bucket)
+        }
+        bucket.items.push(transfer)
+    }
+    return Array.from(buckets, ([key, { monthEnd, items }]) => {
+        const tickets = groupTransfersByTicket(items)
+        const { amountSmallestUnit, failedSmallestUnit, currency } = summarizeTransfers(items)
+        return {
+            key,
+            period: monthLabel(monthEnd.toISOString()),
+            monthEnd: monthEnd.toISOString(),
+            ticketCount: tickets.length,
+            transfers: tickets.flatMap((ticket) => ticket.items),
+            amountSmallestUnit,
+            failedSmallestUnit,
+            currency,
+        }
+    }).sort((a, b) => new Date(b.monthEnd).getTime() - new Date(a.monthEnd).getTime())
 }

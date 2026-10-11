@@ -28,7 +28,7 @@ describe("ConfirmPaymentModal", () => {
         onCancel={vi.fn()}
       />,
     )
-    fireEvent.click(screen.getByRole("button", { name: /confirm payment/i }))
+    fireEvent.click(screen.getByRole("button", { name: /confirm hold/i }))
     // A sandbox ticket must use the test-mode Stripe.js instance.
     await waitFor(() => expect(getStripeMock).toHaveBeenCalledWith("test"))
     await waitFor(() => expect(confirmCardPayment).toHaveBeenCalledWith("pi_1_secret_x"))
@@ -48,7 +48,7 @@ describe("ConfirmPaymentModal", () => {
         onCancel={vi.fn()}
       />,
     )
-    fireEvent.click(screen.getByRole("button", { name: /confirm payment/i }))
+    fireEvent.click(screen.getByRole("button", { name: /confirm hold/i }))
     await waitFor(() =>
       expect(screen.getByText(/your card was declined/i)).toBeInTheDocument(),
     )

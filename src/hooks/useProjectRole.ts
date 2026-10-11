@@ -29,6 +29,8 @@ export function projectAvailableRolesQueryOptions(projectId?: string) {
           .select("helper_id")
           .eq("project_id", projectId)
           .eq("user_id", user.id)
+          .is("deleted_at", null)
+          .limit(1)
           .maybeSingle(),
       ])
 
@@ -57,6 +59,74 @@ export function useProjectAvailableRoles(projectId?: string) {
   return useQuery({
     ...projectAvailableRolesQueryOptions(projectId),
     enabled: !!projectId,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
+/**
+ * Gets the set of role categories the user is ACTUALLY registered for
+ * across all projects (not a hierarchy):
+ * - "admin"  if any active projects_members row has role "admin"
+ * - "helper" if any projects_helpers row exists for the user
+ * - "user"   if any active projects_members row has a non-admin role,
+ *            OR the user has created at least one ticket
+ *
+ * Falls back to ["user"] if the user is signed in but has no registrations.
+ * Returns [] if not signed in.
+ */
+export function useUserRoles() {
+  return useQuery({
+    queryKey: ["user-roles"],
+    queryFn: async (): Promise<UserRole[]> => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+
+      const [
+        { data: adminMemberships },
+        { data: helperRows },
+        { data: memberRows },
+        { data: ticketRows },
+      ] = await Promise.all([
+        supabase
+          .from("projects_members")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "admin")
+          .is("deleted_at", null)
+          .limit(1),
+        supabase
+          .from("projects_helpers")
+          .select("helper_id")
+          .eq("user_id", user.id)
+          .limit(1),
+        supabase
+          .from("projects_members")
+          .select("role")
+          .eq("user_id", user.id)
+          .neq("role", "admin")
+          .is("deleted_at", null)
+          .limit(1),
+        supabase
+          .from("tickets")
+          .select("id")
+          .eq("created_by", user.id)
+          .limit(1),
+      ])
+
+      const roles: UserRole[] = []
+      if (adminMemberships && adminMemberships.length > 0) roles.push("admin")
+      if (helperRows && helperRows.length > 0) roles.push("helper")
+      if (
+        (memberRows && memberRows.length > 0) ||
+        (ticketRows && ticketRows.length > 0)
+      ) {
+        roles.push("user")
+      }
+
+      return roles.length > 0 ? roles : ["user"]
+    },
+    staleTime: 1800000,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   })
@@ -97,6 +167,8 @@ export function useProjectRole(projectId?: string) {
         .select("helper_id")
         .eq("project_id", projectId)
         .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .limit(1)
         .maybeSingle()
 
       if (helperData) {

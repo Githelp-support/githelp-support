@@ -53,9 +53,9 @@ export function ConfirmPaymentModal({ clientSecret, mode, onResolved, onCancel }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-        <h2 className="text-lg font-semibold mb-2">Confirm your payment</h2>
+        <h2 className="text-lg font-semibold mb-2">Confirm the hold on your card</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Your bank requires an extra confirmation step before we can place a hold for this ticket.
+          Your bank wants you to confirm the temporary hold for this ticket. This is not a charge: you only pay for the time your helper logs, and the rest is released.
         </p>
         {error && (
           <p className="text-sm text-red-600 mb-3" role="alert">
@@ -67,7 +67,7 @@ export function ConfirmPaymentModal({ clientSecret, mode, onResolved, onCancel }
             Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={busy}>
-            {busy ? "Confirming…" : "Confirm payment"}
+            {busy ? "Confirming…" : "Confirm hold"}
           </Button>
         </div>
       </div>

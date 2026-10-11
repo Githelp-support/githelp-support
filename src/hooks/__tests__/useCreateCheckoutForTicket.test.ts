@@ -16,8 +16,9 @@ function makeWrapper() {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    return ({ children }: { children: React.ReactNode }) =>
-        createElement(QueryClientProvider, { client: queryClient }, children);
+    return function Wrapper({ children }: { children: React.ReactNode }) {
+        return createElement(QueryClientProvider, { client: queryClient }, children);
+    };
 }
 
 describe("useCreateCheckoutForTicket", () => {

@@ -27,8 +27,9 @@ function makeWrapper() {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     });
-    return ({ children }: { children: React.ReactNode }) =>
-        createElement(QueryClientProvider, { client: queryClient }, children);
+    return function Wrapper({ children }: { children: React.ReactNode }) {
+        return createElement(QueryClientProvider, { client: queryClient }, children);
+    };
 }
 
 beforeEach(() => {
@@ -104,6 +105,55 @@ describe("useTicketPaymentStatus", () => {
         await waitFor(() => expect(result.current.status).toBe("distributing"));
         expect(result.current.capturedAmountSmallestUnit).toBe(13000);
     });
+
+    it("sums the helper/project/Stripe-fee split across captured rows only", async () => {
+        selectMock.mockResolvedValue({
+            data: [
+                {
+                    status: "distributing",
+                    captured_amount_smallest_unit: 3000,
+                    amount_platform_smallest_unit: 117,
+                    amount_project_smallest_unit: 0,
+                    amount_helper_smallest_unit: 2883,
+                },
+                {
+                    status: "failed",
+                    captured_amount_smallest_unit: null,
+                    amount_platform_smallest_unit: 999,
+                    amount_project_smallest_unit: 999,
+                    amount_helper_smallest_unit: 999,
+                },
+                {
+                    status: "completed",
+                    captured_amount_smallest_unit: 10000,
+                    amount_platform_smallest_unit: 320,
+                    amount_project_smallest_unit: 968,
+                    amount_helper_smallest_unit: null,
+                },
+            ],
+            error: null,
+        });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-splits", { slaId: null }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("distributing"));
+        expect(result.current.capturedSplits).toEqual({
+            helperSmallestUnit: 2883,
+            projectSmallestUnit: 968,
+            stripeFeeSmallestUnit: 437,
+        });
+    });
+
+    it("has no split before anything is captured", async () => {
+        selectMock.mockResolvedValue({ data: [{ status: "authorized" }], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-uncaptured", { slaId: null }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("authorized"));
+        expect(result.current.capturedSplits).toBeNull();
+    });
 });
 
 describe("useTicketPaymentStatus failure reason", () => {
@@ -139,5 +189,43 @@ describe("useTicketPaymentStatus failure reason", () => {
         );
         await waitFor(() => expect(result.current.status).toBe("distributing"));
         expect(result.current.failureReason).toBeNull();
+    });
+
+    it("opens the gate for a free-support ticket with no payments row", async () => {
+        selectMock.mockResolvedValue({ data: [], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-free", { slaId: null, isFree: true }),
+            { wrapper: makeWrapper() },
+        );
+        // Closed while the payments rows are still loading…
+        expect(result.current.status).toBe("none");
+        expect(result.current.isReady).toBe(false);
+        // …and open once we know there is no payments row.
+        await waitFor(() => expect(result.current.status).toBe("free"));
+        expect(result.current.isReady).toBe(true);
+    });
+
+    it("keeps the gate closed without a payments row when the project is not free", async () => {
+        selectMock.mockResolvedValue({ data: [], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-paid", { slaId: null, isFree: false }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(selectMock).toHaveBeenCalled());
+        expect(result.current.status).toBe("none");
+        expect(result.current.isReady).toBe(false);
+    });
+
+    it("lets an existing payments row take precedence over isFree", async () => {
+        selectMock.mockResolvedValue({
+            data: [{ status: "failed", captured_amount_smallest_unit: null, failure_reason: "declined" }],
+            error: null,
+        });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-was-paid", { slaId: null, isFree: true }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("failed"));
+        expect(result.current.isReady).toBe(false);
     });
 });

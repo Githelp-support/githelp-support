@@ -186,7 +186,7 @@ export default function ProjectSettingsPage() {
                 </p>
 
                 {adminsLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2 text-muted-foreground text-[14px]">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading admins...
                   </div>
@@ -332,7 +332,7 @@ export default function ProjectSettingsPage() {
                 </div>
 
                 {keywordsLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2 text-muted-foreground text-[14px]">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading keywords...
                   </div>
@@ -392,7 +392,7 @@ export default function ProjectSettingsPage() {
                 </div>
 
                 {categoriesLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2 text-muted-foreground text-[14px]">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading categories...
                   </div>

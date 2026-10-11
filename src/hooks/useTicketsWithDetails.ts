@@ -12,6 +12,7 @@ export interface TicketWithDetails {
     project_id: string;
     /** Customer asked to end the session (see useRequestEndSession); null once the helper ends or they withdraw. */
     end_requested_at?: string | null;
+    time_review_requested_at?: string | null;
     end_requested_by?: string | null;
     keywords?: Array<{ value: string }>;
     help_categories?: Array<{ value: string; type: string }>;

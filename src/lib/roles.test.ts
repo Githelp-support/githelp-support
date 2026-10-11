@@ -10,7 +10,7 @@ describe("homeRouteForRole", () => {
     expect(homeRouteForRole("helper")).toBe("/helper/overview")
   })
 
-  it("sends plain users to support tickets", () => {
-    expect(homeRouteForRole("user")).toBe("/support/tickets")
+  it("sends plain users to the support page", () => {
+    expect(homeRouteForRole("user")).toBe("/support/chat")
   })
 })

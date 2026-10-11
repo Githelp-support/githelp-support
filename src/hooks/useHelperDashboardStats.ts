@@ -22,10 +22,18 @@ export interface HelperInProgressTicket {
     created_at: string;
 }
 
+/** A completed ticket the helper logged time on (for client-side period filtering). */
+export interface HelperCompletedTicket {
+    id: string;
+    created_at: string;
+    completed_at: string | null;
+}
+
 export interface HelperDashboardStats {
     keyStats: KeyStats;
     issueTypeStats: IssueTypeStats[];
     inProgressTickets: HelperInProgressTicket[];
+    completedTickets: HelperCompletedTicket[];
 }
 
 /**
@@ -63,6 +71,7 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                     },
                     issueTypeStats: [],
                     inProgressTickets: [],
+                    completedTickets: [],
                 };
             }
 
@@ -77,7 +86,7 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
             // All (non-deleted) tickets for the project.
             const { data: tickets } = await supabase
                 .from("tickets")
-                .select("id, title, status, priority, created_at")
+                .select("id, title, status, priority, created_at, completed_at")
                 .eq("project_id", projectId)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: false });
@@ -102,6 +111,14 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
             const completedTickets = ticketsWorkedOn.filter(
                 (ticket) => ticket.status === "completed"
             );
+            // Exposed so the page can filter completed tickets by period
+            // client-side without changing `keyStats.totalTicketsSolved`.
+            const helperCompletedTickets: HelperCompletedTicket[] =
+                completedTickets.map((ticket) => ({
+                    id: ticket.id,
+                    created_at: ticket.created_at,
+                    completed_at: ticket.completed_at,
+                }));
             const totalTime = calculateTotalTime(helperTimeEntries);
 
             const keyStats: KeyStats = {
@@ -155,6 +172,7 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                     keyStats,
                     issueTypeStats: [],
                     inProgressTickets,
+                    completedTickets: helperCompletedTickets,
                 };
             }
 
@@ -249,6 +267,7 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                 keyStats,
                 issueTypeStats,
                 inProgressTickets,
+                completedTickets: helperCompletedTickets,
             };
         },
         enabled:

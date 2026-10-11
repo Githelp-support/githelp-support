@@ -7,9 +7,10 @@ export interface CreateCheckoutResult {
 }
 
 /**
- * Customer-initiated: returns a Stripe Checkout URL for adding a card
- * AND placing a hold on this specific ticket in one redirect. Used by
- * the chat-side "Add payment method" CTA on the payment_required
+ * Customer-initiated: returns a Stripe Checkout URL that saves a card for
+ * this ticket (no amount shown). The ticket's hold is placed right after,
+ * when the customer is back (`useHoldTicketAfterSetup`) or from the webhook.
+ * Used by the chat-side "Add payment method" CTA on the payment_required
  * system message.
  */
 export function useCreateCheckoutForTicket() {
