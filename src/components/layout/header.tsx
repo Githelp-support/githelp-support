@@ -24,9 +24,11 @@ interface HeaderProps {
   backgroundColor?: string
   /** Optional classes merged onto the title <h1>. */
   titleClassName?: string
+  /** Rendered above the title, e.g. a back link to the list the page was opened from. */
+  aboveTitle?: ReactNode
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -85,6 +87,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           )}
           {leadingIcon && <div className="shrink-0 self-center">{leadingIcon}</div>}
           <div>
+            {aboveTitle && <div className="mb-2">{aboveTitle}</div>}
             <div ref={titleRowRef} className="flex items-center gap-[13px]">
               <h1 className={cn("text-2xl font-semibold tracking-[0.005em] text-foreground", titleClassName)}>{title}</h1>
               {info && (
