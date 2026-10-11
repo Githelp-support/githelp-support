@@ -2,7 +2,13 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { X, Copy, Check } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { Copy, Check } from "lucide-react"
 
 interface SLAConfirmationModalProps {
   isOpen: boolean
@@ -11,8 +17,12 @@ interface SLAConfirmationModalProps {
   slaId: string
 }
 
-export function SLAConfirmationModal({ isOpen, onClose, onConfirm, slaId }: SLAConfirmationModalProps) {
+const CREATION_UNAVAILABLE_MESSAGE =
+  "Creating SLAs is not available yet. This setup flow is shown for illustration only."
+
+export function SLAConfirmationModal({ isOpen, onClose, slaId }: SLAConfirmationModalProps) {
   const [copied, setCopied] = useState(false)
+  const [tooltipOpen, setTooltipOpen] = useState(false)
 
   const handleCopy = async () => {
     try {
@@ -28,17 +38,14 @@ export function SLAConfirmationModal({ isOpen, onClose, onConfirm, slaId }: SLAC
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-50" onClick={onClose} />
+      {/* Backdrop (non-closing: the modal can only be dismissed via Cancel) */}
+      <div className="fixed inset-0 bg-black/20 z-50" />
 
       {/* Modal */}
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-lg shadow-xl z-50">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">Confirming new SLA</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:bg-muted p-1">
-            <X className="w-5 h-5" />
-          </Button>
         </div>
 
         <div className="p-6 space-y-4">
@@ -56,9 +63,26 @@ export function SLAConfirmationModal({ isOpen, onClose, onConfirm, slaId }: SLAC
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cancel
           </Button>
-          <Button onClick={onConfirm} variant="lavender" className="flex-1">
-            Confirm creation
-          </Button>
+          <TooltipProvider>
+            <Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="lavender"
+                  aria-disabled="true"
+                  className="flex-1"
+                  // Intentional no-op: SLA creation is not available yet.
+                  // Opening the tooltip on click makes the message reachable on touch devices.
+                  onClick={() => setTooltipOpen(true)}
+                >
+                  Confirm creation
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={6} className="max-w-xs text-center">
+                {CREATION_UNAVAILABLE_MESSAGE}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </>
