@@ -22,9 +22,11 @@ interface HeaderProps {
   className?: string
   /** Optional CSS background color to apply to the header container. Overrides the default `bg-background`. */
   backgroundColor?: string
+  /** Optional classes merged onto the title <h1>. */
+  titleClassName?: string
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -84,7 +86,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           {leadingIcon && <div className="shrink-0 self-center">{leadingIcon}</div>}
           <div>
             <div ref={titleRowRef} className="flex items-center gap-[13px]">
-              <h1 className="text-2xl font-semibold tracking-[0.005em] text-foreground">{title}</h1>
+              <h1 className={cn("text-2xl font-semibold tracking-[0.005em] text-foreground", titleClassName)}>{title}</h1>
               {info && (
                 <div className="relative group">
                   <Info className="w-5 h-5 text-muted-foreground cursor-help" />

@@ -92,6 +92,8 @@ export type TicketChatParticipant = {
 
 export interface TicketChatProps {
   headerTitle: string
+  /** Optional extra classes applied to the header title (e.g. to override its font size). */
+  headerTitleClassName?: string
   headerSubtitle?: string
   /** Subtitle text rendered below the title in the header (separate from inline headerSubtitle). */
   subtitle?: string
@@ -178,6 +180,7 @@ export interface TicketChatProps {
 export function TicketChat(props: TicketChatProps) {
   const {
     headerTitle,
+    headerTitleClassName,
     headerSubtitle,
     subtitle,
     headerLeadingIcon,
@@ -285,6 +288,7 @@ export function TicketChat(props: TicketChatProps) {
         <div className="relative border-b border-border z-10">
           <Header
             title={headerTitle}
+            titleClassName={headerTitleClassName}
             subtitle={subtitle}
             showBackButton={showBackButton}
             leadingIcon={headerLeadingIcon}

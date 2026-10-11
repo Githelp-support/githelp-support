@@ -707,6 +707,7 @@ export default function TicketDetailPage() {
           <Header
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
+            titleClassName="text-xl"
             inlineRightContent={
               <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
             }
