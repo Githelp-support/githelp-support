@@ -711,7 +711,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                             {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
                             <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
                               {count === 0 && (
-                                <div className="px-[11px] py-2 text-sm text-muted-foreground">No transactions for this ticket yet.</div>
+                                // Same grid as the payout lines so the text lines up under the ticket ID.
+                                <div className="grid items-center gap-4 px-[11px] py-2 text-sm" style={HELPER_TICKETS_GRID}>
+                                  <span />
+                                  <span className="col-[2/-1] min-w-0 text-muted-foreground">No transactions for this ticket yet.</span>
+                                </div>
                               )}
                               {ticket.transfers.map((transfer, index) => (
                                 <div
