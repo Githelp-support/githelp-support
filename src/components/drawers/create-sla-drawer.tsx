@@ -88,6 +88,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
   const handleCloseConfirmation = () => {
     setShowConfirmation(false)
+    onClose()
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
