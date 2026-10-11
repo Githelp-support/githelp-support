@@ -5,6 +5,14 @@ export interface OnboardingStatus {
     needsOnboarding: boolean;
     isMember: boolean;
     onboardingCompleted: boolean;
+    /** The user has asked to join a project as a helper and is awaiting approval. */
+    hasPendingRequest: boolean;
+    /**
+     * Onboarded, not yet a member of any project, and waiting on a helper
+     * request. Users who finished onboarding as plain "User" (no project,
+     * no request) are NOT waiting — they live in their private user context.
+     */
+    needsWaiting: boolean;
 }
 
 /**
@@ -23,6 +31,8 @@ export function useOnboardingStatus() {
                     needsOnboarding: false,
                     isMember: false,
                     onboardingCompleted: false,
+                    hasPendingRequest: false,
+                    needsWaiting: false,
                 };
             }
 
@@ -36,6 +46,17 @@ export function useOnboardingStatus() {
 
             if (memberError) throw memberError;
             const isMember = (memberData?.length ?? 0) > 0;
+
+            // Outstanding helper join requests (RLS limits this to own rows)
+            const { data: requestData, error: requestError } = await supabase
+                .from("pending_user_requests")
+                .select("project_id")
+                .eq("user_id", user.id)
+                .eq("status", "pending")
+                .limit(1);
+
+            if (requestError) throw requestError;
+            const hasPendingRequest = (requestData?.length ?? 0) > 0;
 
             // Check onboarding completion status from public.users table
             const { data: userData, error: userError } = await supabase
@@ -54,10 +75,14 @@ export function useOnboardingStatus() {
             // User needs onboarding if they're not a member and haven't completed onboarding
             const needsOnboarding = !isMember && !onboardingCompleted;
 
+            const needsWaiting = onboardingCompleted && !isMember && hasPendingRequest;
+
             return {
                 needsOnboarding,
                 isMember,
                 onboardingCompleted,
+                hasPendingRequest,
+                needsWaiting,
             };
         },
         retry: false,

@@ -24,8 +24,19 @@ export function useEnterProject() {
       // ProjectProvider drops any selection that isn't in the loaded project
       // list, so wait for the list to include the new project before
       // selecting it.
+      //
+      // The account-wide role registrations ("user-roles" drives the top-bar
+      // role switcher, "account-roles" the sign-in hand-off) are cached for
+      // 30 minutes and have just changed as well: a user-only account that
+      // creates its first project becomes an admin. Without refreshing them
+      // the top bar would still see ["user"], decide "admin" is not a role
+      // this account holds, and bounce straight back to the user dashboard.
       try {
-        await queryClient.refetchQueries({ queryKey: ["user-projects"] })
+        await Promise.all([
+          queryClient.refetchQueries({ queryKey: ["user-projects"] }),
+          queryClient.refetchQueries({ queryKey: ["user-roles"] }),
+          queryClient.refetchQueries({ queryKey: ["account-roles"] }),
+        ])
       } catch (err) {
         console.error("Failed to refresh user projects:", err)
       }

@@ -1,6 +1,7 @@
 "use client"
 
-import { Bell, ChevronDown, Check, Plus } from "lucide-react"
+import { Bell, ChevronDown, Check, Plus, Lock } from "lucide-react"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { usePathname, useRouter } from "next/navigation"
@@ -76,6 +77,15 @@ const ProjectLogo = ({
   )
 }
 
+// Avatar-sized stand-in for the private user context in the project control.
+const PrivateContextIcon = ({ size }: { size: string }) => (
+  <span
+    className={`${size} ${sizeRadiusMap[size] || "rounded-[9px]"} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
+  >
+    <Lock className="w-3 h-3" strokeWidth={2.2} />
+  </span>
+)
+
 export function TopBar() {
   const router = useRouter()
   const pathname = usePathname()
@@ -130,7 +140,11 @@ export function TopBar() {
   }
 
   const handleProjectSelect = async (project: Project) => {
-    const isDifferentProject = project.project_id !== selectedProjectId
+    // Acting as User means the "Private" context is current, even if a real
+    // project is still remembered as selected — so picking a project from the
+    // User dropdown always counts as a change and switches into that project's
+    // highest role.
+    const isDifferentProject = user.role === "user" || project.project_id !== selectedProjectId
     setSelectedProjectId(project.project_id)
     if (!isDifferentProject) return
 
@@ -192,26 +206,55 @@ export function TopBar() {
     }
   }
 
-  // Roles are scoped to the SELECTED project (keyed by the persisted selected
-  // project id — not the per-page projectRole, which gets cleared/lowered on
-  // /support pages), and limited to the role categories the profile is
-  // ACTUALLY registered for (no implied "user" role for e.g. a freshly
-  // registered helper). Ordered admin → helper → user.
+  // Admin/helper are scoped to the SELECTED project (keyed by the persisted
+  // selected project id — not the per-page projectRole, which gets
+  // cleared/lowered on /support pages), and limited to the role categories
+  // the profile is ACTUALLY registered for. "User" is always offered: every
+  // account has a private user context to act in. Ordered admin → helper → user.
   const availableRoles: UserRole[] = useMemo(() => {
     const registered = userRolesLoaded && userRoles && userRoles.length > 0 ? userRoles : null
+    let roles: UserRole[]
     if (!projectAvailableRoles) {
       // No projects at all (support-only users) or queries still loading:
       // fall back to the global registrations, then to the active role so
       // the dropdown is never empty.
-      return registered ?? [user.role]
+      roles = registered ?? [user.role]
+    } else if (!registered) {
+      roles = projectAvailableRoles
+    } else {
+      const scoped = projectAvailableRoles.filter((role) => registered.includes(role))
+      roles = scoped.length > 0 ? scoped : projectAvailableRoles
     }
-    if (!registered) return projectAvailableRoles
-    const scoped = projectAvailableRoles.filter((role) => registered.includes(role))
-    return scoped.length > 0 ? scoped : projectAvailableRoles
+    return roles.includes("user") ? roles : [...roles, "user"]
   }, [userRolesLoaded, userRoles, projectAvailableRoles, user.role])
 
   const rolesResolved =
     userRolesLoaded && !projectsLoading && (!selectedProject || projectRolesLoaded)
+
+  // An account that is registered as nothing but "user" has no project of its
+  // own yet — it lives in a private user context. It gets a greyed-out
+  // "Private" project placeholder and a "+ New role" entry in the role
+  // dropdown. Anyone holding admin or helper (anywhere) adds projects and
+  // roles through the project dropdown's "Add new" instead.
+  const isUserOnly =
+    userRolesLoaded && !!userRoles && userRoles.length === 1 && userRoles[0] === "user"
+
+  // Acting as User = acting in the private user context, whatever projects the
+  // account belongs to. Users get a context dropdown ("Private" today; later
+  // also employers they are verified to operate under) instead of the project
+  // dropdown.
+  const isPrivateContext = user.role === "user"
+  const [employerTipOpen, setEmployerTipOpen] = useState(false)
+
+  // While acting as User only "User" is offered in the role dropdown, even if
+  // the account is admin/helper somewhere: the roles of a project only show
+  // once that project is selected (which itself switches into its highest
+  // role). `availableRoles` stays complete for the auto-correction effect.
+  const visibleRoles: UserRole[] = isPrivateContext ? ["user"] : availableRoles
+
+  const goToAddRole = () => {
+    if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
+  }
 
   // Once roles are resolved, if the current role isn't one the profile holds,
   // switch to the first available role (e.g. a freshly registered helper
@@ -249,9 +292,9 @@ export function TopBar() {
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
-              {availableRoles.length > 0 ? (
+              {visibleRoles.length > 0 ? (
                 <>
-                  {availableRoles.map((role) => {
+                  {visibleRoles.map((role) => {
                     const isCurrent = role === user.role
                     return (
                       <DropdownMenuItem
@@ -266,12 +309,107 @@ export function TopBar() {
                   })}
                 </>
               ) : null}
+              {isUserOnly && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer font-sans text-[14px] text-brand-primary"
+                    onClick={goToAddRole}
+                  >
+                    <Plus className="w-4 h-4" />
+                    New role
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Project dropdown — only available to Admin and Helper roles.
-              Users don't have a project context, so we hide it for the User role. */}
-          {user.role === "user" ? null : projectsLoading ? (
+          {/* User context dropdown (User role) — styled like the project
+              dropdown. "Private" is the only context today; in time the user
+              will be able to switch to an employer they are verified to operate
+              under ("Add employer" is a placeholder that explains this on
+              hover/tap). Any projects the account is admin/helper in are listed
+              too — picking one switches into the highest role held there. */}
+          {isPrivateContext ? (
+            <DropdownMenu onOpenChange={(open) => !open && setEmployerTipOpen(false)}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <PrivateContextIcon size="w-[22px] h-[22px]" />
+                    <span className="font-sans text-[14px] font-[550] text-sidebar-foreground truncate">Private</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                className="w-56 font-sans"
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
+                {/* Scrollable list — capped at three rows (3 × 32px) so the
+                    separator and "Add employer" below always stay visible. */}
+                <div className={cn("max-h-24 overflow-y-auto")}>
+                  <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
+                    <PrivateContextIcon size="w-5 h-5" />
+                    <span className="font-sans truncate text-[14px] font-[500]">Private</span>
+                  </DropdownMenuItem>
+                  {userProjects.map((project) => (
+                    <ProjectLogoWithBranding
+                      key={project.project_id}
+                      project={project}
+                      isSelected={false}
+                      onSelect={handleProjectSelect}
+                    />
+                  ))}
+                </div>
+                <DropdownMenuSeparator />
+                {/* "Add new" project only makes sense for accounts that already
+                    run projects; project-less users add a role instead ("+ New
+                    role" in the role dropdown). */}
+                {userProjects.length > 0 && (
+                  <DropdownMenuItem
+                    className="font-sans text-[14px] text-brand-primary"
+                    onClick={goToAddRole}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add new
+                  </DropdownMenuItem>
+                )}
+                <TooltipPrimitive.Provider delayDuration={150}>
+                  <TooltipPrimitive.Root open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
+                    <TooltipPrimitive.Trigger asChild>
+                      <DropdownMenuItem
+                        className="font-sans text-[14px] text-brand-primary"
+                        // Keep the menu open and show the explanation on tap as
+                        // well as on hover.
+                        onSelect={(e) => {
+                          e.preventDefault()
+                          setEmployerTipOpen(true)
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add employer
+                      </DropdownMenuItem>
+                    </TooltipPrimitive.Trigger>
+                    <TooltipPrimitive.Portal>
+                      <TooltipPrimitive.Content
+                        side="right"
+                        sideOffset={8}
+                        className="z-[60] max-w-xs rounded-md bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-white shadow-md"
+                      >
+                        We do not support the possibility to connect your account to an employer at the moment.
+                        This functionality will be released in the coming months.
+                        <TooltipPrimitive.Arrow className="fill-foreground" />
+                      </TooltipPrimitive.Content>
+                    </TooltipPrimitive.Portal>
+                  </TooltipPrimitive.Root>
+                </TooltipPrimitive.Provider>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : projectsLoading ? (
             <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
               <div className="font-sans text-[14px] text-muted-foreground">Loading projects...</div>
             </div>
@@ -319,9 +457,7 @@ export function TopBar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="font-sans text-[14px] text-brand-primary"
-                  onClick={() => {
-                    if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
-                  }}
+                  onClick={goToAddRole}
                 >
                   <Plus className="w-4 h-4" />
                   Add new
