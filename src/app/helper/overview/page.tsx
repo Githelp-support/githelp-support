@@ -1,7 +1,9 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import Link from "next/link"
+import { HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown, MessageCircle } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -9,11 +11,27 @@ import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TabSelector } from "@/components/ui/tab-selector"
 import { useProjectSelection } from "@/contexts/project-context"
+import { useUser } from "@/contexts/user-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useHelperDashboardStats } from "@/hooks/useHelperDashboardStats"
+import { useHelperRecentTicketInteractions } from "@/hooks/useHelperRecentTicketInteractions"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
 import { monthLabel } from "@/lib/user-payment-reports"
+import { cn } from "@/lib/utils"
+
+const RECENT_TICKETS_LIMIT = 5
+
+// "dd.mm.yyyy, HH:mm", matching the Tickets page
+function formatDate(dateString: string) {
+  const date = new Date(dateString)
+  const day = String(date.getDate()).padStart(2, "0")
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  return `${day}.${month}.${year}, ${hours}:${minutes}`
+}
 
 export default function HelperOverviewPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("all")
@@ -48,6 +66,15 @@ export default function HelperOverviewPage() {
   // Resolve the current helper, then fetch stats scoped to that helper.
   const { data: helperId } = useCurrentHelper(projectId)
   const { data: helperStats } = useHelperDashboardStats(projectId, helperId ?? undefined)
+
+  // Recent tickets are keyed by the helper's auth user id (not projects_helpers.helper_id).
+  const { user, isLoading: userLoading } = useUser()
+  const userId = user?.id
+  const { data: recentTickets = [], isLoading: recentLoading } = useHelperRecentTicketInteractions(
+    userId,
+    RECENT_TICKETS_LIMIT
+  )
+  const isRecentLoading = userLoading || recentLoading
 
   // The hook restricts issue-types to categories the helper has completed
   // at least one ticket in (Uncategorized is included when the completed
@@ -186,6 +213,108 @@ export default function HelperOverviewPage() {
                 </CardContent>
               </Card>
             </div>
+          </div>
+
+          {/* Recent Tickets Table */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-foreground">Recent tickets</h2>
+              <Link href="/tickets" className="text-sm font-medium text-brand-primary hover:underline">
+                View all tickets
+              </Link>
+            </div>
+            <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+              <CardContent className="p-0">
+                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+                  <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                    <div className="col-span-6">Ticket</div>
+                    <div className="col-span-3">Status</div>
+                    <div className="col-span-2">Last interaction</div>
+                    <div className="col-span-1" />
+                  </div>
+                </div>
+                {isRecentLoading ? (
+                  <div className="px-6 py-2.5">
+                    <div className="text-sm text-muted-foreground">Loading your tickets...</div>
+                  </div>
+                ) : recentTickets.length === 0 ? (
+                  <div className="px-6 py-2.5">
+                    <div className="text-sm text-muted-foreground">No tickets to show</div>
+                  </div>
+                ) : (
+                  recentTickets.map((ticket) => {
+                    const projectName = ticket.project_name || "Project"
+                    const lastInteraction = formatDate(ticket.last_interaction_at)
+                    return (
+                      <Link
+                        key={ticket.id}
+                        href={`/helper/tickets/${ticket.id}`}
+                        className={cn(
+                          "block px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0",
+                          ticket.has_unread ? "bg-purple-50 hover:bg-purple-100" : "hover:bg-muted/50"
+                        )}
+                      >
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-6">
+                            <div className="flex items-start gap-[18px]">
+                              <Avatar
+                                key={`${ticket.project_logo_url ?? ""}|${projectName}`}
+                                className="w-8 h-8 rounded-[11px] shrink-0"
+                              >
+                                {ticket.project_logo_url ? (
+                                  <AvatarImage src={ticket.project_logo_url} alt={projectName} />
+                                ) : null}
+                                <AvatarFallback className="bg-brand-primary text-white text-sm font-medium rounded-[11px]">
+                                  {(projectName?.[0] || "?").toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                                  {projectName}
+                                </h4>
+                                <p
+                                  className="text-xs text-muted-foreground truncate"
+                                  title={ticket.title?.trim() || "Untitled ticket"}
+                                >
+                                  {ticket.title?.trim() || "Untitled ticket"}
+                                </p>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">
+                                    {ticket.message_count} messages
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="col-span-3">
+                            <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.status)}`}>
+                              {ticket.status}
+                            </Badge>
+                          </div>
+                          <div className="col-span-2">
+                            <div className="text-sm text-muted-foreground">
+                              <div>{lastInteraction.split(", ")[0]}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {lastInteraction.split(", ")[1]}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="col-span-1 flex justify-end">
+                            {ticket.has_unread ? (
+                              <i
+                                className="fi fi-rr-comments inline-flex items-center justify-center leading-none text-brand-primary"
+                                aria-label="Unread messages"
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Tables — Issue types and Tickets in progress share equal width */}

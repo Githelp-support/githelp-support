@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import HelperOverviewPage from "./page"
 import type { HelperDashboardStats } from "@/hooks/useHelperDashboardStats"
+import type { HelperRecentTicketInteraction } from "@/hooks/useHelperRecentTicketInteractions"
 
 // Radix Select relies on DOM APIs jsdom does not implement.
 Element.prototype.scrollIntoView = vi.fn()
@@ -10,11 +11,17 @@ Element.prototype.releasePointerCapture = vi.fn()
 
 const mocks = vi.hoisted(() => ({
   useProjectSelection: vi.fn(),
+  useUser: vi.fn(),
   useCurrentHelper: vi.fn(),
   useHelperDashboardStats: vi.fn(),
+  useHelperRecentTicketInteractions: vi.fn(),
 }))
 
 vi.mock("@/contexts/project-context", () => ({ useProjectSelection: mocks.useProjectSelection }))
+vi.mock("@/contexts/user-context", () => ({ useUser: mocks.useUser }))
+vi.mock("@/hooks/useHelperRecentTicketInteractions", () => ({
+  useHelperRecentTicketInteractions: mocks.useHelperRecentTicketInteractions,
+}))
 vi.mock("@/hooks/useCurrentHelper", () => ({ useCurrentHelper: mocks.useCurrentHelper }))
 vi.mock("@/hooks/useHelperDashboardStats", () => ({
   useHelperDashboardStats: mocks.useHelperDashboardStats,
@@ -57,6 +64,21 @@ const stats = (): HelperDashboardStats => ({
   ],
 })
 
+const recentTicket = (
+  overrides: Partial<HelperRecentTicketInteraction> & Pick<HelperRecentTicketInteraction, "id">,
+): HelperRecentTicketInteraction => ({
+  title: `Ticket ${overrides.id}`,
+  project_id: "project-1",
+  project_name: "Acme",
+  project_logo_url: null,
+  status: "Claimed",
+  creator: null,
+  message_count: 3,
+  has_unread: false,
+  last_interaction_at: iso(2026, 8, 14, 9, 5),
+  ...overrides,
+})
+
 const statValue = (label: string) =>
   screen.getByText(label).closest('[data-slot="card-content"]')?.lastElementChild
 
@@ -75,6 +97,8 @@ describe("HelperOverviewPage", () => {
     mocks.useProjectSelection.mockReturnValue({ selectedProjectId: "project-1" })
     mocks.useCurrentHelper.mockReturnValue({ data: "helper-1" })
     mocks.useHelperDashboardStats.mockReturnValue({ data: stats(), isLoading: false })
+    mocks.useUser.mockReturnValue({ user: { id: "user-1" }, isLoading: false })
+    mocks.useHelperRecentTicketInteractions.mockReturnValue({ data: [], isLoading: false })
   })
 
   afterEach(() => {
@@ -151,5 +175,86 @@ describe("HelperOverviewPage", () => {
 
     expect(statValue("Total time spent")).toHaveTextContent("12h 30m")
     expect(statValue("Percentage solved")).toHaveTextContent("80%")
+  })
+
+  describe("Recent tickets", () => {
+    it("requests at most 5 recent tickets for the signed-in user", () => {
+      render(<HelperOverviewPage />)
+
+      expect(mocks.useHelperRecentTicketInteractions).toHaveBeenCalledWith("user-1", 5)
+    })
+
+    it("renders the returned tickets with project name, title, status and helper chat link", () => {
+      mocks.useHelperRecentTicketInteractions.mockReturnValue({
+        data: [
+          recentTicket({ id: "r1", title: "Login broken", project_name: "Acme", status: "Completed" }),
+          recentTicket({ id: "r2", title: "Billing question", project_name: "Globex", status: "Unclaimed" }),
+        ],
+        isLoading: false,
+      })
+
+      render(<HelperOverviewPage />)
+
+      expect(screen.getByRole("heading", { name: "Recent tickets" })).toBeInTheDocument()
+      expect(screen.getByRole("link", { name: "View all tickets" })).toHaveAttribute("href", "/tickets")
+
+      const rows = screen.getAllByRole("link", { name: /messages/ })
+      expect(rows).toHaveLength(2)
+
+      expect(rows[0]).toHaveAttribute("href", "/helper/tickets/r1")
+      expect(rows[0]).toHaveTextContent("Acme")
+      expect(rows[0]).toHaveTextContent("Login broken")
+      expect(rows[0]).toHaveTextContent("Completed")
+      expect(rows[0]).toHaveTextContent("14.09.2026")
+      expect(rows[0]).toHaveTextContent("09:05")
+
+      expect(rows[1]).toHaveAttribute("href", "/helper/tickets/r2")
+      expect(rows[1]).toHaveTextContent("Globex")
+      expect(rows[1]).toHaveTextContent("Billing question")
+      expect(rows[1]).toHaveTextContent("Unclaimed")
+    })
+
+    it("highlights unread rows in purple with the comments icon; read rows have neither", () => {
+      mocks.useHelperRecentTicketInteractions.mockReturnValue({
+        data: [
+          recentTicket({ id: "unread", title: "Unread ticket", has_unread: true }),
+          recentTicket({ id: "read", title: "Read ticket", has_unread: false }),
+        ],
+        isLoading: false,
+      })
+
+      render(<HelperOverviewPage />)
+
+      const unreadRow = screen.getByText("Unread ticket").closest("a")
+      const readRow = screen.getByText("Read ticket").closest("a")
+
+      expect(unreadRow).toHaveClass("bg-purple-50")
+      expect(unreadRow).toHaveClass("hover:bg-purple-100")
+      expect(unreadRow).not.toHaveClass("hover:bg-muted/50")
+      const icon = unreadRow?.querySelector("i.fi-rr-comments")
+      expect(icon).toBeInTheDocument()
+      expect(icon).toHaveAttribute("aria-label", "Unread messages")
+      expect(icon).toHaveClass("text-brand-primary")
+
+      expect(readRow).not.toHaveClass("bg-purple-50")
+      expect(readRow).toHaveClass("hover:bg-muted/50")
+      expect(readRow?.querySelector("i.fi-rr-comments")).toBeNull()
+    })
+
+    it("shows the empty state when there are no recent tickets", () => {
+      render(<HelperOverviewPage />)
+
+      expect(screen.getByText("No tickets to show")).toBeInTheDocument()
+      expect(screen.queryByRole("link", { name: /messages/ })).not.toBeInTheDocument()
+    })
+
+    it("shows a loading state while recent tickets are fetched", () => {
+      mocks.useHelperRecentTicketInteractions.mockReturnValue({ data: undefined, isLoading: true })
+
+      render(<HelperOverviewPage />)
+
+      expect(screen.getByText("Loading your tickets...")).toBeInTheDocument()
+      expect(screen.queryByText("No tickets to show")).not.toBeInTheDocument()
+    })
   })
 })
