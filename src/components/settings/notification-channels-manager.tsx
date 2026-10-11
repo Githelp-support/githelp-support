@@ -211,7 +211,7 @@ export function NotificationChannelsManager({
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="#support-alerts" />
             </div>
           </div>
-          <div>
+          <div className="pt-[2px]">
             <Label className="text-xs mb-1 block font-[550]">Webhook URL</Label>
             <Input
               value={webhookUrl}
@@ -219,7 +219,7 @@ export function NotificationChannelsManager({
               placeholder={URL_PLACEHOLDERS[type]}
             />
           </div>
-          <div>
+          <div className="pt-[2px]">
             <Label className="text-xs mb-2 block font-[550]">Send these notification types</Label>
             <div className="flex flex-wrap gap-3">
               {GROUP_OPTIONS.map((group) => (
