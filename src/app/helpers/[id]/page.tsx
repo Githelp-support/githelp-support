@@ -33,7 +33,7 @@ const TRANSFER_STATUS_LABEL: Record<PaymentTransfer["status"], string> = {
 }
 
 const ROW_BUTTON_CLASS =
-  "rounded-lg border-border text-muted-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+  "rounded-lg border-border text-muted-foreground text-[13px] font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -460,7 +460,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="rounded-lg border-border text-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+                                  className="rounded-lg border-border text-foreground text-[13px] font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
                                   asChild
                                 >
                                   <Link href={`/helper/tickets/${ticket.id}`}>Open</Link>
@@ -469,7 +469,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="rounded-lg border-border text-foreground text-xs font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
+                                  className="rounded-lg border-border text-foreground text-[13px] font-medium px-3 py-1 hover:bg-muted/60 bg-transparent"
                                   disabled
                                 >
                                   Open
