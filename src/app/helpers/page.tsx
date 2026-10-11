@@ -537,7 +537,7 @@ export default function HelpersPage() {
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
               <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
-              <Switch defaultChecked className="h-[22px] w-[38px] p-[3px] border-0 data-[state=checked]:bg-[#4AA19E]" />
+              <Switch defaultChecked className="h-[22px] w-[38px] p-[3px] border-0" />
             </div>
           </div>
 
