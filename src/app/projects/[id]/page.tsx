@@ -174,7 +174,7 @@ export default function ProjectLandingPage() {
                         {hasRequested ? (
                             <div className="bg-muted/50 rounded-lg p-6 border border-border">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <CheckCircle className="w-6 h-6 text-green-600" />
+                                    <CheckCircle className="w-[19px] h-[19px] text-green-600" />
                                     <h3 className="font-semibold text-lg text-foreground">Request submitted</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
