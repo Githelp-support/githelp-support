@@ -7,7 +7,6 @@ import {
     isBillableTimeEntry,
     type TimeEntryReviewStatus,
 } from "@/hooks/useTimeEntries";
-import type { TicketChatTimeEntryReview } from "@/components/ticket-chat/ticket-chat";
 import { useUserActiveTicketsSidebar } from "@/hooks/useTicketsWithDetails";
 import type { TicketChatParticipant } from "@/components/ticket-chat/ticket-chat";
 
@@ -67,17 +66,10 @@ export function useCustomerTicketSidebar(
         [participants]
     );
 
-    const { timeEntriesDisplay, totalLoggedFormatted, timeEntryReviews, pendingReviewCount } = useMemo(() => {
-        const reviews: Record<string, TicketChatTimeEntryReview> = {};
+    const { timeEntriesDisplay, totalLoggedFormatted, pendingReviewCount } = useMemo(() => {
         const entries: CustomerTimeEntryDisplay[] = timeEntriesFromDb.map((entry) => {
             const { hours, minutes } = timeMillisecondsToHoursMinutes(entry.time_milliseconds);
             const reviewStatus = getTimeEntryReviewStatus(entry);
-            reviews[entry.id] = {
-                status: reviewStatus,
-                declineReason: entry.decline_reason ?? null,
-                reviewRequestedAt: entry.review_requested_at ?? null,
-                autoAccepted: entry.auto_accepted ?? false,
-            };
             return {
                 id: entry.id,
                 type: entry.type,
@@ -91,7 +83,7 @@ export function useCustomerTicketSidebar(
                 helperName: entry.helper?.user?.name ?? null,
             };
         });
-        // Declined entries stay listed (with their status) but don't count.
+        // Declined entries stay listed (marked as declined) but don't count.
         const totalMs = timeEntriesFromDb
             .filter(isBillableTimeEntry)
             .reduce((sum, e) => sum + e.time_milliseconds, 0);
@@ -101,7 +93,6 @@ export function useCustomerTicketSidebar(
         return {
             timeEntriesDisplay: entries,
             totalLoggedFormatted: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")} h`,
-            timeEntryReviews: reviews,
             pendingReviewCount: entries.filter((e) => e.reviewStatus === "pending").length,
         };
     }, [timeEntriesFromDb]);
@@ -112,8 +103,6 @@ export function useCustomerTicketSidebar(
         claimer,
         timeEntriesDisplay,
         totalLoggedFormatted,
-        /** Review state per entry id, for the status marks on the chat bubbles. */
-        timeEntryReviews,
         pendingReviewCount,
         activeTicketsSidebar: activeTicketsSidebarData?.items ?? [],
         activeTicketsCount: activeTicketsSidebarData?.activeCount ?? 0,

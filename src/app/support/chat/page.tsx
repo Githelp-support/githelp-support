@@ -294,7 +294,6 @@ export default function UserSupportChatPage() {
     claimer,
     timeEntriesDisplay,
     totalLoggedFormatted,
-    timeEntryReviews,
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
@@ -768,7 +767,6 @@ export default function UserSupportChatPage() {
         onCancelEndSessionRequest={() => handleRequestEndSession(true)}
         endSessionRequestedAt={endSessionRequestedAt}
         endSessionRequestPending={requestEndSession.isPending}
-        timeEntryReviews={timeEntryReviews}
         timeReviewRequestedAt={existingTicket?.time_review_requested_at ?? null}
         timeEntrySummary={timeEntriesDisplay}
         onConfirmTimeEntries={canConfirmTimeEntries ? handleConfirmTimeEntries : undefined}

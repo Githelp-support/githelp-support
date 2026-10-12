@@ -69,30 +69,34 @@ const STATUS_LABEL: Record<TimeEntryReviewStatus, string> = {
 }
 
 /**
- * Small inline status used in the Logged time sidebars and the End ticket
- * drawer. Pending is the normal state during a session (the customer confirms
- * everything at once when the helper ends), so it is worded neutrally.
+ * Small inline status. Pending is the normal state during a session (the
+ * customer confirms everything at once when the helper ends), so it is worded
+ * neutrally.
  */
 export function TimeEntryReviewStatusBadge({
   status,
   auto,
   perspective = "helper",
+  label: labelOverride,
   className,
 }: {
   status: TimeEntryReviewStatus
   /** Accepted by the 24h job rather than the customer. */
   auto?: boolean | null
   perspective?: "helper" | "customer"
+  /** Replaces the default wording, e.g. "2 declined". */
+  label?: string
   className?: string
 }) {
   const label =
-    status === "pending"
+    labelOverride ??
+    (status === "pending"
       ? perspective === "customer"
         ? "To confirm when the session ends"
         : STATUS_LABEL.pending
       : status === "accepted" && auto
         ? "Confirmed automatically"
-        : STATUS_LABEL[status]
+        : STATUS_LABEL[status])
   return (
     <span
       data-status={status}
@@ -113,6 +117,38 @@ export function TimeEntryReviewStatusBadge({
       )}
       {label}
     </span>
+  )
+}
+
+/**
+ * Review state of all logged time on a ticket, shown once after the total in
+ * the Logged time sidebars and the End ticket drawer. Time is confirmed as one
+ * summary at the end of the session, so the entries share a state: not yet
+ * confirmed while anything is pending, confirmed otherwise. Entries the
+ * customer declined are counted next to it.
+ */
+export function TimeEntriesReviewStatus({
+  entries,
+  perspective = "helper",
+  className,
+}: {
+  entries: { reviewStatus?: TimeEntryReviewStatus | null; autoAccepted?: boolean | null }[]
+  perspective?: "helper" | "customer"
+  className?: string
+}) {
+  const declinedCount = entries.filter((e) => e.reviewStatus === "declined").length
+  const pending = entries.some((e) => e.reviewStatus === "pending")
+  const accepted = entries.filter((e) => e.reviewStatus === "accepted")
+  if (!pending && accepted.length === 0 && declinedCount === 0) return null
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1", className)}>
+      {pending ? (
+        <TimeEntryReviewStatusBadge status="pending" perspective={perspective} />
+      ) : accepted.length > 0 ? (
+        <TimeEntryReviewStatusBadge status="accepted" auto={accepted.every((e) => e.autoAccepted)} />
+      ) : null}
+      {declinedCount > 0 && <TimeEntryReviewStatusBadge status="declined" label={`${declinedCount} declined`} />}
+    </div>
   )
 }
 
