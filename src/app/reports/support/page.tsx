@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet, List, MoreVertical } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, MoreVertical } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { cn } from "@/lib/utils"
@@ -200,7 +200,7 @@ function ReceiptButton({ url }: { url: string | null }) {
     return (
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title="Open the Stripe receipt for this charge">
-          <ExternalLink className="w-3.5 h-3.5" />
+          <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
           Receipt
         </a>
       </Button>
@@ -209,7 +209,7 @@ function ReceiptButton({ url }: { url: string | null }) {
   return (
     <span title="A receipt becomes available once the payment has been captured" className="inline-flex">
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
-        <ExternalLink className="w-3.5 h-3.5" />
+        <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
         Receipt
       </Button>
     </span>
@@ -222,7 +222,7 @@ function ReceiptMenuItem({ url }: { url: string | null }) {
     return (
       <DropdownMenuItem asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
-          <ExternalLink />
+          <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
           Receipt
         </a>
       </DropdownMenuItem>
@@ -232,7 +232,7 @@ function ReceiptMenuItem({ url }: { url: string | null }) {
   return (
     <span title={RECEIPT_UNAVAILABLE_TITLE} className="block">
       <DropdownMenuItem disabled>
-        <ExternalLink />
+        <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
         Receipt
       </DropdownMenuItem>
     </span>
@@ -633,7 +633,7 @@ export default function ReportsSupportPage() {
                                   title={`Download the ${row.period} project report as PDF`}
                                   onSelect={() => exportPdf(row.period)}
                                 >
-                                  <Download />
+                                  <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                   PDF
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -760,7 +760,7 @@ export default function ReportsSupportPage() {
                               <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
                                 {count > 1 ? (
                                   <DropdownMenuItem title="Each charge has its own Stripe receipt" onSelect={() => toggle(row.id)}>
-                                    <ExternalLink />
+                                    <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                     Receipts
                                   </DropdownMenuItem>
                                 ) : (
@@ -776,7 +776,7 @@ export default function ReportsSupportPage() {
                                     })
                                   }
                                 >
-                                  <Download />
+                                  <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                   PDF
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -926,7 +926,7 @@ export default function ReportsSupportPage() {
                                   title={`Download all of ${row.helper}'s transactions in ${row.period} as one PDF`}
                                   onSelect={() => exportPdf(null, helperMonthExport(row))}
                                 >
-                                  <Download />
+                                  <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                   PDF
                                 </DropdownMenuItem>
                                 {/* Opens the same list as clicking the row; an already open list stays open. */}
@@ -936,7 +936,7 @@ export default function ReportsSupportPage() {
                                     if (!expanded) toggle(row.id)
                                   }}
                                 >
-                                  <List />
+                                  <i className="fi fi-rr-list inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                   See transactions
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -986,7 +986,7 @@ export default function ReportsSupportPage() {
                                     title="Download this transaction and its customer charge as a PDF"
                                     onClick={() => exportPdf(null, payoutExport(transfer))}
                                   >
-                                    <Download className="w-3.5 h-3.5" />
+                                    <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
                                     Receipt
                                   </Button>
                                 </span>
