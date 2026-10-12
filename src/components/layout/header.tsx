@@ -93,7 +93,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               {info && (
                 <div className="relative group">
                   <Info className="w-5 h-5 text-muted-foreground cursor-help" />
-                  <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50 w-64 p-2 bg-foreground text-background text-sm rounded-md shadow-lg pointer-events-none">
+                  <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50 w-64 p-2 bg-foreground text-background text-xs rounded-md shadow-lg pointer-events-none">
                     {info}
                     <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-foreground" />
                   </div>
