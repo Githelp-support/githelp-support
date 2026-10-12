@@ -398,6 +398,7 @@ export default function OnboardingPage() {
                             disabled={isCreating}
                             busyRole={isCreating ? "user" : null}
                             showIcons={!isAddingRole}
+                            className={isAddingRole ? "px-[28px]" : undefined}
                         />
                         {isAddingRole && (
                             <Button variant="ghost" className="w-full" onClick={() => router.push("/")}>
