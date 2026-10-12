@@ -3,6 +3,7 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2, Shield, Wrench, LifeBuoy } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type { UserRole } from "@/contexts/user-context"
 
 /**
@@ -46,6 +47,7 @@ export function RoleOptionCards({
     busyRole = null,
     showIcons = false,
     hint,
+    className,
 }: {
     /** Which roles to offer, in display order. */
     roles: UserRole[]
@@ -56,6 +58,8 @@ export function RoleOptionCards({
     showIcons?: boolean
     /** Optional extra line under a card's description. */
     hint?: (role: UserRole) => ReactNode
+    /** Extra classes applied to each role card. */
+    className?: string
 }) {
     return (
         <>
@@ -67,7 +71,10 @@ export function RoleOptionCards({
                         key={option.role}
                         onClick={() => onSelect(option.role)}
                         disabled={disabled}
-                        className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary whitespace-normal disabled:opacity-50"
+                        className={cn(
+                            "w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary whitespace-normal disabled:opacity-50",
+                            className
+                        )}
                         variant="outline"
                     >
                         <div className="flex items-start gap-3 w-full">
