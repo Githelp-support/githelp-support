@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
+import { cn } from "@/lib/utils"
 import { EndSessionRequestedHelperBanner } from "@/components/ticket-chat/end-session-request"
 import { LogTimeDrawer, type TimeEntry } from "@/components/drawers/log-time-drawer"
 import {
@@ -25,8 +26,8 @@ import {
 } from "@/hooks/useTimeEntries"
 import {
   DeleteTimeEntryDialog,
+  TimeEntriesReviewStatus,
   TimeEntryAwaitingApprovalBanner,
-  TimeEntryReviewStatusBadge,
 } from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
@@ -94,8 +95,6 @@ interface Message {
   metadataKind?: string
   /** `time_entries_confirmed` message in which the user declined at least one entry. */
   hasDeclines?: boolean
-  /** `metadata.time_entry_id` of a `time_logged` system message. */
-  timeEntryId?: string
 }
 
 const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
@@ -211,7 +210,6 @@ export default function TicketDetailPage() {
     () => timeEntries.filter((entry) => entry.reviewStatus === "pending").length,
     [timeEntries]
   )
-  const timeEntriesById = useMemo(() => new Map(timeEntries.map((entry) => [entry.id, entry])), [timeEntries])
   
   // Format payment values (convert cents to dollars)
   const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
@@ -377,7 +375,6 @@ export default function TicketDetailPage() {
         type: undefined,
         metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
         hasDeclines: ((msg.metadata as { declined?: unknown[] } | null | undefined)?.declined?.length ?? 0) > 0,
-        timeEntryId: (msg.metadata as { time_entry_id?: string } | null | undefined)?.time_entry_id,
       }))
     )
   }, [messagesData, isClaimed, claimer])
@@ -930,17 +927,6 @@ export default function TicketDetailPage() {
                               style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
-                              {msg.metadataKind === "time_logged" &&
-                                msg.timeEntryId &&
-                                (() => {
-                                  const entry = timeEntriesById.get(msg.timeEntryId)
-                                  if (!entry?.reviewStatus) return null
-                                  return (
-                                    <div className="mt-2">
-                                      <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
-                                    </div>
-                                  )
-                                })()}
                             </div>
                           </div>
                         </>
@@ -1223,7 +1209,12 @@ export default function TicketDetailPage() {
                         <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-[13px] text-muted-foreground tabular-nums">
+                        <span
+                          className={cn(
+                            "text-[13px] text-muted-foreground tabular-nums",
+                            entry.reviewStatus === "declined" && "line-through",
+                          )}
+                        >
                           {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
                         </span>
                         {canDeleteTimeEntry(entry) && (
@@ -1240,13 +1231,10 @@ export default function TicketDetailPage() {
                       </div>
                     </div>
                     {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                    {entry.reviewStatus && (
-                      <div className="mt-1 ml-8">
-                        <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
-                      </div>
-                    )}
-                    {entry.reviewStatus === "declined" && entry.declineReason && (
-                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+                    {entry.reviewStatus === "declined" && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">
+                        Declined{entry.declineReason ? `: ${entry.declineReason}` : ""}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -1254,13 +1242,12 @@ export default function TicketDetailPage() {
                   <span className="text-[13px] text-foreground">Total</span>
                   <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                 </div>
+                <TimeEntriesReviewStatus entries={timeEntries} />
                 {pendingReviewCount > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    {pendingReviewCount === 1 ? "1 entry is" : `${pendingReviewCount} entries are`} not yet confirmed by the
-                    user.{" "}
                     {timeReviewRequested
-                      ? `You sent the summary; the session can end once they confirm it (automatically after ${TIME_ENTRY_AUTO_ACCEPT_HOURS} hours).`
-                      : "When you're done, send the summary from End ticket so they can confirm it in one go."}
+                      ? `You sent the summary; the session can end once the user confirms it (automatically after ${TIME_ENTRY_AUTO_ACCEPT_HOURS} hours).`
+                      : "When you're done, send the summary from End ticket so the user can confirm it in one go."}
                   </p>
                 )}
               </div>

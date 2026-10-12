@@ -7,8 +7,9 @@ import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { Clock, Info } from "lucide-react"
 import { useState } from "react"
 import type { TimeEntry } from "./log-time-drawer"
-import { TimeEntryReviewStatusBadge } from "@/components/ticket-chat/time-entry-review"
+import { TimeEntriesReviewStatus } from "@/components/ticket-chat/time-entry-review"
 import { TIME_ENTRY_AUTO_ACCEPT_HOURS, describeAutoAcceptDeadline } from "@/lib/time-entries"
+import { cn } from "@/lib/utils"
 
 interface EndTicketDrawerProps {
   isOpen: boolean
@@ -185,16 +186,20 @@ export function EndTicketDrawer({
                           <p className="text-xs text-muted-foreground">{formatted.date}</p>
                         </div>
                       </div>
-                      <span className="text-sm text-muted-foreground">{formatted.hours}</span>
+                      <span
+                        className={cn(
+                          "text-sm text-muted-foreground",
+                          entry.reviewStatus === "declined" && "line-through",
+                        )}
+                      >
+                        {formatted.hours}
+                      </span>
                     </div>
                     {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-11">{entry.note}</p>}
-                    {entry.reviewStatus && (
-                      <div className="mt-1 ml-11">
-                        <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} />
-                      </div>
-                    )}
-                    {entry.reviewStatus === "declined" && entry.declineReason && (
-                      <p className="text-xs text-muted-foreground mt-1 ml-11 italic">Reason: {entry.declineReason}</p>
+                    {entry.reviewStatus === "declined" && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-11 italic">
+                        Declined{entry.declineReason ? `: ${entry.declineReason}` : ""}
+                      </p>
                     )}
                   </div>
                 )
@@ -203,6 +208,7 @@ export function EndTicketDrawer({
                 <span className="text-sm font-medium text-foreground">Total time (excl. declined)</span>
                 <span className="text-sm font-medium text-foreground">{getTotalTime()}</span>
               </div>
+              <TimeEntriesReviewStatus entries={timeEntries} />
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">No time logged yet</p>

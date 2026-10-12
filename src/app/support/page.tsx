@@ -130,7 +130,6 @@ export default function SupportPage() {
     claimer,
     timeEntriesDisplay,
     totalLoggedFormatted,
-    timeEntryReviews,
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
@@ -531,7 +530,6 @@ export default function SupportPage() {
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}
             endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
             endSessionRequestPending={requestEndSession.isPending}
-            timeEntryReviews={timeEntryReviews}
             timeReviewRequestedAt={liveTicket?.time_review_requested_at ?? null}
             timeEntrySummary={timeEntriesDisplay}
             onConfirmTimeEntries={canConfirmTimeEntries ? handleConfirmTimeEntries : undefined}

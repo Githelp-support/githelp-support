@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import {
   DECLINE_TIME_ENTRY_PROMPT,
   TimeEntryAwaitingApprovalBanner,
+  TimeEntriesReviewStatus,
   TimeEntryReviewStatusBadge,
   TimeEntrySummaryBanner,
   TimeEntrySummaryDialog,
@@ -146,6 +147,30 @@ describe("TimeEntryReviewStatusBadge", () => {
     rerender(<TimeEntryReviewStatusBadge status="accepted" />)
     expect(screen.getByText("Confirmed")).toBeInTheDocument()
     rerender(<TimeEntryReviewStatusBadge status="accepted" auto />)
+    expect(screen.getByText("Confirmed automatically")).toBeInTheDocument()
+  })
+})
+
+describe("TimeEntriesReviewStatus", () => {
+  it("shows one state for all logged time", () => {
+    const { container, rerender } = render(<TimeEntriesReviewStatus entries={[]} />)
+    expect(container).toBeEmptyDOMElement()
+    rerender(
+      <TimeEntriesReviewStatus
+        perspective="customer"
+        entries={[{ reviewStatus: "accepted" }, { reviewStatus: "pending" }]}
+      />,
+    )
+    expect(screen.getByText("To confirm when the session ends")).toBeInTheDocument()
+    expect(screen.queryByText("Confirmed")).not.toBeInTheDocument()
+    rerender(
+      <TimeEntriesReviewStatus
+        entries={[{ reviewStatus: "accepted" }, { reviewStatus: "accepted", autoAccepted: true }, { reviewStatus: "declined" }]}
+      />,
+    )
+    expect(screen.getByText("Confirmed")).toBeInTheDocument()
+    expect(screen.getByText("1 declined")).toBeInTheDocument()
+    rerender(<TimeEntriesReviewStatus entries={[{ reviewStatus: "accepted", autoAccepted: true }]} />)
     expect(screen.getByText("Confirmed automatically")).toBeInTheDocument()
   })
 })
