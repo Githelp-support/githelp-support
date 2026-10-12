@@ -14,13 +14,12 @@ import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-s
 import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "./right-sidebar-collapse"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import {
-  TimeEntryReviewStatusBadge,
   TimeEntrySummaryBanner,
   TimeEntrySummaryDialog,
   type TimeEntrySummaryDecline,
   type TimeEntrySummaryItem,
 } from "@/components/ticket-chat/time-entry-review"
-import { describeAutoAcceptDeadline, type TimeEntryReviewStatus } from "@/lib/time-entries"
+import { describeAutoAcceptDeadline } from "@/lib/time-entries"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
@@ -56,15 +55,6 @@ export type SystemMessageKind =
   | "time_entry_deleted"
   | "time_review_requested"
   | "time_entries_confirmed"
-
-/** Current review state of one logged entry, keyed by `tickets_time_entries.id`. */
-export type TicketChatTimeEntryReview = {
-  status: TimeEntryReviewStatus
-  declineReason?: string | null
-  /** When the entry was logged and became pending. */
-  reviewRequestedAt?: string | null
-  autoAccepted?: boolean
-}
 
 export type TicketChatMessage = {
   id: string
@@ -133,14 +123,6 @@ export interface TicketChatProps {
   endSessionRequestPending?: boolean
 
   /**
-   * Review state of logged time. `timeEntryReviews` maps a time entry id
-   * (from `time_logged` metadata) to its current status so confirmed /
-   * declined entries are marked in their bubble; pending ones show nothing,
-   * since confirmation happens once, at the end of the session.
-   */
-  timeEntryReviews?: Record<string, TicketChatTimeEntryReview>
-
-  /**
    * Customer-side confirmation of the logged-time summary. When the helper
    * has sent it (`timeReviewRequestedAt` set on the ticket) and
    * `onConfirmTimeEntries` is provided, a banner above the input opens the
@@ -200,7 +182,6 @@ export function TicketChat(props: TicketChatProps) {
     onCancelEndSessionRequest,
     endSessionRequestedAt,
     endSessionRequestPending,
-    timeEntryReviews,
     timeReviewRequestedAt,
     timeEntrySummary,
     onConfirmTimeEntries,
@@ -232,12 +213,6 @@ export function TicketChat(props: TicketChatProps) {
     () => (timeEntrySummary ?? []).filter((e) => e.reviewStatus === "pending").length,
     [timeEntrySummary],
   )
-  const timeEntryReviewFor = (msg: TicketChatMessage): TicketChatTimeEntryReview | null => {
-    if (msg.paymentMetadata?.kind !== "time_logged") return null
-    const entryId = msg.paymentMetadata.time_entry_id
-    if (typeof entryId !== "string") return null
-    return timeEntryReviews?.[entryId] ?? null
-  }
 
   // Uploads finish asynchronously, so append to the latest draft rather than
   // the one captured when the upload started.
@@ -415,23 +390,6 @@ export function TicketChat(props: TicketChatProps) {
                                         : msg.content
                                     }
                                   />
-                                  {msg.senderType === "system" &&
-                                    msg.paymentMetadata?.kind === "time_logged" &&
-                                    (() => {
-                                      const review = timeEntryReviewFor(msg)
-                                      // Pending is the normal state during a session; only a
-                                      // decision is worth marking on the bubble.
-                                      if (!review || review.status === "pending") return null
-                                      return (
-                                        <div className="mt-2">
-                                          <TimeEntryReviewStatusBadge
-                                            status={review.status}
-                                            auto={review.autoAccepted}
-                                            perspective={onConfirmTimeEntries ? "customer" : "helper"}
-                                          />
-                                        </div>
-                                      )
-                                    })()}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button

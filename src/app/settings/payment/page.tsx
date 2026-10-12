@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Info, Landmark } from "lucide-react"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 import { Logo } from "@/components/brand/logo"
 import { useProject, useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { useStartPaymentConnect } from "@/hooks/usePaymentConnect"
@@ -368,7 +369,7 @@ export default function PaymentSettingsPage() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden [&>header]:pl-14">
-        <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="This is a test info" />
+        <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="Configure what users pay for support, and how each payment is split between your project and its helpers." />
         <main className="flex-1 px-8 py-6 overflow-y-auto">
           {/* Tab Navigation */}
           <div className="mb-8">
@@ -637,7 +638,10 @@ export default function PaymentSettingsPage() {
                 <div className="bg-card rounded-lg p-6">
                   <div className="flex items-center gap-2 mb-6">
                     <h2 className="text-base font-semibold text-foreground">Payment options</h2>
-                    <Info className="w-4 h-4 text-muted-foreground" />
+                    <InfoTooltip
+                      label="About payment options"
+                      content="Choose how users can pay for support. With pay per ticket, users pay for each ticket that gets claimed. With SLAs, users get support under the terms of an agreement. You can offer one or both."
+                    />
                   </div>
 
                   <div className="space-y-4">
@@ -706,25 +710,35 @@ export default function PaymentSettingsPage() {
 
                 {/* Ticket cost Section */}
                 <div className="bg-card rounded-lg p-6">
-                  <div className="flex items-center mb-2">
+                  <div className="flex items-center gap-2 mb-6">
                     <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
+                    <InfoTooltip
+                      label="About Stripe fees"
+                      className="max-w-sm"
+                      content={
+                        <>
+                          <span className="block font-semibold">Stripe fee</span>
+                          When a ticket opens, an authorization hold for the estimated time is placed on the
+                          customer&apos;s card and captured when the ticket ends. Time beyond the hold is charged
+                          as a separate transaction, long-running tickets are captured once a week, and a declined
+                          card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
+                          fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
+                          from that charge before the helper and project shares above are applied, so a ticket paid in
+                          two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
+                          what the customer is charged.
+                        </>
+                      }
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    When a ticket opens, an authorization hold for the estimated time is placed on the
-                    customer&apos;s card and captured when the ticket ends. Time beyond the hold is charged
-                    as a separate transaction, long-running tickets are captured once a week, and a declined
-                    card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
-                    fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
-                    from that charge before the helper and project shares above are applied, so a ticket paid in
-                    two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
-                    what the customer is charged.
-                  </p>
 
                   <div className="space-y-6">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] font-semibold text-foreground">Start price</span>
-                        <Info className="w-4 h-4 text-muted-foreground" />
+                        <InfoTooltip
+                          label="About start price"
+                          content="A fixed fee charged when a helper claims a ticket, added on top of any per-minute cost."
+                        />
                       </div>
                       <div className="flex items-center gap-2">
                         <Input
@@ -744,7 +758,10 @@ export default function PaymentSettingsPage() {
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-foreground">Cost/minute - first 60 minutes</span>
-                          <Info className="w-4 h-4 text-muted-foreground" />
+                          <InfoTooltip
+                            label="About cost per minute for the first 60 minutes"
+                            content="Per-minute rate for the first 60 minutes of support on a ticket."
+                          />
                         </div>
                         <div className="flex items-center gap-2">
                           <Input
@@ -763,7 +780,10 @@ export default function PaymentSettingsPage() {
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-foreground">Cost/minute - after 60 minutes</span>
-                          <Info className="w-4 h-4 text-muted-foreground" />
+                          <InfoTooltip
+                            label="About cost per minute after 60 minutes"
+                            content="Per-minute rate for support on a ticket after the first 60 minutes."
+                          />
                         </div>
                         <div className="flex items-center gap-2">
                           <Input
@@ -864,7 +884,10 @@ export default function PaymentSettingsPage() {
                 <div className="bg-card rounded-lg p-6">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-foreground">Set up payouts</h2>
-                    <Info className="w-4 h-4 text-muted-foreground" />
+                    <InfoTooltip
+                      label="About setting up payouts"
+                      content="Payouts are set up through Stripe. You will be sent to Stripe's own website to complete the set up."
+                    />
                   </div>
 
                   <div className="mt-8 flex flex-col gap-10">
@@ -913,5 +936,49 @@ export default function PaymentSettingsPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+// Small info icon with a tooltip. Controlled open state so it works on tap as
+// well as on hover (mirrors the employer tooltip in top-bar.tsx).
+function InfoTooltip({
+  content,
+  label = "More information",
+  className,
+}: {
+  content: React.ReactNode
+  label?: string
+  className?: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <TooltipPrimitive.Provider delayDuration={150}>
+      <TooltipPrimitive.Root open={open} onOpenChange={setOpen}>
+        <TooltipPrimitive.Trigger asChild>
+          <button
+            type="button"
+            aria-label={label}
+            className="inline-flex shrink-0 items-center justify-center rounded-sm text-muted-foreground"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <Info className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content
+            side="top"
+            sideOffset={6}
+            className={cn(
+              "z-[60] max-w-xs rounded-md bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-white shadow-md",
+              className
+            )}
+          >
+            {content}
+            <TooltipPrimitive.Arrow className="fill-foreground" />
+          </TooltipPrimitive.Content>
+        </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   )
 }

@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import { getAvatarColorHexForId } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 import type { CustomerTimeEntryDisplay } from "@/hooks/useCustomerTicketSidebar"
 import type { UserActiveTicketSidebarItem } from "@/hooks/useTicketsWithDetails"
 import { SidebarSectionHeading, SidebarDivider } from "./sidebar-section"
-import { TimeEntryReviewStatusBadge } from "./time-entry-review"
+import { TimeEntriesReviewStatus } from "./time-entry-review"
 
 export interface CustomerTicketSidebarFooterProps {
   /** Current ticket id, if a ticket exists yet. */
@@ -52,16 +53,20 @@ export function CustomerTicketSidebarFooter({
                         </div>
                         <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
                       </div>
-                      <span className="text-[13px] text-muted-foreground tabular-nums">
+                      <span
+                        className={cn(
+                          "text-[13px] text-muted-foreground tabular-nums",
+                          entry.reviewStatus === "declined" && "line-through",
+                        )}
+                      >
                         {String(entry.hours).padStart(2, "0")}:{String(entry.minutes).padStart(2, "0")} h
                       </span>
                     </div>
                     {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
-                    <div className="mt-1 ml-8">
-                      <TimeEntryReviewStatusBadge status={entry.reviewStatus} auto={entry.autoAccepted} perspective="customer" />
-                    </div>
-                    {entry.reviewStatus === "declined" && entry.declineReason && (
-                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">Reason: {entry.declineReason}</p>
+                    {entry.reviewStatus === "declined" && (
+                      <p className="text-xs text-muted-foreground mt-1 ml-8 italic">
+                        Declined{entry.declineReason ? `: ${entry.declineReason}` : ""}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -69,6 +74,7 @@ export function CustomerTicketSidebarFooter({
                   <span className="text-[13px] text-foreground">Total</span>
                   <span className="text-[13px] text-foreground tabular-nums">{totalLoggedFormatted}</span>
                 </div>
+                <TimeEntriesReviewStatus entries={timeEntries} perspective="customer" />
               </div>
             ) : (
               <p className="text-[13px] text-muted-foreground">No time logged yet.</p>

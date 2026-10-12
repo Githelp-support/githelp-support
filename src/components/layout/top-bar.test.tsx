@@ -30,6 +30,7 @@ const useUserRoles = vi.fn()
 vi.mock("@/hooks/useProjectRole", () => ({
   useProjectAvailableRoles: () => ({ data: undefined }),
   projectAvailableRolesQueryOptions: vi.fn(),
+  roleProjectIdsQueryOptions: vi.fn(),
   useUserRoles: () => useUserRoles(),
 }))
 
