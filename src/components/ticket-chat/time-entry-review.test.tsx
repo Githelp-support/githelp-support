@@ -2,8 +2,10 @@ import { describe, it, expect, vi } from "vitest"
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react"
 import {
   DECLINE_TIME_ENTRY_PROMPT,
+  REJECT_LOGGED_TIME_PROMPT,
   TimeEntryAwaitingApprovalBanner,
   TimeEntriesReviewStatus,
+  TimeEntryRejectedBanner,
   TimeEntryReviewStatusBadge,
   TimeEntrySummaryBanner,
   TimeEntrySummaryDialog,
@@ -30,6 +32,7 @@ describe("TimeEntrySummaryDialog", () => {
         open
         onOpenChange={() => {}}
         onConfirm={onConfirm}
+        onReject={() => {}}
         autoAcceptHint="in about 5 hours"
         entries={[
           item(),
@@ -62,6 +65,7 @@ describe("TimeEntrySummaryDialog", () => {
         open
         onOpenChange={() => {}}
         onConfirm={onConfirm}
+        onReject={() => {}}
         entries={[item(), item({ id: "e2", type: "solo", hours: 0, minutes: 45 })]}
       />,
     )
@@ -87,7 +91,7 @@ describe("TimeEntrySummaryDialog", () => {
   })
 
   it("lets the customer take a decline back", () => {
-    render(<TimeEntrySummaryDialog open onOpenChange={() => {}} onConfirm={() => {}} entries={[item()]} />)
+    render(<TimeEntrySummaryDialog open onOpenChange={() => {}} onConfirm={() => {}} onReject={() => {}} entries={[item()]} />)
     fireEvent.click(screen.getByRole("button", { name: "Decline" }))
     expect(screen.getByTestId("summary-total")).toHaveTextContent("00:00 h")
     fireEvent.click(screen.getByRole("button", { name: "Keep it" }))
@@ -96,9 +100,9 @@ describe("TimeEntrySummaryDialog", () => {
   })
 
   it("locks the form while the confirmation is being saved", () => {
-    render(<TimeEntrySummaryDialog open pending onOpenChange={() => {}} onConfirm={() => {}} entries={[item()]} />)
+    render(<TimeEntrySummaryDialog open pending onOpenChange={() => {}} onConfirm={() => {}} onReject={() => {}} entries={[item()]} />)
     expect(screen.getByRole("button", { name: "Confirming…" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Not now" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Reject logged time" })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Decline" })).toBeDisabled()
   })
 
@@ -108,11 +112,107 @@ describe("TimeEntrySummaryDialog", () => {
         open
         onOpenChange={() => {}}
         onConfirm={() => {}}
+        onReject={() => {}}
         entries={[item({ reviewStatus: "accepted" })]}
       />,
     )
     expect(screen.getByText("There is no logged time waiting for your confirmation.")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Confirm logged time" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Reject logged time" })).toBeDisabled()
+  })
+
+  it("shows the helper's avatar on each entry and scrolls the list past three entries", () => {
+    const { rerender } = render(
+      <TimeEntrySummaryDialog
+        open
+        onOpenChange={() => {}}
+        onConfirm={() => {}}
+        onReject={() => {}}
+        entries={[item({ helperId: "u1" }), item({ id: "e2" }), item({ id: "e3" })]}
+      />,
+    )
+    const list = screen.getByRole("list", { name: "Logged time to confirm" })
+    // No image → the fallback initial of the helper's name.
+    expect(within(list).getAllByText("A")).toHaveLength(3)
+    expect(list.className).not.toContain("max-h-")
+
+    rerender(
+      <TimeEntrySummaryDialog
+        open
+        onOpenChange={() => {}}
+        onConfirm={() => {}}
+        onReject={() => {}}
+        entries={[item(), item({ id: "e2" }), item({ id: "e3" }), item({ id: "e4" })]}
+      />,
+    )
+    const longList = screen.getByRole("list", { name: "Logged time to confirm" })
+    expect(longList).toHaveClass("overflow-y-auto")
+    expect(longList.className).toContain("max-h-")
+    // The total stays outside the scrolling list.
+    expect(longList).not.toContainElement(screen.getByTestId("summary-total"))
+  })
+
+  it("switches to the reject view and back", () => {
+    render(<TimeEntrySummaryDialog open onOpenChange={() => {}} onConfirm={() => {}} onReject={() => {}} entries={[item()]} />)
+    fireEvent.click(screen.getByRole("button", { name: "Reject logged time" }))
+
+    expect(screen.getByRole("heading", { name: "Logged time rejected" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Confirm the logged time" })).not.toBeInTheDocument()
+    expect(REJECT_LOGGED_TIME_PROMPT).toBe(
+      "You have rejected the time logged. Please explain why you are rejecting the logged time. Your explanation will be shared with your helper(s) in the ticket chat, so you together can coordinate what the logged time should be.",
+    )
+    expect(screen.getByText(REJECT_LOGGED_TIME_PROMPT)).toBeInTheDocument()
+    const explanation = screen.getByRole("textbox")
+    expect(explanation).toHaveAttribute("rows", "5")
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled()
+    expect(screen.queryByRole("button", { name: "Confirm logged time" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(screen.getByRole("heading", { name: "Confirm the logged time" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Logged time rejected" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Confirm logged time" })).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Reject logged time" })).toBeEnabled()
+  })
+
+  it("keeps per-entry declines when the reject view is cancelled", () => {
+    render(<TimeEntrySummaryDialog open onOpenChange={() => {}} onConfirm={() => {}} onReject={() => {}} entries={[item()]} />)
+    fireEvent.click(screen.getByRole("button", { name: "Decline" }))
+    fireEvent.change(screen.getByLabelText("Why are you declining this time?"), { target: { value: "Too long" } })
+    fireEvent.click(screen.getByRole("button", { name: "Reject logged time" }))
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(screen.getByLabelText("Why are you declining this time?")).toHaveValue("Too long")
+  })
+
+  it("submits the trimmed rejection reason and needs a non-empty one", async () => {
+    const onReject = vi.fn()
+    const onConfirm = vi.fn()
+    render(<TimeEntrySummaryDialog open onOpenChange={() => {}} onConfirm={onConfirm} onReject={onReject} entries={[item()]} />)
+    fireEvent.click(screen.getByRole("button", { name: "Reject logged time" }))
+
+    const submit = screen.getByRole("button", { name: "Submit" })
+    expect(submit).toBeDisabled()
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "   " } })
+    expect(submit).toBeDisabled()
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "  We agreed on one hour.  " } })
+    expect(submit).toBeEnabled()
+    fireEvent.click(submit)
+
+    await waitFor(() => expect(onReject).toHaveBeenCalledWith("We agreed on one hour."))
+    expect(onReject).toHaveBeenCalledTimes(1)
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it("locks the reject view while the rejection is being saved", () => {
+    const { rerender } = render(
+      <TimeEntrySummaryDialog open onOpenChange={() => {}} onConfirm={() => {}} onReject={() => {}} entries={[item()]} />,
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Reject logged time" }))
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Too much" } })
+    rerender(
+      <TimeEntrySummaryDialog open pending onOpenChange={() => {}} onConfirm={() => {}} onReject={() => {}} entries={[item()]} />,
+    )
+    expect(screen.getByRole("button", { name: "Submitting…" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled()
   })
 })
 
@@ -186,5 +286,18 @@ describe("TimeEntryAwaitingApprovalBanner", () => {
     rerender(<TimeEntryAwaitingApprovalBanner pendingCount={3} />)
     expect(screen.getByRole("status")).toHaveTextContent("Waiting for the user to confirm the logged time")
     expect(screen.getByRole("status")).toHaveTextContent("confirmed automatically after 24 hours")
+  })
+})
+
+describe("TimeEntryRejectedBanner", () => {
+  it("tells the helper the user rejected the logged time", () => {
+    const { rerender } = render(<TimeEntryRejectedBanner customerName="Grace" />)
+    const banner = screen.getByRole("status")
+    expect(banner).toHaveTextContent("Grace has rejected the logged time")
+    expect(banner).toHaveTextContent("See the explanation for the rejection in the chat.")
+    expect(screen.getByText("Grace has rejected the logged time")).toHaveClass("font-[550]")
+    expect(banner.querySelector("i.fi.fi-rr-cross-circle")).toBeInTheDocument()
+    rerender(<TimeEntryRejectedBanner />)
+    expect(screen.getByRole("status")).toHaveTextContent("The user has rejected the logged time")
   })
 })

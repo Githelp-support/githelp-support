@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     calculateTotalTime,
     describeAutoAcceptDeadline,
+    getTimeEntriesRejection,
     getTimeEntryReviewStatus,
     isBillableTimeEntry,
     TIME_ENTRY_AUTO_ACCEPT_HOURS,
@@ -66,5 +67,41 @@ describe("describeAutoAcceptDeadline", () => {
         expect(describeAutoAcceptDeadline(requestedAt, requestedMs + 23.5 * hour)).toBe("in less than an hour");
         expect(describeAutoAcceptDeadline(requestedAt, requestedMs + 24 * hour - 60_000)).toBe("any moment now");
         expect(describeAutoAcceptDeadline(requestedAt, requestedMs + 30 * hour)).toBe("any moment now");
+    });
+});
+
+describe("getTimeEntriesRejection", () => {
+    const declined = (reason: string, id = "e1") => ({ time_entry_id: id, reason });
+
+    it("reads a full rejection and lists the repeated explanation once", () => {
+        expect(
+            getTimeEntriesRejection({
+                kind: "time_entries_confirmed",
+                reviewer_name: "Grace",
+                accepted_count: 0,
+                declined: [declined("Too much\ntime", "e1"), declined(" Too much\ntime ", "e2")],
+            }),
+        ).toEqual({ reviewerName: "Grace", reasons: ["Too much\ntime"] });
+    });
+
+    it("is null for confirmations, partial declines, other kinds and missing metadata", () => {
+        expect(getTimeEntriesRejection({ kind: "time_entries_confirmed", accepted_count: 2, declined: [] })).toBeNull();
+        expect(
+            getTimeEntriesRejection({ kind: "time_entries_confirmed", accepted_count: 1, declined: [declined("No")] }),
+        ).toBeNull();
+        expect(getTimeEntriesRejection({ kind: "time_entry_declined", declined: [declined("No")] })).toBeNull();
+        expect(getTimeEntriesRejection(null)).toBeNull();
+        expect(getTimeEntriesRejection(undefined)).toBeNull();
+    });
+
+    it("leaves the name empty when the RPC only had its placeholder", () => {
+        expect(
+            getTimeEntriesRejection({
+                kind: "time_entries_confirmed",
+                reviewer_name: "The user",
+                accepted_count: 0,
+                declined: [declined("No")],
+            })?.reviewerName,
+        ).toBeNull();
     });
 });

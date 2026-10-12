@@ -332,6 +332,33 @@ export default function UserSupportChatPage() {
       throw error
     }
   }
+  // "Reject logged time": decline every pending entry with the same
+  // explanation, through the same RPC (it posts the reasons into the chat and
+  // clears the helper's request).
+  const handleRejectTimeEntries = async (reason: string) => {
+    if (!existingTicket?.id) return
+    const trimmed = reason.trim()
+    const declines = timeEntriesDisplay
+      .filter((e) => e.reviewStatus === "pending")
+      .map((e) => ({ entryId: e.id, reason: trimmed }))
+    try {
+      await confirmTimeEntries.mutateAsync({ ticketId: existingTicket.id, declines })
+      toast.success("Logged time rejected. Your explanation has been shared with the helper in the chat.")
+    } catch (error) {
+      console.error("Failed to reject time entries:", error)
+      const hint = getReviewTimeEntryErrorHint(error)
+      toast.error(
+        hint === "reason_required"
+          ? "Please explain why you are rejecting the logged time."
+          : hint === "nothing_to_confirm"
+            ? "There is no logged time waiting for your confirmation."
+            : hint === "ticket_ended"
+              ? "The session has already ended."
+              : "Couldn't reject the logged time. Please try again.",
+      )
+      throw error
+    }
+  }
 
   // Ensure support users always have an organization and a selected organization
   useEffect(() => {
@@ -770,6 +797,7 @@ export default function UserSupportChatPage() {
         timeReviewRequestedAt={existingTicket?.time_review_requested_at ?? null}
         timeEntrySummary={timeEntriesDisplay}
         onConfirmTimeEntries={canConfirmTimeEntries ? handleConfirmTimeEntries : undefined}
+        onRejectTimeEntries={canConfirmTimeEntries ? handleRejectTimeEntries : undefined}
         timeEntryConfirmPending={confirmTimeEntries.isPending}
         timeReviewHelperName={claimer?.name ?? null}
         // Before the first message there is no ticket yet: uploads go to the
