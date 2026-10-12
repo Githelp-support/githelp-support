@@ -12,7 +12,7 @@ import {
     type RepoContributor,
 } from "@/hooks/useProject"
 import { supabase } from "@/lib/supabase/client"
-import { Loader2, Check, Copy, Users, ArrowRight } from "lucide-react"
+import { Loader2, Check, Copy } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
@@ -133,22 +133,14 @@ export default function InviteContributorsPage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-2xl">
                 <CardHeader>
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <CardTitle className="text-2xl font-bold">
-                                Invite contributors as helpers
-                            </CardTitle>
-                            <CardDescription className="mt-1">
-                                Select top contributors from {fullName || "your repository"} to invite as helpers.
-                                They&apos;ll receive a unique link. If they sign in with GitHub, we&apos;ll match them automatically.
-                            </CardDescription>
-                        </div>
-                        <Button variant="outline" asChild>
-                            <Link href={`/projects/${projectId}`}>
-                                <ArrowRight className="w-4 h-4 rotate-180" />
-                                Back to project
-                            </Link>
-                        </Button>
+                    <div>
+                        <CardTitle className="text-2xl font-bold">
+                            Invite contributors as helpers
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                            Select top contributors from {fullName || "your repository"} to invite as helpers.
+                            They&apos;ll receive a unique link. If they sign in with GitHub, we&apos;ll match them automatically.
+                        </CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -204,12 +196,12 @@ export default function InviteContributorsPage() {
                                                 <Image
                                                     src={c.avatar_url}
                                                     alt={c.login}
-                                                    width={40}
-                                                    height={40}
+                                                    width={32}
+                                                    height={32}
                                                     className="rounded-full"
                                                 />
                                                 <div className="min-w-0">
-                                                    <div className="font-medium truncate">{c.login}</div>
+                                                    <div className="text-sm font-medium truncate">{c.login}</div>
                                                     <div className="text-sm text-muted-foreground">
                                                         {c.contributions} contributions
                                                     </div>
@@ -240,7 +232,7 @@ export default function InviteContributorsPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <Users className="w-4 h-4" />
+                                        <i className="fi fi-rr-user-add inline-flex items-center justify-center leading-none w-4 h-4" />
                                         Invite {selectedContributors.size} as helpers
                                     </>
                                 )}
@@ -282,7 +274,7 @@ export default function InviteContributorsPage() {
 
                     <div className="pt-2.5">
                         <Button asChild>
-                            <Link href="/">Continue to dashboard</Link>
+                            <Link href="/">Add helpers later</Link>
                         </Button>
                     </div>
                 </CardContent>
