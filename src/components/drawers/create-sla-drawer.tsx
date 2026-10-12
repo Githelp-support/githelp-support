@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { X, Info } from "lucide-react"
+import { Info } from "lucide-react"
+import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { SLAConfirmationModal } from "@/components/modals/sla-confirmation-modal"
 
 export interface SLAPayload {
@@ -99,28 +100,35 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-[500px] bg-white shadow-xl z-50 flex flex-col rounded-l-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Creating new SLA</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+      <DrawerPanel
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Creating new SLA"
+        width="w-[500px]"
+        footer={
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="create-sla-form" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
+              Create SLA
+            </Button>
+          </div>
+        }
+      >
+        <form id="create-sla-form" onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto max-h-full">
             {/* Contact details */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Contact details</h3>
+              <h3 className="text-[13px] font-semibold text-foreground">Contact details</h3>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-700">Contract name</label>
+                <label className="text-[13px] font-semibold text-foreground">Contract name</label>
                 <Input
                   placeholder="Choose name"
                   value={formData.contractName}
@@ -131,7 +139,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-700">Main contact person</label>
+                <label className="text-[13px] font-semibold text-foreground">Main contact person</label>
                 <Input
                   placeholder="First and last name"
                   value={formData.mainContactPerson}
@@ -142,7 +150,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-700">Email address</label>
+                <label className="text-[13px] font-semibold text-foreground">Email address</label>
                 <Input
                   type="email"
                   placeholder="Type in address"
@@ -156,7 +164,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
             {/* Support limitations */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Support limitations</h3>
+              <h3 className="text-[13px] font-semibold text-foreground">Support limitations</h3>
 
               <RadioGroup
                 value={formData.supportLimitation}
@@ -188,10 +196,10 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             {/* Hours included */}
             {formData.supportLimitation === "limited" && (
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Hours included</h3>
+                <h3 className="text-[13px] font-semibold text-foreground">Hours included</h3>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-700">Monthly hours included in contract</label>
+                  <label className="text-[13px] font-semibold text-foreground">Monthly hours included in contract</label>
                   <Input
                     placeholder="Number of hours"
                     type="number"
@@ -218,13 +226,13 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
             {/* Subscription cost */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <h3 className="text-[13px] font-semibold text-foreground flex items-center gap-2">
                 Subscription cost
                 <Info className="w-4 h-4 text-gray-400" />
               </h3>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-700">Cost</label>
+                <label className="text-[13px] font-semibold text-foreground">Cost</label>
                 <Input
                   placeholder="USD 0.00"
                   value={formData.subscriptionCost}
@@ -234,7 +242,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-700 flex items-center gap-2">
+                <label className="text-[13px] font-semibold text-foreground flex items-center gap-2">
                   Paid
                   <Info className="w-4 h-4 text-gray-400" />
                 </label>
@@ -257,10 +265,10 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             {/* Rates beyond included hours */}
             {formData.supportLimitation === "limited" && (
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Rates beyond included hours</h3>
+                <h3 className="text-[13px] font-semibold text-foreground">Rates beyond included hours</h3>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-700 flex items-center gap-2">
+                  <label className="text-[13px] font-semibold text-foreground flex items-center gap-2">
                     Start price
                     <Info className="w-4 h-4 text-gray-400" />
                   </label>
@@ -273,7 +281,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-700">USD/min - First 60 min</label>
+                  <label className="text-[13px] font-semibold text-foreground">USD/min - First 60 min</label>
                   <Input
                     placeholder="USD 0.00"
                     value={formData.firstSixtyMinRate}
@@ -283,7 +291,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-700">USD/min - After 60 min</label>
+                  <label className="text-[13px] font-semibold text-foreground">USD/min - After 60 min</label>
                   <Input
                     placeholder="USD 0.00"
                     value={formData.afterSixtyMinRate}
@@ -296,10 +304,10 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
             {/* Response times */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-900">Response times</h3>
+              <h3 className="text-[13px] font-semibold text-foreground">Response times</h3>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-700 flex items-center gap-2">
+                <label className="text-[13px] font-semibold text-foreground flex items-center gap-2">
                   Max response time
                   <Info className="w-4 h-4 text-gray-400" />
                 </label>
@@ -312,7 +320,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm text-gray-700 flex items-center gap-2">
+                <label className="text-[13px] font-semibold text-foreground flex items-center gap-2">
                   Max down time
                   <Info className="w-4 h-4 text-gray-400" />
                 </label>
@@ -325,23 +333,8 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               </div>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 flex-shrink-0 bg-white">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
-              Create SLA
-            </Button>
-          </div>
         </form>
-      </div>
+      </DrawerPanel>
 
       {/* Confirmation Modal */}
       <SLAConfirmationModal
