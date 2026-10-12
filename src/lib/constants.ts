@@ -60,8 +60,9 @@ export function getAvatarColorHexForId(id: string | null | undefined): string {
   return avatarColorsHex[hashStringToIndex(id, avatarColorsHex.length)]
 }
 
-/** Tooltip (native `title`) for buttons that are not wired to any functionality yet. */
-export const ILLUSTRATIVE_BUTTON_TOOLTIP = "This button is currently just illustrative"
+/** Tooltip (native `title`) for buttons, options and links that are not wired to any functionality yet. */
+export const ILLUSTRATIVE_BUTTON_TOOLTIP =
+  "Only for illustrative purposes. Will be released in future version."
 
 /** Tooltip shown when pressing "Confirm creation" in the SLA setup flow, which is not wired to any backend yet. */
 export const SLA_CREATION_UNAVAILABLE_TOOLTIP =
