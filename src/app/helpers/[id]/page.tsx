@@ -33,7 +33,7 @@ import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeE
 import { usePaymentTransfers, usePayments, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import { monthLabel } from "@/lib/user-payment-reports"
@@ -663,10 +663,12 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                     </Link>
                                   </DropdownMenuItem>
                                 ) : (
-                                  <DropdownMenuItem disabled>
-                                    <ExternalLink />
-                                    Open
-                                  </DropdownMenuItem>
+                                  <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="block">
+                                    <DropdownMenuItem disabled>
+                                      <ExternalLink />
+                                      Open
+                                    </DropdownMenuItem>
+                                  </span>
                                 )}
                                 {/* Opens the same list as clicking the row; an already open list stays open. */}
                                 <DropdownMenuItem
