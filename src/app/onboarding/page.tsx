@@ -437,7 +437,7 @@ export default function OnboardingPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="onboarding-project-name">Project name</Label>
+                            <Label htmlFor="onboarding-project-name" className="font-[550]">Project name</Label>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
@@ -464,7 +464,7 @@ export default function OnboardingPage() {
 
                         {showSuggestions && (
                             <div className="space-y-2">
-                                <p className="text-sm font-medium text-foreground">
+                                <p className="text-sm font-[550] text-foreground">
                                     {showShortAlternatives && !nameIsLongEnough
                                         ? "Did you mean one of these?"
                                         : "Already on Githelp"}
@@ -670,7 +670,7 @@ export default function OnboardingPage() {
                                 onClick={() => setStep("create")}
                                 className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
                             >
-                                <Plus className="w-4 h-4" />
+                                <i className="fi fi-rr-folder-add inline-flex items-center justify-center leading-none w-4 h-4" />
                                 Yes, create the project
                             </Button>
                         </div>
@@ -771,13 +771,13 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-start gap-3">
-                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
-                                <div>
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <Plus className="w-6 h-6 shrink-0 text-brand-primary" />
                                     <div className="font-semibold text-lg text-foreground">Create from scratch</div>
-                                    <div className="text-sm text-muted-foreground mt-1">
-                                        {trimmedName ? `Start with the name "${trimmedName}"` : "Start with a project name"}
-                                    </div>
+                                </div>
+                                <div className="text-sm text-muted-foreground mt-1 pl-9">
+                                    {trimmedName ? `Start with the name "${trimmedName}"` : "Start with a project name"}
                                 </div>
                             </div>
                         </Button>
@@ -787,13 +787,13 @@ export default function OnboardingPage() {
                             className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
-                            <div className="flex items-start gap-3">
-                                <Github className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
-                                <div>
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <Github className="w-6 h-6 shrink-0 text-brand-primary" />
                                     <div className="font-semibold text-lg text-foreground">Import from GitHub</div>
-                                    <div className="text-sm text-muted-foreground mt-1">
-                                        Connect GitHub and select a repository
-                                    </div>
+                                </div>
+                                <div className="text-sm text-muted-foreground mt-1 pl-9">
+                                    Connect GitHub and select a repository
                                 </div>
                             </div>
                         </Button>
@@ -902,7 +902,7 @@ export default function OnboardingPage() {
                                                 className="w-full flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 hover:border-brand-primary/50 text-left transition-colors disabled:opacity-50"
                                             >
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-foreground truncate">{repo.full_name}</div>
+                                                    <div className="text-sm font-medium text-foreground truncate">{repo.full_name}</div>
                                                     {repo.description && (
                                                         <div className="text-sm text-muted-foreground truncate mt-0.5">
                                                             {repo.description}
@@ -910,9 +910,9 @@ export default function OnboardingPage() {
                                                     )}
                                                 </div>
                                                 {isCreating ? (
-                                                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0" />
+                                                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground flex-shrink-0" />
                                                 ) : (
-                                                    <Check className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                                                    <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                                 )}
                                             </button>
                                         ))}
