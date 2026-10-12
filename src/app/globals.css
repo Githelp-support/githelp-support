@@ -248,6 +248,73 @@
   white-space: pre;
 }
 
+/*
+ * Invite page surface + card. Tokens are scoped to .invite-surface so they
+ * apply only inside the invite page; --ring is intentionally NOT redefined on
+ * :root/.dark, where it drives the app-wide focus rings. Unlayered so these
+ * rules win over the Card primitive's utility classes.
+ */
+.invite-surface {
+  --surface-page: #f7f9ff;
+  --surface-card: #ffffff;
+  --ring: rgba(0, 0, 0, 0.08);
+  --shadow-card:
+    0 0 0 1px var(--ring), 0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.04), 0 16px 32px -8px rgba(0, 0, 0, 0.06);
+  background-color: var(--surface-page);
+}
+.dark .invite-surface {
+  --surface-page: #161620;
+  --surface-card: #1e1e22;
+  --ring: rgba(255, 255, 255, 0.1);
+  --shadow-card:
+    0 0 0 1px var(--ring), 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.25), 0 16px 32px -8px rgba(0, 0, 0, 0.4);
+}
+.invite-surface :is(a, button, input) {
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out,
+    opacity 150ms ease-out;
+}
+.invite-card {
+  background-color: var(--surface-card);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  width: 100%;
+  max-width: 480px;
+  padding: 32px;
+  gap: 24px;
+  animation: invite-card-enter 200ms ease-out both;
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out,
+    opacity 150ms ease-out;
+}
+@media (max-width: 639px) {
+  .invite-card {
+    padding: 24px;
+  }
+}
+@keyframes invite-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .invite-card {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
