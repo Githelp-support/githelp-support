@@ -8,7 +8,7 @@ import { useProject, useProjectBySlug, useProjectBranding } from "@/hooks/usePro
 import { useCreatePendingRequest } from "@/hooks/usePendingRequests"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { supabase } from "@/lib/supabase/client"
-import { Loader2, CheckCircle, LogIn, Users } from "lucide-react"
+import { Loader2, CheckCircle, LogIn } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
@@ -200,7 +200,7 @@ export default function ProjectLandingPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <Users className="w-4 h-4" />
+                                                <i className="fi fi-rr-user-add inline-flex items-center justify-center leading-none w-4 h-4" />
                                                 Request to become a helper
                                             </>
                                         )}
