@@ -45,4 +45,10 @@ function PopoverContent({
   )
 }
 
-export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent }
+function PopoverArrow({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Arrow>) {
+  return <PopoverPrimitive.Arrow data-slot="popover-arrow" {...props} />
+}
+
+export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent, PopoverArrow }

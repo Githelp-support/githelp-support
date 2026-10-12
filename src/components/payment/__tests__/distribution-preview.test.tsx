@@ -79,6 +79,28 @@ describe("DistributionPreview", () => {
     expect(screen.getByText(BODY_ASSUMPTION)).toBeInTheDocument()
   })
 
+  it("uses the dark tooltip style with one font size for the body text", () => {
+    renderPreview()
+
+    fireEvent.click(getInfoButton())
+
+    const content = document.querySelector('[data-slot="popover-content"]')
+    expect(content).toHaveClass("bg-foreground", "text-white", "text-xs")
+
+    // Neither paragraph overrides the size inherited from the popover.
+    for (const body of [BODY_FEE, BODY_ASSUMPTION]) {
+      expect(screen.getByText(body).className).not.toMatch(/\btext-/)
+    }
+  })
+
+  it("aligns the info button to the top of the Stripe label", () => {
+    renderPreview()
+
+    const label = getInfoButton().parentElement
+    expect(label).toHaveClass("items-start")
+    expect(label?.firstElementChild).toBe(getInfoButton())
+  })
+
   it("closes the popover when Escape is pressed", async () => {
     renderPreview()
 

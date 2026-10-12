@@ -5,6 +5,7 @@ import { Info } from "lucide-react"
 
 import {
   Popover,
+  PopoverArrow,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
@@ -64,7 +65,7 @@ function StripeFeeInfo() {
         <button
           type="button"
           aria-label="About the Stripe fee"
-          className="inline-flex shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
+          className="mt-[3px] inline-flex shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
           onMouseEnter={() => {
             cancelClose()
             closedByHoverRef.current = false
@@ -90,7 +91,11 @@ function StripeFeeInfo() {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        align="start"
+        side="top"
+        sideOffset={6}
+        // Same dark style as the Radix tooltips elsewhere in the app
+        // (see InfoTooltip in settings/payment/page.tsx).
+        className="z-[60] w-auto max-w-xs rounded-md border-0 bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-white shadow-md"
         onMouseEnter={cancelClose}
         onMouseLeave={scheduleClose}
         onOpenAutoFocus={(event) => {
@@ -103,18 +108,19 @@ function StripeFeeInfo() {
           closedByHoverRef.current = false
         }}
       >
-        <h5 className="text-[14px] font-semibold text-foreground mb-2">
+        <h5 className="mb-1 text-[14px] font-semibold">
           About the Stripe fee
         </h5>
-        <p className="text-[13px] leading-snug text-muted-foreground">
+        <p>
           Stripe charges about 2,9% + $0.30 per card transaction (US cards).
         </p>
-        <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
+        <p className="mt-2">
           This preview assumes one transaction. Tickets charged several times
           - extra time beyond the hold, weekly captures, a retry after a
           declined card - pay the fee on each charge, before the
           helper/project split.
         </p>
+        <PopoverArrow className="fill-foreground" />
       </PopoverContent>
     </Popover>
   )
@@ -187,7 +193,7 @@ export function DistributionPreview({
               className="grid grid-cols-3 items-center text-[14px]"
             >
               {info ? (
-                <span className="col-span-2 pl-[10px] text-muted-foreground inline-flex items-center gap-1.5">
+                <span className="col-span-2 pl-[10px] text-muted-foreground inline-flex items-start gap-1.5">
                   <StripeFeeInfo />
                   {label}
                 </span>
