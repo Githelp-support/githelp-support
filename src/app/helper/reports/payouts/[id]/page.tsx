@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Download, ExternalLink } from "lucide-react"
+import { ArrowLeft, ExternalLink } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -83,7 +83,7 @@ export default function HelperPayoutStatementPage() {
                   onClick={() => window.print()}
                   title="Opens your browser's print dialog, where you can save the statement as a PDF"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <i className="fi fi-rr-download inline-flex items-center justify-center leading-none w-3.5 h-3.5 text-[14px]" aria-hidden="true" />
                   Download PDF
                 </Button>
               </div>

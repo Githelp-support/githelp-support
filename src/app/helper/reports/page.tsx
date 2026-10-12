@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
 import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
@@ -511,7 +511,7 @@ export default function HelperReportsPage() {
                 title={exportTitle("PDF")}
                 onClick={() => exportPdf(targetMonth)}
               >
-                <Download className="w-3.5 h-3.5" />
+                <i className="fi fi-rr-download inline-flex items-center justify-center leading-none w-3.5 h-3.5 text-[14px]" aria-hidden="true" />
                 Download PDF
               </Button>
             </div>
@@ -713,7 +713,7 @@ export default function HelperReportsPage() {
                                   title="Download all your payouts on this ticket as a PDF for your accounting"
                                   onSelect={() => exportPdf(null, wholeTicket(payout))}
                                 >
-                                  <Download />
+                                  <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[16px] text-muted-foreground" aria-hidden="true" />
                                   PDF
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -916,7 +916,7 @@ export default function HelperReportsPage() {
                                 title={`Download the ${row.period} payout report as PDF`}
                                 onSelect={() => exportPdf(row.period)}
                               >
-                                <Download />
+                                <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[16px] text-muted-foreground" aria-hidden="true" />
                                 PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem
