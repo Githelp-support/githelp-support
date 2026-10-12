@@ -26,9 +26,16 @@ import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
 import {
   useProjectAvailableRoles,
   projectAvailableRolesQueryOptions,
+  roleProjectIdsQueryOptions,
   useUserRoles,
 } from "@/hooks/useProjectRole"
-import { homeRouteForRole } from "@/lib/roles"
+import {
+  homeRouteForRole,
+  getLastProjectForRole,
+  pickProjectForRole,
+  rememberLastProjectForRole,
+} from "@/lib/roles"
+import { toast } from "sonner"
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -140,11 +147,7 @@ export function TopBar() {
   }
 
   const handleProjectSelect = async (project: Project) => {
-    // Acting as User means the "Private" context is current, even if a real
-    // project is still remembered as selected — so picking a project from the
-    // User dropdown always counts as a change and switches into that project's
-    // highest role.
-    const isDifferentProject = user.role === "user" || project.project_id !== selectedProjectId
+    const isDifferentProject = project.project_id !== selectedProjectId
     setSelectedProjectId(project.project_id)
     if (!isDifferentProject) return
 
@@ -171,9 +174,37 @@ export function TopBar() {
   // guard so choosing "Stay" leaves the current role and page untouched.
   const handleSwitchRole = (role: UserRole) => {
     confirmNavigation(() => {
+      // Leaving the private User context for admin/helper: open the project
+      // last used in that role (see pickProjectForRole for the fallbacks).
+      if (user.role === "user" && role !== "user") {
+        void enterRoleFromPrivate(role)
+        return
+      }
       switchRole(role)
       routeForRole(role)
     })
+  }
+
+  const enterRoleFromPrivate = async (role: "admin" | "helper") => {
+    try {
+      const ids = await queryClient.fetchQuery(roleProjectIdsQueryOptions())
+      // Keep the project list's order and drop projects it doesn't contain
+      // (deleted ones) — ProjectProvider rejects selections outside the list.
+      const candidates = userProjects
+        .map((p) => p.project_id)
+        .filter((id) => ids[role].includes(id))
+      const projectId = pickProjectForRole(candidates, getLastProjectForRole(role), selectedProjectId)
+      if (!projectId) {
+        toast.error(`You don't have the ${getRoleDisplayName(role)} role in any project.`)
+        return
+      }
+      setSelectedProjectId(projectId)
+      switchRole(role)
+      routeForRole(role)
+    } catch (error) {
+      console.error("Failed to resolve project for role:", error)
+      toast.error("Couldn't switch role. Please try again.")
+    }
   }
 
   const isSignedIn = Boolean(user.id)
@@ -231,26 +262,32 @@ export function TopBar() {
   const rolesResolved =
     userRolesLoaded && !projectsLoading && (!selectedProject || projectRolesLoaded)
 
-  // An account that is registered as nothing but "user" has no project of its
-  // own yet — it lives in a private user context. It gets a greyed-out
-  // "Private" project placeholder and a "+ New role" entry in the role
-  // dropdown. Anyone holding admin or helper (anywhere) adds projects and
-  // roles through the project dropdown's "Add new" instead.
-  const isUserOnly =
-    userRolesLoaded && !!userRoles && userRoles.length === 1 && userRoles[0] === "user"
-
   // Acting as User = acting in the private user context, whatever projects the
   // account belongs to. Users get a context dropdown ("Private" today; later
   // also employers they are verified to operate under) instead of the project
-  // dropdown.
+  // dropdown, and it lists no projects. The role dropdown is therefore the
+  // way back to a project: it keeps offering the admin/helper roles held in
+  // the remembered project, plus "+ New role" (User role only).
   const isPrivateContext = user.role === "user"
   const [employerTipOpen, setEmployerTipOpen] = useState(false)
 
-  // While acting as User only "User" is offered in the role dropdown, even if
-  // the account is admin/helper somewhere: the roles of a project only show
-  // once that project is selected (which itself switches into its highest
-  // role). `availableRoles` stays complete for the auto-correction effect.
-  const visibleRoles: UserRole[] = isPrivateContext ? ["user"] : availableRoles
+  // Role dropdown contents. In a project (admin/helper) it lists the roles
+  // held in that project. In the private User context there is no project, so
+  // it lists every role the account holds in ANY project; picking one opens
+  // the project last used in that role.
+  const visibleRoles: UserRole[] = useMemo(() => {
+    if (!isPrivateContext) return availableRoles
+    const held = userRolesLoaded && userRoles ? userRoles : []
+    return [...(["admin", "helper"] as const).filter((r) => held.includes(r)), "user"]
+  }, [isPrivateContext, availableRoles, userRolesLoaded, userRoles])
+
+  // Remember, per role, the project the account last worked in.
+  useEffect(() => {
+    if (user.role === "user" || !selectedProjectId || !projectRolesLoaded) return
+    if (projectAvailableRoles?.includes(user.role)) {
+      rememberLastProjectForRole(user.role, selectedProjectId)
+    }
+  }, [user.role, selectedProjectId, projectRolesLoaded, projectAvailableRoles])
 
   const goToAddRole = () => {
     if (typeof window !== "undefined") window.location.href = "/onboarding?new=1"
@@ -309,7 +346,7 @@ export function TopBar() {
                   })}
                 </>
               ) : null}
-              {isUserOnly && (
+              {isPrivateContext && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -328,8 +365,8 @@ export function TopBar() {
               dropdown. "Private" is the only context today; in time the user
               will be able to switch to an employer they are verified to operate
               under ("Add employer" is a placeholder that explains this on
-              hover/tap). Any projects the account is admin/helper in are listed
-              too — picking one switches into the highest role held there. */}
+              hover/tap). No projects and no "Add new" here: projects belong to
+              the admin/helper roles. */}
           {isPrivateContext ? (
             <DropdownMenu onOpenChange={(open) => !open && setEmployerTipOpen(false)}>
               <DropdownMenuTrigger asChild>
@@ -349,35 +386,11 @@ export function TopBar() {
                 className="w-56 font-sans"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
-                {/* Scrollable list — capped at three rows (3 × 32px) so the
-                    separator and "Add employer" below always stay visible. */}
-                <div className={cn("max-h-24 overflow-y-auto")}>
-                  <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
-                    <PrivateContextIcon size="w-5 h-5" />
-                    <span className="font-sans truncate text-[14px] font-[500]">Private</span>
-                  </DropdownMenuItem>
-                  {userProjects.map((project) => (
-                    <ProjectLogoWithBranding
-                      key={project.project_id}
-                      project={project}
-                      isSelected={false}
-                      onSelect={handleProjectSelect}
-                    />
-                  ))}
-                </div>
+                <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
+                  <PrivateContextIcon size="w-5 h-5" />
+                  <span className="font-sans truncate text-[14px] font-[500]">Private</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {/* "Add new" project only makes sense for accounts that already
-                    run projects; project-less users add a role instead ("+ New
-                    role" in the role dropdown). */}
-                {userProjects.length > 0 && (
-                  <DropdownMenuItem
-                    className="font-sans text-[14px] text-brand-primary"
-                    onClick={goToAddRole}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add new
-                  </DropdownMenuItem>
-                )}
                 <TooltipPrimitive.Provider delayDuration={150}>
                   <TooltipPrimitive.Root open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
                     <TooltipPrimitive.Trigger asChild>

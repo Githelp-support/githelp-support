@@ -46,6 +46,44 @@ export function projectAvailableRolesQueryOptions(projectId?: string) {
 }
 
 /**
+ * Project ids in which the signed-in user is an admin member / a helper.
+ * Fetched imperatively when switching from the private User context into a
+ * role, to find the project to open.
+ */
+export function roleProjectIdsQueryOptions() {
+  return {
+    queryKey: ["role-project-ids"] as const,
+    queryFn: async (): Promise<{ admin: string[]; helper: string[] }> => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return { admin: [], helper: [] }
+
+      const [{ data: adminRows, error: adminError }, { data: helperRows, error: helperError }] =
+        await Promise.all([
+          supabase
+            .from("projects_members")
+            .select("project_id")
+            .eq("user_id", user.id)
+            .eq("role", "admin")
+            .is("deleted_at", null),
+          supabase
+            .from("projects_helpers")
+            .select("project_id")
+            .eq("user_id", user.id)
+            .is("deleted_at", null),
+        ])
+      if (adminError) throw adminError
+      if (helperError) throw helperError
+
+      return {
+        admin: (adminRows ?? []).map((r) => r.project_id as string),
+        helper: (helperRows ?? []).map((r) => r.project_id as string),
+      }
+    },
+    staleTime: 0,
+  }
+}
+
+/**
  * Gets the roles the user actually holds in a specific project, for the role
  * switcher: "admin" if they are an admin member of the project, "helper" if
  * they are a helper in the project, and "user" always (any profile can act
