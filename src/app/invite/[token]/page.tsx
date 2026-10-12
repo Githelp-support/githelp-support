@@ -207,7 +207,7 @@ export default function InviteAcceptancePage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+            <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
                     <p className="text-[14px] text-muted-foreground">Loading invite...</p>
@@ -218,9 +218,9 @@ export default function InviteAcceptancePage() {
 
     if (error || !project) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
-                <Card className="w-full max-w-md">
-                    <CardHeader>
+            <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
+                <Card className="invite-card">
+                    <CardHeader className="px-0">
                         <div className="flex items-center gap-3 mb-2">
                             <XCircle className="w-6 h-6 text-red-500" />
                             <CardTitle>Invalid invite link</CardTitle>
@@ -229,7 +229,7 @@ export default function InviteAcceptancePage() {
                             {error || "This invite link is invalid or has expired."}
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-0">
                         <Link href="/">
                             <Button variant="outline" className="w-full">Go to homepage</Button>
                         </Link>
@@ -241,9 +241,9 @@ export default function InviteAcceptancePage() {
 
     if (isMember) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
-                <Card className="w-full max-w-md">
-                    <CardHeader>
+            <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
+                <Card className="invite-card">
+                    <CardHeader className="px-0">
                         <div className="flex flex-col items-start gap-4 mb-2 text-left">
                             <CheckCircle className="w-6 h-6 text-green-600" />
                             <CardTitle>Congratulations! You are now a validated helper</CardTitle>
@@ -252,7 +252,7 @@ export default function InviteAcceptancePage() {
                             Someone from the project core team has added you as a validated helper to {String(project?.name ?? "this project")}. You can now accept incoming tickets to this project.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-0">
                         <Link href="/">
                             <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
                                 Go to dashboard
@@ -267,7 +267,7 @@ export default function InviteAcceptancePage() {
     // Show profile completion form if needed
     if (isAuthenticated && needsProfile && inviteData?.invite_type === "helper") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
                 <HelperInviteAcceptance
                     projectName={String(project?.name ?? "the project")}
                     onComplete={handleProfileComplete}
@@ -279,15 +279,15 @@ export default function InviteAcceptancePage() {
     const inviteTypeLabel = inviteData?.invite_type === "helper" ? "as a helper" : "as a member"
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
+        <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
+            <Card className="invite-card">
+                <CardHeader className="px-0 text-center">
                     <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
                     <CardDescription className="text-sm mt-2">
                         Join {String(project?.name ?? "this project")} {inviteTypeLabel}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="px-0 space-y-4">
                     {!isAuthenticated ? (
                         <>
                             <p className="text-sm text-muted-foreground text-center">

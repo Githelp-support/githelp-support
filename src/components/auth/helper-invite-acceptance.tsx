@@ -52,14 +52,14 @@ export function HelperInviteAcceptance({ onComplete, projectName }: HelperInvite
     }
 
     return (
-        <Card className="w-full max-w-md">
-            <CardHeader>
+        <Card className="invite-card">
+            <CardHeader className="px-0">
                 <CardTitle>Complete your profile</CardTitle>
                 <CardDescription>
                     To join {projectName} as a helper, we need some information about you.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-0">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <label htmlFor="name" className="text-sm font-medium">
