@@ -250,25 +250,26 @@
 
 /*
  * Invite page surface + card. Tokens are scoped to .invite-surface so they
- * apply only inside the invite page; --ring is intentionally NOT redefined on
- * :root/.dark, where it drives the app-wide focus rings. Unlayered so these
+ * apply only inside the invite page. The card hairline uses its own
+ * --invite-ring token; --ring is left alone because it drives the app-wide
+ * focus rings (ring-ring, outline-ring) on controls inside the card. Unlayered so these
  * rules win over the Card primitive's utility classes.
  */
 .invite-surface {
   --surface-page: #f7f9ff;
   --surface-card: #ffffff;
-  --ring: rgba(0, 0, 0, 0.08);
+  --invite-ring: rgba(0, 0, 0, 0.08);
   --shadow-card:
-    0 0 0 1px var(--ring), 0 1px 2px rgba(0, 0, 0, 0.04),
+    0 0 0 1px var(--invite-ring), 0 1px 2px rgba(0, 0, 0, 0.04),
     0 4px 12px rgba(0, 0, 0, 0.04), 0 16px 32px -8px rgba(0, 0, 0, 0.06);
   background-color: var(--surface-page);
 }
 .dark .invite-surface {
   --surface-page: #161620;
   --surface-card: #1e1e22;
-  --ring: rgba(255, 255, 255, 0.1);
+  --invite-ring: rgba(255, 255, 255, 0.1);
   --shadow-card:
-    0 0 0 1px var(--ring), 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--invite-ring), 0 1px 2px rgba(0, 0, 0, 0.3),
     0 4px 12px rgba(0, 0, 0, 0.25), 0 16px 32px -8px rgba(0, 0, 0, 0.4);
 }
 .invite-surface :is(a, button, input) {

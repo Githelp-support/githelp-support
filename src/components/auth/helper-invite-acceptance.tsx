@@ -52,7 +52,7 @@ export function HelperInviteAcceptance({ onComplete, projectName }: HelperInvite
     }
 
     return (
-        <Card className="invite-card w-full">
+        <Card className="invite-card">
             <CardHeader className="px-0">
                 <CardTitle>Complete your profile</CardTitle>
                 <CardDescription>

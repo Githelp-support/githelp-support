@@ -219,7 +219,7 @@ export default function InviteAcceptancePage() {
     if (error || !project) {
         return (
             <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
-                <Card className="invite-card w-full">
+                <Card className="invite-card">
                     <CardHeader className="px-0">
                         <div className="flex items-center gap-3 mb-2">
                             <XCircle className="w-6 h-6 text-red-500" />
@@ -242,7 +242,7 @@ export default function InviteAcceptancePage() {
     if (isMember) {
         return (
             <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
-                <Card className="invite-card w-full">
+                <Card className="invite-card">
                     <CardHeader className="px-0">
                         <div className="flex flex-col items-start gap-4 mb-2 text-left">
                             <CheckCircle className="w-6 h-6 text-green-600" />
@@ -280,7 +280,7 @@ export default function InviteAcceptancePage() {
 
     return (
         <div className="invite-surface min-h-screen flex items-center justify-center px-4 py-4">
-            <Card className="invite-card w-full">
+            <Card className="invite-card">
                 <CardHeader className="px-0 text-center">
                     <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
                     <CardDescription className="text-sm mt-2">
