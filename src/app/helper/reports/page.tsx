@@ -713,7 +713,7 @@ export default function HelperReportsPage() {
                                   title="Download all your payouts on this ticket as a PDF for your accounting"
                                   onSelect={() => exportPdf(null, wholeTicket(payout))}
                                 >
-                                  <Download />
+                                  <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                   PDF
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -916,7 +916,7 @@ export default function HelperReportsPage() {
                                 title={`Download the ${row.period} payout report as PDF`}
                                 onSelect={() => exportPdf(row.period)}
                               >
-                                <Download />
+                                <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                 PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem

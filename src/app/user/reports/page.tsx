@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, MoreVertical } from "lucide-react"
+import { ChevronUp, ChevronDown, ChevronsUpDown, MoreVertical } from "lucide-react"
 import { useUserPayments, formatAmount } from "@/hooks/usePayments"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -145,7 +145,7 @@ function ReceiptButton({ row }: { row: UserPaymentRow }) {
           rel="noopener noreferrer"
           title={RECEIPT_AVAILABLE_TITLE}
         >
-          <ExternalLink className="w-3.5 h-3.5" />
+          <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
           Receipt
         </a>
       </Button>
@@ -154,7 +154,7 @@ function ReceiptButton({ row }: { row: UserPaymentRow }) {
   return (
     <span title={receiptUnavailableTitle(row)} className="inline-flex">
       <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-        <ExternalLink className="w-3.5 h-3.5" />
+        <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
         Receipt
       </Button>
     </span>
@@ -167,7 +167,7 @@ function ReceiptMenuItem({ row }: { row: UserPaymentRow }) {
     return (
       <DropdownMenuItem asChild>
         <a href={row.receiptUrl} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
-          <ExternalLink />
+          <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
           Receipt
         </a>
       </DropdownMenuItem>
@@ -177,7 +177,7 @@ function ReceiptMenuItem({ row }: { row: UserPaymentRow }) {
   return (
     <span title={receiptUnavailableTitle(row)} className="block">
       <DropdownMenuItem disabled>
-        <ExternalLink />
+        <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
         Receipt
       </DropdownMenuItem>
     </span>
@@ -624,7 +624,7 @@ export default function UserReportsPage() {
                                       title="Each transaction has its own Stripe receipt"
                                       onSelect={() => toggle(row.id)}
                                     >
-                                      <ExternalLink />
+                                      <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                       Receipts
                                     </DropdownMenuItem>
                                   ) : (
@@ -634,7 +634,7 @@ export default function UserReportsPage() {
                                     title="Download a PDF report of this ticket with all its transactions"
                                     onSelect={() => downloadTicketPdf(row)}
                                   >
-                                    <Download />
+                                    <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                     PDF
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -754,7 +754,7 @@ export default function UserReportsPage() {
                           <div className="col-span-2">
                             <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
                               <Button variant="outline" size="sm" type="button" disabled className={OUTLINE_BUTTON_CLASS}>
-                                <Download className="w-3.5 h-3.5" />
+                                <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
                                 PDF
                               </Button>
                             </span>
@@ -796,7 +796,7 @@ export default function UserReportsPage() {
                               title="Download a PDF report of this month's charges"
                               onClick={() => downloadMonthlyPdf(row.period)}
                             >
-                              <Download className="w-3.5 h-3.5" />
+                              <i className="fi fi-rr-download inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
                               PDF
                             </Button>
                           </div>

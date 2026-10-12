@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   HelpCircle,
   ExternalLink,
-  List,
   MoreVertical,
 } from "lucide-react"
 import Link from "next/link"
@@ -164,7 +163,7 @@ function ReceiptButton({ url }: { url: string | null }) {
     return (
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
-          <ExternalLink className="w-3.5 h-3.5" />
+          <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
           Receipt
         </a>
       </Button>
@@ -173,7 +172,7 @@ function ReceiptButton({ url }: { url: string | null }) {
   return (
     <span title={RECEIPT_UNAVAILABLE_TITLE} className="inline-flex">
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
-        <ExternalLink className="w-3.5 h-3.5" />
+        <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-3.5 shrink-0 text-[11.2px]" aria-hidden="true" />
         Receipt
       </Button>
     </span>
@@ -186,7 +185,7 @@ function ReceiptMenuItem({ url, label = "Receipt" }: { url: string | null; label
     return (
       <DropdownMenuItem asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
-          <ExternalLink />
+          <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
           {label}
         </a>
       </DropdownMenuItem>
@@ -196,7 +195,7 @@ function ReceiptMenuItem({ url, label = "Receipt" }: { url: string | null; label
   return (
     <span title={RECEIPT_UNAVAILABLE_TITLE} className="block">
       <DropdownMenuItem disabled>
-        <ExternalLink />
+        <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
         {label}
       </DropdownMenuItem>
     </span>
@@ -675,12 +674,12 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                     if (!expanded) toggle(ticket.key)
                                   }}
                                 >
-                                  <List />
+                                  <i className="fi fi-rr-list inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                   See transactions
                                 </DropdownMenuItem>
                                 {receiptsPerPayout ? (
                                   <DropdownMenuItem title="Each payout links to the receipt of the charge it came from" onSelect={() => toggle(ticket.key)}>
-                                    <ExternalLink />
+                                    <i className="fi fi-rr-document inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" aria-hidden="true" />
                                     Receipts
                                   </DropdownMenuItem>
                                 ) : ticket.receipts.length > 1 ? (
