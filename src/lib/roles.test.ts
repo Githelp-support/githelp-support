@@ -1,16 +1,20 @@
 import { describe, it, expect } from "vitest"
-import { homeRouteForRole } from "./roles"
+import { pickProjectForRole } from "./roles"
 
-describe("homeRouteForRole", () => {
-  it("sends admins to the dashboard", () => {
-    expect(homeRouteForRole("admin")).toBe("/")
+describe("pickProjectForRole", () => {
+  it("prefers the project last used in that role", () => {
+    expect(pickProjectForRole(["a", "b", "c"], "b", "c")).toBe("b")
   })
 
-  it("sends helpers to the helper overview", () => {
-    expect(homeRouteForRole("helper")).toBe("/helper/overview")
+  it("falls back to the selected project when the last-used one no longer qualifies", () => {
+    expect(pickProjectForRole(["a", "c"], "b", "c")).toBe("c")
   })
 
-  it("sends plain users to the support page", () => {
-    expect(homeRouteForRole("user")).toBe("/support/chat")
+  it("falls back to the first qualifying project", () => {
+    expect(pickProjectForRole(["a", "c"], null, "x")).toBe("a")
+  })
+
+  it("returns null when the role is held nowhere", () => {
+    expect(pickProjectForRole([], "b", "c")).toBeNull()
   })
 })
