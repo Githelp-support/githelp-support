@@ -93,12 +93,13 @@ describe("DistributionPreview", () => {
     }
   })
 
-  it("aligns the info button to the top of the Stripe label", () => {
+  it("places the info button top-aligned, right of the Stripe label text", () => {
     renderPreview()
 
     const label = getInfoButton().parentElement
     expect(label).toHaveClass("items-start")
-    expect(label?.firstElementChild).toBe(getInfoButton())
+    expect(label?.firstChild?.textContent).toBe("Stripe (per transaction)")
+    expect(label?.lastElementChild).toBe(getInfoButton())
   })
 
   it("closes the popover when Escape is pressed", async () => {

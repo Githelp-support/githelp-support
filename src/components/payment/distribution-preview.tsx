@@ -194,8 +194,8 @@ export function DistributionPreview({
             >
               {info ? (
                 <span className="col-span-2 pl-[10px] text-muted-foreground inline-flex items-start gap-1.5">
-                  <StripeFeeInfo />
                   {label}
+                  <StripeFeeInfo />
                 </span>
               ) : (
                 <span className="col-span-2 pl-[10px] text-muted-foreground">{label}</span>
