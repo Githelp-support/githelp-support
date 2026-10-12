@@ -31,7 +31,7 @@ export function EndSessionRequestDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className="gap-[11px]">
           <DialogTitle>End this session?</DialogTitle>
           <DialogDescription className="leading-relaxed">
             This lets the helper know you&apos;d like to wrap up. They will log any remaining time and end the
@@ -39,7 +39,7 @@ export function EndSessionRequestDialog({
             until the helper has ended the session.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="mt-[3px]">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
             Keep session open
           </Button>
@@ -81,7 +81,7 @@ export function EndSessionRequestedBanner({
     >
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
-        <p className="font-medium">The helper has been notified that you&apos;d like to end the session.</p>
+        <p className="font-[550]">The helper has been notified that you&apos;d like to end the session.</p>
         <p className="text-muted-foreground">
           Awaiting their final confirmation{when ? ` (requested ${when})` : ""}. You can still write in the chat, or
           cancel this request at any time until the helper ends the session.
@@ -130,7 +130,7 @@ export function EndSessionRequestedHelperBanner({
     >
       <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
-        <p className="font-medium">
+        <p className="font-[550]">
           {requesterName ? requesterName : "The user"} has asked to end this session{when ? ` (${when})` : ""}.
         </p>
         <p className="text-muted-foreground">

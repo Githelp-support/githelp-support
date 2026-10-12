@@ -4,12 +4,49 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
-import { Clock, Info } from "lucide-react"
-import { useState } from "react"
+import { ChevronDown, Clock, Info } from "lucide-react"
+import { useId, useState, type ReactNode } from "react"
 import type { TimeEntry } from "./log-time-drawer"
 import { TimeEntriesReviewStatus } from "@/components/ticket-chat/time-entry-review"
 import { TIME_ENTRY_AUTO_ACCEPT_HOURS, describeAutoAcceptDeadline } from "@/lib/time-entries"
 import { cn } from "@/lib/utils"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
+
+/** Notice box whose body is collapsed by default; the chevron on the right toggles it. */
+function CollapsibleNotice({
+  header,
+  children,
+  className,
+  role,
+}: {
+  header: ReactNode
+  children: ReactNode
+  className?: string
+  role?: "status"
+}) {
+  const [open, setOpen] = useState(false)
+  const bodyId = useId()
+  return (
+    <div role={role} className={cn("rounded-lg border p-4 text-sm text-foreground", className)}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-[550] flex items-center gap-2">{header}</p>
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          aria-controls={bodyId}
+          aria-label={open ? "Hide details" : "Show details"}
+          className="shrink-0 rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+        </button>
+      </div>
+      <p id={bodyId} hidden={!open} className="text-muted-foreground mt-1">
+        {children}
+      </p>
+    </div>
+  )
+}
 
 interface EndTicketDrawerProps {
   isOpen: boolean
@@ -111,46 +148,50 @@ export function EndTicketDrawer({
         </div>
       }
     >
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
+      <div className="flex-1 p-6 space-y-[26px] overflow-auto">
         {userRequestedEnd && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
-            <p className="font-medium">The user has asked to end this session.</p>
-            <p className="text-muted-foreground mt-1">
-              Make sure all your time is logged below before ending — ending finalises the ticket and the charge.
-            </p>
-          </div>
+          <CollapsibleNotice
+            className="border-amber-300 bg-amber-50"
+            header="The user has asked to end this session."
+          >
+            Make sure all your time is logged below before ending — ending finalises the ticket and the charge.
+          </CollapsibleNotice>
         )}
         {needsSummary && (
-          <div role="status" className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-foreground">
-            <p className="font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-brand-primary" />
-              {pendingReview.length === 1
+          <CollapsibleNotice
+            role="status"
+            className="border-brand-primary/30 bg-brand-primary/5"
+            header={
+              pendingReview.length === 1
                 ? "1 logged entry needs the user's confirmation."
-                : `${pendingReview.length} logged entries need the user's confirmation.`}
-            </p>
-            <p className="text-muted-foreground mt-1">
-              Make sure all your time is logged, then send the summary. The user confirms it in one go (they can
-              decline single entries with a reason) and you can end the ticket right after. If they don&apos;t respond
-              within {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours it is confirmed automatically. Declined time is not charged.
-            </p>
-          </div>
+                : `${pendingReview.length} logged entries need the user's confirmation.`
+            }
+          >
+            Log all your time, then send the summary. The user either confirms the total or declines it with an
+            explanation. If they decline, agree on the final time together in the chat. If the user doesn&apos;t
+            respond within {TIME_ENTRY_AUTO_ACCEPT_HOURS} hours, the time is confirmed automatically. You can end the
+            ticket once it&apos;s confirmed.
+          </CollapsibleNotice>
         )}
         {waitingForUser && (
-          <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
-            <p className="font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-amber-700" />
-              Waiting for the user to confirm the logged time.
-            </p>
-            <p className="text-muted-foreground mt-1">
-              You sent the summary ({pendingReview.length === 1 ? "1 entry" : `${pendingReview.length} entries`}). The
-              ticket can end once they confirm it
-              {autoAcceptHint ? `; it is confirmed automatically ${autoAcceptHint} otherwise` : ""}. You can remind them
-              in the chat. Declined time is not charged.
-            </p>
-          </div>
+          <CollapsibleNotice
+            role="status"
+            className="border-amber-300 bg-amber-50"
+            header={
+              <>
+                <Clock className="h-4 w-4 text-amber-700" />
+                Waiting for the user to confirm the logged time.
+              </>
+            }
+          >
+            You sent the summary ({pendingReview.length === 1 ? "1 entry" : `${pendingReview.length} entries`}). The
+            ticket can end once they confirm it
+            {autoAcceptHint ? `; it is confirmed automatically ${autoAcceptHint} otherwise` : ""}. You can remind them
+            in the chat. Declined time is not charged.
+          </CollapsibleNotice>
         )}
         <div>
-          <h3 className="text-sm font-medium text-foreground mb-4">How did the support go?</h3>
+          <h3 className="text-sm font-[550] text-foreground mb-4">How did the support go?</h3>
           <RadioGroup value={supportOutcome} onValueChange={setSupportOutcome}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="able-to-help" id="able-to-help" />
@@ -169,7 +210,7 @@ export function EndTicketDrawer({
         </div>
 
         <div>
-          <h3 className="text-sm font-medium text-foreground mb-4">Logged time</h3>
+          <h3 className="text-sm font-[550] text-foreground mb-4">Logged time</h3>
           {timeEntries.length > 0 ? (
             <div className="space-y-3">
               {timeEntries.map((entry) => {
@@ -177,10 +218,15 @@ export function EndTicketDrawer({
                 return (
                   <div key={entry.id} className="py-2">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">{formatted.type === "Together" ? "T" : "S"}</span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <ProfileAvatar
+                          id={entry.helperUser?.id ?? entry.helperId}
+                          name={entry.helperUser?.name}
+                          avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                          size="sm"
+                          radius="8.25px"
+                          className="w-6 h-6"
+                        />
                         <div>
                           <p className="text-sm font-medium text-foreground">{formatted.type}</p>
                           <p className="text-xs text-muted-foreground">{formatted.date}</p>
@@ -195,20 +241,15 @@ export function EndTicketDrawer({
                         {formatted.hours}
                       </span>
                     </div>
-                    {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-11">{entry.note}</p>}
-                    {entry.reviewStatus === "declined" && (
-                      <p className="text-xs text-muted-foreground mt-1 ml-11 italic">
-                        Declined{entry.declineReason ? `: ${entry.declineReason}` : ""}
-                      </p>
-                    )}
+                    {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-8">{entry.note}</p>}
                   </div>
                 )
               })}
               <div className="border-t border-border pt-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">Total time (excl. declined)</span>
+                <span className="text-sm font-medium text-foreground">Total time</span>
                 <span className="text-sm font-medium text-foreground">{getTotalTime()}</span>
               </div>
-              <TimeEntriesReviewStatus entries={timeEntries} />
+              <TimeEntriesReviewStatus entries={timeEntries} className="justify-start" />
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-4">No time logged yet</p>

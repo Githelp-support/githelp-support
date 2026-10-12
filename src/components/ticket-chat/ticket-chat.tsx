@@ -14,12 +14,14 @@ import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-s
 import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "./right-sidebar-collapse"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import {
+  TimeEntriesRejectedMessage,
+  TimeEntryReviewStatusBadge,
   TimeEntrySummaryBanner,
   TimeEntrySummaryDialog,
   type TimeEntrySummaryDecline,
   type TimeEntrySummaryItem,
 } from "@/components/ticket-chat/time-entry-review"
-import { describeAutoAcceptDeadline } from "@/lib/time-entries"
+import { describeAutoAcceptDeadline, getTimeEntriesRejection } from "@/lib/time-entries"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
@@ -134,6 +136,8 @@ export interface TicketChatProps {
   timeReviewRequestedAt?: string | null
   timeEntrySummary?: TimeEntrySummaryItem[]
   onConfirmTimeEntries?: (declines: TimeEntrySummaryDecline[]) => void | Promise<void>
+  /** Rejects the whole summary with the customer's explanation ("Reject logged time"). */
+  onRejectTimeEntries?: (reason: string) => void | Promise<void>
   timeEntryConfirmPending?: boolean
   /** Name shown in the summary banner ("Ada is ready to end the session…"). */
   timeReviewHelperName?: string | null
@@ -185,6 +189,7 @@ export function TicketChat(props: TicketChatProps) {
     timeReviewRequestedAt,
     timeEntrySummary,
     onConfirmTimeEntries,
+    onRejectTimeEntries,
     timeEntryConfirmPending,
     timeReviewHelperName,
     attachmentStoragePrefix,
@@ -383,13 +388,26 @@ export function TicketChat(props: TicketChatProps) {
                                   }
                                   style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
-                                  <MarkdownContent
-                                    content={
-                                      msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
-                                        ? `✓ ${msg.content}`
-                                        : msg.content
-                                    }
-                                  />
+                                  {/* Whole summary rejected: headline + the explanation once, instead of the per-entry list. */}
+                                  {msg.senderType === "system" && getTimeEntriesRejection(msg.paymentMetadata) ? (
+                                    <TimeEntriesRejectedMessage rejection={getTimeEntriesRejection(msg.paymentMetadata)!} />
+                                  ) : (
+                                    <MarkdownContent
+                                      content={
+                                        msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
+                                          ? `✓ ${msg.content}`
+                                          : msg.content
+                                      }
+                                    />
+                                  )}
+                                  {/* Fully confirmed summary (no declines): `auto` is set by the 24h auto-accept job. */}
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "time_entries_confirmed" &&
+                                    !(Array.isArray(msg.paymentMetadata.declined) && msg.paymentMetadata.declined.length > 0) && (
+                                    <div className="mt-1.5">
+                                      <TimeEntryReviewStatusBadge status="accepted" auto={msg.paymentMetadata.auto === true} />
+                                    </div>
+                                  )}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
                                     <div className="mt-2">
                                       <button
@@ -518,6 +536,16 @@ export function TicketChat(props: TicketChatProps) {
                 // so the decline reasons aren't lost.
                 try {
                   await onConfirmTimeEntries(declines)
+                  setSummaryOpen(false)
+                } catch {
+                  /* handled by the page */
+                }
+              }}
+              onReject={async (reason) => {
+                // Without a handler the dialog stays open so the explanation isn't lost.
+                if (!onRejectTimeEntries) return
+                try {
+                  await onRejectTimeEntries(reason)
                   setSummaryOpen(false)
                 } catch {
                   /* handled by the page */

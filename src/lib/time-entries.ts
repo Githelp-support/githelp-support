@@ -92,3 +92,35 @@ export function timeMillisecondsToHoursMinutes(ms: number): { hours: number; min
     const totalMinutes = Math.floor(ms / 60000);
     return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
 }
+
+/** The customer's rejection of a whole logged-time summary, read from a chat message. */
+export interface TimeEntriesRejection {
+    /** `metadata.reviewer_name`; null when the RPC had no name for the customer. */
+    reviewerName: string | null;
+    /** The customer's explanation(s), de-duplicated (a full rejection repeats one reason per entry). */
+    reasons: string[];
+}
+
+/**
+ * Reads a `time_entries_confirmed` system message's metadata (written by the
+ * `confirm_time_entries` RPC: `accepted_count`, `declined[].reason`,
+ * `reviewer_name`). Returns the rejection when the customer declined every
+ * entry of the summary (non-empty `declined`, nothing accepted); null for a
+ * confirmation, a partial decline, another kind of message or missing metadata.
+ */
+export function getTimeEntriesRejection(metadata: unknown): TimeEntriesRejection | null {
+    if (!metadata || typeof metadata !== "object") return null;
+    const meta = metadata as Record<string, unknown>;
+    if (meta.kind !== "time_entries_confirmed") return null;
+    if (!Array.isArray(meta.declined) || meta.declined.length === 0) return null;
+    if (typeof meta.accepted_count === "number" && meta.accepted_count > 0) return null;
+
+    const reasons: string[] = [];
+    for (const item of meta.declined) {
+        const raw = item && typeof item === "object" ? (item as Record<string, unknown>).reason : null;
+        const reason = typeof raw === "string" ? raw.trim() : "";
+        if (reason && !reasons.includes(reason)) reasons.push(reason);
+    }
+    const name = typeof meta.reviewer_name === "string" ? meta.reviewer_name.trim() : "";
+    return { reviewerName: name && name !== "The user" ? name : null, reasons };
+}

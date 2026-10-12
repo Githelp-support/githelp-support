@@ -26,9 +26,13 @@ import {
 } from "@/hooks/useTimeEntries"
 import {
   DeleteTimeEntryDialog,
+  TimeEntriesRejectedMessage,
   TimeEntriesReviewStatus,
   TimeEntryAwaitingApprovalBanner,
+  TimeEntryRejectedBanner,
+  TimeEntryReviewStatusBadge,
 } from "@/components/ticket-chat/time-entry-review"
+import { getTimeEntriesRejection, type TimeEntriesRejection } from "@/lib/time-entries"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
@@ -95,6 +99,10 @@ interface Message {
   metadataKind?: string
   /** `time_entries_confirmed` message in which the user declined at least one entry. */
   hasDeclines?: boolean
+  /** `time_entries_confirmed` message in which the user rejected the whole summary. */
+  rejection?: TimeEntriesRejection | null
+  /** `time_entries_confirmed` message written by the 24h auto-confirm job. */
+  autoConfirmed?: boolean
 }
 
 const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
@@ -375,9 +383,25 @@ export default function TicketDetailPage() {
         type: undefined,
         metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
         hasDeclines: ((msg.metadata as { declined?: unknown[] } | null | undefined)?.declined?.length ?? 0) > 0,
+        rejection: msg.sender_type === "system" ? getTimeEntriesRejection(msg.metadata) : null,
+        autoConfirmed: (msg.metadata as { auto?: unknown } | null | undefined)?.auto === true,
       }))
     )
   }, [messagesData, isClaimed, claimer])
+
+  // The user rejected the whole summary and the helper hasn't sent a new one:
+  // the latest summary message in the chat is a full rejection. Sending a new
+  // summary posts `time_review_requested` (and sets timeReviewRequested).
+  const timeRejected = useMemo(() => {
+    if (isTicketEnded || timeReviewRequested) return false
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]
+      if (msg.sender !== "system") continue
+      if (msg.metadataKind === "time_review_requested") return false
+      if (msg.metadataKind === "time_entries_confirmed") return !!msg.rejection
+    }
+    return false
+  }, [messages, isTicketEnded, timeReviewRequested])
 
   /** First user message in the chat, or ticket description as fallback (for "Info about issue"). */
   const firstIssueMessage = useMemo(() => {
@@ -926,7 +950,20 @@ export default function TicketDetailPage() {
                               }
                               style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
-                              <MarkdownContent content={msg.content} />
+                              {msg.sender === "system" && msg.rejection ? (
+                                <TimeEntriesRejectedMessage
+                                  rejection={msg.rejection}
+                                  customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+                                />
+                              ) : (
+                                <MarkdownContent content={msg.content} />
+                              )}
+                              {/* Fully confirmed summary (no declines), same as on the customer side. */}
+                              {msg.sender === "system" && msg.metadataKind === "time_entries_confirmed" && !msg.hasDeclines && (
+                                <div className="mt-1.5">
+                                  <TimeEntryReviewStatusBadge status="accepted" auto={msg.autoConfirmed} />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </>
@@ -1054,6 +1091,12 @@ export default function TicketDetailPage() {
               </div>
             </div>
             </div>
+
+            {timeRejected && (
+              <TimeEntryRejectedBanner
+                customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+              />
+            )}
 
             {timeReviewRequested && (
               <TimeEntryAwaitingApprovalBanner
