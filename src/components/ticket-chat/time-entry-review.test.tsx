@@ -102,7 +102,7 @@ describe("TimeEntrySummaryDialog", () => {
     expect(screen.getByRole("button", { name: "Decline" })).toBeDisabled()
   })
 
-  it("has nothing to confirm when every entry was already reviewed", () => {
+  it("offers to close the summary when every entry was already reviewed", () => {
     render(
       <TimeEntrySummaryDialog
         open
@@ -112,7 +112,8 @@ describe("TimeEntrySummaryDialog", () => {
       />,
     )
     expect(screen.getByText("There is no logged time waiting for your confirmation.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Confirm logged time" })).toBeDisabled()
+    // The open request can still be acknowledged; the RPC then just clears it.
+    expect(screen.getByRole("button", { name: "Close summary" })).toBeEnabled()
   })
 })
 

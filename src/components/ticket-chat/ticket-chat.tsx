@@ -23,6 +23,8 @@ import { describeAutoAcceptDeadline } from "@/lib/time-entries"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { isPaymentFailedCtaLive } from "@/lib/customer-chat-messages"
+import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -32,6 +34,10 @@ export type PaymentSystemMessageKind =
   | "payment_cap_exceeded"
   | "payment_failed"
   | "payment_completed"
+  /** The final remainder was below the card minimum and written off. */
+  | "payment_remainder_waived"
+  /** Money captured on a ticket that ended cancelled; flagged for a refund. */
+  | "payment_refund_needed"
   | "sla_covered"
   | "free_support"
 
@@ -165,6 +171,12 @@ export interface TicketChatProps {
    */
   onPaymentCtaClick?: (msg: TicketChatMessage) => void
   paymentCtaLoading?: boolean
+  /**
+   * The ticket's payment status (useTicketPaymentStatus). Once the ticket is
+   * ended (`isEnded`) and this is no longer "failed", "Update payment method"
+   * CTAs are retired (see isPaymentFailedCtaLive).
+   */
+  paymentStatus?: TicketPaymentStatus
 }
 
 export function TicketChat(props: TicketChatProps) {
@@ -201,6 +213,7 @@ export function TicketChat(props: TicketChatProps) {
     rightSidebarFooter,
     onPaymentCtaClick,
     paymentCtaLoading,
+    paymentStatus,
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
@@ -252,19 +265,21 @@ export function TicketChat(props: TicketChatProps) {
 
   const thread = useMemo(() => messages ?? [], [messages])
 
-  // Once the ticket's payment is authorized, any earlier payment_required /
-  // payment_cap_exceeded system messages are stale — suppress their CTAs so the
-  // "Add payment method" button disappears after the hold is placed.
-  const paymentResolved = useMemo(
-    () => thread.some((m) => m.paymentMetadata?.kind === "payment_authorized"),
-    [thread],
-  )
-  // A payment_failed CTA stays live until a later payment_completed message
-  // confirms the retry went through (index order = chronological order).
-  const paymentCompletedIdx = useMemo(
-    () => thread.findIndex((m) => m.paymentMetadata?.kind === "payment_completed"),
-    [thread],
-  )
+  // A payment_required / payment_cap_exceeded prompt is stale once a hold is
+  // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
+  // again even though an earlier hold was authorized (index = chronological order).
+  const lastAuthorizedIdx = useMemo(() => {
+    for (let i = thread.length - 1; i >= 0; i--) {
+      if (thread[i].senderType === "system" && thread[i].paymentMetadata?.kind === "payment_authorized") return i
+    }
+    return -1
+  }, [thread])
+  const isPromptResolved = (msg: (typeof thread)[number]) => lastAuthorizedIdx > thread.indexOf(msg)
+  // A payment_failed CTA stays live until a later settling message (paid,
+  // remainder waived, refund flagged) or until the ended ticket's payment is
+  // no longer failed (index order = chronological order).
+  const isFailedCtaLive = (msg: (typeof thread)[number]) =>
+    isPaymentFailedCtaLive(thread, thread.indexOf(msg), { ticketClosed: isEnded, paymentStatus })
 
   return (
     <div className="flex-1 flex overflow-hidden">
@@ -382,6 +397,9 @@ export function TicketChat(props: TicketChatProps) {
                                           ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                           : msg.paymentMetadata?.kind === "payment_failed"
                                             ? "bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                            : msg.paymentMetadata?.kind === "payment_refund_needed" ||
+                                                msg.paymentMetadata?.kind === "payment_remainder_waived"
+                                              ? "bg-background border border-border text-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
                                             : msg.paymentMetadata?.kind === "time_entry_declined" ||
                                                 msg.paymentMetadata?.kind === "payment_hold_declined" ||
                                                 (msg.paymentMetadata?.kind === "time_entries_confirmed" &&
@@ -400,7 +418,7 @@ export function TicketChat(props: TicketChatProps) {
                                         : msg.content
                                     }
                                   />
-                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !paymentResolved && (
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !isPromptResolved(msg) && (
                                     <div className="mt-2">
                                       <button
                                         type="button"
@@ -422,7 +440,7 @@ export function TicketChat(props: TicketChatProps) {
                                   )}
                                   {msg.senderType === "system" &&
                                     msg.paymentMetadata?.kind === "payment_failed" &&
-                                    (paymentCompletedIdx === -1 || paymentCompletedIdx < thread.indexOf(msg)) && (
+                                    isFailedCtaLive(msg) && (
                                     <div className="mt-2">
                                       <button
                                         type="button"
@@ -434,7 +452,7 @@ export function TicketChat(props: TicketChatProps) {
                                       </button>
                                     </div>
                                   )}
-                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_cap_exceeded" && !paymentResolved && (
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_cap_exceeded" && !isPromptResolved(msg) && (
                                     <div className="mt-2">
                                       <button
                                         type="button"

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { toEdgeFunctionError } from "@/lib/functions-error"
 
 export type HoldAfterSetupStatus =
   | "authorized"
@@ -35,7 +36,7 @@ export function useHoldTicketAfterSetup() {
         body: { ticket_id: args.ticketId, session_id: args.sessionId },
       })
       if (resp.error) {
-        throw new Error(resp.error.message || "Failed to place the hold")
+        throw await toEdgeFunctionError(resp.error, "Failed to place the hold")
       }
       const data = (resp.data ?? {}) as Record<string, unknown>
       return {

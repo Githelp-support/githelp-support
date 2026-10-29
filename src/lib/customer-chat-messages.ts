@@ -183,14 +183,19 @@ export function describeChargedLine(opts: {
     /** Stripe's reason when `paymentStatus` is "failed". */
     failureReason?: string | null;
 }): string {
+    const amount = opts.capturedAmountSmallestUnit != null ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}` : null;
+    // Cancelled after money was already captured (a weekly segment): it is
+    // flagged for a refund, which the `payment_refund_needed` message explains.
+    if (opts.paymentStatus === "refund_pending") {
+        return amount ? `Refund pending (${amount} collected)` : "Refund pending";
+    }
     if (opts.cancelled) return "No charge";
     if (opts.slaCovered) return "Covered by your SLA";
     if (opts.paymentStatus === "free") return "Free support — no charge";
     if (opts.paymentStatus === "distributing" || opts.paymentStatus === "completed") {
-        return opts.capturedAmountSmallestUnit != null
-            ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}`
-            : "Charged";
+        return amount ?? "Charged";
     }
+    if (opts.paymentStatus === "waived") return amount ?? "No charge (amount below the card minimum)";
     if (opts.paymentStatus === "failed") {
         const reason = opts.failureReason?.trim();
         return reason
@@ -230,6 +235,35 @@ export function buildSessionEndedMessage(opts: {
     };
 }
 
+/** System messages that settle a ticket's payment after a `payment_failed` prompt. */
+const PAYMENT_SETTLED_KINDS = new Set(["payment_completed", "payment_remainder_waived", "payment_refund_needed"]);
+
+/**
+ * Whether the "Update payment method" CTA on the `payment_failed` message at
+ * `index` is still live. It is resolved by any later settling system message
+ * (`payment_completed`, `payment_remainder_waived`, `payment_refund_needed`),
+ * or once the ticket is closed and its payment status is known and no longer
+ * `failed` (e.g. a capture settled it without a message). Otherwise the
+ * backend would answer "This ticket has no failed payment to retry".
+ */
+export function isPaymentFailedCtaLive(
+    messages: TicketChatMessage[],
+    index: number,
+    opts: { ticketClosed?: boolean; paymentStatus?: TicketPaymentStatus } = {}
+): boolean {
+    const msg = messages[index];
+    if (!msg || msg.senderType !== "system" || msg.paymentMetadata?.kind !== "payment_failed") return false;
+    const settledLater = messages
+        .slice(index + 1)
+        .some((m) => m.senderType === "system" && PAYMENT_SETTLED_KINDS.has(String(m.paymentMetadata?.kind ?? "")));
+    if (settledLater) return false;
+    // "none" = not loaded yet (or unreadable): don't hide on a guess.
+    if (opts.ticketClosed && opts.paymentStatus && opts.paymentStatus !== "none" && opts.paymentStatus !== "failed") {
+        return false;
+    }
+    return true;
+}
+
 /**
  * The pending SCA prompt carried by the latest `payment_requires_action` system
  * message, if any. Only the latest counts: an earlier prompt belongs to a hold
@@ -243,11 +277,12 @@ export function findPendingSca(
 ): { messageId: string; clientSecret: string; ticketId?: string } | null {
     let scaIndex = -1;
     messages.forEach((m, index) => {
-        if (m.paymentMetadata?.kind === "payment_requires_action") scaIndex = index;
+        // Only server-written system messages may open the payment modal.
+        if (m.senderType === "system" && m.paymentMetadata?.kind === "payment_requires_action") scaIndex = index;
     });
     const scaMsg = scaIndex === -1 ? undefined : messages[scaIndex];
     if (!scaMsg || scaMsg.id === handledMessageId) return null;
-    if (messages.slice(scaIndex + 1).some((m) => m.paymentMetadata?.kind === "payment_authorized")) return null;
+    if (messages.slice(scaIndex + 1).some((m) => m.senderType === "system" && m.paymentMetadata?.kind === "payment_authorized")) return null;
     const clientSecret = scaMsg.paymentMetadata?.client_secret as string | undefined;
     if (!clientSecret) return null;
     return {

@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { toEdgeFunctionError } from "@/lib/functions-error"
 
 export interface RetryTicketPaymentResult {
   checkoutUrl: string
@@ -23,7 +24,7 @@ export function useRetryTicketPayment() {
         body: { ticket_id: args.ticketId, return_origin: returnOrigin },
       })
       if (resp.error) {
-        throw new Error(resp.error.message || "Failed to start checkout")
+        throw await toEdgeFunctionError(resp.error, "Failed to start checkout")
       }
       const data = (resp.data ?? {}) as Record<string, unknown>
       if (typeof data.error === "string") {

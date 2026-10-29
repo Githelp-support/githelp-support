@@ -58,7 +58,7 @@ import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/
 import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
-import { formatTicketRates, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
+import { formatTicketRates, isFlatFeePricing, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
@@ -98,6 +98,18 @@ interface Message {
 
 const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
 
+/** Toast for a failed capture: only card problems mention updating the card. */
+function notifyCaptureError(error: Error, cardHint: string) {
+  const code = (error as { code?: string }).code
+  if (code === "capture_recorded_in_stripe_only") {
+    toast.info("Payment captured", { description: "It will be recorded automatically in a few minutes." })
+  } else if (code === "not_ticket_helper_or_admin" || code === "ticket_not_ended" || code === "charge_outcome_unknown") {
+    toast.error("Payment not captured yet", { description: error.message })
+  } else {
+    toast.error(`Payment failed: ${error.message}`, { description: cardHint })
+  }
+}
+
 export default function TicketDetailPage() {
   const params = useParams()
   const ticketId = params.id as string
@@ -126,9 +138,17 @@ export default function TicketDetailPage() {
   const { data: ticketDetails } = useTicketWithDetails(ticketId)
   // Fetch payment settings (the payment gate needs them: free support opens it)
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
+  // Billing uses the prices snapshotted when the ticket was opened; prefer them over
+  // the live project settings so the helper sees what the customer will be charged.
+  const pricingSnapshot = (ticket as { pricing_snapshot?: Record<string, number> | null } | undefined)?.pricing_snapshot
+  const effectivePricing = pricingSnapshot && paymentSettings ? { ...paymentSettings, ...pricingSnapshot } : paymentSettings
   const paymentGate = useTicketPaymentStatus(ticketId, {
     slaId: (ticketDetails as { sla_id?: string | null } | undefined)?.sla_id ?? null,
-    isFree: isFreeSupport(paymentSettings),
+    isFree: isFreeSupport(effectivePricing),
+    ticketStatus: ticket?.status ?? null,
+    // Flat fee follows the ticket's snapshot only, like the DB gate (legacy
+    // tickets without a snapshot keep needing an authorized hold).
+    isFlatFee: !!pricingSnapshot && isFlatFeePricing(effectivePricing),
   })
   const { data: messagesData, isLoading: messagesLoading } = useTicketMessages(ticketId)
   const sendMessage = useSendMessage()
@@ -216,7 +236,7 @@ export default function TicketDetailPage() {
   
   // Format payment values (convert cents to dollars); null until the project
   // has a payment settings row — no placeholder prices.
-  const rates = formatTicketRates(paymentSettings)
+  const rates = formatTicketRates(effectivePricing)
 
   // Set up real-time subscriptions
   useRealtimeMessages(ticketId)
@@ -301,10 +321,19 @@ export default function TicketDetailPage() {
     prevTimeReviewRequestedAtRef.current = timeReviewRequestedAt
     if (prev === undefined || isTicketEnded) return
     if (prev && !timeReviewRequestedAt) {
-      toast.info("The logged time summary has been resolved.", {
-        description: "Check the chat for the outcome, then end the session from End ticket.",
-      })
+      if (pendingReviewCount > 0) {
+        // Time changed after the summary was sent; the backend withdrew it.
+        toast.info("The summary was withdrawn because the logged time changed.", {
+          description: "Send the updated summary to the user before ending the session.",
+        })
+      } else {
+        toast.info("The logged time summary has been resolved.", {
+          description: "Check the chat for the outcome, then end the session from End ticket.",
+        })
+      }
     }
+    // pendingReviewCount is read at the moment the request clears; not a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeReviewRequestedAt, isTicketEnded])
 
   const handleRequestTimeEntryReview = async () => {
@@ -566,6 +595,17 @@ export default function TicketDetailPage() {
       setJustClaimedLocal(true)
     } catch (error) {
       console.error("Failed to claim ticket:", error)
+      const hint = (error as { hint?: string } | null)?.hint
+      if (hint === "claim_own_ticket") {
+        toast.error("You can't claim a ticket you opened yourself.", {
+          description: "Another helper or a project admin needs to take it.",
+        })
+        return
+      }
+      if (hint === "ticket_already_claimed") {
+        toast.error("Another helper has already claimed this ticket.")
+        return
+      }
       toast.error("Couldn't claim the ticket. Please try again.", {
         description: error instanceof Error ? error.message : undefined,
       })
@@ -600,8 +640,14 @@ export default function TicketDetailPage() {
       })
     } catch (error) {
       console.error("Failed to end ticket:", error)
+      const hint = (error as { hint?: string } | null)?.hint
       toast.error("Couldn't end the ticket. It is still open.", {
-        description: error instanceof Error ? error.message : "Please try again.",
+        description:
+          hint === "ticket_has_pending_time"
+            ? "Some logged time is still waiting for the user's confirmation. Send the summary first, or remove those entries."
+            : error instanceof Error
+              ? error.message
+              : "Please try again.",
       })
       throw error
     }
@@ -618,12 +664,17 @@ export default function TicketDetailPage() {
     })
     if (endedEventError) console.warn("Failed to log ended event:", endedEventError)
 
-    // Capture the authorized hold and kick off payout distribution. Only when
-    // the helper actually helped (status=completed), the ticket isn't
-    // SLA-covered (those bill via metered usage), and a hold is in place
-    // (status=authorized). "Not able to help" leaves the hold to auto-expire.
+    // Capture and kick off payout distribution when the helper actually helped
+    // (status=completed) on a billable ticket (not SLA-covered, not free, some
+    // payment exists). The backend captures the open hold, or charges confirmed
+    // time to the saved card when a weekly renewal failed. "Not able to help"
+    // is never charged.
     const isSlaCovered = !!(ticketDetails as { sla_id?: string | null } | undefined)?.sla_id
-    if (status === "completed" && !isSlaCovered && paymentGate.status === "authorized") {
+    const billable =
+      paymentGate.status !== "free" &&
+      paymentGate.status !== "none" &&
+      paymentGate.status !== "sla_covered"
+    if (status === "completed" && !isSlaCovered && billable) {
       void supabase
         .from("tickets_events")
         .insert({ ticket_id: ticketId, type: "payment_processing", payload: {} })
@@ -633,10 +684,7 @@ export default function TicketDetailPage() {
       captureTicket.mutate(
         { ticketId },
         {
-          onError: (error) =>
-            toast.error(`Payment failed: ${error.message}`, {
-              description: "The user has been asked to update their card. You can also retry below.",
-            }),
+          onError: (error) => notifyCaptureError(error, "The user has been asked to update their card. You can also retry below."),
         },
       )
     }
@@ -732,16 +780,31 @@ export default function TicketDetailPage() {
   const paymentSettled =
     paymentGate.status === "distributing" ||
     paymentGate.status === "completed" ||
-    captureTicket.isSuccess
+    (captureTicket.isSuccess && captureTicket.data?.status !== "processing")
   // 403s and "Stripe captured but our row did not update" are not card failures:
   // the hold is still (or already) captured, so never offer "update your card" for them.
   const captureErrorCode = (captureTicket.error as { code?: string } | null)?.code
   const captureNonCardError =
     captureErrorCode === "capture_recorded_in_stripe_only" ||
     captureErrorCode === "not_ticket_helper_or_admin" ||
-    captureErrorCode === "ticket_not_ended"
+    captureErrorCode === "ticket_not_ended" ||
+    captureErrorCode === "charge_outcome_unknown"
+  // Settled per the payments rows (aggregated over all of them once the ticket
+  // is closed): a card error from this session's capture no longer means
+  // failed (a real decline also writes a failed row, which the rows reflect).
+  const settledByRows =
+    paymentGate.status === "distributing" ||
+    paymentGate.status === "completed" ||
+    paymentGate.status === "waived" ||
+    paymentGate.status === "refund_pending"
   const paymentFailed =
-    (captureTicket.isError && !captureNonCardError) || paymentGate.status === "failed"
+    !settledByRows && ((captureTicket.isError && !captureNonCardError) || paymentGate.status === "failed")
+  // Authorization / ordering errors: nothing was charged and the card is fine,
+  // so offer a neutral retry instead of leaving the panel on "Processing…".
+  const captureNeedsRetry =
+    captureErrorCode === "not_ticket_helper_or_admin" ||
+    captureErrorCode === "ticket_not_ended" ||
+    captureErrorCode === "charge_outcome_unknown"
   // Why it failed: Stripe's message from the payments row (realtime, survives
   // reloads), else from the last capture attempt in this session.
   const paymentFailureReason = paymentFailed
@@ -750,22 +813,36 @@ export default function TicketDetailPage() {
   const paymentProcessing =
     !paymentSettled &&
     !paymentFailed &&
+    !captureNeedsRetry &&
     (captureTicket.isPending ||
       paymentGate.status === "authorized" ||
-      paymentGate.status === "pending")
-  const chargedLabel = isCancelledEnd
-    ? "No charge"
-    : paymentGate.status === "free"
-      ? "Free support"
-    : paymentSettled && chargedSmallestUnit != null
-      ? `$${(chargedSmallestUnit / 100).toFixed(2)}`
-      : paymentProcessing
-        ? "Processing…"
-        : paymentFailed
-          ? "Failed"
-          : "—"
-  // Who got what out of the charge. Shown once the capture has settled.
+      paymentGate.status === "pending" ||
+      paymentGate.status === "processing")
+  const captureChargedNothing =
+    captureTicket.data?.status === "not_billable" || captureTicket.data?.status === "released"
   const formatUsd = (smallestUnit: number) => `$${(smallestUnit / 100).toFixed(2)}`
+  const chargedLabel =
+    // Cancelled after a weekly segment was captured: flagged for a refund.
+    paymentGate.status === "refund_pending"
+      ? paymentGate.capturedAmountSmallestUnit != null
+        ? `Refund pending (${formatUsd(paymentGate.capturedAmountSmallestUnit)} collected)`
+        : "Refund pending"
+      : isCancelledEnd
+        ? "No charge"
+        : paymentGate.status === "free"
+          ? "Free support"
+          : paymentSettled && chargedSmallestUnit != null
+            ? formatUsd(chargedSmallestUnit)
+            : paymentGate.status === "waived"
+              ? "No charge (amount below the card minimum)"
+              : captureChargedNothing
+                ? "No charge"
+                : paymentProcessing
+                  ? "Processing…"
+                  : paymentFailed
+                    ? "Failed"
+                    : "—"
+  // Who got what out of the charge. Shown once the capture has settled.
   const chargeSplits =
     !isCancelledEnd && paymentSettled && chargedSmallestUnit != null ? paymentGate.capturedSplits : null
   const billedHelperCount = new Set(
@@ -1127,16 +1204,18 @@ export default function TicketDetailPage() {
                                   The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
-                              {paymentFailed && (
+                              {captureNeedsRetry && !paymentFailed && (
+                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                  {captureTicket.error?.message ?? "The payment hasn't been captured yet."}
+                                </p>
+                              )}
+                              {(paymentFailed || captureNeedsRetry) && (
                                 <Button
                                   onClick={() =>
                                     captureTicket.mutate(
                                       { ticketId },
                                       {
-                                        onError: (error) =>
-                                          toast.error(`Payment failed: ${error.message}`, {
-                                            description: "The user has been asked to update their card.",
-                                          }),
+                                        onError: (error) => notifyCaptureError(error, "The user has been asked to update their card."),
                                       },
                                     )
                                   }

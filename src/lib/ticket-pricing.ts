@@ -27,7 +27,20 @@ export function isFreeSupport(settings: TicketPriceSettings | null | undefined):
   )
 }
 
-const centsToDollars = (cents: number | null | undefined) => ((cents ?? 0) / 100).toFixed(2)
+/**
+ * A flat-fee ticket: both per-minute rates are zero, so once the start price
+ * is collected more time costs nothing. Mirrors the flat-fee branch of the DB
+ * gate `enforce_time_entry_payment_gate` (which reads the ticket's pricing
+ * snapshot): logging stays open after the start price was captured, and the
+ * weekly rehold places no further hold. Returns false while the settings
+ * haven't loaded.
+ */
+export function isFlatFeePricing(settings: TicketPriceSettings | null | undefined): boolean {
+  if (!settings) return false
+  return (settings.ticket_price_minute_first_60 ?? 0) <= 0 && (settings.ticket_price_minute_after_60 ?? 0) <= 0
+}
+
+const centsToDollars =(cents: number | null | undefined) => ((cents ?? 0) / 100).toFixed(2)
 
 /**
  * Ticket prices formatted as dollar strings. Returns `null` while the settings

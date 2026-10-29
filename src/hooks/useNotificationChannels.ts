@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toEdgeFunctionError } from "@/lib/functions-error";
 import { supabase } from "@/lib/supabase/client";
 
 export type ChannelScope = "project" | "user";
@@ -16,7 +17,7 @@ export interface NotificationChannel {
 
 async function invokeChannels<T>(body: Record<string, unknown>): Promise<T> {
     const { data, error } = await supabase.functions.invoke("notification-channels", { body });
-    if (error) throw error;
+    if (error) throw await toEdgeFunctionError(error, "Notification channel request failed");
     if (data?.error) throw new Error(data.error);
     return data as T;
 }

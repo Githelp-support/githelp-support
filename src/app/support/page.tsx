@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -64,6 +65,7 @@ export default function SupportPage() {
   const [hasEnteredChat, setHasEnteredChat] = useState(false)
   const { user, setProjectRole } = useUser()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const params = useParams<{ slug?: string }>()
@@ -93,16 +95,13 @@ export default function SupportPage() {
   // Fetch resources and branding from database
   const { data: resourcesData, isLoading: resourcesLoading } = useProjectResources(projectId || "")
   const { data: brandingData } = useProjectBranding(projectId || "")
-  const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
+  const { data: paymentSettings, isLoading: paymentSettingsLoading } = useProjectPaymentSettings(projectId || "")
   const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(projectId || "")
 
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
 
-  // Format payment values (convert cents to dollars); null until the project
-  // has payment settings — no placeholder prices.
-  const rates = formatTicketRates(paymentSettings)
 
   // Transform resources data
   const resources = resourcesData || []
@@ -126,6 +125,12 @@ export default function SupportPage() {
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
   const { data: liveTicket } = useTicket(ticketId)
+  // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
+  const ticketPricingSnapshot = (liveTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
+  const effectivePricing = ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings
+  // Format payment values (convert cents to dollars); null until the project
+  // has payment settings — no placeholder prices. An open ticket shows its snapshot.
+  const rates = formatTicketRates(effectivePricing)
 
   const isAuthenticated = !!user?.id
 
@@ -170,6 +175,8 @@ export default function SupportPage() {
             ? "There is no logged time waiting for your confirmation."
             : hint === "ticket_ended"
               ? "The session has already ended."
+              : hint === "review_withdrawn"
+                ? "The helper changed the logged time. Wait for the updated summary."
               : "Couldn't save your confirmation. Please try again.",
       )
       throw error
@@ -191,7 +198,11 @@ export default function SupportPage() {
   const ticketEnded = liveTicket?.status === "completed" || liveTicket?.status === "cancelled"
   // SLA coverage comes from the ticket row only (never from the URL).
   const slaId = liveTicket?.sla_id ?? null
-  const paymentStatus = useTicketPaymentStatus(ticketId || null, { slaId, isFree: isFreeSupport(paymentSettings) })
+  const paymentStatus = useTicketPaymentStatus(ticketId || null, {
+    slaId,
+    isFree: isFreeSupport(effectivePricing),
+    ticketStatus: liveTicket?.status ?? null,
+  })
 
   // Mark the latest message as read so the sidebar's unread dot clears for
   // the customer too (mirrors the helper page). Depend on ids only: the
@@ -302,7 +313,9 @@ export default function SupportPage() {
       window.location.assign(out.checkoutUrl)
     } catch (err) {
       console.error("Failed to start Stripe Checkout:", err)
-      toast.error("Couldn't open Stripe Checkout. Please try again.")
+      // useCreateCheckoutForTicket throws toEdgeFunctionError, so the message
+      // is the backend's mapped copy (same as /support/chat).
+      toast.error(err instanceof Error ? err.message : "Couldn't open Stripe Checkout. Please try again.")
     }
   }
 
@@ -316,6 +329,11 @@ export default function SupportPage() {
     }
     if (ticketEnded) {
       toast.error("This ticket is closed, so new messages can't be sent.")
+      return
+    }
+    // A new ticket must be created against prices the customer has actually seen.
+    if (!ticketCreated && (paymentSettingsLoading || !paymentSettings)) {
+      toast.error(paymentSettingsLoading ? "Loading the project's rates — try again in a moment." : "This project isn't accepting tickets yet.")
       return
     }
     if (sendingRef.current) return
@@ -333,12 +351,35 @@ export default function SupportPage() {
             created_by: user.id,
             status: "available",
             priority: "medium",
-          })
+            // The prices the customer was shown; the database refuses the ticket if
+            // they no longer match, so nobody is billed at prices they never saw.
+            ...(paymentSettings
+              ? {
+                  pricing_snapshot: {
+                    ticket_start_price: paymentSettings.ticket_start_price,
+                    ticket_price_minute_first_60: paymentSettings.ticket_price_minute_first_60,
+                    ticket_price_minute_after_60: paymentSettings.ticket_price_minute_after_60,
+                  },
+                }
+              : {}),
+          } as Parameters<typeof createTicket.mutateAsync>[0])
         } catch (error) {
           console.error("Failed to create ticket:", error)
-          toast.error("Couldn't create your ticket. Please try again.", {
-            description: error instanceof Error ? error.message : undefined,
-          })
+          const hint = (error as { hint?: string } | null)?.hint
+          if (hint === "ticket_prices_changed") {
+            toast.error("The project's prices just changed.", {
+              description: "Please review the updated rates, then send your message again.",
+            })
+            void queryClient.invalidateQueries({ queryKey: ["project-payment-settings"] })
+          } else if (hint === "project_pricing_missing") {
+            toast.error("This project isn't accepting tickets yet.", {
+              description: "Its pricing hasn't been set up. Please try again later.",
+            })
+          } else {
+            toast.error("Couldn't create your ticket. Please try again.", {
+              description: error instanceof Error ? error.message : undefined,
+            })
+          }
           return
         }
 
@@ -462,7 +503,7 @@ export default function SupportPage() {
       welcomeText={welcomeMessageContent}
       timestamp={nowFormatted}
       rates={rates}
-      isFree={isFreeSupport(paymentSettings)}
+      isFree={isFreeSupport(effectivePricing)}
       isAuthenticated={isAuthenticated}
       ticketCreated={ticketCreated}
       userName={user?.name}
@@ -584,6 +625,7 @@ export default function SupportPage() {
             sendDisabled={!message.trim() || createTicket.isPending}
             sending={isSending}
             isEnded={ticketEnded}
+            paymentStatus={paymentStatus.status}
             // No session → no ticket can be created (RLS requires created_by =
             // auth.uid()), so offer sign-in instead of a composer that fails.
             composerReplacement={
@@ -633,7 +675,7 @@ export default function SupportPage() {
               {activeTab === "rates" && (
                 <RatesAndDetailsContent
                   projectName={projectName}
-                  isFree={isFreeSupport(paymentSettings)}
+                  isFree={isFreeSupport(effectivePricing)}
                   rates={rates}
                   avgResponseSeconds={avgResponseSeconds}
                   avgResponseLoading={avgResponseLoading}

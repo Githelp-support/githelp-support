@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { useQueryClient } from "@tanstack/react-query"
 import { Input } from "@/components/ui/input"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
@@ -66,6 +67,7 @@ export default function UserSupportChatPage() {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user, setProjectRole } = useUser()
   // Where sign-in should bring the visitor back to (this page incl. its query).
   const currentHref = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
@@ -156,10 +158,15 @@ export default function UserSupportChatPage() {
   const slaId = existingTicket?.sla_id ?? null
   const slaCovered = !!slaId
   // Fetch payment settings (the payment status needs them: free support has no payment)
-  const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
+  // effectiveProjectId also covers the ?slug= entry, so the displayed prices are always loaded.
+  const { data: paymentSettings, isLoading: paymentSettingsLoading } = useProjectPaymentSettings(effectiveProjectId)
+  // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
+  const ticketPricingSnapshot = (existingTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
+  const effectivePricing = ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings
   const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, {
     slaId,
-    isFree: isFreeSupport(paymentSettings),
+    isFree: isFreeSupport(effectivePricing),
+    ticketStatus: existingTicket?.status ?? null,
   })
 
   // "End session" from the customer only signals intent: the helper logs any
@@ -251,7 +258,7 @@ export default function UserSupportChatPage() {
   }
   
   // Get user's role in this project
-  const { data: projectRole } = useProjectRole(projectId || undefined)
+  const { data: projectRole } = useProjectRole(effectiveProjectId || undefined)
   
   // Check if user is a support user (has "user" role preference from localStorage)
   const isSupportUser = typeof window !== "undefined" && localStorage.getItem("userRole") === "user"
@@ -262,13 +269,13 @@ export default function UserSupportChatPage() {
     if (isSupportUser) {
       // Support users should not have a projectRole set
       setProjectRole(null)
-    } else if (projectId && projectRole) {
+    } else if (effectiveProjectId && projectRole) {
       setProjectRole(projectRole)
-    } else if (!projectId) {
+    } else if (!effectiveProjectId) {
       setProjectRole(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, projectRole, isSupportUser])
+  }, [effectiveProjectId, projectRole, isSupportUser])
 
   // Check authentication state on mount (must run before any conditional return)
   useEffect(() => {
@@ -280,12 +287,12 @@ export default function UserSupportChatPage() {
   }, [])
 
   // Fetch branding for project logo
-  const { data: brandingData } = useProjectBranding(projectId || "")
+  const { data: brandingData } = useProjectBranding(effectiveProjectId)
   const projectLogo = brandingData?.logo_url || null
   
   // Format payment values (convert cents to dollars); null until the project
   // has payment settings — no placeholder prices.
-  const rates = formatTicketRates(paymentSettings)
+  const rates = formatTicketRates(effectivePricing)
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
@@ -348,6 +355,8 @@ export default function UserSupportChatPage() {
             ? "There is no logged time waiting for your confirmation."
             : hint === "ticket_ended"
               ? "The session has already ended."
+              : hint === "review_withdrawn"
+                ? "The helper changed the logged time. Wait for the updated summary."
               : "Couldn't save your confirmation. Please try again.",
       )
       throw error
@@ -644,6 +653,11 @@ export default function UserSupportChatPage() {
       toast.error("This ticket is closed, so new messages can't be sent.")
       return
     }
+    // A new ticket must be created against prices the customer has actually seen.
+    if (!ticketCreated && (paymentSettingsLoading || !paymentSettings)) {
+      toast.error(paymentSettingsLoading ? "Loading the project's rates — try again in a moment." : "This project isn't accepting tickets yet.")
+      return
+    }
     if (sendingRef.current) return
     sendingRef.current = true
     setIsSending(true)
@@ -659,12 +673,35 @@ export default function UserSupportChatPage() {
             created_by: user.id,
             status: "available",
             priority: "medium",
-          })
+            // The prices the customer was shown; the database refuses the ticket if
+            // they no longer match, so nobody is billed at prices they never saw.
+            ...(paymentSettings
+              ? {
+                  pricing_snapshot: {
+                    ticket_start_price: paymentSettings.ticket_start_price,
+                    ticket_price_minute_first_60: paymentSettings.ticket_price_minute_first_60,
+                    ticket_price_minute_after_60: paymentSettings.ticket_price_minute_after_60,
+                  },
+                }
+              : {}),
+          } as Parameters<typeof createTicket.mutateAsync>[0])
         } catch (error) {
           console.error("Failed to create ticket:", error)
-          toast.error("Couldn't create your ticket. Please try again.", {
-            description: error instanceof Error ? error.message : undefined,
-          })
+          const hint = (error as { hint?: string } | null)?.hint
+          if (hint === "ticket_prices_changed") {
+            toast.error("The project's prices just changed.", {
+              description: "Please review the updated rates, then send your message again.",
+            })
+            void queryClient.invalidateQueries({ queryKey: ["project-payment-settings"] })
+          } else if (hint === "project_pricing_missing") {
+            toast.error("This project isn't accepting tickets yet.", {
+              description: "Its pricing hasn't been set up. Please try again later.",
+            })
+          } else {
+            toast.error("Couldn't create your ticket. Please try again.", {
+              description: error instanceof Error ? error.message : undefined,
+            })
+          }
           return
         }
 
@@ -771,7 +808,7 @@ export default function UserSupportChatPage() {
             welcomeText={welcomeText}
             timestamp={nowFormatted}
             rates={rates}
-            isFree={isFreeSupport(paymentSettings)}
+            isFree={isFreeSupport(effectivePricing)}
             isAuthenticated={isAuthenticated}
             ticketCreated={ticketCreated}
             userName={user?.name}
@@ -789,6 +826,7 @@ export default function UserSupportChatPage() {
         sendDisabled={!message.trim() || createTicket.isPending}
         sending={isSending}
         isEnded={ticketEnded}
+        paymentStatus={paymentStatus.status}
         // No session → no ticket can be created (RLS requires created_by =
         // auth.uid()), so offer sign-in instead of a composer that fails.
         composerReplacement={

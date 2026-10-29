@@ -47,6 +47,15 @@ import {
 type SortDirection = "asc" | "desc"
 type TicketsSortField = "ticket" | "date" | "amount" | "status"
 
+/** Close date: cancelled tickets carry cancelled_at, completed ones completed_at. */
+function ticketDisplayDate(ticket: { status?: string | null; completed_at?: string | null; created_at?: string | null }): string | null {
+  const closed =
+    ticket.status === "cancelled"
+      ? (ticket as { cancelled_at?: string | null }).cancelled_at ?? ticket.completed_at
+      : ticket.completed_at
+  return closed ?? ticket.created_at ?? null
+}
+
 // Same Badge classes as Reports: design-token colours from getStatusBadgeClass.
 const statusBadgeClass = (label: string) =>
   `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
@@ -284,7 +293,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   const periodTickets = useMemo(() => {
     const all = (helperTicketsData ?? []).filter(isHelperTicket)
     if (!targetMonth) return all
-    return all.filter((ticket) => monthLabel(ticket.completed_at ?? ticket.created_at) === targetMonth)
+    return all.filter((ticket) => monthLabel(ticketDisplayDate(ticket) ?? "") === targetMonth)
   }, [helperTicketsData, targetMonth])
 
   const periodTimeEntries = useMemo(() => {
@@ -356,7 +365,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 id: ticket.id,
                 shortId: getShortTicketId(ticket.id),
                 title: ticket.title?.trim() || "—",
-                dateIso: ticket.completed_at ?? ticket.created_at ?? null,
+                dateIso: ticketDisplayDate(ticket),
                 amountRaw: group ? group.amountSmallestUnit : null,
                 currency: group?.currency ?? "usd",
                 status: TICKET_STATUS_LABEL[ticket.status],

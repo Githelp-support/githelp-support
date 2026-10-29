@@ -26,6 +26,14 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
     "Only the helper who claimed this ticket can do that.",
   not_ticket_helper_or_admin:
     "Only the helper who claimed this ticket or a project admin can end and charge it.",
+  capture_recorded_in_stripe_only:
+    "The payment was captured. It will be recorded automatically in a few minutes.",
+  charge_outcome_unknown:
+    "The payment provider did not confirm the charge. It is safe to retry.",
+  ticket_cancelled_not_billable:
+    "This ticket was closed as \"not able to help\", so the customer is not charged.",
+  ticket_not_open:
+    "This ticket is already closed, so no payment can be requested for it.",
   ticket_not_ended:
     "The ticket has to be ended before the payment can be captured.",
 }
@@ -85,12 +93,18 @@ export async function toEdgeFunctionError(error: unknown, fallback: string): Pro
 
   const response = responseFrom(error)
   const body = await getFunctionErrorBody(error)
-  const rawCode = body && typeof body.error === "string" ? body.error : null
+  // Bodies are `{ error: code, message? }`; some older handlers send
+  // `{ error: sentence, code }`, so prefer an explicit `code` field.
+  const codeField = body && typeof body.code === "string" ? body.code : null
+  const errorField = body && typeof body.error === "string" ? body.error : null
+  const rawCode = codeField ?? errorField
   const rawMessage = body && typeof body.message === "string" ? body.message : null
 
   let message: string | null = null
-  if (rawCode) message = friendlyMessageFor(rawCode) ?? rawCode
-  else if (rawMessage) message = rawMessage
+  if (rawCode) {
+    message =
+      friendlyMessageFor(rawCode) ?? rawMessage ?? (codeField && errorField ? errorField : rawCode)
+  } else if (rawMessage) message = rawMessage
 
   if (!message) {
     const own = error instanceof Error ? error.message : (error as { message?: unknown } | null)?.message

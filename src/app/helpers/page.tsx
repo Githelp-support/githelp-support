@@ -271,14 +271,21 @@ export default function HelpersPage() {
     // request accepted, so a failure never leaves an accepted request with
     // no helper row.
     try {
-      await createHelper.mutateAsync({
-        discord_username: "",
-        github_username: "",
-        name: selectedRequest.name,
-        email: selectedRequest.email,
-        category: requestData.category, // core, extended, or community
-        project_id: projectId,
-      })
+      try {
+        await createHelper.mutateAsync({
+          discord_username: "",
+          github_username: "",
+          name: selectedRequest.name,
+          email: selectedRequest.email,
+          category: requestData.category, // core, extended, or community
+          project_id: projectId,
+        })
+      } catch (inviteErr) {
+        // A retry after the request update failed: the helper already exists, so
+        // carry on and mark the request accepted.
+        const msg = inviteErr instanceof Error ? inviteErr.message : ""
+        if (!/already a helper/i.test(msg)) throw inviteErr
+      }
       await updatePendingRequest.mutateAsync({
         userId: selectedRequest.user_id,
         projectId: projectId,

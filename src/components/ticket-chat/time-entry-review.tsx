@@ -253,7 +253,9 @@ function TimeEntrySummaryForm({
   const accepting = toConfirm.filter((e) => !declinedIds.has(e.id))
   const chargedTotal = sumMinutes([...accepting, ...alreadyConfirmed])
   const missingReason = Object.values(declines).some((r) => r.trim().length === 0)
-  const canSubmit = !pending && toConfirm.length > 0 && !missingReason
+  // An empty summary (the helper removed every entry) can still be acknowledged:
+  // the RPC then just clears the open request.
+  const canSubmit = !pending && !missingReason
 
   const toggleDecline = (id: string) =>
     setDeclines((prev) => {
@@ -372,9 +374,11 @@ function TimeEntrySummaryForm({
         <Button onClick={submit} disabled={!canSubmit}>
           {pending
             ? "Confirming…"
-            : declinedIds.size > 0
-              ? `Confirm ${accepting.length} and decline ${declinedIds.size}`
-              : "Confirm logged time"}
+            : toConfirm.length === 0
+              ? "Close summary"
+              : declinedIds.size > 0
+                ? `Confirm ${accepting.length} and decline ${declinedIds.size}`
+                : "Confirm logged time"}
         </Button>
       </DialogFooter>
     </>

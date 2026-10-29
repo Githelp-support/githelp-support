@@ -3,7 +3,16 @@ import { supabase } from "@/lib/supabase/client"
 import { toEdgeFunctionError } from "@/lib/functions-error"
 
 /** `free`: the project offers free support, so nothing was charged. */
-export type CaptureTicketStatus = "distributing" | "completed" | "failed" | "free"
+/** `not_billable` / `released`: nothing was charged (no billable work, or holds released). */
+export type CaptureTicketStatus =
+  | "distributing"
+  | "completed"
+  | "failed"
+  | "free"
+  | "processing"
+  | "not_billable"
+  | "released"
+  | "ticket_not_ended"
 
 interface CaptureArgs {
   ticketId: string
