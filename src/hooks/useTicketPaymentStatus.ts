@@ -33,7 +33,22 @@ export interface TicketPaymentResult {
    * `failed` (declined, expired authorization, …). Null otherwise.
    */
   failureReason: string | null
+  /**
+   * Message of the last failed `payments` read, or null. While set, `status`
+   * reflects the last successful read (or "none"), so callers should show the
+   * error rather than a silent "waiting for payment".
+   */
+  error: string | null
 }
+
+const EMPTY: Omit<TicketPaymentResult, "status" | "isReady"> = {
+  capturedAmountSmallestUnit: null,
+  capturedSplits: null,
+  failureReason: null,
+  error: null,
+}
+
+const TERMINAL_STATUSES = new Set<TicketPaymentStatus>(["completed", "failed", "cancelled"])
 
 export interface CapturedSplits {
   helperSmallestUnit: number
@@ -82,7 +97,7 @@ export function useTicketPaymentStatus(
   const queryClient = useQueryClient()
   const enabled = !!ticketId && !opts.slaId
 
-  const { data } = useQuery({
+  const { data, error: queryError } = useQuery({
     queryKey: ["ticket-payment-status", ticketId],
     enabled,
     queryFn: async () => {
@@ -97,24 +112,30 @@ export function useTicketPaymentStatus(
       return ((resp.data as PaymentRow[] | null) ?? [])
     },
     staleTime: 30_000,
-    // Realtime is the primary signal, but poll while the payment is still in
-    // flight (no row yet / pending / requires_action / authorized-awaiting-
-    // capture) so the UI converges even if a realtime event is missed.
+    // Realtime is the primary signal; polling is only a safety net while the
+    // payment is still in flight. No row yet / pending / requires_action poll
+    // every 5 s (the customer is in Checkout or 3-D Secure right now); an
+    // authorized hold only changes at capture, so 30 s is plenty; terminal
+    // rows stop polling altogether.
     refetchInterval: (query) => {
       const rows = query.state.data
       const latest = rows?.[0]
       // Free support: no payments row is ever expected, so don't poll for one.
       if (!latest) return opts.isFree ? false : 5_000
-      return latest.status === "completed" || latest.status === "failed" || latest.status === "cancelled"
-        ? false
-        : 5_000
+      if (TERMINAL_STATUSES.has(latest.status)) return false
+      if (latest.status === "requires_action" || latest.status === "pending") return 5_000
+      return 30_000
     },
   })
+  const error = queryError ? (queryError instanceof Error ? queryError.message : String(queryError)) : null
 
   useEffect(() => {
     if (!ticketId || opts.slaId) return
+    // Unique topic per mount: a fixed topic would make two mounted views
+    // (or a fast remount) share one channel and its handlers.
+    const topic = `payments:ticket=${ticketId}:${Math.random().toString(36).slice(2, 10)}`
     const channel = supabase
-      .channel(`payments:ticket=${ticketId}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "payments", filter: `ticket_id=eq.${ticketId}` },
@@ -122,22 +143,29 @@ export function useTicketPaymentStatus(
           queryClient.invalidateQueries({ queryKey: ["ticket-payment-status", ticketId] })
         },
       )
-      .subscribe()
+      .subscribe((status) => {
+        // Re-join after a drop: catch up on anything missed meanwhile.
+        if (status === "SUBSCRIBED") {
+          queryClient.invalidateQueries({ queryKey: ["ticket-payment-status", ticketId] })
+        }
+      })
     return () => {
-      channel.unsubscribe()
+      // removeChannel (not unsubscribe) also drops the channel from the
+      // client, so remounts don't accumulate bindings.
+      void supabase.removeChannel(channel)
     }
   }, [ticketId, opts.slaId, queryClient])
 
   if (opts.slaId) {
-    return { status: "sla_covered", isReady: true, capturedAmountSmallestUnit: null, capturedSplits: null, failureReason: null }
+    return { ...EMPTY, status: "sla_covered", isReady: true }
   }
   const latest = data?.[0]
   if (!latest) {
     // `data === undefined` means the rows haven't loaded yet: stay closed until
     // we know there is no payments row, so an existing row always wins.
     return opts.isFree && data !== undefined
-      ? { status: "free", isReady: true, capturedAmountSmallestUnit: null, capturedSplits: null, failureReason: null }
-      : { status: "none", isReady: false, capturedAmountSmallestUnit: null, capturedSplits: null, failureReason: null }
+      ? { ...EMPTY, status: "free", isReady: true, error }
+      : { ...EMPTY, status: "none", isReady: false, error }
   }
   const capturedRows = (data ?? []).filter(
     (r) => (r.status === "distributing" || r.status === "completed") && r.captured_amount_smallest_unit != null,
@@ -160,5 +188,6 @@ export function useTicketPaymentStatus(
     capturedAmountSmallestUnit: capturedTotal,
     capturedSplits,
     failureReason: latest.status === "failed" ? latest.failure_reason?.trim() || null : null,
+    error,
   }
 }

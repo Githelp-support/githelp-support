@@ -15,12 +15,10 @@ const nextConfig: NextConfig = {
                 port: "",
                 pathname: "/**",
             },
-            {
-                protocol: "http",
-                hostname: "localhost",
-                port: "54321",
-                pathname: "/**",
-            },
+            // Local Supabase stack — development only.
+            ...(process.env.NODE_ENV === "development"
+                ? [{ protocol: "http" as const, hostname: "localhost", port: "54321", pathname: "/**" }]
+                : []),
             {
                 // Supabase Storage — hosts project logos and other branding
                 // assets. Covers any *.supabase.co project (the hostname in
@@ -31,7 +29,8 @@ const nextConfig: NextConfig = {
                 pathname: "/**",
             },
         ],
-        dangerouslyAllowLocalIP: true, // Allow images from localhost/private IPs (development only)
+        // Private-IP image hosts are only needed against a local Supabase stack.
+        dangerouslyAllowLocalIP: process.env.NODE_ENV === "development",
     },
     devIndicators: false,
 };

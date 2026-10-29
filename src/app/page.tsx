@@ -35,7 +35,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (isUserLoading) return
     if (!projectId) return
-    if (isProjectRoleLoading || isProjectRoleFetching) return
+    if (isProjectRoleLoading || (isProjectRoleFetching && projectRole === undefined)) return
     if (!projectRole) return
 
     if (projectRole === "helper") {
@@ -168,7 +168,8 @@ export default function Dashboard() {
   // redirect kicks in.
   const isResolvingRole =
     isUserLoading ||
-    (!!projectId && (isProjectRoleLoading || isProjectRoleFetching))
+    (!!projectId &&
+      (isProjectRoleLoading || (isProjectRoleFetching && projectRole === undefined)))
   const isRedirectingNonAdmin =
     !!projectId && projectRole !== undefined && projectRole !== "admin"
 

@@ -57,8 +57,35 @@ export function useRealtimeTicket(ticketId?: string | null) {
         predicate: (q) => q.queryKey[0] === 'time-entries' && q.queryKey[2] === ticketId,
       })
 
+    const refreshTicket = () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['ticket-with-details', ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['ticket-payment-status', ticketId] })
+      invalidateParticipants()
+      invalidateTimeEntries()
+      void refetchMessages()
+    }
+
+    // Missed events are never replayed, so a (re-)join refreshes everything
+    // this channel feeds. The first join only invalidates (dedupes onto the
+    // initial fetches); a re-join after a drop does the full cancel+refetch.
+    let joinedBefore = false
+    const onJoined = () => {
+      if (joinedBefore) {
+        refreshTicket()
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] })
+        queryClient.invalidateQueries({ queryKey: ['ticket-with-details', ticketId] })
+        queryClient.invalidateQueries({ queryKey: ['ticket-payment-status', ticketId] })
+      }
+      joinedBefore = true
+    }
+
+    // Unique topic per mount: two subscribers on the same fixed topic would
+    // share one channel and its bindings (and tear each other down).
+    const topic = `ticket-row-${ticketId}-${Math.random().toString(36).slice(2, 10)}`
     const channel = supabase
-      .channel(`ticket-row-${ticketId}`)
+      .channel(topic)
       .on(
         'postgres_changes',
         {
@@ -67,14 +94,7 @@ export function useRealtimeTicket(ticketId?: string | null) {
           table: 'tickets',
           filter: `id=eq.${ticketId}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] })
-          queryClient.invalidateQueries({ queryKey: ['ticket-with-details', ticketId] })
-          queryClient.invalidateQueries({ queryKey: ['ticket-payment-status', ticketId] })
-          invalidateParticipants()
-          invalidateTimeEntries()
-          void refetchMessages()
-        },
+        refreshTicket,
       )
       .on(
         'postgres_changes',
@@ -97,11 +117,15 @@ export function useRealtimeTicket(ticketId?: string | null) {
         invalidateTimeEntries,
       )
       .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          onJoined()
+          return
+        }
         // Surface a failed join: a CHANNEL_ERROR here means none of the
         // above bindings deliver, which is otherwise indistinguishable from
         // "nothing changed" in the UI.
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn(`[realtime] ticket-row-${ticketId} ${status}`, err)
+          console.warn(`[realtime] ${topic} ${status}`, err)
         }
       })
 

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { toEdgeFunctionError } from "@/lib/functions-error";
 import type { Database } from "@/types/database";
 
 type Helper = Database["public"]["Tables"]["projects_helpers"]["Row"];
@@ -83,7 +84,7 @@ export function useCreateHelper() {
                 },
             );
 
-            if (error) throw error;
+            if (error) throw await toEdgeFunctionError(error, "Failed to invite user");
 
             if (!data?.success) {
                 throw new Error("Failed to invite user");

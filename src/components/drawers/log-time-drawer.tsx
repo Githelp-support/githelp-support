@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { useState } from "react"
-import type { TimeEntryReviewStatus } from "@/lib/time-entries"
+import { validateLoggedDuration, type TimeEntryReviewStatus } from "@/lib/time-entries"
 
 interface LogTimeDrawerProps {
   isOpen: boolean
@@ -37,21 +37,24 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
   const [hours, setHours] = useState("")
   const [minutes, setMinutes] = useState("")
   const [note, setNote] = useState("") // Added note state
+  const [durationError, setDurationError] = useState<string | null>(null)
 
   const handleSubmit = () => {
-    const hoursNum = Number.parseInt(hours) || 0
-    const minutesNum = Number.parseInt(minutes) || 0
-
-    if (hoursNum === 0 && minutesNum === 0) {
+    // Whole numbers only, minutes < 60, total between 1 minute and 24 hours;
+    // a zero or negative entry must never reach the database.
+    const validation = validateLoggedDuration(hours, minutes)
+    if (!validation.ok) {
+      setDurationError(validation.error)
       return
     }
+    setDurationError(null)
 
     const entry: TimeEntry = {
       id: Date.now().toString(),
       type: timeType,
       date: new Date().toLocaleDateString("en-GB"),
-      hours: hoursNum,
-      minutes: minutesNum,
+      hours: validation.hours,
+      minutes: validation.minutes,
       note: note.trim() || undefined, // Include note if provided
     }
 
@@ -63,6 +66,15 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     setMinutes("")
     setNote("") // Reset note field
     onClose()
+  }
+
+  const handleHoursChange = (value: string) => {
+    setHours(value)
+    if (durationError) setDurationError(null)
+  }
+  const handleMinutesChange = (value: string) => {
+    setMinutes(value)
+    if (durationError) setDurationError(null)
   }
 
   if (!isOpen) return null
@@ -112,11 +124,15 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
               <Input
                 id="hours"
                 type="number"
+                inputMode="numeric"
                 min="0"
-                max="23"
+                max="24"
+                step="1"
                 value={hours}
-                onChange={(e) => setHours(e.target.value)}
+                onChange={(e) => handleHoursChange(e.target.value)}
                 placeholder="0"
+                aria-invalid={!!durationError}
+                aria-describedby={durationError ? "duration-error" : undefined}
                 className="border-input"
               />
             </div>
@@ -127,15 +143,24 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
               <Input
                 id="minutes"
                 type="number"
+                inputMode="numeric"
                 min="0"
                 max="59"
+                step="1"
                 value={minutes}
-                onChange={(e) => setMinutes(e.target.value)}
+                onChange={(e) => handleMinutesChange(e.target.value)}
                 placeholder="0"
+                aria-invalid={!!durationError}
+                aria-describedby={durationError ? "duration-error" : undefined}
                 className="border-input"
               />
             </div>
           </div>
+          {durationError && (
+            <p id="duration-error" role="alert" className="mt-2 text-sm text-destructive">
+              {durationError}
+            </p>
+          )}
         </div>
 
         <div>

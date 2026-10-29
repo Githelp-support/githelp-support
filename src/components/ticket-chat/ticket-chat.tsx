@@ -109,7 +109,15 @@ export interface TicketChatProps {
   onMessageChange: (v: string) => void
   onSend: () => void | Promise<void>
   sendDisabled?: boolean
+  /** A send is in flight (see TicketChatInput). */
+  sending?: boolean
+  /** Closed ticket: the composer and attachments are disabled. */
   isEnded?: boolean
+  /**
+   * Rendered in place of the composer, e.g. a "Sign in to start a ticket"
+   * call-to-action for a visitor without a session.
+   */
+  composerReplacement?: React.ReactNode
 
   /**
    * Customer-side "End session". Pressing the toolbar button does not end the
@@ -177,7 +185,9 @@ export function TicketChat(props: TicketChatProps) {
     onMessageChange,
     onSend,
     sendDisabled,
+    sending,
     isEnded,
+    composerReplacement,
     onRequestEndSession,
     onCancelEndSessionRequest,
     endSessionRequestedAt,
@@ -470,14 +480,17 @@ export function TicketChat(props: TicketChatProps) {
             />
           )}
 
+          {composerReplacement ?? (
           <TicketChatInput
             value={message}
             onChange={onMessageChange}
             onSend={onSend}
             sendDisabled={sendDisabled}
+            sending={sending}
+            disabled={isEnded}
             placeholder="Message #askanything"
-            onImageClick={attachmentStoragePrefix ? () => setImageUploadOpen(true) : undefined}
-            onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
+            onImageClick={attachmentStoragePrefix && !isEnded ? () => setImageUploadOpen(true) : undefined}
+            onImageFiles={attachmentStoragePrefix && !isEnded ? uploadFiles : undefined}
             imagesUploading={isUploading}
             toolbarEndContent={
               !isEnded && onRequestEndSession && !endSessionRequested ? (
@@ -493,6 +506,7 @@ export function TicketChat(props: TicketChatProps) {
               ) : undefined
             }
           />
+          )}
 
           {onRequestEndSession && (
             <EndSessionRequestDialog
@@ -526,7 +540,7 @@ export function TicketChat(props: TicketChatProps) {
             />
           )}
 
-          {attachmentStoragePrefix && (
+          {attachmentStoragePrefix && !isEnded && (
             <AttachImageModal
               open={imageUploadOpen}
               onOpenChange={setImageUploadOpen}

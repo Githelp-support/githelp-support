@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -9,7 +9,8 @@ import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
+import { SignInToStartTicket } from "@/components/support/sign-in-to-start-ticket"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
@@ -31,7 +32,7 @@ import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
-import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
+import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
 import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
@@ -63,8 +64,11 @@ export default function SupportPage() {
   const [hasEnteredChat, setHasEnteredChat] = useState(false)
   const { user, setProjectRole } = useUser()
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const params = useParams<{ slug?: string }>()
+  // Where sign-in should bring the visitor back to (this page incl. ?project/?slug).
+  const currentHref = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
 
   const projectIdParam = searchParams.get("project")
   const slugParam = params?.slug || searchParams.get("slug")
@@ -96,8 +100,9 @@ export default function SupportPage() {
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
 
-  // Format payment values (convert cents to dollars)
-  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
+  // Format payment values (convert cents to dollars); null until the project
+  // has payment settings — no placeholder prices.
+  const rates = formatTicketRates(paymentSettings)
 
   // Transform resources data
   const resources = resourcesData || []
@@ -107,6 +112,10 @@ export default function SupportPage() {
   const [ticketCreated, setTicketCreated] = useState(false)
   const [ticketId, setTicketId] = useState("")
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
+  // In-flight guard: the mutation's isPending only flips after the lazy-loaded
+  // formatter has run, so a fast double Enter would otherwise send twice.
+  const [isSending, setIsSending] = useState(false)
+  const sendingRef = useRef(false)
 
   const createTicket = useCreateTicket()
   const createCheckout = useCreateCheckoutForTicket()
@@ -180,7 +189,20 @@ export default function SupportPage() {
     }
   }
   const ticketEnded = liveTicket?.status === "completed" || liveTicket?.status === "cancelled"
-  const paymentStatus = useTicketPaymentStatus(ticketId || null, { isFree: isFreeSupport(paymentSettings) })
+  // SLA coverage comes from the ticket row only (never from the URL).
+  const slaId = liveTicket?.sla_id ?? null
+  const paymentStatus = useTicketPaymentStatus(ticketId || null, { slaId, isFree: isFreeSupport(paymentSettings) })
+
+  // Mark the latest message as read so the sidebar's unread dot clears for
+  // the customer too (mirrors the helper page). Depend on ids only: the
+  // mutation object changes identity and would loop with the invalidation.
+  const updateLastReadMessage = useUpdateLastReadMessage()
+  const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
+  useEffect(() => {
+    if (!ticketId || !user?.id || !lastMessageId) return
+    updateLastReadMessage.mutate({ ticketId, participantId: user.id, messageId: lastMessageId })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
+  }, [ticketId, user?.id, lastMessageId])
 
   // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
@@ -215,7 +237,7 @@ export default function SupportPage() {
           totalLoggedFormatted,
           chargedLine: describeChargedLine({
             cancelled,
-            slaCovered: false,
+            slaCovered: !!slaId,
             paymentStatus: paymentStatus.status,
             capturedAmountSmallestUnit: paymentStatus.capturedAmountSmallestUnit,
             failureReason: paymentStatus.failureReason,
@@ -234,6 +256,7 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    slaId,
     avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
@@ -285,17 +308,39 @@ export default function SupportPage() {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return
+    // Tickets need a signed-in creator (RLS: created_by = auth.uid()); the
+    // composer is replaced by a sign-in CTA while signed out, this is a guard.
+    if (!user?.id) {
+      setIsSignInModalOpen(true)
+      return
+    }
+    if (ticketEnded) {
+      toast.error("This ticket is closed, so new messages can't be sent.")
+      return
+    }
+    if (sendingRef.current) return
+    sendingRef.current = true
+    setIsSending(true)
 
-    if (!ticketCreated && projectId) {
-      try {
-        const ticket = await createTicket.mutateAsync({
-          project_id: projectId,
-          title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
-          description: message,
-          created_by: user?.id || null,
-          status: "available",
-          priority: "medium",
-        })
+    try {
+      if (!ticketCreated && projectId) {
+        let ticket
+        try {
+          ticket = await createTicket.mutateAsync({
+            project_id: projectId,
+            title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
+            description: message,
+            created_by: user.id,
+            status: "available",
+            priority: "medium",
+          })
+        } catch (error) {
+          console.error("Failed to create ticket:", error)
+          toast.error("Couldn't create your ticket. Please try again.", {
+            description: error instanceof Error ? error.message : undefined,
+          })
+          return
+        }
 
         setTicketCreated(true)
         setTicketId(ticket.id)
@@ -304,7 +349,7 @@ export default function SupportPage() {
         // Show the question immediately; hidden once the persisted message arrives.
         setPendingFirstMessage(firstMessageContent)
 
-        if (user?.id) {
+        try {
           await ensureParticipant.mutateAsync({
             ticketId: ticket.id,
             participantId: user.id,
@@ -315,6 +360,13 @@ export default function SupportPage() {
             sender_id: user.id,
             sender_type: "user",
             content: firstMessageContent,
+          })
+        } catch (error) {
+          // The ticket exists (with the question as its description); only the
+          // chat copy of the first message failed.
+          console.error("Failed to post the first message:", error)
+          toast.error("Your ticket was created, but the message couldn't be posted to the chat.", {
+            description: error instanceof Error ? error.message : undefined,
           })
         }
 
@@ -327,26 +379,31 @@ export default function SupportPage() {
               description: ticket.description ?? firstMessageContent,
             },
           })
-          .then(() => {})
+          .then((resp: { error?: { message?: string } | null }) => {
+            if (resp?.error) console.warn("classify-ticket failed:", resp.error.message)
+          })
           .catch(() => {})
-      } catch (error) {
-        console.error("Failed to create ticket:", error)
         return
       }
-      return
-    }
 
-    if (!ticketId || !user?.id) return
-    try {
-      await sendMessage.mutateAsync({
-        ticket_id: ticketId,
-        sender_id: user.id,
-        sender_type: "user",
-        content: await prepareOutgoingMessage(message),
-      })
-      setMessage("")
-    } catch (error) {
-      console.error("Failed to send message:", error)
+      if (!ticketId) return
+      try {
+        await sendMessage.mutateAsync({
+          ticket_id: ticketId,
+          sender_id: user.id,
+          sender_type: "user",
+          content: await prepareOutgoingMessage(message),
+        })
+        setMessage("")
+      } catch (error) {
+        console.error("Failed to send message:", error)
+        toast.error("Couldn't send your message. Please try again.", {
+          description: error instanceof Error ? error.message : undefined,
+        })
+      }
+    } finally {
+      sendingRef.current = false
+      setIsSending(false)
     }
   }
 
@@ -385,7 +442,7 @@ export default function SupportPage() {
           </p>
           <div className="flex items-center gap-3">
             <Button asChild className="bg-[#554abf] hover:bg-[#4a3fa3] text-white cursor-pointer">
-              <Link href="/signin">Sign in</Link>
+              <Link href="/auth/signin">Sign in</Link>
             </Button>
             <Button asChild variant="outline" className="border-gray-200 text-[#444444] bg-transparent cursor-pointer">
               <Link href="/">Go to home</Link>
@@ -404,7 +461,7 @@ export default function SupportPage() {
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
       timestamp={nowFormatted}
-      rates={{ startPrice, first60Price, after60Price }}
+      rates={rates}
       isFree={isFreeSupport(paymentSettings)}
       isAuthenticated={isAuthenticated}
       ticketCreated={ticketCreated}
@@ -525,7 +582,13 @@ export default function SupportPage() {
             onMessageChange={setMessage}
             onSend={handleSendMessage}
             sendDisabled={!message.trim() || createTicket.isPending}
+            sending={isSending}
             isEnded={ticketEnded}
+            // No session → no ticket can be created (RLS requires created_by =
+            // auth.uid()), so offer sign-in instead of a composer that fails.
+            composerReplacement={
+              !isAuthenticated ? <SignInToStartTicket redirectTo={projectId ? `/support/chat?project=${projectId}` : currentHref} /> : undefined
+            }
             onRequestEndSession={ticketId && user?.id ? () => handleRequestEndSession(false) : undefined}
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}
             endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
@@ -571,9 +634,7 @@ export default function SupportPage() {
                 <RatesAndDetailsContent
                   projectName={projectName}
                   isFree={isFreeSupport(paymentSettings)}
-                  startPrice={startPrice}
-                  first60Price={first60Price}
-                  after60Price={after60Price}
+                  rates={rates}
                   avgResponseSeconds={avgResponseSeconds}
                   avgResponseLoading={avgResponseLoading}
                 />

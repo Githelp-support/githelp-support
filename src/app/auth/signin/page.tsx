@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Logo } from "@/components/brand/logo"
 import { SignInOptions } from "@/components/auth/sign-in-options"
 import { supabase } from "@/lib/supabase/client"
+import { safeInternalPath } from "@/lib/safe-redirect"
 import { Loader2 } from "lucide-react"
 
 export default function SignInPage() {
@@ -13,7 +14,9 @@ export default function SignInPage() {
   const searchParams = useSearchParams()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
-  const redirectTo = searchParams.get("redirect") || "/"
+  // Only same-origin paths may be used as a post-sign-in destination.
+  const redirectTo = safeInternalPath(searchParams.get("redirect"), "/")
+  const skipOnboarding = searchParams.get("skipOnboarding") === "true"
 
   useEffect(() => {
     // Check if user is already authenticated
@@ -48,7 +51,13 @@ export default function SignInPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <SignInOptions confirmPath={"/auth/confirmed?redirect=" + encodeURIComponent(redirectTo)} />
+          <SignInOptions
+            confirmPath={
+              "/auth/confirmed?redirect=" +
+              encodeURIComponent(redirectTo) +
+              (skipOnboarding ? "&skipOnboarding=true" : "")
+            }
+          />
         </CardContent>
       </Card>
       </div>

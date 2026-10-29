@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { safeInternalPath } from "@/lib/safe-redirect"
 import { useRouter } from "next/navigation"
 import { Bell, CheckCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -50,7 +51,7 @@ export default function NotificationsPage() {
       if (notificationType(notification) === "HELPER_REQUEST") {
         router.push("/helpers?view=requests")
       } else {
-        router.push(notification.route)
+        router.push(safeInternalPath(notification.route, "/notifications"))
       }
     }
   }

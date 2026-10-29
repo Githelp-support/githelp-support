@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getAvatarColorHexForId } from "@/lib/constants"
+import { RATES_NOT_CONFIGURED, type TicketRates } from "@/lib/ticket-pricing"
 
 export interface CustomerChatIntroProps {
   projectId: string
@@ -14,7 +15,8 @@ export interface CustomerChatIntroProps {
   /** Welcome copy shown as the project team's opening line. */
   welcomeText: string
   timestamp: string
-  rates: { startPrice: string; first60Price: string; after60Price: string }
+  /** Formatted rates, or `null` while the project has no payment settings (see formatTicketRates). */
+  rates: TicketRates | null
   /** The project offers support for free (all three rates are zero): say so instead of listing $0 rates. */
   isFree?: boolean
   isAuthenticated: boolean
@@ -97,6 +99,13 @@ export function CustomerChatIntro({
                 {projectName} offers support for free — no payment method needed.
               </p>
             </div>
+          ) : rates == null ? (
+            <div className="bg-card border border-border rounded-lg p-3">
+              <p className="text-sm font-medium text-foreground">{RATES_NOT_CONFIGURED}</p>
+              <p className="text-sm text-muted-foreground">
+                {projectName} hasn&apos;t set its support rates yet.
+              </p>
+            </div>
           ) : (
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-card border border-border rounded-lg p-3">
@@ -133,7 +142,7 @@ export function CustomerChatIntro({
             </Button>
             {signedOutExtra}
             <p className="text-xs text-[#868c98] mt-2">
-              You can also start typing your message below to create a ticket. Signing in helps us track your support history.
+              Sign in to start a ticket. Your account keeps your support history and lets the helper reach you.
             </p>
           </div>
         )}

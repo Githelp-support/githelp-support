@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
 import { useAccountRoles } from "@/hooks/useAccountRoles"
 import { homeRouteForRole } from "@/lib/roles"
+import { safeInternalPathOrNull } from "@/lib/safe-redirect"
 import type { UserRole } from "@/contexts/user-context"
 import { Loader2 } from "lucide-react"
 
@@ -20,7 +21,8 @@ export default function RolePage() {
   const searchParams = useSearchParams()
   const { data: roles, isLoading } = useAccountRoles()
 
-  const redirect = searchParams.get("redirect")
+  // Only same-origin paths are forwarded (open-redirect guard).
+  const redirect = safeInternalPathOrNull(searchParams.get("redirect"))
 
   useEffect(() => {
     if (isLoading || !roles) return

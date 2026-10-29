@@ -10,6 +10,15 @@ import { useAcceptProjectInvite } from "@/hooks/useProject"
 import { useEnterProject } from "@/hooks/useEnterProject"
 import { homeRouteForRole } from "@/lib/roles"
 import { ensureUserOrganization } from "@/lib/organizations"
+import { safeInternalPathOrNull, storePendingRedirect } from "@/lib/safe-redirect"
+
+/**
+ * Pages that run their own onboarding (accepting an invite / requesting to
+ * join a project marks the user as onboarded). New accounts heading there
+ * must not be diverted into the generic wizard, which would lose the token.
+ */
+const handlesOwnOnboarding = (path: string | null): boolean =>
+  !!path && (path.startsWith("/invite/") || path.startsWith("/projects/"))
 
 export default function AuthConfirmedPage() {
   const router = useRouter()
@@ -23,6 +32,9 @@ export default function AuthConfirmedPage() {
   // The callback below accepts an invite, so it must run once per mount even
   // if a dependency changes identity while it is in flight.
   const hasHandledCallback = useRef(false)
+
+  // Open-redirect guard: only same-origin paths are ever navigated to.
+  const redirectTo = safeInternalPathOrNull(searchParams.get("redirect"))
 
   useEffect(() => {
     if (hasHandledCallback.current) return
@@ -42,9 +54,11 @@ export default function AuthConfirmedPage() {
       // If user signed in with GitHub and is NOT already a project member,
       // check for pending helper invite by github_username and auto-accept.
       // Skip this block entirely for existing members so a stale invite
-      // doesn't hijack every subsequent login.
+      // doesn't hijack every subsequent login, and when the user arrived
+      // from a specific invite link — that page accepts its own token.
       const providers = (session.user.app_metadata?.providers as string[] | undefined) ?? []
-      if (providers.includes("github")) {
+      const cameFromInviteLink = !!redirectTo && redirectTo.startsWith("/invite/")
+      if (providers.includes("github") && !cameFromInviteLink) {
         try {
           // Check if user is already an active member of any project
           const { data: existingMemberships } = await supabase
@@ -100,16 +114,15 @@ export default function AuthConfirmedPage() {
     }
 
     handleAuthCallback()
-  }, [router, queryClient, acceptInviteAsync, enterProject])
+  }, [router, queryClient, acceptInviteAsync, enterProject, redirectTo])
 
   // Handle redirect after onboarding status is loaded
   useEffect(() => {
     if (isProcessing || onboardingLoading || !onboardingStatus) return
 
-    const redirectTo = searchParams.get("redirect")
     const skipOnboarding = searchParams.get("skipOnboarding") === "true"
-    const isInviteRedirect = !!redirectTo && redirectTo.startsWith("/invite/")
-    
+    const selfOnboarding = handlesOwnOnboarding(redirectTo)
+
     // Support users (signing in from support chat) skip onboarding - they don't need an organization
     // Set their role to "user" by default as they are users of support
     if (skipOnboarding && redirectTo) {
@@ -123,9 +136,9 @@ export default function AuthConfirmedPage() {
       router.push(redirectTo)
       return
     }
-    
+
     // Admin/helper sign-in path (non-invite): ensure organization before proceeding
-    if (!skipOnboarding && !isInviteRedirect) {
+    if (!skipOnboarding && !selfOnboarding) {
       void ensureUserOrganization("admin")
     }
 
@@ -136,8 +149,19 @@ export default function AuthConfirmedPage() {
       return
     }
 
+    // Invite links and project landing pages handle onboarding themselves
+    // (accepting / requesting marks the account as onboarded), so go there
+    // directly even for brand-new accounts instead of dropping the target.
+    if (redirectTo && selfOnboarding) {
+      router.push(redirectTo)
+      return
+    }
+
     // Otherwise, check onboarding status
     if (onboardingStatus.needsOnboarding) {
+      // Remember where they were heading; the wizard honours it once it
+      // completes (see /onboarding).
+      storePendingRedirect(redirectTo)
       router.push("/onboarding")
       return
     }
@@ -150,7 +174,7 @@ export default function AuthConfirmedPage() {
     // Default: /auth/role resolves the role to act as (last used, else
     // highest held) and lands in the app, forwarding any redirect URL
     router.push(redirectTo ? `/auth/role?redirect=${encodeURIComponent(redirectTo)}` : "/auth/role")
-  }, [isProcessing, onboardingLoading, onboardingStatus, router, searchParams])
+  }, [isProcessing, onboardingLoading, onboardingStatus, router, searchParams, redirectTo])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">

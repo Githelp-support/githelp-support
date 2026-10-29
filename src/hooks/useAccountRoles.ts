@@ -57,7 +57,9 @@ export function accountRolesQueryOptions() {
             if (hasActedAsUser) roles.push("user")
             return roles
         },
-        staleTime: 1800000,
+        // Short cache: roles change through other users' actions (promotion,
+        // invite acceptance, removal). `useAccountRoles` refetches on focus.
+        staleTime: 60_000,
     }
 }
 
@@ -72,7 +74,7 @@ export function accountRolesQueryOptions() {
 export function useAccountRoles() {
     return useQuery({
         ...accountRolesQueryOptions(),
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
+        refetchOnReconnect: true,
+        refetchOnWindowFocus: true,
     })
 }

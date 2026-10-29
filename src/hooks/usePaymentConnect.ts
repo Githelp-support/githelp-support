@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { FunctionsHttpError } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase/client"
+import { toEdgeFunctionError } from "@/lib/functions-error"
 
 interface StartArgs {
   organizationId: string
@@ -11,16 +11,10 @@ interface StartArgs {
 /**
  * Edge functions return their real error as a JSON body, but supabase-js
  * surfaces non-2xx responses as a FunctionsHttpError with a generic message.
- * Pull the body message out so callers see the actual cause.
+ * Shared helper (src/lib/functions-error.ts) pulls the body message out so
+ * callers see the actual cause.
  */
-async function toInvokeError(error: unknown, fallback: string): Promise<Error> {
-  if (error instanceof FunctionsHttpError) {
-    const body = await error.context.json().catch(() => null)
-    if (body && typeof body.error === "string") return new Error(body.error)
-  }
-  const message = error instanceof Error ? error.message : (error as { message?: string })?.message
-  return new Error(message || fallback)
-}
+const toInvokeError = toEdgeFunctionError
 
 /**
  * Org-side Connect onboarding: invokes payments-create-account (idempotent)

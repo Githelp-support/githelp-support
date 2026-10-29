@@ -50,13 +50,16 @@ export default function RootLayout({
                       {children}
                     </div>
                   </UnsavedChangesProvider>
-                  <Toaster position="top-right" richColors closeButton />
                 </ProtectedLayout>
               </ProjectProvider>
             </UserProvider>
           </ReactQueryProvider>
         </Suspense>
-        <Toaster />
+        {/* Single global Toaster: sonner renders every toast in each mounted
+            Toaster without an id, so a second one shows everything twice.
+            Mounted at body level so public routes (invite, onboarding) and
+            protected pages alike get their toasts. */}
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   )

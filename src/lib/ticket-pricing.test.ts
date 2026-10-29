@@ -39,7 +39,14 @@ describe("formatTicketRates", () => {
     ).toEqual({ startPrice: "0.00", first60Price: "0.00", after60Price: "0.00" })
   })
 
-  it("falls back to placeholders only when settings are missing", () => {
-    expect(formatTicketRates(undefined)).toEqual({ startPrice: "10.00", first60Price: "1.50", after60Price: "1.00" })
+  it("returns null instead of placeholder prices when settings are missing", () => {
+    expect(formatTicketRates(undefined)).toBeNull()
+    expect(formatTicketRates(null)).toBeNull()
+  })
+
+  it("treats a null column as zero once settings exist", () => {
+    expect(
+      formatTicketRates({ ticket_start_price: 500, ticket_price_minute_first_60: null, ticket_price_minute_after_60: undefined }),
+    ).toEqual({ startPrice: "5.00", first60Price: "0.00", after60Price: "0.00" })
   })
 })

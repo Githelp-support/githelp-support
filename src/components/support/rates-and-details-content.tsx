@@ -4,15 +4,14 @@ import { Button } from "@/components/ui/button"
 import { Clock, Target, HelpCircle } from "lucide-react"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { formatDuration } from "@/lib/format"
+import { RATES_NOT_CONFIGURED, type TicketRates } from "@/lib/ticket-pricing"
 
 interface RatesAndDetailsContentProps {
   projectName: string
   /** Project offers support for free (see isFreeSupport in lib/ticket-pricing). */
   isFree: boolean
-  /** Formatted rates from formatTicketRates (lib/ticket-pricing). */
-  startPrice: string
-  first60Price: string
-  after60Price: string
+  /** Formatted rates from formatTicketRates (lib/ticket-pricing); `null` while the project has none. */
+  rates: TicketRates | null
   /** From useProjectAverageResponseTime; `null` when no ticket has had a response yet. */
   avgResponseSeconds: number | null | undefined
   avgResponseLoading: boolean
@@ -25,9 +24,7 @@ interface RatesAndDetailsContentProps {
 export function RatesAndDetailsContent({
   projectName,
   isFree,
-  startPrice,
-  first60Price,
-  after60Price,
+  rates,
   avgResponseSeconds,
   avgResponseLoading,
 }: RatesAndDetailsContentProps) {
@@ -44,11 +41,19 @@ export function RatesAndDetailsContent({
         )}
 
         {/* Pricing cards */}
+        {rates == null ? (
+          <div className="bg-white rounded-lg p-6 shadow-none border border-[#E1E1E1] mb-12">
+            <h3 className="text-[14px] font-semibold text-[#444444] mb-2">{RATES_NOT_CONFIGURED}</h3>
+            <p className="text-sm text-[#868c98]">
+              {projectName} hasn&apos;t set its support rates yet. You won&apos;t see prices here until they do.
+            </p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-[18px] mb-12">
           {/* Ticket start price */}
           <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none flex flex-col">
             <div className="bg-gradient-to-br from-[#c5b0ef] to-[#b8a0e8] px-6 py-4 text-center">
-              <div className="text-lg font-semibold text-[#2d2a49]">{startPrice} USD</div>
+              <div className="text-lg font-semibold text-[#2d2a49]">{rates.startPrice} USD</div>
             </div>
             <div className="bg-white p-6 flex-1">
               <h3 className="text-[14px] font-semibold text-[#444444] mb-2">Ticket start price</h3>
@@ -61,7 +66,7 @@ export function RatesAndDetailsContent({
           {/* First 60 minutes */}
           <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none flex flex-col">
             <div className="bg-gradient-to-br from-[#e7e5fd] to-[#d8d4f7] px-6 py-4 text-center">
-              <div className="text-lg font-semibold text-[#2d2a49]">{first60Price} USD/min</div>
+              <div className="text-lg font-semibold text-[#2d2a49]">{rates.first60Price} USD/min</div>
             </div>
             <div className="bg-white p-6 flex-1">
               <h3 className="text-[14px] font-semibold text-[#444444] mb-2">First 60 minutes</h3>
@@ -74,16 +79,17 @@ export function RatesAndDetailsContent({
           {/* After 60 minutes */}
           <div className="rounded-lg overflow-hidden border border-[#E1E1E1] shadow-none flex flex-col">
             <div className="bg-gradient-to-br from-[#f9f7ff] to-[#f0ecff] px-6 py-4 text-center">
-              <div className="text-lg font-semibold text-[#2d2a49]">{after60Price} USD/min</div>
+              <div className="text-lg font-semibold text-[#2d2a49]">{rates.after60Price} USD/min</div>
             </div>
             <div className="bg-white p-6 flex-1">
               <h3 className="text-[14px] font-semibold text-[#444444] mb-2">After 60 minutes</h3>
               <p className="text-sm text-[#868c98]">
-                If the support is lengthy, the price drops to {after60Price} USD per minute after the first hour.
+                If the support is lengthy, the price drops to {rates.after60Price} USD per minute after the first hour.
               </p>
             </div>
           </div>
         </div>
+        )}
 
         {/* Info cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-[18px] mb-8">

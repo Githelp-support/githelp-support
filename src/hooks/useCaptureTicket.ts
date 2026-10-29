@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { toEdgeFunctionError } from "@/lib/functions-error"
 
 /** `free`: the project offers free support, so nothing was charged. */
 export type CaptureTicketStatus = "distributing" | "completed" | "failed" | "free"
@@ -32,7 +33,10 @@ export function useCaptureTicket() {
         body: { ticket_id: args.ticketId },
       })
       if (resp.error) {
-        throw new Error(resp.error.message || "Failed to capture payment")
+        // Carries the server's `error`/`code` (e.g. not_ticket_helper_or_admin,
+        // capture_recorded_in_stripe_only) so the page can tell a card decline
+        // from an authorization or bookkeeping problem.
+        throw await toEdgeFunctionError(resp.error, "Failed to capture payment")
       }
       const data = (resp.data ?? {}) as Record<string, unknown>
       // The edge function returns HTTP 200 even when the Stripe capture failed

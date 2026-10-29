@@ -10,7 +10,8 @@ import { Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useState, useEffect, useMemo, useRef } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { usePathname, useSearchParams, useRouter } from "next/navigation"
+import { SignInToStartTicket } from "@/components/support/sign-in-to-start-ticket"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects, PROJECT_SEARCH_MIN_LENGTH } from "@/hooks/useProject"
 import { useRequestProjectSupport } from "@/hooks/useRequestProjectSupport"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
@@ -24,7 +25,7 @@ import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
-import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
+import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
 import { useTicketWithDetails, useLatestUserActiveTicket } from "@/hooks/useTicketsWithDetails"
 import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
@@ -63,9 +64,16 @@ void python
 
 export default function UserSupportChatPage() {
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const router = useRouter()
   const { user, setProjectRole } = useUser()
+  // Where sign-in should bring the visitor back to (this page incl. its query).
+  const currentHref = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
   const [message, setMessage] = useState("")
+  // In-flight guard: the mutation's isPending only flips after the lazy-loaded
+  // formatter has run, so a fast double Enter would otherwise send twice.
+  const [isSending, setIsSending] = useState(false)
+  const sendingRef = useRef(false)
   const [ticketCreated, setTicketCreated] = useState(false)
   const [ticketId, setTicketId] = useState("")
   /** Ticket created in this session (signed-in flow pushes it into the URL). */
@@ -81,7 +89,7 @@ export default function UserSupportChatPage() {
   // Sign-in options open in a modal so the visitor keeps the page (and its
   // project context in the URL); the modal redirects back here after auth.
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
-  /** When user creates ticket without being signed in, first message is not persisted; we show it locally. */
+  /** The first message right after creation, shown until the persisted copy arrives. */
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
   /** SCA prompt (payment_requires_action) already resolved or dismissed in this session. */
   const [handledScaMessageId, setHandledScaMessageId] = useState<string | null>(null)
@@ -97,9 +105,9 @@ export default function UserSupportChatPage() {
   const projectIdParam = searchParams.get("project")
   const slugParam = searchParams.get("slug")
   const ticketIdParam = searchParams.get("ticket")
-  const slaId = searchParams.get("sla")
-  const hasSLA = !!slaId
-  const noParams = !hasSLA && !projectIdParam && !slugParam && !ticketIdParam
+  // `?sla=` is deliberately ignored: SLA coverage is read from the loaded
+  // ticket row (`tickets.sla_id`) only, never from the URL.
+  const noParams = !projectIdParam && !slugParam && !ticketIdParam
 
   // When the page is opened without any context (e.g. clicking "Support" in
   // the sidebar), we need to either send the user to their last ticket or let
@@ -137,8 +145,6 @@ export default function UserSupportChatPage() {
       : undefined
   const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
-  const organizationName = hasSLA ? projectName : null
-  const freeHelpRemaining: string | null = null
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
 
   // Ticket-ended summary for the customer: reflect that the helper closed the
@@ -146,6 +152,9 @@ export default function UserSupportChatPage() {
   // settles from "Processing…" to the captured value without a reload.
   const ticketEnded =
     existingTicket?.status === "completed" || existingTicket?.status === "cancelled"
+  // SLA coverage from the ticket row only (billing copy and the payment gate).
+  const slaId = existingTicket?.sla_id ?? null
+  const slaCovered = !!slaId
   // Fetch payment settings (the payment status needs them: free support has no payment)
   const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
   const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, {
@@ -274,8 +283,9 @@ export default function UserSupportChatPage() {
   const { data: brandingData } = useProjectBranding(projectId || "")
   const projectLogo = brandingData?.logo_url || null
   
-  // Format payment values (convert cents to dollars)
-  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
+  // Format payment values (convert cents to dollars); null until the project
+  // has payment settings — no placeholder prices.
+  const rates = formatTicketRates(paymentSettings)
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
@@ -286,6 +296,17 @@ export default function UserSupportChatPage() {
   const { data: messagesData } = useTicketMessages(ticketId)
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
+
+  // Mark the latest message as read so the sidebar's unread dot clears for
+  // the customer too (mirrors the helper page). Depend on ids only: the
+  // mutation object changes identity and would loop with the invalidation.
+  const updateLastReadMessage = useUpdateLastReadMessage()
+  const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
+  useEffect(() => {
+    if (!ticketId || !user?.id || !lastMessageId) return
+    updateLastReadMessage.mutate({ ticketId, participantId: user.id, messageId: lastMessageId })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
+  }, [ticketId, user?.id, lastMessageId])
   // Right sidebar data (participants / logged time / active tickets) — shared
   // with the /support Get support tab so both entry points render the same.
   const {
@@ -349,8 +370,8 @@ export default function UserSupportChatPage() {
 
   const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
 
-  const welcomeText = hasSLA
-    ? `Welcome to ${projectName}'s support chat. You have entered the chat as ${organizationName}.\nAsk your question and someone from our team will try to help you, as soon as we can.`
+  const welcomeText = slaCovered
+    ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
     : `Welcome to ${projectName}'s support chat.\nAsk your question and someone from our team will try to help you, as soon as we can.`
 
   // Thread: disclaimer → claimed banner → (pending first message) → persisted
@@ -376,7 +397,7 @@ export default function UserSupportChatPage() {
           totalLoggedFormatted,
           chargedLine: describeChargedLine({
             cancelled,
-            slaCovered: !!slaId,
+            slaCovered,
             paymentStatus: paymentStatus.status,
             capturedAmountSmallestUnit: paymentStatus.capturedAmountSmallestUnit,
             failureReason: paymentStatus.failureReason,
@@ -398,7 +419,7 @@ export default function UserSupportChatPage() {
     avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
-    slaId,
+    slaCovered,
     paymentStatus.status,
     paymentStatus.capturedAmountSmallestUnit,
     paymentStatus.failureReason,
@@ -613,17 +634,39 @@ export default function UserSupportChatPage() {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return
+    // Tickets need a signed-in creator (RLS: created_by = auth.uid()); the
+    // composer is replaced by a sign-in CTA while signed out, this is a guard.
+    if (!user?.id) {
+      setIsSignInModalOpen(true)
+      return
+    }
+    if (ticketEnded) {
+      toast.error("This ticket is closed, so new messages can't be sent.")
+      return
+    }
+    if (sendingRef.current) return
+    sendingRef.current = true
+    setIsSending(true)
 
-    if (!ticketCreated && effectiveProjectId) {
-      try {
-        const ticket = await createTicket.mutateAsync({
-          project_id: effectiveProjectId,
-          title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
-          description: message,
-          created_by: user?.id || null,
-          status: "available",
-          priority: "medium",
-        })
+    try {
+      if (!ticketCreated && effectiveProjectId) {
+        let ticket
+        try {
+          ticket = await createTicket.mutateAsync({
+            project_id: effectiveProjectId,
+            title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
+            description: message,
+            created_by: user.id,
+            status: "available",
+            priority: "medium",
+          })
+        } catch (error) {
+          console.error("Failed to create ticket:", error)
+          toast.error("Couldn't create your ticket. Please try again.", {
+            description: error instanceof Error ? error.message : undefined,
+          })
+          return
+        }
 
         setTicketCreated(true)
         setTicketId(ticket.id)
@@ -634,7 +677,7 @@ export default function UserSupportChatPage() {
         // message once the messages query includes it.
         setPendingFirstMessage(firstMessageContent)
 
-        if (user?.id) {
+        try {
           await ensureParticipant.mutateAsync({
             ticketId: ticket.id,
             participantId: user.id,
@@ -646,18 +689,22 @@ export default function UserSupportChatPage() {
             sender_type: "user",
             content: firstMessageContent,
           })
-
-          // Put the new ticket in the URL so the page behaves exactly like a
-          // reopened ticket from here on (ticket details, claimed banner,
-          // end-of-session summary all key off `?ticket=`). Signed-in users
-          // only: an anonymous creator (created_by = null) can't read the row
-          // back under RLS, so for them the lookup would land on "Ticket not
-          // found" — they keep the in-memory ticket instead.
-          const params = new URLSearchParams(searchParams.toString())
-          params.set("ticket", ticket.id)
-          params.set("project", effectiveProjectId)
-          router.replace(`/support/chat?${params.toString()}`)
+        } catch (error) {
+          // The ticket exists (with the question as its description); only the
+          // chat copy of the first message failed.
+          console.error("Failed to post the first message:", error)
+          toast.error("Your ticket was created, but the message couldn't be posted to the chat.", {
+            description: error instanceof Error ? error.message : undefined,
+          })
         }
+
+        // Put the new ticket in the URL so the page behaves exactly like a
+        // reopened ticket from here on (ticket details, claimed banner,
+        // end-of-session summary all key off `?ticket=`).
+        const params = new URLSearchParams(searchParams.toString())
+        params.set("ticket", ticket.id)
+        params.set("project", effectiveProjectId)
+        router.replace(`/support/chat?${params.toString()}`)
 
         supabase.functions.invoke("classify-ticket", {
           body: {
@@ -666,35 +713,34 @@ export default function UserSupportChatPage() {
             title: ticket.title,
             description: ticket.description ?? firstMessageContent,
           },
-        }).then(() => {}).catch(() => {})
-      } catch (error) {
-        console.error("Failed to create ticket:", error)
+        }).then((resp: { error?: { message?: string } | null }) => {
+          if (resp?.error) console.warn("classify-ticket failed:", resp.error.message)
+        }).catch(() => {})
         return
       }
-      return
-    }
 
-    if (!ticketId || !user?.id) return
-    try {
-      await sendMessage.mutateAsync({
-        ticket_id: ticketId,
-        sender_id: user.id,
-        sender_type: "user",
-        content: await prepareOutgoingMessage(message),
-      })
-      setMessage("")
-    } catch (error) {
-      console.error("Failed to send message:", error)
+      if (!ticketId) return
+      try {
+        await sendMessage.mutateAsync({
+          ticket_id: ticketId,
+          sender_id: user.id,
+          sender_type: "user",
+          content: await prepareOutgoingMessage(message),
+        })
+        setMessage("")
+      } catch (error) {
+        console.error("Failed to send message:", error)
+        toast.error("Couldn't send your message. Please try again.", {
+          description: error instanceof Error ? error.message : undefined,
+        })
+      }
+    } finally {
+      sendingRef.current = false
+      setIsSending(false)
     }
   }
 
   const handleSignIn = () => setIsSignInModalOpen(true)
-
-  const handleContinueWithoutSignIn = () => {
-    // Allow continuing without sign in (for SLA users)
-    // This doesn't set authentication, but allows ticket creation
-    // The ticket will be created without a created_by user
-  }
 
   // "People in this chat": tickets_participants, plus the ticket creator if
   // they have no participant row (e.g. old tickets).
@@ -724,32 +770,13 @@ export default function UserSupportChatPage() {
             primaryColor={brandingData?.primary_color}
             welcomeText={welcomeText}
             timestamp={nowFormatted}
-            rates={{ startPrice, first60Price, after60Price }}
+            rates={rates}
             isFree={isFreeSupport(paymentSettings)}
             isAuthenticated={isAuthenticated}
             ticketCreated={ticketCreated}
             userName={user?.name}
             onSignIn={handleSignIn}
-            signedOutExtra={
-              hasSLA ? (
-                <Button
-                  onClick={handleContinueWithoutSignIn}
-                  variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-                >
-                  Continue without signing in
-                </Button>
-              ) : undefined
-            }
-          >
-            {hasSLA && freeHelpRemaining && (
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">Time of free help left this month:</span> {freeHelpRemaining}
-                </p>
-              </div>
-            )}
-          </CustomerChatIntro>
+          />
         }
         messages={chatMessages}
         participants={chatParticipants}
@@ -760,7 +787,13 @@ export default function UserSupportChatPage() {
         onMessageChange={setMessage}
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
+        sending={isSending}
         isEnded={ticketEnded}
+        // No session → no ticket can be created (RLS requires created_by =
+        // auth.uid()), so offer sign-in instead of a composer that fails.
+        composerReplacement={
+          !isAuthenticated ? <SignInToStartTicket redirectTo={currentHref} /> : undefined
+        }
         onRequestEndSession={
           existingTicket?.id && user?.id ? () => handleRequestEndSession(false) : undefined
         }
@@ -796,6 +829,7 @@ export default function UserSupportChatPage() {
             window.location.assign(out.checkoutUrl)
           } catch (err) {
             console.error("Failed to start Stripe Checkout:", err)
+            toast.error(err instanceof Error ? err.message : "Couldn't open Stripe Checkout. Please try again.")
           }
         }}
         paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}

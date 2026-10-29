@@ -12,7 +12,13 @@ import { Plus, Trash2, ExternalLink, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useUserProjects, useProjectResources, useCreateProjectResource, useDeleteProjectResource } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
-import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { toast } from "sonner"
+
+const errorMessage = (error: unknown, fallback: string) =>
+  (error instanceof Error && error.message) ||
+  (typeof (error as { message?: unknown } | null)?.message === "string"
+    ? ((error as { message: string }).message)
+    : fallback)
 
 interface Resource {
   id: number
@@ -49,9 +55,10 @@ export default function LandingPageSettings() {
         })
         setNewResourceName("")
         setNewResourceUrl("")
+        toast.success("Resource added")
       } catch (error) {
         console.error("Failed to add resource:", error)
-        // You might want to show a toast notification here
+        toast.error(errorMessage(error, "Couldn't add the resource. Please try again."))
       }
     }
   }
@@ -63,9 +70,10 @@ export default function LandingPageSettings() {
           projectId,
           resourceId: id,
         })
+        toast.success("Resource removed")
       } catch (error) {
         console.error("Failed to delete resource:", error)
-        // You might want to show a toast notification here
+        toast.error(errorMessage(error, "Couldn't remove the resource. Please try again."))
       }
     }
   }
@@ -210,10 +218,6 @@ export default function LandingPageSettings() {
                       ))}
                     </div>
                   )}
-
-                  <Button variant="lavender" size="sm" className="mt-3" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                    Save
-                  </Button>
                 </div>
             </div>
           </div>

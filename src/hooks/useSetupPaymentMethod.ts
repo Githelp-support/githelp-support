@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { toEdgeFunctionError } from "@/lib/functions-error"
 
 export type SetupPaymentMethodScope = "organization" | "user"
 
@@ -37,7 +38,9 @@ export function useSetupPaymentMethod() {
       if (returnPath) body.return_path = returnPath
       const resp = await supabase.functions.invoke("payments-setup-method", { body })
       if (resp.error) {
-        throw new Error(resp.error.message || "Failed to start card setup")
+        // Surface the server's reason (Stripe error, missing customer, ...)
+        // instead of supabase-js's generic non-2xx message.
+        throw await toEdgeFunctionError(resp.error, "Failed to start card setup")
       }
       const checkoutUrl = (resp.data as { checkout_url?: string } | null)?.checkout_url
       if (!checkoutUrl) throw new Error("No checkout URL returned")
@@ -98,7 +101,7 @@ export function useSyncPaymentMethod() {
       if (projectId) body.project_id = projectId
       const resp = await supabase.functions.invoke("payments-sync-setup-method", { body })
       if (resp.error) {
-        throw new Error(resp.error.message || "Failed to sync card")
+        throw await toEdgeFunctionError(resp.error, "Failed to sync card")
       }
       const data = resp.data as SyncResponse | null
       if (!data || typeof data.synced !== "boolean") {

@@ -36,6 +36,31 @@ export function getLastProjectForRole(role: ProjectRole): string | null {
 }
 
 /**
+ * Forget every piece of per-account UI state kept in web storage, so the
+ * next account signing in on this browser does not inherit the previous
+ * one's role, selected project or pending redirect. Called on sign-out.
+ */
+export function clearAccountUiState(): void {
+  const localKeys = [
+    "userRole",
+    "selectedProjectId",
+    lastProjectKey("admin"),
+    lastProjectKey("helper"),
+  ]
+  const sessionKeys = ["selectedProjectId", "pendingRedirect"]
+  try {
+    for (const key of localKeys) localStorage.removeItem(key)
+  } catch {
+    // Storage unavailable — nothing to clear.
+  }
+  try {
+    for (const key of sessionKeys) sessionStorage.removeItem(key)
+  } catch {
+    // Storage unavailable — nothing to clear.
+  }
+}
+
+/**
  * Which project to open when switching into `admin` / `helper` from the
  * private User context: the project last used in that role if the account
  * still holds the role there, else the currently remembered project if it

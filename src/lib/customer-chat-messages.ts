@@ -170,7 +170,11 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     return list;
 }
 
-/** What the customer was charged, for the end-of-session summary. */
+/**
+ * What the customer was charged, for the end-of-session summary.
+ * `slaCovered` must come from the loaded ticket row (`tickets.sla_id`), never
+ * from a URL parameter: the backend bills by that column alone.
+ */
 export function describeChargedLine(opts: {
     cancelled: boolean;
     slaCovered: boolean;

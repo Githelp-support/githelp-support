@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { getFunctionErrorMessage } from "@/lib/functions-error";
 import type { Database } from "@/types/database";
 
 type TicketParticipant =
@@ -232,28 +234,45 @@ export function useClaimTicket() {
             queryClient.invalidateQueries({
                 queryKey: ["ticket", variables.ticketId],
             });
+            queryClient.invalidateQueries({
+                queryKey: ["ticket-with-details", variables.ticketId],
+            });
             queryClient.invalidateQueries({ queryKey: ["tickets"] });
+            // The /tickets list reads this key (claimer avatar, status).
+            queryClient.invalidateQueries({ queryKey: ["tickets-with-details"] });
 
-            // Fire-and-forget: invoke payments-authorize-on-claim. Failures
-            // are non-fatal — the claim itself stands; the customer can
-            // retry from the chat CTA if a system message wasn't written.
-            try {
-                const resp = await supabase.functions.invoke(
-                    "payments-authorize-on-claim",
-                    { body: { ticket_id: variables.ticketId } },
-                );
-                if (resp.error) {
-                    console.warn(
-                        `payments-authorize-on-claim failed for ${variables.ticketId}:`,
-                        resp.error.message,
+            // Invoke payments-authorize-on-claim. The claim itself stands even
+            // if this fails, but without it the customer never gets the
+            // "add a card" prompt, so surface the failure with a retry (the
+            // function is idempotent for the claimed helper).
+            const requestHold = async (): Promise<void> => {
+                let message: string | null = null;
+                try {
+                    const resp = await supabase.functions.invoke(
+                        "payments-authorize-on-claim",
+                        { body: { ticket_id: variables.ticketId } },
                     );
+                    if (resp.error) {
+                        message = await getFunctionErrorMessage(
+                            resp.error,
+                            "Couldn't request the customer's payment.",
+                        );
+                    }
+                } catch (err) {
+                    message = err instanceof Error ? err.message : "Couldn't request the customer's payment.";
                 }
-            } catch (err) {
-                console.warn(
-                    `payments-authorize-on-claim threw for ${variables.ticketId}:`,
-                    err,
-                );
-            }
+                if (message) {
+                    console.warn(`payments-authorize-on-claim failed for ${variables.ticketId}:`, message);
+                    toast.error("Ticket claimed, but the payment request failed", {
+                        description: message,
+                        action: { label: "Try again", onClick: () => { void requestHold(); } },
+                    });
+                } else {
+                    queryClient.invalidateQueries({ queryKey: ["ticket-payment-status", variables.ticketId] });
+                    queryClient.invalidateQueries({ queryKey: ["ticket-messages", variables.ticketId] });
+                }
+            };
+            await requestHold();
             // The hold (if any) now exists — refresh the payment gate so "Log
             // time" unlocks without waiting on realtime or a page refresh.
             queryClient.invalidateQueries({
@@ -328,7 +347,7 @@ export function useUpdateLastReadMessage() {
                 .eq("ticket_id", ticketId)
                 .eq("participant_id", participantId)
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
             return data;
@@ -337,9 +356,13 @@ export function useUpdateLastReadMessage() {
             queryClient.invalidateQueries({
                 queryKey: ["ticket-participants", variables.ticketId],
             });
-            // Also refresh helper sidebar data that depends on last_read_message_id
+            // Also refresh sidebar data that depends on last_read_message_id
+            // (helper and customer "Active tickets" unread dots).
             queryClient.invalidateQueries({
                 queryKey: ["helper-claimed-tickets-sidebar"],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["user-active-tickets-sidebar"],
             });
             queryClient.invalidateQueries({
                 queryKey: ["helper-recent-ticket-interactions"],

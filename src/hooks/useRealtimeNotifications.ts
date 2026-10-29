@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { safeInternalPath } from '@/lib/safe-redirect'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -34,7 +35,7 @@ export function useRealtimeNotifications() {
             action: notification.route
               ? {
                   label: 'View',
-                  onClick: () => router.push(notification.route as string),
+                  onClick: () => router.push(safeInternalPath(notification.route, '/notifications')),
                 }
               : undefined,
           })

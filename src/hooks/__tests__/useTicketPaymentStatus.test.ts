@@ -18,6 +18,7 @@ vi.mock("@/lib/supabase/client", () => ({
             })),
         })),
         channel: channelMock,
+        removeChannel: vi.fn(),
     },
 }));
 

@@ -8,6 +8,9 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useProject, useProjectBySlug } from "@/hooks/useProject"
 
+/** SLA ids are `slas.id` UUIDs; accept nothing else before navigating. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export default function SLAEntryPage() {
   const [slaId, setSlaId] = useState("")
   const router = useRouter()
@@ -20,11 +23,19 @@ export default function SLAEntryPage() {
   const project = projectIdParam ? projectById : projectBySlug
   const projectName = project?.name || "Support"
 
+  const trimmedSlaId = slaId.trim()
+  const slaIdValid = UUID_PATTERN.test(trimmedSlaId)
+  const showFormatError = trimmedSlaId.length > 0 && !slaIdValid
+
   const handleEnterSupportSpace = () => {
-    if (slaId.trim()) {
-      // Validate SLA ID and redirect to support chat
-      router.push(`/support/chat?sla=${slaId}`)
-    }
+    // Only a well-formed SLA id goes into the URL; anything else is rejected
+    // here instead of being pushed through as a query string.
+    if (!slaIdValid) return
+    const params = new URLSearchParams()
+    params.set("sla", trimmedSlaId.toLowerCase())
+    if (projectIdParam) params.set("project", projectIdParam)
+    else if (slugParam) params.set("slug", slugParam)
+    router.push(`/support/chat?${params.toString()}`)
   }
 
   return (
@@ -83,19 +94,32 @@ export default function SLAEntryPage() {
         </p>
 
         <div className="space-y-6">
-          <Input
-            type="text"
-            placeholder="298HKS674TVW90"
-            value={slaId}
-            onChange={(e) => setSlaId(e.target.value)}
-            className="border-gray-300 text-[#444444] placeholder:text-[#868c98]"
-          />
+          <div>
+            <Input
+              type="text"
+              placeholder="00000000-0000-0000-0000-000000000000"
+              value={slaId}
+              onChange={(e) => setSlaId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleEnterSupportSpace()
+              }}
+              aria-invalid={showFormatError}
+              aria-describedby={showFormatError ? "sla-id-error" : undefined}
+              className="border-gray-300 text-[#444444] placeholder:text-[#868c98] font-mono"
+            />
+            {showFormatError && (
+              <p id="sla-id-error" role="alert" className="mt-2 text-sm text-destructive">
+                That doesn&apos;t look like an SLA ID. It is the identifier from your SLA agreement, in the form
+                8-4-4-4-12 hexadecimal characters.
+              </p>
+            )}
+          </div>
 
           <Button
             onClick={handleEnterSupportSpace}
             variant="outline"
             className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
-            disabled={!slaId.trim()}
+            disabled={!slaIdValid}
           >
             Enter support space
           </Button>

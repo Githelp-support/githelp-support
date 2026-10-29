@@ -30,6 +30,13 @@ export interface TicketChatInputProps {
   onChange: (value: string) => void
   onSend: () => void
   sendDisabled?: boolean
+  /** A send is in flight: the send button is disabled and Enter is ignored until it settles. */
+  sending?: boolean
+  /**
+   * The ticket is closed: the textarea, send and attachments are all off.
+   * `placeholder` is replaced by a short "closed" notice.
+   */
+  disabled?: boolean
   placeholder?: string
   /** Optional content to render at the end of the toolbar (e.g. "End session" button) */
   toolbarEndContent?: React.ReactNode
@@ -52,15 +59,22 @@ export function TicketChatInput({
   onChange,
   onSend,
   sendDisabled,
+  sending,
+  disabled,
   placeholder = "Message #askanything",
   toolbarEndContent,
-  onImageClick,
-  onImageFiles,
+  onImageClick: onImageClickProp,
+  onImageFiles: onImageFilesProp,
   imagesUploading,
 }: TicketChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [dragActive, setDragActive] = useState(false)
   const pendingSelectionRef = useRef<{ start: number; end: number } | null>(null)
+  // One rule for the button and the Enter key, so the two can't disagree.
+  const cannotSend = !!sendDisabled || !!sending || !!disabled
+  // A closed ticket takes no attachments either (paste/drop included).
+  const onImageClick = disabled ? undefined : onImageClickProp
+  const onImageFiles = disabled ? undefined : onImageFilesProp
 
   /** Replace [start, end) of the current value and place the caret afterwards. */
   const replaceRange = useCallback(
@@ -188,8 +202,9 @@ export function TicketChatInput({
         // once the block is closed (or with Enter outside it).
         if (inFence) return
         e.preventDefault()
-        // Same rule as the send button, so the two can't disagree.
-        if (!sendDisabled) onSend()
+        // Same rule as the send button, so the two can't disagree; a pending
+        // send swallows the key so a double Enter can't send twice.
+        if (!cannotSend) onSend()
         return
       }
       if (e.key === "Tab" && !e.shiftKey && inFence) {
@@ -198,7 +213,7 @@ export function TicketChatInput({
         replaceRange(ta.selectionStart, ta.selectionEnd, "  ", { start: caret, end: caret })
       }
     },
-    [value, onSend, sendDisabled, replaceRange]
+    [value, onSend, cannotSend, replaceRange]
   )
 
   useLayoutEffect(() => {
@@ -262,8 +277,10 @@ export function TicketChatInput({
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[17px] text-muted-foreground placeholder:text-muted-foreground"
+          placeholder={disabled ? "This ticket is closed. New messages can't be sent." : placeholder}
+          disabled={!!disabled}
+          aria-disabled={!!disabled}
+          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[17px] text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           spellCheck={!isInsideOpenFence(value, value.length)}
@@ -293,10 +310,16 @@ export function TicketChatInput({
           <div className="ml-auto">
             <Button
               onClick={onSend}
-              disabled={!!sendDisabled}
+              disabled={cannotSend}
+              aria-busy={!!sending}
+              title={sending ? "Sending…" : disabled ? "This ticket is closed" : "Send"}
               className="bg-transparent hover:bg-transparent p-0 h-auto w-auto disabled:opacity-50"
             >
-              <Send className="w-[26px] h-[26px] text-foreground" />
+              {sending ? (
+                <Loader2 className="w-[26px] h-[26px] text-foreground animate-spin" />
+              ) : (
+                <Send className="w-[26px] h-[26px] text-foreground" />
+              )}
             </Button>
           </div>
         </div>

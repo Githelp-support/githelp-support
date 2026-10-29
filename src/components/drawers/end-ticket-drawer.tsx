@@ -14,7 +14,12 @@ import { cn } from "@/lib/utils"
 interface EndTicketDrawerProps {
   isOpen: boolean
   onClose: () => void
-  onEndTicket: (outcome: string) => void
+  /**
+   * Ends the ticket. May be async: the drawer stays open (and the button
+   * shows "Ending…") until it resolves, and stays open if it rejects so the
+   * helper can retry after the page's error toast.
+   */
+  onEndTicket: (outcome: string) => void | Promise<void>
   timeEntries?: TimeEntry[]
   /** Set when the customer has asked to end the session — shown as a reminder to log remaining time first. */
   userRequestedEnd?: boolean
@@ -40,6 +45,7 @@ export function EndTicketDrawer({
   requestTimeReviewPending,
 }: EndTicketDrawerProps) {
   const [supportOutcome, setSupportOutcome] = useState("")
+  const [ending, setEnding] = useState(false)
 
   const formatTimeEntry = (entry: TimeEntry) => {
     return {
@@ -69,9 +75,17 @@ export function EndTicketDrawer({
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} h`
   }
 
-  const handleEndTicket = () => {
-    onEndTicket(supportOutcome)
-    onClose()
+  const handleEndTicket = async () => {
+    if (ending) return
+    setEnding(true)
+    try {
+      await onEndTicket(supportOutcome)
+      onClose()
+    } catch {
+      // The page already reported the failure; keep the drawer open to retry.
+    } finally {
+      setEnding(false)
+    }
   }
 
   if (!isOpen) return null
@@ -99,13 +113,13 @@ export function EndTicketDrawer({
             </Button>
           ) : (
             <Button
-              onClick={handleEndTicket}
-              disabled={!canEnd}
+              onClick={() => void handleEndTicket()}
+              disabled={!canEnd || ending}
               title={waitingForUser ? "Waiting for the user to confirm the logged time" : undefined}
               variant="default"
               className="flex-1"
             >
-              {waitingForUser ? "Waiting for user confirmation" : "End ticket"}
+              {ending ? "Ending…" : waitingForUser ? "Waiting for user confirmation" : "End ticket"}
             </Button>
           )}
         </div>

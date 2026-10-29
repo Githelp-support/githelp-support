@@ -96,8 +96,7 @@ export function useTimeEntries(
             return entries;
         },
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
+        staleTime: 60_000,
         refetchOnWindowFocus: false,
     });
 }

@@ -14,6 +14,8 @@ export interface TicketWithDetails {
     end_requested_at?: string | null;
     time_review_requested_at?: string | null;
     end_requested_by?: string | null;
+    /** SLA covering this ticket (billing goes through metered usage, not a card hold). */
+    sla_id?: string | null;
     keywords?: Array<{ value: string }>;
     help_categories?: Array<{ value: string; type: string }>;
     user?: {
@@ -103,8 +105,7 @@ export function useTicketsWithDetails(projectId?: string) {
         },
         enabled: !!projectId,
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
+        staleTime: 60_000,
         refetchOnWindowFocus: false,
     });
 }
@@ -511,8 +512,7 @@ export function useTicketWithDetails(ticketId?: string) {
         },
         enabled: !!ticketId,
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
+        staleTime: 60_000,
         refetchOnWindowFocus: false,
     });
 }

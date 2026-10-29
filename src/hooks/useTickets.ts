@@ -27,8 +27,7 @@ export function useTickets(projectId?: string) {
         },
         enabled: !!projectId,
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
+        staleTime: 60_000,
         refetchOnWindowFocus: false,
     });
 }
@@ -48,8 +47,8 @@ export function useTicket(ticketId: string) {
         },
         enabled: !!ticketId,
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
+        // Status flips drive both chat UIs; let a reconnect refetch them.
+        staleTime: 60_000,
         refetchOnWindowFocus: false,
     });
 }
@@ -100,9 +99,14 @@ export function useUpdateTicket() {
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ["ticket", data.id] });
+            queryClient.invalidateQueries({ queryKey: ["ticket-with-details", data.id] });
             queryClient.invalidateQueries({
                 queryKey: ["tickets", data.project_id],
             });
+            // The /tickets list and the detail page read this key; without it a
+            // claim/close performed on the detail page stays stale for the
+            // full staleTime.
+            queryClient.invalidateQueries({ queryKey: ["tickets-with-details"] });
         },
     });
 }
@@ -147,17 +151,24 @@ export function useRequestEndSession() {
 
             if (error) throw error;
 
-            void supabase.from("tickets_events").insert({
-                ticket_id: ticketId,
-                type: cancel ? "end_request_cancelled" : "end_requested",
-                payload: { by: userId },
-            });
+            // Audit row; a PostgREST builder only executes once it is awaited.
+            void supabase
+                .from("tickets_events")
+                .insert({
+                    ticket_id: ticketId,
+                    type: cancel ? "end_request_cancelled" : "end_requested",
+                    payload: { by: userId },
+                })
+                .then(({ error: eventError }) => {
+                    if (eventError) console.warn("tickets_events insert failed:", eventError.message);
+                });
 
             return data as Ticket;
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ["ticket", data.id] });
             queryClient.invalidateQueries({ queryKey: ["ticket-with-details", data.id] });
+            queryClient.invalidateQueries({ queryKey: ["tickets-with-details"] });
         },
     });
 }

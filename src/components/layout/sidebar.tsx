@@ -216,8 +216,9 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
     }
   }
 
+  // "Documentation" used to sit here as an inert placeholder; only real
+  // destinations are listed now.
   const bottomItems = [
-    { name: "Documentation", href: "#", icon: "fi-rr-book-alt" },
     { name: "Help", href: "/help", icon: "fi-rr-interrogation" },
   ]
 
@@ -468,31 +469,22 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
           </a>
         )}
         {bottomItems.map((item) => {
-          const isActive = item.href !== "#" && pathname === item.href
+          const isActive = pathname === item.href
           const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
             isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
           }`
-          const content = (
-            <>
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <FlaticonIcon iconClass={item.icon} />
-              </span>
-              {!isCollapsed && item.name}
-            </>
-          )
-          return item.href !== "#" ? (
+          return (
             <Link
               key={item.name}
               href={item.href}
               className={className}
               title={isCollapsed ? item.name : undefined}
             >
-              {content}
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <FlaticonIcon iconClass={item.icon} />
+              </span>
+              {!isCollapsed && item.name}
             </Link>
-          ) : (
-            <div key={item.name} className={className} title={isCollapsed ? item.name : undefined}>
-              {content}
-            </div>
           )
         })}
       </div>

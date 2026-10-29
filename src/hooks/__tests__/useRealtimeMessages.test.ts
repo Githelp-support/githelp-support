@@ -87,7 +87,8 @@ describe("useRealtimeMessages", () => {
     it("subscribes to this ticket's messages", () => {
         setup();
 
-        expect(supabase.channel).toHaveBeenCalledWith(`ticket-messages-${TICKET}`);
+        // Topic carries a per-mount suffix so two subscribers never share a channel.
+        expect(supabase.channel).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^ticket-messages-${TICKET}`)));
         expect(bindings.map((b) => b.filter)).toEqual([
             { event: "*", schema: "public", table: "tickets_messages", filter: `ticket_id=eq.${TICKET}` },
         ]);

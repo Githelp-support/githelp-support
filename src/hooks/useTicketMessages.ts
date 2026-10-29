@@ -37,7 +37,7 @@ export function useTicketMessages(ticketId: string) {
                 participants.map((p) => [p.participant_id, p.user])
             );
 
-            const missingSenderIds = [...new Set(messages.map((m: any) => m.sender_id).filter((id: string) => !senderMap.has(id)))];
+            const missingSenderIds = [...new Set(messages.map((m: any) => m.sender_id).filter((id: string | null): id is string => !!id && !senderMap.has(id)))];
             if (missingSenderIds.length > 0) {
                 const { data: users } = await supabase
                     .from("users_public")
@@ -55,8 +55,10 @@ export function useTicketMessages(ticketId: string) {
         },
         enabled: !!ticketId,
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
+        // Short staleTime + the global refetchOnReconnect: realtime is the
+        // primary signal, but events missed while disconnected are never
+        // replayed, so a reconnect/focus must be allowed to refetch.
+        staleTime: 60_000,
         refetchOnWindowFocus: false,
     });
 }

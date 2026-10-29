@@ -86,9 +86,13 @@ export function useOnboardingStatus() {
             };
         },
         retry: false,
-        staleTime: 1800000,
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
+        // Membership / request status changes in *other* browsers (an admin
+        // approving a helper request), so keep this short and refresh on
+        // focus — otherwise AuthGuard bounces an approved helper back to
+        // /onboarding/waiting for the whole stale window.
+        staleTime: 60_000,
+        refetchOnReconnect: true,
+        refetchOnWindowFocus: true,
     });
 }
 

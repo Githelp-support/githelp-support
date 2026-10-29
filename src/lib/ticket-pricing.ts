@@ -27,17 +27,22 @@ export function isFreeSupport(settings: TicketPriceSettings | null | undefined):
   )
 }
 
-const centsToDollars = (cents: number | null | undefined, fallback: string) =>
-  cents == null ? fallback : (cents / 100).toFixed(2)
+const centsToDollars = (cents: number | null | undefined) => ((cents ?? 0) / 100).toFixed(2)
 
 /**
- * Ticket prices formatted as dollar strings. The fallbacks only apply while
- * the settings are missing — a stored price of 0 is a real price ("0.00").
+ * Ticket prices formatted as dollar strings. Returns `null` while the settings
+ * are missing or still loading — callers render "Rates not configured" (or
+ * nothing) instead of placeholder prices. A stored price of 0 is a real price
+ * ("0.00"); a null column counts as 0, like `isFreeSupport`.
  */
-export function formatTicketRates(settings: TicketPriceSettings | null | undefined): TicketRates {
+export function formatTicketRates(settings: TicketPriceSettings | null | undefined): TicketRates | null {
+  if (!settings) return null
   return {
-    startPrice: centsToDollars(settings?.ticket_start_price, "10.00"),
-    first60Price: centsToDollars(settings?.ticket_price_minute_first_60, "1.50"),
-    after60Price: centsToDollars(settings?.ticket_price_minute_after_60, "1.00"),
+    startPrice: centsToDollars(settings.ticket_start_price),
+    first60Price: centsToDollars(settings.ticket_price_minute_first_60),
+    after60Price: centsToDollars(settings.ticket_price_minute_after_60),
   }
 }
+
+/** Copy shown wherever rates would be listed but the project has no payment settings row. */
+export const RATES_NOT_CONFIGURED = "Rates not configured"

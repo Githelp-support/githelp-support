@@ -23,6 +23,7 @@ import { useCompleteOnboarding, useOnboardingStatus } from "@/hooks/useOnboardin
 import { useEnterProject } from "@/hooks/useEnterProject"
 import { useUser } from "@/contexts/user-context"
 import { homeRouteForRole } from "@/lib/roles"
+import { consumePendingRedirect } from "@/lib/safe-redirect"
 import {
     Loader2,
     Plus,
@@ -196,6 +197,16 @@ export default function OnboardingPage() {
     const roleOptions: UserRole[] = isAddingRole ? ["admin", "helper"] : ["admin", "helper", "user"]
 
     /**
+     * Where to go once the wizard completes: the page the user was heading
+     * to before being sent through onboarding (stored by /auth/confirmed as
+     * `pendingRedirect`, consumed once), else the role's home route.
+     */
+    const completionRoute = (fallback: string) => {
+        if (isAddingRole) return fallback
+        return consumePendingRedirect() ?? fallback
+    }
+
+    /**
      * Leave the wizard without a project: first-time users are marked as
      * onboarded and land in their private user context; existing members
      * simply go back to the app.
@@ -212,7 +223,7 @@ export default function OnboardingPage() {
             }
             await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
             switchRole("user")
-            router.push(homeRouteForRole("user"))
+            router.push(completionRoute(homeRouteForRole("user")))
         } catch (error: unknown) {
             console.error("Failed to finish onboarding:", error)
             toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.")
@@ -292,7 +303,7 @@ export default function OnboardingPage() {
             // even if their last active role (e.g. helper) was something else.
             const role = await enterProject(project.project_id, "admin")
             toast.success("Project created successfully!")
-            router.push(homeRouteForRole(role))
+            router.push(completionRoute(homeRouteForRole(role)))
         } catch (error: unknown) {
             console.error("Failed to create project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create project. Please try again.")
@@ -329,7 +340,11 @@ export default function OnboardingPage() {
 
             await enterProject(result.project.project_id, "admin")
             toast.success("Project imported from GitHub successfully!")
-            router.push(`/projects/${result.project.project_id}/invite-contributors?repo=${encodeURIComponent(repo.full_name)}`)
+            router.push(
+                completionRoute(
+                    `/projects/${result.project.project_id}/invite-contributors?repo=${encodeURIComponent(repo.full_name)}`,
+                ),
+            )
         } catch (error: unknown) {
             console.error("Failed to import project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to import project. Please try again.")
@@ -350,7 +365,7 @@ export default function OnboardingPage() {
 
             const role = await enterProject(result.project.project_id, "admin")
             toast.success("Sandbox ready! Explore your demo project.")
-            router.push(homeRouteForRole(role))
+            router.push(completionRoute(homeRouteForRole(role)))
         } catch (error: unknown) {
             console.error("Failed to create sandbox:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create sandbox. Please try again.")

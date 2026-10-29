@@ -11,8 +11,10 @@ import {
     useCreateProjectInvite,
     type RepoContributor,
 } from "@/hooks/useProject"
+import { useProjectRole } from "@/hooks/useProjectRole"
 import { supabase } from "@/lib/supabase/client"
-import { Loader2, Check, Copy, Users, ArrowRight } from "lucide-react"
+import { getFunctionErrorMessage } from "@/lib/functions-error"
+import { Loader2, Check, Copy, Users, ArrowRight, ShieldAlert } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
@@ -36,11 +38,15 @@ export default function InviteContributorsPage() {
     const [copiedToken, setCopiedToken] = useState<string | null>(null)
 
     const { data: project, isLoading: projectLoading } = useProject(projectId)
-    const { data: repoFullName } = useGetProjectRepo(repoFromQuery ? null : projectId)
+    // Inviting helpers is an admin action (create-project-invite returns 403
+    // otherwise), so gate the whole page on the caller's role in this project.
+    const { data: projectRole, isLoading: roleLoading } = useProjectRole(projectId)
+    const isProjectAdmin = projectRole === "admin"
+    const { data: repoFullName } = useGetProjectRepo(repoFromQuery || !isProjectAdmin ? null : projectId)
     const fullName = repoFromQuery ?? repoFullName ?? null
 
     const { data: contributors = [], isLoading: contributorsLoading } = useListRepoContributors(
-        githubToken,
+        isProjectAdmin ? githubToken : null,
         fullName
     )
 
@@ -82,6 +88,7 @@ export default function InviteContributorsPage() {
 
         const toInvite = contributors.filter((c) => selectedContributors.has(c.login))
         const errors: string[] = []
+        let lastErrorMessage: string | null = null
 
         for (const contributor of toInvite) {
             try {
@@ -102,11 +109,14 @@ export default function InviteContributorsPage() {
                 })
             } catch (err) {
                 errors.push(contributor.login)
+                lastErrorMessage = await getFunctionErrorMessage(err, "Failed to create invite")
             }
         }
 
         if (errors.length > 0) {
-            toast.error(`Failed to invite: ${errors.join(", ")}`)
+            toast.error(`Failed to invite: ${errors.join(", ")}`, {
+                description: lastErrorMessage ?? undefined,
+            })
         } else {
             toast.success(`Invited ${toInvite.length} contributor(s) as helpers!`)
         }
@@ -121,10 +131,40 @@ export default function InviteContributorsPage() {
 
     const hasInvited = invitedLogins.size > 0
 
-    if (projectLoading || !project) {
+    if (projectLoading || roleLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    if (!project || !isProjectAdmin) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+                <Card className="w-full max-w-md">
+                    <CardHeader>
+                        <div className="flex items-center gap-3 mb-2">
+                            <ShieldAlert className="w-6 h-6 text-amber-600" />
+                            <CardTitle>{project ? "Not authorized" : "Project not found"}</CardTitle>
+                        </div>
+                        <CardDescription>
+                            {project
+                                ? `Only admins of ${project.name} can invite contributors as helpers.`
+                                : "This project does not exist or you do not have access to it."}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex gap-3">
+                        {project && (
+                            <Button variant="outline" asChild className="flex-1">
+                                <Link href={`/projects/${projectId}`}>Back to project</Link>
+                            </Button>
+                        )}
+                        <Button asChild className="flex-1">
+                            <Link href="/">Go to dashboard</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
         )
     }
