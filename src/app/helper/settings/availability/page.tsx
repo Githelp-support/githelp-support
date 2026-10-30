@@ -19,7 +19,7 @@ export default function HelperSettingsPage() {
 
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-2xl">
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-background rounded-lg p-6">
               <div className="flex items-start gap-3">
                 <CalendarClock className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div>

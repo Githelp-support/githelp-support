@@ -261,7 +261,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
       // profile block stays pinned to the bottom of the screen. On Admin/Helper
       // pages the parent row is `h-screen` (a definite height), where
       // `self-stretch` and `h-full` are equivalent — so this is a no-op there.
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
       <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
@@ -328,7 +328,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
             const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
-            const inactiveClasses = "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            const inactiveClasses = "text-text-muted hover:bg-bg-subtle hover:text-sidebar-foreground"
             // Whether any sub-item under this parent matches the current path —
             // used in collapsed mode to highlight the parent icon since the
             // sub-items themselves are hidden behind a dropdown.
@@ -433,7 +433,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                               <Link key={subItem.name} href={subItem.href} className="block">
                                 <div
                                   className={`relative flex items-center pl-11 pr-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
-                                    isSubActive ? activeClasses : "text-[#818185] hover:bg-bg-subtle hover:text-sidebar-foreground"
+                                    isSubActive ? activeClasses : "text-text-tertiary hover:bg-bg-subtle hover:text-sidebar-foreground"
                                   }`}
                                 >
                                   {/* Sub-category marker, centered on the vertical line */}
@@ -479,7 +479,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
             href={projectPageHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors text-text-muted hover:bg-bg-subtle hover:text-sidebar-foreground"
             title={isCollapsed ? "Open project page" : undefined}
           >
             <span className="flex h-5 w-5 shrink-0 items-center justify-center">
@@ -491,7 +491,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         {bottomItems.map((item) => {
           const isActive = pathname === item.href
           const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
-            isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-text-muted hover:bg-bg-subtle hover:text-sidebar-foreground"
           }`
           return (
             <Link

@@ -33,9 +33,9 @@ const selectTriggerVariants = cva(
         default: "dark:bg-input/30 dark:hover:bg-input/50",
         outline: "border-border text-muted-foreground bg-transparent hover:bg-muted",
         lavender:
-          "bg-brand-primary/10 border border-brand-primary text-brand-primary [&_svg]:text-brand-primary hover:bg-brand-primary hover:text-white hover:[&_svg]:text-white dark:bg-brand-primary/20 dark:border-brand-primary dark:text-brand-primary dark:[&_svg]:text-brand-primary dark:hover:bg-brand-primary dark:hover:text-white dark:hover:[&_svg]:text-white",
+          "bg-brand-primary/10 border border-brand-primary text-brand-primary [&_svg]:text-brand-primary hover:bg-brand-primary hover:text-brand-foreground hover:[&_svg]:text-white dark:bg-brand-primary/20 dark:border-brand-primary dark:text-brand-primary dark:[&_svg]:text-brand-primary dark:hover:bg-brand-primary dark:hover:text-brand-foreground dark:hover:[&_svg]:text-white",
         neutral:
-          "bg-[rgba(0,0,0,0.05)] border border-[rgba(0,0,0,0.1)] text-foreground [&_svg]:text-foreground hover:bg-[rgba(0,0,0,0.08)] dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10",
+          "bg-surface-hover border border-border-control text-foreground [&_svg]:text-foreground hover:bg-surface-active dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10",
       },
       size: {
         default: "h-9",

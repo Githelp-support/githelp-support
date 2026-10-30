@@ -518,7 +518,7 @@ export default function HelperReportsPage() {
           </div>
 
           {!projectId && (
-            <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">
+            <div className="rounded-lg bg-bg-subtle px-4 py-3 text-sm text-text-muted">
               Select a project to see your payouts and monthly reports.
             </div>
           )}
@@ -531,7 +531,7 @@ export default function HelperReportsPage() {
 
           {/* Payouts Table */}
           {activeTab === "payouts" && (
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                   <div className="flex items-center">
@@ -617,7 +617,7 @@ export default function HelperReportsPage() {
                       <div
                         key={payout.id}
                         className={cn(
-                          "px-6 py-4 hover:bg-[#f7f9ff]",
+                          "px-6 py-4 hover:bg-page-muted",
                           href &&
                             "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
                         )}
@@ -784,7 +784,7 @@ export default function HelperReportsPage() {
 
           {/* Monthly Reports Tab Content */}
           {activeTab === "monthly" && (
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                   <div className="flex items-center">
@@ -865,7 +865,7 @@ export default function HelperReportsPage() {
                       role="button"
                       tabIndex={0}
                       aria-label={`View payouts for ${row.period}`}
-                      className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                      className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
                       onClick={() => openMonthPayouts(row.period)}
                       onKeyDown={(e) => {
                         if (e.target !== e.currentTarget) return

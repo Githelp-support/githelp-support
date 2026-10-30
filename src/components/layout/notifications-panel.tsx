@@ -144,7 +144,7 @@ export function NotificationsPanel({
                       <div className="flex items-center gap-2">
                         <span
                           className={`text-xs ${
-                            !notification.is_read ? "text-[#2E2D31]" : "text-[#868686]"
+                            !notification.is_read ? "text-foreground" : "text-text-tertiary"
                           }`}
                         >
                           {formatRelativeTime(notification.created_at)}
@@ -154,7 +154,7 @@ export function NotificationsPanel({
                     </div>
                     <p
                       className={`text-[13px] leading-relaxed ${
-                        !notification.is_read ? "text-[#2E2D31]" : "text-[#868686]"
+                        !notification.is_read ? "text-foreground" : "text-text-tertiary"
                       }`}
                     >
                       {stripQuotes(notification.content)}

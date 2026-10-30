@@ -539,7 +539,7 @@ export default function UserSupportChatPage() {
       (!!sessionUserId && userTicketsLoadingForResolve) || !!latestUserTicket
     if (resolving) {
       return (
-        <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+        <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
           <Sidebar />
           <main className="flex-1 flex items-center justify-center">
             <div className="text-[14px] text-muted-foreground">Loading your support…</div>
@@ -585,7 +585,7 @@ export default function UserSupportChatPage() {
     }
 
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -627,7 +627,7 @@ export default function UserSupportChatPage() {
                 : `Type at least ${PROJECT_SEARCH_MIN_LENGTH} characters, or press Search.`}
             </p>
 
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               {allProjectsLoading ? (
                 <div className="px-4 py-6 text-sm text-muted-foreground">
                   Loading projects…
@@ -654,7 +654,7 @@ export default function UserSupportChatPage() {
                     <Button
                       onClick={handleRequestProjectSupport}
                       disabled={requestProjectSupport.isPending}
-                      className="bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                      variant="brand"
                     >
                       {requestProjectSupport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                       Request to get help
@@ -693,7 +693,7 @@ export default function UserSupportChatPage() {
   const openingOtherTicket = !!ticketIdParam && ticketIdParam !== createdTicketId
   if (openingOtherTicket && existingTicketLoading) {
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
         <Sidebar projectPageHref={projectPageHref} />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-[14px] text-muted-foreground">Loading ticket…</div>
@@ -704,7 +704,7 @@ export default function UserSupportChatPage() {
 
   if (openingOtherTicket && !existingTicket?.id) {
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
         <Sidebar projectPageHref={projectPageHref} />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">

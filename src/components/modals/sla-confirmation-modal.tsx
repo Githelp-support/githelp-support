@@ -40,7 +40,7 @@ export function SLAConfirmationModal({ isOpen, onClose, slaId }: SLAConfirmation
       <div className="fixed inset-0 bg-black/20 z-50" />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-lg shadow-xl z-50">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card rounded-lg shadow-xl z-50">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">Confirming new SLA</h2>

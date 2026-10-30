@@ -332,7 +332,7 @@ export default function HelperProfilePage() {
                 {projectKeywords.map((kw) => (
                   <label
                     key={kw.id}
-                    className="flex items-center gap-2 cursor-pointer rounded-md border border-[rgba(0,0,0,0.1)] px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
+                    className="flex items-center gap-2 cursor-pointer rounded-md border border-border-control px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
                   >
                     <Checkbox
                       checked={selectedKeywords.includes(kw.id)}

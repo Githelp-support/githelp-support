@@ -99,7 +99,7 @@ export function CustomerTicketSidebarFooter({
                 className={`block w-full border cursor-pointer transition-colors ${
                   item.current
                     ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                    : "bg-white border-border hover:bg-muted"
+                    : "bg-background border-border hover:bg-muted"
                 }`}
               >
                 <div className="p-3">

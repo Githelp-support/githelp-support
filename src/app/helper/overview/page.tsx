@@ -110,7 +110,7 @@ export default function HelperOverviewPage() {
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -119,7 +119,7 @@ export default function HelperOverviewPage() {
                   <div className="text-[22px] font-[550] text-foreground tabular-nums">{ticketsSolvedInPeriod}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -128,7 +128,7 @@ export default function HelperOverviewPage() {
                   <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
@@ -148,7 +148,7 @@ export default function HelperOverviewPage() {
                 View all tickets
               </Link>
             </div>
-            <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+            <Card className="border-border-subtle rounded-lg py-0 shadow-none overflow-hidden">
               <CardContent className="p-0">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
@@ -175,8 +175,8 @@ export default function HelperOverviewPage() {
                         key={ticket.id}
                         href={`/helper/tickets/${ticket.id}`}
                         className={cn(
-                          "block px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0",
-                          ticket.has_unread ? "bg-purple-50 hover:bg-purple-100" : "hover:bg-muted/50"
+                          "block px-6 py-2.5 border-b border-border-subtle last:border-b-0",
+                          ticket.has_unread ? "bg-brand-primary/10 hover:bg-brand-primary/15" : "hover:bg-muted/50"
                         )}
                       >
                         <div className="grid grid-cols-12 gap-4 items-center">
@@ -189,7 +189,7 @@ export default function HelperOverviewPage() {
                                 {ticket.project_logo_url ? (
                                   <AvatarImage src={ticket.project_logo_url} alt={projectName} />
                                 ) : null}
-                                <AvatarFallback className="bg-brand-primary text-white text-sm font-medium rounded-[11px]">
+                                <AvatarFallback className="bg-brand-primary text-brand-foreground text-sm font-medium rounded-[11px]">
                                   {(projectName?.[0] || "?").toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>

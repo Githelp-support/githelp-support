@@ -240,7 +240,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
               form="add-helper-form"
               disabled={isSubmitting || !canSubmit}
               variant="default"
-              className="flex-1 py-2.5 rounded-md text-[13px] font-medium bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md"
+              className="flex-1 py-2.5 rounded-md text-[13px] font-medium bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground shadow-md"
             >
               {isSubmitting ? "Creating..." : "Create invite"}
             </Button>

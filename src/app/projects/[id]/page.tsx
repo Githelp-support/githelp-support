@@ -156,7 +156,7 @@ export default function ProjectLandingPage() {
                                 ) : (
                                     <Avatar className="w-[82px] h-[82px]">
                                         <AvatarFallback
-                                            className={cn("text-white text-[26px]", !branding?.primary_color && "bg-[#3c2ec5]")}
+                                            className={cn("text-brand-foreground text-[26px]", !branding?.primary_color && "bg-brand-primary")}
                                             style={branding?.primary_color ? { backgroundColor: branding.primary_color } : undefined}
                                         >
                                             {projectName?.[0]?.toUpperCase() || "?"}
@@ -192,7 +192,7 @@ export default function ProjectLandingPage() {
                                     <Button
                                         onClick={handleRequestHelper}
                                         disabled={createRequest.isPending}
-                                        className="bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                        variant="brand"
                                     >
                                         {createRequest.isPending ? (
                                             <>
@@ -212,7 +212,7 @@ export default function ProjectLandingPage() {
                                             You need to sign in to request helper status.
                                         </p>
                                         <Link href={`/auth/signin?redirect=${encodeURIComponent(`/projects/${projectId}`)}`}>
-                                            <Button className="bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                                            <Button variant="brand">
                                                 <LogIn className="w-4 h-4" />
                                                 Sign in to continue
                                             </Button>
@@ -231,7 +231,7 @@ export default function ProjectLandingPage() {
                         If you&apos;re looking for help with this project, visit the support page.
                     </p>
                     <Link href={`/support?project=${projectId}`}>
-                        <Button variant="outline" className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white">
+                        <Button variant="outline" className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground">
                             Visit support page
                         </Button>
                     </Link>

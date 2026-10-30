@@ -343,7 +343,7 @@ export default function ProjectSettingsPage() {
                     {keywords.map((kw) => (
                       <div
                         key={kw.id}
-                        className="flex items-center gap-[10px] rounded-md border border-[rgba(0,0,0,0.06)] px-5 py-2 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-border-subtle px-5 py-2 bg-muted/50"
                       >
                         <span className="text-[13px] font-medium">{kw.value}</span>
                         <button
@@ -403,7 +403,7 @@ export default function ProjectSettingsPage() {
                     {helpCategories.map((cat) => (
                       <div
                         key={cat.id}
-                        className="flex items-center gap-[10px] rounded-md border border-[rgba(0,0,0,0.06)] px-5 py-2 bg-muted/50"
+                        className="flex items-center gap-[10px] rounded-md border border-border-subtle px-5 py-2 bg-muted/50"
                       >
                         <span className="text-[13px] font-medium">{cat.value}</span>
                         <button

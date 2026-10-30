@@ -169,7 +169,7 @@ export default function HelpPage() {
             </div>
 
             {/* FAQ */}
-            <Card className="border-[#E1E1E1] shadow-none rounded-lg">
+            <Card className="border-border-subtle shadow-none rounded-lg">
               <CardContent className="p-0">
                 <Accordion type="single" collapsible className="w-full">
                   {faqItems.map((item, index) => (
@@ -187,7 +187,7 @@ export default function HelpPage() {
             </Card>
 
             {/* Get support CTA */}
-            <Card className="border-[#E1E1E1] shadow-none rounded-lg bg-muted/30">
+            <Card className="border-border-subtle shadow-none rounded-lg bg-muted/30">
               <CardContent className="p-6">
                 <h3 className="font-semibold text-foreground mb-2">Still need help?</h3>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -196,7 +196,7 @@ export default function HelpPage() {
                 <div className="flex flex-wrap gap-3">
                   {isAuthenticated && (
                     <>
-                      <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
+                      <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
                         <Link href={GITHELP_SUPPORT_URL} className="inline-flex items-center gap-2">
                           <MessageCircle className="w-4 h-4" />
                           Open support chat
@@ -212,7 +212,7 @@ export default function HelpPage() {
                     </>
                   )}
                   {!isAuthenticated && (
-                    <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
+                    <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
                       <Link href="/auth/signin" className="inline-flex items-center gap-2">
                         Sign in to get support
                         <ArrowRight className="w-4 h-4" />

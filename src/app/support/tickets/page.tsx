@@ -243,9 +243,9 @@ export default function SupportTicketsPage() {
                     aria-pressed={statusFilter === "in-progress"}
                     className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                   >
-                    <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                    <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
                       {statusFilter === "in-progress" && (
-                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                       )}
                       <CardContent className="px-5 py-4">
                         <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
@@ -263,9 +263,9 @@ export default function SupportTicketsPage() {
                     aria-pressed={statusFilter === "completed"}
                     className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                   >
-                    <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                    <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
                       {statusFilter === "completed" && (
-                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                       )}
                       <CardContent className="px-5 py-4">
                         <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
@@ -279,7 +279,7 @@ export default function SupportTicketsPage() {
                 </div>
                 <Button
                   onClick={() => setIsNewTicketModalOpen(true)}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
+                  className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-[13px]"
                 >
                   <Plus className="h-4 w-4" />
                   New ticket
@@ -297,7 +297,7 @@ export default function SupportTicketsPage() {
                     </p>
                     <Button
                       onClick={() => setIsNewTicketModalOpen(true)}
-                      className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
+                      className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-[13px]"
                     >
                       <Plus className="h-4 w-4" />
                       New ticket
@@ -305,7 +305,7 @@ export default function SupportTicketsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+                <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
                   <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                     <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
                       <div className="col-span-5 flex items-center space-x-2">
@@ -373,7 +373,7 @@ export default function SupportTicketsPage() {
                         <Link
                           key={ticket.id}
                           href={chatHref}
-                          className="block px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]"
+                          className="block px-6 py-4 border-b border-border last:border-b-0 hover:bg-surface-hover"
                         >
                           <div className="grid grid-cols-12 gap-4 items-center">
                             <div className="col-span-5">
@@ -388,7 +388,7 @@ export default function SupportTicketsPage() {
                                       alt={ticket.project.name}
                                     />
                                   ) : null}
-                                  <AvatarFallback className="bg-brand-primary text-white text-sm font-medium rounded-[11px]">
+                                  <AvatarFallback className="bg-brand-primary text-brand-foreground text-sm font-medium rounded-[11px]">
                                     {(ticket.project.name?.[0] || "?").toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>

@@ -459,7 +459,7 @@ export default function UserReportsPage() {
 
               {/* Payments Table */}
               {activeTab === "payments" && (
-                <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+                <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
                   <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                     <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={PAYMENTS_GRID}>
                       <div className="flex items-center">
@@ -509,8 +509,8 @@ export default function UserReportsPage() {
                             <div className="text-xs text-muted-foreground truncate">{row.ticketTitle}</div>
                           </div>
                           <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
-                          <div className={cn("min-w-0 text-sm text-gray-900 truncate", BEFORE_AMOUNT_CLASS)}>{row.projectName}</div>
-                          <div className="min-w-0 text-sm text-gray-900 whitespace-nowrap">{row.amount.replace(/^USD\s+/, "")}</div>
+                          <div className={cn("min-w-0 text-sm text-foreground truncate", BEFORE_AMOUNT_CLASS)}>{row.projectName}</div>
+                          <div className="min-w-0 text-sm text-foreground whitespace-nowrap">{row.amount.replace(/^USD\s+/, "")}</div>
                           <div className="min-w-0">
                             <Badge className={statusBadgeClass(row.status)}>{row.status}</Badge>
                           </div>
@@ -543,7 +543,7 @@ export default function UserReportsPage() {
                         <div
                           key={row.id}
                           className={cn(
-                            "px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]",
+                            "px-6 py-4 border-b border-border last:border-b-0 hover:bg-page-muted",
                             href &&
                               "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
                           )}
@@ -588,10 +588,10 @@ export default function UserReportsPage() {
                               </div>
                             </div>
                             <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
-                            <div className={cn("min-w-0 text-sm text-gray-900 truncate", BEFORE_AMOUNT_CLASS)} title={row.projectName}>
+                            <div className={cn("min-w-0 text-sm text-foreground truncate", BEFORE_AMOUNT_CLASS)} title={row.projectName}>
                               {row.projectName}
                             </div>
-                            <div className="min-w-0 text-sm text-gray-900">
+                            <div className="min-w-0 text-sm text-foreground">
                               <div className="whitespace-nowrap">{formatPaymentAmount(row.amountSmallestUnit, row.currency)}</div>
                               {row.paidSmallestUnit > 0 && row.openSmallestUnit > 0 && (
                                 <div className="text-xs text-muted-foreground">
@@ -702,7 +702,7 @@ export default function UserReportsPage() {
 
               {/* Monthly Reports Tab Content */}
               {activeTab === "monthly" && (
-                <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+                <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
                   <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                     <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={MONTHLY_GRID}>
                       <div className="flex items-center">
@@ -740,14 +740,14 @@ export default function UserReportsPage() {
                           <div className="flex items-center">
                             <Checkbox disabled checked={false} />
                           </div>
-                          <div className="col-span-3 flex items-center gap-2 text-sm text-gray-900">
+                          <div className="col-span-3 flex items-center gap-2 text-sm text-foreground">
                             {row.period}
                             <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                               Preview
                             </Badge>
                           </div>
-                          <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
-                          <div className="col-span-2 text-sm text-gray-900">{row.amount.replace(/^USD\s+/, "")}</div>
+                          <div className="col-span-2 text-sm text-foreground">{row.ticketCount}</div>
+                          <div className="col-span-2 text-sm text-foreground">{row.amount.replace(/^USD\s+/, "")}</div>
                           <div className="col-span-2">
                             <Badge className={statusBadgeClass("Paid")}>Paid</Badge>
                           </div>
@@ -770,7 +770,7 @@ export default function UserReportsPage() {
                     </div>
                   ) : (
                     monthlyReports.map((row) => (
-                      <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f7f9ff]">
+                      <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-page-muted">
                         <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                           <div className="flex items-center">
                             <Checkbox
@@ -779,9 +779,9 @@ export default function UserReportsPage() {
                               aria-label={`Select monthly report for ${row.period}`}
                             />
                           </div>
-                          <div className="col-span-3 text-sm text-gray-900">{row.period}</div>
-                          <div className="col-span-2 text-sm text-gray-900">{row.ticketCount}</div>
-                          <div className="col-span-2 text-sm text-gray-900">
+                          <div className="col-span-3 text-sm text-foreground">{row.period}</div>
+                          <div className="col-span-2 text-sm text-foreground">{row.ticketCount}</div>
+                          <div className="col-span-2 text-sm text-foreground">
                             {formatPaymentAmount(row.amountSmallestUnit, row.currency)}
                           </div>
                           <div className="col-span-2">

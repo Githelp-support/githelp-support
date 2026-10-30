@@ -96,7 +96,7 @@ export default function NotificationsPage() {
             {isLoading ? (
               <div className="p-10 text-center text-muted-foreground">Loading notifications…</div>
             ) : visible.length === 0 ? (
-              <Card className="border-[#E1E1E1] shadow-none rounded-lg">
+              <Card className="border-border-subtle shadow-none rounded-lg">
                 <CardContent className="p-10 flex flex-col items-center text-center gap-2">
                   <Bell className="w-8 h-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">

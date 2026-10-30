@@ -85,7 +85,7 @@ function ProjectLogo({
     return (
         <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} rounded-[11px] shrink-0`}>
             {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
-            <AvatarFallback className="bg-brand-primary text-white text-xs rounded-[11px]">
+            <AvatarFallback className="bg-brand-primary text-brand-foreground text-xs rounded-[11px]">
                 {projectName?.[0]?.toUpperCase() || "?"}
             </AvatarFallback>
         </Avatar>
@@ -571,7 +571,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={handleProjectNameNext}
                                 disabled={!trimmedName || (showShortAlternatives && isSearchingProjects)}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {selectedMatch
                                     ? onboardingRole === "admin"
@@ -659,7 +659,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={finishWithoutProject}
                                 disabled={isCreating}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                                 {isAddingRole ? "Back to Githelp" : "Continue to Githelp"}
@@ -702,7 +702,7 @@ export default function OnboardingPage() {
                             </Button>
                             <Button
                                 onClick={() => setStep("create")}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 <Plus className="w-4 h-4" />
                                 Yes, create the project
@@ -766,7 +766,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={finishWithoutProject}
                                 disabled={isCreating}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                                 {isAddingRole ? "Back to Githelp" : "Continue to Githelp"}
@@ -802,7 +802,7 @@ export default function OnboardingPage() {
                     <CardContent className="space-y-4">
                         <Button
                             onClick={() => setStep("create-manual")}
-                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
+                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
@@ -818,7 +818,7 @@ export default function OnboardingPage() {
 
                         <Button
                             onClick={() => setStep("create-github")}
-                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
+                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
@@ -836,7 +836,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={handleCreateSandbox}
                                 disabled={isCreating}
-                                className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
+                                className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
                                 variant="outline"
                             >
                                 <div className="flex items-start gap-3 w-full">
@@ -1023,7 +1023,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={handleCreateProject}
                                 disabled={!projectName.trim() || isCreating}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {isCreating ? (
                                     <>

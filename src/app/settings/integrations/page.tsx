@@ -20,7 +20,7 @@ export default function IntegrationsSettingsPage() {
 
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-2xl">
-            <div className="bg-white rounded-lg p-6 mb-6">
+            <div className="bg-background rounded-lg p-6 mb-6">
               <h2 className="text-base font-semibold text-foreground mb-1">
                 Delivery channels
               </h2>

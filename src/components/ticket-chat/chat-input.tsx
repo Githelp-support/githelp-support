@@ -229,7 +229,7 @@ export function TicketChatInput({
   return (
     <div
       className={cn(
-        "bg-white border border-border rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] mx-4 mb-4 overflow-hidden",
+        "bg-card border border-border rounded-[10px] shadow-soft mx-4 mb-4 overflow-hidden",
         dragActive && "border-brand-primary ring-2 ring-brand-primary/30"
       )}
       onDragOver={handleDragOver}

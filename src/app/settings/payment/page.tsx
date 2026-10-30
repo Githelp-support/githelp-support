@@ -517,7 +517,7 @@ export default function PaymentSettingsPage() {
                                 onValueChange={handleTeamMemberChange}
                                 max={100}
                                 step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-[#554abf] [&_[data-slot='slider-thumb']]:bg-[#554abf] [&_[data-slot='slider-range']]:bg-[#554abf]"
+                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
                               />
                             </div>
                           </div>
@@ -533,7 +533,7 @@ export default function PaymentSettingsPage() {
                                 onValueChange={handleTeamProjectChange}
                                 max={100}
                                 step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-[#554abf] [&_[data-slot='slider-thumb']]:bg-[#554abf] [&_[data-slot='slider-range']]:bg-[#554abf]"
+                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
                               />
                             </div>
                           </div>
@@ -582,7 +582,7 @@ export default function PaymentSettingsPage() {
                                 min={85}
                                 max={100}
                                 step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-[#554abf] [&_[data-slot='slider-thumb']]:bg-[#554abf] [&_[data-slot='slider-range']]:bg-[#554abf]"
+                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
                               />
                             </div>
                           </div>
@@ -599,7 +599,7 @@ export default function PaymentSettingsPage() {
                                 min={0}
                                 max={15}
                                 step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-[#554abf] [&_[data-slot='slider-thumb']]:bg-[#554abf] [&_[data-slot='slider-range']]:bg-[#554abf]"
+                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
                               />
                             </div>
                           </div>
@@ -647,7 +647,7 @@ export default function PaymentSettingsPage() {
                                 value="ticket"
                                 checked={contractType === "ticket"}
                                 onChange={(e) => setContractType(e.target.value as "ticket")}
-                                className="w-4 h-4 text-[#554abf] border-[rgba(0,0,0,0.1)] focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                                className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                               />
                               <span className="text-sm text-muted-foreground">By the ticket</span>
                             </label>
@@ -658,7 +658,7 @@ export default function PaymentSettingsPage() {
                                 value="outside"
                                 checked={contractType === "outside"}
                                 onChange={(e) => setContractType(e.target.value as "outside")}
-                                className="w-4 h-4 text-[#554abf] border-[rgba(0,0,0,0.1)] focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                                className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                               />
                               <span className="text-sm text-muted-foreground">Payment outside Githelp</span>
                             </label>
@@ -679,7 +679,7 @@ export default function PaymentSettingsPage() {
                                   onValueChange={handleConsultantChange}
                                   max={100}
                                   step={1}
-                                  className="w-full [&_[data-slot='slider-thumb']]:border-[#554abf] [&_[data-slot='slider-thumb']]:bg-[#554abf] [&_[data-slot='slider-range']]:bg-[#554abf]"
+                                  className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
                                 />
                               </div>
                             </div>
@@ -695,7 +695,7 @@ export default function PaymentSettingsPage() {
                                   onValueChange={handleConsultantProjectChange}
                                   max={100}
                                   step={1}
-                                  className="w-full [&_[data-slot='slider-thumb']]:border-[#554abf] [&_[data-slot='slider-thumb']]:bg-[#554abf] [&_[data-slot='slider-range']]:bg-[#554abf]"
+                                  className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
                                 />
                               </div>
                             </div>
@@ -729,7 +729,7 @@ export default function PaymentSettingsPage() {
                       <label
                         htmlFor="by-ticket"
                         className={cn(
-                          "flex items-start gap-3 rounded-md border border-[rgba(0,0,0,0.1)] p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                          "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
                           paymentByTicket && "border-brand-primary bg-brand-primary/5"
                         )}
                       >
@@ -753,7 +753,7 @@ export default function PaymentSettingsPage() {
                       <label
                         htmlFor="sla"
                         className={cn(
-                          "flex items-start gap-3 rounded-md border border-[rgba(0,0,0,0.1)] p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                          "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
                           paymentBySLA && "border-brand-primary bg-brand-primary/5"
                         )}
                       >
@@ -831,7 +831,7 @@ export default function PaymentSettingsPage() {
                           onChange={(e) => setStartPrice(e.target.value)}
                           aria-invalid={!!priceErrors.start}
                           className={cn(
-                            "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                            "w-[230px] text-right pr-[3px] border-border-control [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
                             priceErrors.start && "border-destructive"
                           )}
                           placeholder="10.00"
@@ -861,7 +861,7 @@ export default function PaymentSettingsPage() {
                             onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
                             aria-invalid={!!priceErrors.first60}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                              "w-[230px] text-right pr-[3px] border-border-control [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
                               priceErrors.first60 && "border-destructive"
                             )}
                             placeholder="1.50"
@@ -890,7 +890,7 @@ export default function PaymentSettingsPage() {
                             onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
                             aria-invalid={!!priceErrors.after60}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                              "w-[230px] text-right pr-[3px] border-border-control [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
                               priceErrors.after60 && "border-destructive"
                             )}
                             placeholder="1.00"
@@ -994,6 +994,7 @@ export default function PaymentSettingsPage() {
                   <div className="mt-8 flex flex-col gap-10">
                     {/* GitHub → Stripe connection */}
                     <div className="flex items-center gap-1">
+                      {/* Third-party brand colour (GitHub); kept on purpose, not a token. */}
                       <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[14px]">
                         <Logo className="size-6 text-[#24292f]" variant="dark" />
                       </div>
@@ -1002,6 +1003,7 @@ export default function PaymentSettingsPage() {
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                       </div>
+                      {/* Third-party brand colour (Stripe); kept on purpose, not a token. */}
                       <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[14px]">
                         <img
                           src="/images/stripe-svg.svg"

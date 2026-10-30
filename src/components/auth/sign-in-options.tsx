@@ -84,7 +84,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
       <Button
         onClick={handleGitHubSignIn}
         disabled={isLoading}
-        className="w-full bg-[#3C2EC5] hover:bg-[#3C2EC5]/90 text-white"
+        variant="brand" className="w-full"
         size="lg"
       >
         {isLoading ? (
@@ -104,7 +104,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
       <Button
         onClick={handleGoogleSignIn}
         disabled={isLoading}
-        className="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-300"
+        className="w-full bg-background hover:bg-surface-hover text-text-secondary border border-border-control"
         size="lg"
       >
         {isLoading ? (

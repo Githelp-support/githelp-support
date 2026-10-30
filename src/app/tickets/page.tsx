@@ -318,9 +318,9 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "all"}
               className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "all" && (
-                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.total}</div>
@@ -338,9 +338,9 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "available"}
               className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "available" && (
-                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.available}</div>
@@ -358,9 +358,9 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "in-progress"}
               className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "in-progress" && (
-                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
@@ -378,9 +378,9 @@ export default function TicketsPage() {
               aria-pressed={statusFilter === "completed"}
               className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
-              <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+              <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
                 {statusFilter === "completed" && (
-                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
                   <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
@@ -395,7 +395,7 @@ export default function TicketsPage() {
 
           {/* Preview disclaimer banner */}
           {showTicketsPreview && (
-            <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">{SUPPORT_TICKETS_PREVIEW_DISCLAIMER}</div>
+            <div className="rounded-lg bg-bg-subtle px-4 py-3 text-sm text-text-muted">{SUPPORT_TICKETS_PREVIEW_DISCLAIMER}</div>
           )}
 
           {/* Filters */}
@@ -409,10 +409,10 @@ export default function TicketsPage() {
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Statuses</SelectItem>
-                <SelectItem value="available" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Unclaimed</SelectItem>
-                <SelectItem value="in-progress" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">In Progress</SelectItem>
-                <SelectItem value="completed" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Completed</SelectItem>
+                <SelectItem value="all" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Statuses</SelectItem>
+                <SelectItem value="available" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Unclaimed</SelectItem>
+                <SelectItem value="in-progress" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">In Progress</SelectItem>
+                <SelectItem value="completed" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Completed</SelectItem>
               </SelectContent>
             </Select>
 
@@ -425,12 +425,12 @@ export default function TicketsPage() {
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Types</SelectItem>
+                <SelectItem value="all" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Types</SelectItem>
                 {typeOptions.map((type) => (
                   <SelectItem
                     key={type}
                     value={type}
-                    className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium"
+                    className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium"
                   >
                     {type}
                   </SelectItem>
@@ -447,10 +447,10 @@ export default function TicketsPage() {
                 <SelectValue placeholder="All Priority" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Priority</SelectItem>
-                <SelectItem value="high" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">High</SelectItem>
-                <SelectItem value="medium" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Medium</SelectItem>
-                <SelectItem value="low" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Low</SelectItem>
+                <SelectItem value="all" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Priority</SelectItem>
+                <SelectItem value="high" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">High</SelectItem>
+                <SelectItem value="medium" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Medium</SelectItem>
+                <SelectItem value="low" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Low</SelectItem>
               </SelectContent>
             </Select>
 
@@ -460,7 +460,7 @@ export default function TicketsPage() {
           </div>
 
           {/* Tickets Table */}
-          <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
+          <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
             {showAvailablePreviewCards ? (
             <>
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
@@ -501,7 +501,7 @@ export default function TicketsPage() {
                       }
                     }}
                     aria-expanded={isExpanded}
-                    className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50 cursor-pointer hover:bg-gray-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
+                    className="px-6 py-4 border-b border-border last:border-b-0 bg-bg-subtle/50 cursor-pointer hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
                   >
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-9">
@@ -683,7 +683,7 @@ export default function TicketsPage() {
                         }
                       }}
                       aria-expanded={isExpanded}
-                      className="px-6 py-4 border-b border-border last:border-b-0 bg-gray-50/50 cursor-pointer hover:bg-gray-100/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
+                      className="px-6 py-4 border-b border-border last:border-b-0 bg-bg-subtle/50 cursor-pointer hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
                     >
                       <div className="grid grid-cols-12 gap-4 items-start">
                         <div className="col-span-4">
@@ -781,7 +781,7 @@ export default function TicketsPage() {
                 }
 
                 return (
-              <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]">
+              <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-surface-hover">
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-4">
                     <div className="flex items-start gap-[18px]">
@@ -822,7 +822,7 @@ export default function TicketsPage() {
                         {getStatusLabel(ticket.status)}
                       </Badge>
                       {ticket.helper && (
-                        <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-white text-xs font-medium shrink-0">
+                        <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-brand-foreground text-xs font-medium shrink-0">
                           {ticket.helper.avatar}
                         </div>
                       )}

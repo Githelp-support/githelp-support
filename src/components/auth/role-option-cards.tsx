@@ -72,7 +72,7 @@ export function RoleOptionCards({
                         onClick={() => onSelect(option.role)}
                         disabled={disabled}
                         className={cn(
-                            "w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary whitespace-normal disabled:opacity-50",
+                            "w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary whitespace-normal disabled:opacity-50",
                             className
                         )}
                         variant="outline"

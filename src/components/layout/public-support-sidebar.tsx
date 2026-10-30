@@ -72,7 +72,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       // content height). Stretching as a flex item uses the row's actual
       // laid-out height instead, so the sidebar always fills the area below
       // the TopBar and the profile block stays pinned to the bottom.
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
       <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
@@ -136,7 +136,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
           {navigationItems.map((item) => {
             const isActive = activeTab === item.name
             const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
-            const inactiveClasses = "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            const inactiveClasses = "text-text-muted hover:bg-bg-subtle hover:text-sidebar-foreground"
 
             return (
               <button
@@ -169,7 +169,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
             target="_blank"
             rel="noopener noreferrer"
             title={isCollapsed ? "Open my user portal" : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground ${isCollapsed ? "justify-center" : ""}`}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 text-text-muted hover:bg-bg-subtle hover:text-sidebar-foreground ${isCollapsed ? "justify-center" : ""}`}
           >
             <span className="flex h-5 w-5 shrink-0 items-center justify-center">
               <FlaticonIcon iconClass="fi-rr-user" />
@@ -194,7 +194,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
           ) : (
             <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
               <AvatarFallback
-                className="bg-[#868c98] text-white text-sm rounded-[10px] font-medium"
+                className="bg-text-tertiary text-white text-sm rounded-[10px] font-medium"
               >
                 {user.avatar}
               </AvatarFallback>

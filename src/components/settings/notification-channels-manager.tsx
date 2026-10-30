@@ -123,7 +123,7 @@ export function NotificationChannelsManager({
             <code className="font-mono">X-Githelp-Signature: sha256=&lt;hmac&gt;</code> header.
           </p>
           <div className="flex items-center gap-2">
-            <code className="text-xs font-mono bg-white border border-border rounded px-2 py-1 break-all flex-1">
+            <code className="text-xs font-mono bg-background border border-border rounded px-2 py-1 break-all flex-1">
               {signingSecret}
             </code>
             <Button
@@ -150,7 +150,7 @@ export function NotificationChannelsManager({
           No delivery channels connected yet.
         </p>
       ) : (
-        <div className="space-y-0 divide-y divide-[rgba(0,0,0,0.06)]">
+        <div className="space-y-0 divide-y divide-border-subtle">
           {channels.map((channel) => (
             <div key={channel.id} className="flex items-center justify-between py-3 gap-3">
               <div className="min-w-0">
@@ -224,7 +224,7 @@ export function NotificationChannelsManager({
             <Label className="text-xs mb-2 block font-[550]">Send these notification types</Label>
             <div className="flex flex-wrap gap-3">
               {GROUP_OPTIONS.map((group) => (
-                <label key={group.key} className="flex items-center gap-1.5 text-sm text-[#737373] cursor-pointer">
+                <label key={group.key} className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
                   <input
                     type="checkbox"
                     checked={groups.includes(group.key)}

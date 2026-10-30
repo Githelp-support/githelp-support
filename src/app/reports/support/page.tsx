@@ -548,12 +548,12 @@ export default function ReportsSupportPage() {
             </div>
 
             {!projectId && (
-              <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">Select a project to see its reports.</div>
+              <div className="rounded-lg bg-bg-subtle px-4 py-3 text-sm text-text-muted">Select a project to see its reports.</div>
             )}
 
             {/* Monthly: the project's income per month */}
             {activeTab === "monthly" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                     <div>
@@ -588,7 +588,7 @@ export default function ReportsSupportPage() {
                         role="button"
                         tabIndex={0}
                         aria-label={`View tickets for ${row.period}`}
-                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
                         onClick={() => openMonthTickets(row.period)}
                         onKeyDown={(e) => {
                           if (e.target !== e.currentTarget) return
@@ -656,7 +656,7 @@ export default function ReportsSupportPage() {
 
             {/* Tickets: the project's income per ticket */}
             {activeTab === "tickets" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid gap-4 items-center" style={TICKETS_GRID}>
                     <div>
@@ -692,7 +692,7 @@ export default function ReportsSupportPage() {
                       <div
                         key={row.id}
                         className={cn(
-                          "px-6 py-4 hover:bg-[#f7f9ff]",
+                          "px-6 py-4 hover:bg-page-muted",
                           ticketHref &&
                             "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
                         )}
@@ -835,7 +835,7 @@ export default function ReportsSupportPage() {
 
             {/* Helpers: each helper's income per month, with that month's tickets underneath */}
             {activeTab === "helpers" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid gap-4 items-center" style={HELPERS_GRID}>
                     <div>
@@ -873,7 +873,7 @@ export default function ReportsSupportPage() {
                         aria-expanded={expanded}
                         aria-controls={expanded ? panelId : undefined}
                         aria-label={`Tickets for ${row.helper}, ${row.period}`}
-                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
                         onClick={() => toggle(row.id)}
                         onKeyDown={(e) => {
                           // Only when the row itself has focus, not a control inside it.

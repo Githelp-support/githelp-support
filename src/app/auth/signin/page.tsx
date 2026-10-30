@@ -69,14 +69,14 @@ export default function SignInPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+      <div className="min-h-screen flex items-center justify-center bg-page-muted">
         <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
       <div className="flex flex-col items-center gap-6 w-full max-w-md">
         <Logo className="w-[50px] h-[50px]" />
         <Card className="w-full max-w-md">

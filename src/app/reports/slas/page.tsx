@@ -375,7 +375,7 @@ export default function ReportsSLAsPage() {
 
             {/* Monthly Reports Table */}
             {activeTab === "monthly" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
                 {/* Table Header */}
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 items-center">
@@ -439,7 +439,7 @@ export default function ReportsSLAsPage() {
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("reports")}</div>
                   ) : (
                     sortedReports.map((report) => (
-                    <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                    <div key={report.id} className="px-6 py-4 hover:bg-page-muted">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-1">
                           <Checkbox
@@ -486,7 +486,7 @@ export default function ReportsSLAsPage() {
             )}
 
             {activeTab === "tickets" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
                 {/* Table Header */}
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 items-center">
@@ -550,7 +550,7 @@ export default function ReportsSLAsPage() {
                     <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("tickets")}</div>
                   ) : (
                     sortedTickets.map((ticket) => (
-                    <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                    <div key={ticket.id} className="px-6 py-4 hover:bg-page-muted">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-1">
                           <Checkbox

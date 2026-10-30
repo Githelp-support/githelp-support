@@ -79,7 +79,7 @@ const ProjectLogo = ({
     <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${radius}`}>
       {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
       <AvatarFallback
-        className={`${primaryColor ? "" : "bg-brand-primary"} text-white text-xs ${radius} font-[family-name:var(--font-outfit)]`}
+        className={`${primaryColor ? "" : "bg-brand-primary"} text-brand-foreground text-xs ${radius} font-[family-name:var(--font-outfit)]`}
         style={primaryColor ? { backgroundColor: primaryColor } : undefined}
       >
         {firstLetter}
@@ -340,7 +340,7 @@ export function TopBar() {
 
   return (
     <>
-      <div className="sticky top-0 z-40 w-full min-h-[60px] bg-[#FAFAFA] border-b border-border px-8 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-40 w-full min-h-[60px] bg-sidebar border-b border-border px-8 py-3 flex items-center justify-between">
         {/* Left cluster: Logo, Role dropdown, Project dropdown */}
         <div className="flex items-center gap-4">
           <Logo />
@@ -517,7 +517,7 @@ export function TopBar() {
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
             className="relative p-1 mt-[2px] hover:bg-muted rounded-md transition-colors cursor-pointer"
           >
-            <Bell className="w-[18px] h-[18px] text-[#55555E]" strokeWidth={1.95} />
+            <Bell className="w-[18px] h-[18px] text-text-muted" strokeWidth={1.95} />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -573,7 +573,7 @@ function ProjectLogoWithBranding({
         className={`font-sans truncate text-[14px] ${
           isSelected
             ? "font-[500]"
-            : "font-medium text-[#55555E] group-focus:text-sidebar-foreground"
+            : "font-medium text-text-muted group-focus:text-sidebar-foreground"
         }`}
       >
         {project.name}

@@ -42,41 +42,41 @@ export default function SLAEntryPage() {
     <div className="max-w-7xl mx-auto px-6 py-12">
       <div className="flex items-center gap-4 mb-8">
         <div className="relative">
-          <div className="w-20 h-20 bg-white rounded-lg shadow-sm flex items-center justify-center">
+          <div className="w-20 h-20 bg-card rounded-lg shadow-sm flex items-center justify-center">
             <div className="text-4xl font-bold">N</div>
           </div>
-          <div className="absolute -top-2 -left-2 bg-[#868c98] text-white text-xs px-2 py-1 rounded">OS</div>
+          <div className="absolute -top-2 -left-2 bg-text-tertiary text-white text-xs px-2 py-1 rounded">OS</div>
         </div>
         <div>
-          <h1 className="text-3xl font-normal text-[#444444]">
+          <h1 className="text-3xl font-normal text-text-secondary">
             Welcome to the support page for <span className="font-semibold">{projectName}</span>
           </h1>
         </div>
       </div>
 
-      <div className="border-b border-gray-200 mb-12">
+      <div className="border-b border-border-subtle mb-12">
         <nav className="flex gap-8">
           <Link
             href="/support"
-            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-[#554abf] border-b-2 border-[#554abf]"
+            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-brand-primary border-b-2 border-brand-primary"
           >
             Get support
           </Link>
           <Link
             href="/support"
-            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-[#868c98] hover:text-[#444444]"
+            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-text-tertiary hover:text-text-secondary"
           >
             Rates and details
           </Link>
           <Link
             href="/support"
-            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-[#868c98] hover:text-[#444444]"
+            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-text-tertiary hover:text-text-secondary"
           >
             Resources
           </Link>
           <Link
             href="/support"
-            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-[#868c98] hover:text-[#444444]"
+            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-text-tertiary hover:text-text-secondary"
           >
             About support
           </Link>
@@ -85,11 +85,11 @@ export default function SLAEntryPage() {
 
       <div className="max-w-2xl">
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-xl font-normal text-[#444444]">Type in your SLA ID</h2>
-          <HelpCircle className="h-4 w-4 text-[#868c98]" />
+          <h2 className="text-xl font-normal text-text-secondary">Type in your SLA ID</h2>
+          <HelpCircle className="h-4 w-4 text-text-tertiary" />
         </div>
 
-        <p className="text-[#444444] mb-8">
+        <p className="text-text-secondary mb-8">
           When typing in your SLA ID, you will enter your organization&apos;s personal support space.
         </p>
 
@@ -105,7 +105,7 @@ export default function SLAEntryPage() {
               }}
               aria-invalid={showFormatError}
               aria-describedby={showFormatError ? "sla-id-error" : undefined}
-              className="border-gray-300 text-[#444444] placeholder:text-[#868c98] font-mono"
+              className="border-border-control text-text-secondary placeholder:text-text-tertiary font-mono"
             />
             {showFormatError && (
               <p id="sla-id-error" role="alert" className="mt-2 text-sm text-destructive">
@@ -118,13 +118,13 @@ export default function SLAEntryPage() {
           <Button
             onClick={handleEnterSupportSpace}
             variant="outline"
-            className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
+            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground cursor-pointer bg-transparent"
             disabled={!slaIdValid}
           >
             Enter support space
           </Button>
 
-          <Link href="/support" className="flex items-center gap-2 text-[#554abf] hover:underline text-sm">
+          <Link href="/support" className="flex items-center gap-2 text-brand-primary hover:underline text-sm">
             I don&apos;t have my SLA ID
           </Link>
         </div>

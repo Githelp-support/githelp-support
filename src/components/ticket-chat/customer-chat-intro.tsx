@@ -71,13 +71,13 @@ export function CustomerChatIntro({
       <div className="flex-1 space-y-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm" style={{ color: "#2E2D31", fontWeight: 550 }}>
+            <span className="text-sm text-foreground font-medium">
               {projectName} Team
             </span>
             <span
               className="text-xs"
               style={{
-                color: "rgba(0,0,0,0.5)",
+                color: "var(--muted-foreground)",
                 fontFamily: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
                 fontVariantNumeric: "tabular-nums",
               }}
@@ -141,7 +141,7 @@ export function CustomerChatIntro({
               Sign in
             </Button>
             {signedOutExtra}
-            <p className="text-xs text-[#868c98] mt-2">
+            <p className="text-xs text-text-tertiary mt-2">
               No account needed: just type your question below. Sign in to get notified when a helper replies and to keep your support history.
             </p>
           </div>

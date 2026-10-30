@@ -459,7 +459,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   onClick={() => setHelpersView("view-all")}
                   className={
                     helpersView === "view-all"
-                      ? "bg-brand-primary hover:bg-brand-primary/90 text-white"
+                      ? "bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
                       : "border-border text-muted-foreground hover:bg-muted"
                   }
                 >

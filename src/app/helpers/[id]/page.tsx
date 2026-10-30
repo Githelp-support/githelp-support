@@ -530,7 +530,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               <HelpCircle className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -539,7 +539,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -548,7 +548,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                   <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.totalTime}</div>
                 </CardContent>
               </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
+              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
                 <CardContent className="px-[30px]">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
@@ -563,7 +563,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
           {/* All tickets */}
           <div className="space-y-4">
             <h2 className="text-base font-semibold text-foreground">All tickets</h2>
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                 <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
                   <div>
@@ -606,7 +606,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                         aria-expanded={expanded}
                         aria-controls={expanded ? panelId : undefined}
                         aria-label={`Transactions for ticket ${ticket.shortId}`}
-                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
+                        className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
                         onClick={() => toggle(ticket.key)}
                         onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
                           // Only when the row itself has focus, not a control inside it.

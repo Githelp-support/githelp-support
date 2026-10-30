@@ -879,7 +879,7 @@ export default function TicketDetailPage() {
           </div>
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto px-6 py-12">
-              <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+              <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
                 <h1 className="text-2xl font-semibold text-foreground mb-2">
                   Ticket not found or you don&apos;t have access
                 </h1>
@@ -924,7 +924,7 @@ export default function TicketDetailPage() {
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
                 <div
-                  className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                  className="bg-card rounded-[10px] shadow-soft flex-1 overflow-auto"
                   onLoadCapture={(e) => {
                     // Images load after the initial scroll and push the thread
                     // down; keep it pinned to the bottom if it was there.
@@ -948,11 +948,11 @@ export default function TicketDetailPage() {
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{firstIssueMessage.senderName}</span>
+                        <span className="text-sm text-foreground font-medium">{firstIssueMessage.senderName}</span>
                         <span
                           className="text-xs"
                           style={{
-                            color: 'rgba(0,0,0,0.5)',
+                            color: "var(--muted-foreground)",
                             fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                             fontVariantNumeric: 'tabular-nums',
                           }}
@@ -969,8 +969,8 @@ export default function TicketDetailPage() {
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium mb-2" style={{ color: '#2E2D31' }}>Info about issue</h3>
-                        <div className="space-y-3" style={{ color: '#2E2D31' }}>
+                        <h3 className="text-sm font-medium mb-2 text-foreground">Info about issue</h3>
+                        <div className="space-y-3 text-foreground">
                           {firstIssueMessage.content ? (
                             <MarkdownContent content={firstIssueMessage.content} className="text-sm" />
                           ) : (
@@ -1078,11 +1078,11 @@ export default function TicketDetailPage() {
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                              <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
                               <span
                                 className="text-xs"
                                 style={{
-                                  color: 'rgba(0,0,0,0.5)',
+                                  color: "var(--muted-foreground)",
                                   fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                   fontVariantNumeric: 'tabular-nums',
                                 }}
@@ -1090,7 +1090,7 @@ export default function TicketDetailPage() {
                                 {msg.timestamp}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
+                            <div className="flex items-center gap-2 text-sm text-foreground">
                               <Check className="w-4 h-4 text-brand-primary shrink-0" />
                               <MarkdownContent content={msg.content} className="text-sm" />
                             </div>
@@ -1110,11 +1110,11 @@ export default function TicketDetailPage() {
                           <div className="flex-1">
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                                <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
                                 <span
                                   className="text-xs"
                                   style={{
-                                    color: 'rgba(0,0,0,0.5)',
+                                    color: "var(--muted-foreground)",
                                     fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                     fontVariantNumeric: 'tabular-nums',
                                   }}
@@ -1130,9 +1130,8 @@ export default function TicketDetailPage() {
                                     (msg.metadataKind === "time_entries_confirmed" && msg.hasDeclines)
                                     ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                     : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                  : "text-sm"
+                                  : "text-sm text-foreground"
                               }
-                              style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
                             </div>
@@ -1340,7 +1339,7 @@ export default function TicketDetailPage() {
       {/* Right Sidebar — sibling of the header column so it spans the full height, like the left sidebar */}
       <div
         suppressHydrationWarning
-        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-background border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
       >
         <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
@@ -1509,7 +1508,7 @@ export default function TicketDetailPage() {
                     className={`block w-full border cursor-pointer transition-colors ${
                       item.current
                         ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                        : "bg-white border-border hover:bg-muted"
+                        : "bg-background border-border hover:bg-muted"
                     }`}
                   >
                     <div className="p-3">
@@ -1599,7 +1598,7 @@ export default function TicketDetailPage() {
               Cancel
             </Button>
             <Button
-              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+              className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
               onClick={handleAddSelfAsHelper}
               disabled={addSelfAsHelper.isPending}
             >

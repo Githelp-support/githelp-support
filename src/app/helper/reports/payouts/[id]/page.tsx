@@ -26,7 +26,7 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
   return (
     <div className="min-w-0">
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className={mono ? "font-mono text-sm break-all text-gray-900" : "text-sm text-gray-900 break-words"}>
+      <dd className={mono ? "font-mono text-sm break-all text-foreground" : "text-sm text-foreground break-words"}>
         {value || "—"}
       </dd>
     </div>
@@ -90,26 +90,26 @@ export default function HelperPayoutStatementPage() {
             </div>
 
             {isLoading ? (
-              <div className="bg-white rounded-lg border border-[#E1E1E1] px-6 py-8 text-center text-muted-foreground text-[14px]">
+              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-[14px]">
                 Loading payout...
               </div>
             ) : isError || !statement ? (
-              <div className="bg-white rounded-lg border border-[#E1E1E1] px-6 py-8 text-center text-muted-foreground text-[14px]">
+              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-[14px]">
                 This payout could not be found, or you do not have access to it.
               </div>
             ) : (
-              <article className="bg-white rounded-lg border border-[#E1E1E1] print:border-0 print:rounded-none">
+              <article className="bg-card rounded-lg border border-border-subtle print:border-0 print:rounded-none">
                 <header className="px-8 py-6 border-b border-border flex items-start justify-between gap-6">
                   <div className="flex items-center gap-3">
                     <Logo className="text-brand-primary" />
                     <div>
-                      <div className="text-lg font-semibold text-gray-900">Githelp</div>
+                      <div className="text-lg font-semibold text-foreground">Githelp</div>
                       <div className="text-sm text-muted-foreground">Payout statement</div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground">Reference</div>
-                    <div className="font-mono text-sm text-gray-900 break-all">{statement.reference}</div>
+                    <div className="font-mono text-sm text-foreground break-all">{statement.reference}</div>
                     <div className="text-xs text-muted-foreground mt-2">{formatLongDate(statement.date)}</div>
                   </div>
                 </header>
@@ -130,13 +130,13 @@ export default function HelperPayoutStatementPage() {
 
                 <section className="px-8 py-6 border-b border-border grid gap-6 sm:grid-cols-2">
                   <dl className="space-y-3">
-                    <div className="text-sm font-medium text-gray-900">Paid to</div>
+                    <div className="text-sm font-medium text-foreground">Paid to</div>
                     <Field label="Name" value={statement.payee.name} />
                     <Field label="Email" value={statement.payee.email} />
                     <Field label="Stripe account" value={statement.payee.stripeAccountId} mono />
                   </dl>
                   <dl className="space-y-3">
-                    <div className="text-sm font-medium text-gray-900">Paid by</div>
+                    <div className="text-sm font-medium text-foreground">Paid by</div>
                     <Field label="Platform" value="Githelp" />
                     <Field label="On behalf of project" value={statement.projectName} />
                     <Field label="Method" value="Stripe Connect transfer" />
@@ -155,30 +155,30 @@ export default function HelperPayoutStatementPage() {
                     </thead>
                     <tbody>
                       <tr className="border-t border-border">
-                        <td className="py-3 pr-4 text-gray-900">
+                        <td className="py-3 pr-4 text-foreground">
                           <div>Helper payout for support ticket</div>
                           <div className="text-xs text-muted-foreground">{statement.ticketTitle}</div>
                           {statement.slaName && (
                             <div className="text-xs text-muted-foreground">SLA: {statement.slaName}</div>
                           )}
                         </td>
-                        <td className="py-3 pr-4 font-mono tabular-nums text-gray-900 align-top">{statement.ticketShortId}</td>
-                        <td className="py-3 pr-4 text-gray-900 align-top">{statement.ticketType}</td>
-                        <td className="py-3 text-right tabular-nums text-gray-900 align-top">
+                        <td className="py-3 pr-4 font-mono tabular-nums text-foreground align-top">{statement.ticketShortId}</td>
+                        <td className="py-3 pr-4 text-foreground align-top">{statement.ticketType}</td>
+                        <td className="py-3 text-right tabular-nums text-foreground align-top">
                           {formatAmount(statement.amountSmallestUnit, statement.currency)}
                         </td>
                       </tr>
                     </tbody>
                     <tfoot>
                       <tr className="border-t border-border">
-                        <td colSpan={3} className="pt-3 text-right font-medium text-gray-900">
+                        <td colSpan={3} className="pt-3 text-right font-medium text-foreground">
                           {statement.status === "completed"
                             ? "Total paid out"
                             : statement.status === "failed"
                               ? "Total (not paid)"
                               : "Total due"}
                         </td>
-                        <td className="pt-3 text-right font-semibold tabular-nums text-gray-900">
+                        <td className="pt-3 text-right font-semibold tabular-nums text-foreground">
                           {formatAmount(statement.amountSmallestUnit, statement.currency)}
                         </td>
                       </tr>
@@ -187,7 +187,7 @@ export default function HelperPayoutStatementPage() {
                 </section>
 
                 <section className="px-8 py-6 border-b border-border">
-                  <div className="text-sm font-medium text-gray-900 mb-3">References</div>
+                  <div className="text-sm font-medium text-foreground mb-3">References</div>
                   <dl className="grid gap-4 sm:grid-cols-2">
                     <Field label="Payout ID" value={statement.payoutId} mono />
                     <Field label="Stripe transfer ID" value={statement.stripeTransferId} mono />

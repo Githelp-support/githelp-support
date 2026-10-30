@@ -337,7 +337,7 @@ export function TicketChat(props: TicketChatProps) {
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
               <div
-                className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                className="bg-card rounded-[10px] shadow-soft flex-1 overflow-auto"
                 onLoadCapture={(e) => {
                   // Images load after the initial scroll and push the thread
                   // down; keep it pinned to the bottom if it was there.
@@ -366,13 +366,13 @@ export function TicketChat(props: TicketChatProps) {
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
+                                  <span className="text-sm text-foreground font-medium">
                                     {msg.senderName || "System"}
                                   </span>
                                   <span
                                     className="text-xs"
                                     style={{
-                                      color: 'rgba(0,0,0,0.5)',
+                                      color: "var(--muted-foreground)",
                                       fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                       fontVariantNumeric: 'tabular-nums',
                                     }}
@@ -380,7 +380,7 @@ export function TicketChat(props: TicketChatProps) {
                                     {msg.timestamp}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
+                                <div className="flex items-center gap-2 text-sm text-foreground">
                                   <Check className="w-4 h-4 text-brand-primary shrink-0" />
                                   <MarkdownContent content={msg.content} className="text-sm" />
                                 </div>
@@ -401,13 +401,13 @@ export function TicketChat(props: TicketChatProps) {
                               <div className="flex-1">
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
+                                    <span className="text-sm text-foreground font-medium">
                                       {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
                                     </span>
                                     <span
                                       className="text-xs"
                                       style={{
-                                        color: 'rgba(0,0,0,0.5)',
+                                        color: "var(--muted-foreground)",
                                         fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                         fontVariantNumeric: 'tabular-nums',
                                       }}
@@ -436,9 +436,8 @@ export function TicketChat(props: TicketChatProps) {
                                                   msg.paymentMetadata.declined.length > 0)
                                               ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                               : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                      : "text-sm"
+                                      : "text-sm text-foreground"
                                   }
-                                  style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent
                                     content={
@@ -458,7 +457,7 @@ export function TicketChat(props: TicketChatProps) {
                                         type="button"
                                         onClick={() => handlePaymentCta(msg)}
                                         disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-brand-foreground hover:bg-brand-primary/90 disabled:opacity-60"
                                       >
                                         {ctaLabel("Add payment method")}
                                       </button>
@@ -480,7 +479,7 @@ export function TicketChat(props: TicketChatProps) {
                                         type="button"
                                         onClick={() => handlePaymentCta(msg)}
                                         disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-brand-foreground hover:bg-brand-primary/90 disabled:opacity-60"
                                       >
                                         {ctaLabel("Update payment method")}
                                       </button>
@@ -609,7 +608,7 @@ export function TicketChat(props: TicketChatProps) {
       {/* Right Sidebar */}
       <div
         suppressHydrationWarning
-        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+        className={`${isCollapsed ? "w-16" : "w-80"} bg-background border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
       >
           <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 

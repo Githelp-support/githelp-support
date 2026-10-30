@@ -238,7 +238,7 @@ export default function SLAsPage() {
                 <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading SLAs...</div>
               ) : filteredAndSortedSLAs.length > 0 ? (
                 filteredAndSortedSLAs.map((sla, index) => (
-                <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                <div key={index} className="px-6 py-4 hover:bg-page-muted">
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <input type="checkbox" className="rounded border-border" />

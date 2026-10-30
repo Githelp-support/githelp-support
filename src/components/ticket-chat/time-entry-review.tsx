@@ -286,7 +286,7 @@ function TimeEntrySummaryForm({
                   data-declined={declined || undefined}
                   className={cn(
                     "rounded-lg border border-border p-3",
-                    declined ? "border-red-200 bg-red-50/60" : "bg-white",
+                    declined ? "border-red-200 bg-red-50/60" : "bg-background",
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -329,7 +329,7 @@ function TimeEntrySummaryForm({
                           setDeclines((prev) => ({ ...prev, [entry.id]: e.target.value.slice(0, DECLINE_REASON_MAX_LENGTH) }))
                         }
                         placeholder="e.g. We only worked together for about 20 minutes, not an hour."
-                        className="border-input min-h-[72px] resize-none bg-white"
+                        className="border-input min-h-[72px] resize-none bg-background"
                         maxLength={DECLINE_REASON_MAX_LENGTH}
                         autoFocus
                         disabled={pending}

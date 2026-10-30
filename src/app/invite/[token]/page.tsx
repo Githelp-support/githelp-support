@@ -267,7 +267,7 @@ export default function InviteAcceptancePage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
                     <p className="text-[14px] text-muted-foreground">Loading invite...</p>
@@ -278,7 +278,7 @@ export default function InviteAcceptancePage() {
 
     if (error || !project) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
@@ -313,7 +313,7 @@ export default function InviteAcceptancePage() {
                 : `You've joined ${projectName} ${inviteRoleLabel(inviteData?.invite_type)}.`
             : `This invite is for ${projectName}, which you are already a member of. Open your dashboard to continue.`
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex flex-col items-start gap-4 mb-2 text-left">
@@ -324,7 +324,7 @@ export default function InviteAcceptancePage() {
                     </CardHeader>
                     <CardContent>
                         <Link href="/">
-                            <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                            <Button variant="brand" className="w-full">
                                 Go to dashboard
                             </Button>
                         </Link>
@@ -337,7 +337,7 @@ export default function InviteAcceptancePage() {
     // Show profile completion form if needed
     if (isAuthenticated && needsProfile && inviteData?.invite_type === "helper") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
                 <HelperInviteAcceptance
                     projectName={project?.name ?? "the project"}
                     onComplete={handleProfileComplete}
@@ -349,7 +349,7 @@ export default function InviteAcceptancePage() {
     const inviteTypeLabel = inviteRoleLabel(inviteData?.invite_type)
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+        <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
@@ -364,7 +364,7 @@ export default function InviteAcceptancePage() {
                                 Sign in to accept this invitation and join the project.
                             </p>
                             <Link href={`/auth/signin?redirect=${encodeURIComponent(`/invite/${token}`)}`}>
-                                <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                                <Button variant="brand" className="w-full">
                                     <LogIn className="w-4 h-4" />
                                     Sign in to continue
                                 </Button>
@@ -378,7 +378,7 @@ export default function InviteAcceptancePage() {
                             <Button
                                 onClick={handleAcceptInvite}
                                 disabled={isProcessing}
-                                className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="w-full"
                             >
                                 {isProcessing ? (
                                     <>

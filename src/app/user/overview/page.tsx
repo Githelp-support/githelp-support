@@ -147,7 +147,7 @@ export default function UserOverviewPage() {
               {stats.map((stat) => (
                 <Card
                   key={stat.label}
-                  className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg"
+                  className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg"
                 >
                   <CardContent className="px-[30px]">
                     <div className="flex items-center gap-2 mb-3">
@@ -172,7 +172,7 @@ export default function UserOverviewPage() {
                 View all tickets
               </Link>
             </div>
-            <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
+            <Card className="border-border-subtle rounded-lg py-0 shadow-none overflow-hidden">
               <CardContent className="p-0">
                 <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
                   <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
@@ -201,7 +201,7 @@ export default function UserOverviewPage() {
                       <Link
                         key={ticket.id}
                         href={`/support/chat?ticket=${ticket.id}&project=${ticket.project_id}`}
-                        className="block px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0 hover:bg-muted/50"
+                        className="block px-6 py-2.5 border-b border-border-subtle last:border-b-0 hover:bg-muted/50"
                       >
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-6">
@@ -213,7 +213,7 @@ export default function UserOverviewPage() {
                                 {ticket.project_logo_url ? (
                                   <AvatarImage src={ticket.project_logo_url} alt={projectName} />
                                 ) : null}
-                                <AvatarFallback className="bg-brand-primary text-white text-sm font-medium rounded-[11px]">
+                                <AvatarFallback className="bg-brand-primary text-brand-foreground text-sm font-medium rounded-[11px]">
                                   {(projectName?.[0] || "?").toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>

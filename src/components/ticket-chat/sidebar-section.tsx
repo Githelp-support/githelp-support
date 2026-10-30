@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 const HEADING_STYLE = {
   fontSize: "11px",
   letterSpacing: "0.05em",
-  color: "rgba(0,0,0,0.5)",
+  color: "var(--muted-foreground)",
   fontWeight: 500,
 } as const
 

@@ -102,6 +102,7 @@ export default function HelperPayoutPage() {
             <div className="mt-8 flex flex-col gap-10">
               {/* Stripe → helper avatar connection */}
               <div className="flex items-center gap-1">
+                {/* Third-party brand colour (Stripe); kept on purpose, not a token. */}
                 <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[14px]">
                   <img
                     src="/images/stripe-svg.svg"

@@ -218,15 +218,15 @@ describe("HelperOverviewPage", () => {
       const unreadRow = screen.getByText("Unread ticket").closest("a")
       const readRow = screen.getByText("Read ticket").closest("a")
 
-      expect(unreadRow).toHaveClass("bg-purple-50")
-      expect(unreadRow).toHaveClass("hover:bg-purple-100")
+      expect(unreadRow).toHaveClass("bg-brand-primary/10")
+      expect(unreadRow).toHaveClass("hover:bg-brand-primary/15")
       expect(unreadRow).not.toHaveClass("hover:bg-muted/50")
       const icon = unreadRow?.querySelector("i.fi-rr-comments")
       expect(icon).toBeInTheDocument()
       expect(icon).toHaveAttribute("aria-label", "Unread messages")
       expect(icon).toHaveClass("text-brand-primary")
 
-      expect(readRow).not.toHaveClass("bg-purple-50")
+      expect(readRow).not.toHaveClass("bg-brand-primary/10")
       expect(readRow).toHaveClass("hover:bg-muted/50")
       expect(readRow?.querySelector("i.fi-rr-comments")).toBeNull()
     })
