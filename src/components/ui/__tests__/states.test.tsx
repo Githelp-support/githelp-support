@@ -105,8 +105,11 @@ describe("TabSelector", () => {
     expect(track.className).toMatch(/bg-bg-subtle/)
     const active = screen.getByRole("tab", { name: "Alpha" })
     expect(active).toHaveAttribute("aria-selected", "true")
-    expect(active.className).toMatch(/shadow-tab/)
     expect(active.className).not.toMatch(/#|rgba/)
+    // The glow lives on the single sliding indicator, not on the items.
+    const indicator = track.querySelector("[data-slot='tab-indicator']")
+    expect(indicator).not.toBeNull()
+    expect(indicator!.className).toMatch(/shadow-tab/)
     fireEvent.click(screen.getByRole("tab", { name: "Beta" }))
     expect(onChange).toHaveBeenCalledWith("b")
   })

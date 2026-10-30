@@ -182,6 +182,11 @@ export interface TicketChatProps {
 
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
+  /**
+   * Identity of the thread being shown (the ticket id). When it changes, the
+   * next thread's history renders without the new-message animation.
+   */
+  threadKey?: string
 
   /**
    * Called when the user clicks a payment CTA on a system message: "Add
@@ -235,6 +240,7 @@ export function TicketChat(props: TicketChatProps) {
     timeReviewHelperName,
     attachmentStoragePrefix,
     rightSidebarFooter,
+    threadKey,
     onPaymentCtaClick,
     paymentCtaLoading,
     paymentStatus,
@@ -290,13 +296,15 @@ export function TicketChat(props: TicketChatProps) {
   }, [messages.length, isEnded])
 
   const thread = useMemo(() => messages ?? [], [messages])
-  // Messages present when the thread first loaded don't animate; later ones do.
-  // (State set during render, once, when the first non-empty thread arrives.)
-  const [initialMessageIds, setInitialMessageIds] = useState<Set<string> | null>(null)
-  if (initialMessageIds === null && thread.length > 0) {
-    setInitialMessageIds(new Set(thread.map((m) => m.id)))
+  // Messages present when a thread first loads don't animate; later ones do.
+  // (State set during render when the first non-empty thread for this
+  // `threadKey` arrives; switching tickets takes a fresh snapshot.)
+  const [initialMessages, setInitialMessages] = useState<{ key: string | undefined; ids: Set<string> } | null>(null)
+  if ((initialMessages === null || initialMessages.key !== threadKey) && thread.length > 0) {
+    setInitialMessages({ key: threadKey, ids: new Set(thread.map((m) => m.id)) })
   }
-  const isNewMessage = (id: string) => initialMessageIds !== null && !initialMessageIds.has(id)
+  const isNewMessage = (id: string) =>
+    initialMessages !== null && initialMessages.key === threadKey && !initialMessages.ids.has(id)
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live

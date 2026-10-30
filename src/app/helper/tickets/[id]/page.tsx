@@ -920,6 +920,19 @@ export default function TicketDetailPage() {
                 {isGuestTicket && <GuestTicketBadge />}
               </span>
             }
+            actions={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-text-muted"
+                aria-label="Ticket details"
+                aria-expanded={mobilePanelOpen}
+                onClick={() => setMobilePanelOpen((v) => !v)}
+              >
+                <PanelRight className="size-4" aria-hidden />
+              </Button>
+            }
           />
         </div>
         <main className="flex-1 flex overflow-hidden">

@@ -62,6 +62,7 @@ function Button({
      * Shows a centred spinner over the (still rendered, invisible) label so the
      * button keeps its width, and disables the button. Use for submit/confirm
      * buttons that wait on a request instead of swapping the label text.
+     * Ignored with `asChild` (the child element renders as-is).
      */
     loading?: boolean
   }) {

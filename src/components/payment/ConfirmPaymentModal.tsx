@@ -52,8 +52,15 @@ export function ConfirmPaymentModal({ clientSecret, mode, onResolved, onCancel }
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && !busy && onCancel()}>
-      <DialogContent showCloseButton={false} className="sm:max-w-md">
+    // Only the buttons dismiss it: a tap outside or Esc must not count as "handled".
+    <Dialog open>
+      <DialogContent
+        showCloseButton={false}
+        className="sm:max-w-md"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Confirm the hold on your card</DialogTitle>
           <DialogDescription className="leading-relaxed">
@@ -70,7 +77,7 @@ export function ConfirmPaymentModal({ clientSecret, mode, onResolved, onCancel }
           <Button variant="outline" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} loading={busy} className="tabular-nums">
+          <Button onClick={handleConfirm} loading={busy}>
             Confirm hold
           </Button>
         </DialogFooter>

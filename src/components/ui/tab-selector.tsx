@@ -60,7 +60,7 @@ export function TabSelector<T = string>({ options, value, onChange, className }:
             className={cn(
               "relative z-10 inline-flex h-7 cursor-pointer items-center justify-center whitespace-nowrap rounded-md px-3 text-ui transition-colors duration-fast ease-out outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
               isSelected
-                ? "font-medium text-foreground shadow-tab [&]:shadow-none"
+                ? "font-medium text-foreground"
                 : "font-normal text-muted-foreground hover:text-foreground",
             )}
             onClick={() => onChange(option.value)}

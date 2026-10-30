@@ -21,8 +21,7 @@ import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/sup
 import { signInHref } from "@/lib/sign-in-href"
 import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft } from "@/lib/support-draft"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
-import { MobileSidebarSheet, MobileNavToggle, useMobileNav } from "@/components/layout/mobile-nav"
-import { Logo } from "@/components/brand/logo"
+import { MobileSidebarSheet, useMobileNav } from "@/components/layout/mobile-nav"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
@@ -660,14 +659,6 @@ export default function SupportPage() {
       </MobileSidebarSheet>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Signed-out visitors get no TopBar, so below lg this strip carries the menu button. */}
-        {!isAuthenticated && (
-          <div className="flex shrink-0 items-center gap-2 border-b border-border-subtle bg-sidebar px-4 py-2 lg:hidden">
-            <MobileNavToggle className="-ml-1" />
-            <Logo />
-            <span className="truncate text-ui font-medium text-foreground">{projectName} support</span>
-          </div>
-        )}
         {activeTab === "get-support" ? (
           !hasEnteredChat ? (
             <div className="flex-1 flex flex-col px-6 pt-16 md:px-18 md:pt-40">

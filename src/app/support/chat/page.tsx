@@ -908,6 +908,7 @@ export default function UserSupportChatPage() {
   return (
     <>
       <TicketChat
+        threadKey={ticketId ?? undefined}
         headerTitle={`Ticket with ${projectName}`}
         headerTitleClassName="text-xl"
         headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}

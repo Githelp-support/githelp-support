@@ -52,7 +52,8 @@ export function RightSidebarCollapseToggle({
   onToggle: (collapsed: boolean) => void
 }) {
   return (
-    <div className={`${isCollapsed ? "justify-center px-0" : "justify-start px-3"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
+    // Below lg the panel is an off-canvas sheet; the desktop collapse toggle is hidden there.
+    <div className={`${isCollapsed ? "justify-center px-0" : "justify-start px-3"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0 max-lg:hidden`}>
       <Button
         variant="ghost"
         size="sm"

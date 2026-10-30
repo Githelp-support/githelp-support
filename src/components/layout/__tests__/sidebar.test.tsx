@@ -186,3 +186,18 @@ describe("PublicSupportSidebar — 'Open my user portal' link", () => {
     expect(screen.queryByText("Open my user portal")).not.toBeInTheDocument()
   })
 })
+
+describe("Sidebar — expansion follows client-side navigation", () => {
+  it("expands the parent of the active sub-item when the pathname changes without a remount", () => {
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "admin" }, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/tickets")
+    const { rerender } = render(<Sidebar />)
+    expect(screen.getByText("Branding").closest("[data-state]")).toHaveAttribute("data-state", "closed")
+
+    // A link elsewhere (or back/forward) lands on a settings sub-page: the Sidebar stays mounted.
+    usePathname.mockReturnValue("/settings/branding")
+    rerender(<Sidebar />)
+    expect(screen.getByText("Branding").closest("[data-state]")).toHaveAttribute("data-state", "open")
+    expect(screen.getByText("Branding").closest("a")).toHaveAttribute("href", "/settings/branding")
+  })
+})

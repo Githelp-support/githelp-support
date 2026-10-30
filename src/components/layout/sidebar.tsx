@@ -20,7 +20,7 @@ import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { isSupportRoute } from "@/lib/sign-in-href"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import type { ReactElement } from "react"
+import { Fragment, type ReactElement } from "react"
 
 interface SidebarProps {
   className?: string
@@ -221,9 +221,12 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   // during render (not in an effect) so the new role's nav never paints with
   // the old role's expansion. It also runs on the first render, since the
   // useState seed above only knows a few path prefixes.
-  const [expansionRole, setExpansionRole] = useState<{ role: typeof user.role } | null>(null)
-  if (!expansionRole || expansionRole.role !== user.role) {
-    setExpansionRole({ role: user.role })
+  // The Sidebar is mounted once (AppShell), so the same recompute also runs
+  // when the pathname changes: a link elsewhere, a redirect or back/forward
+  // into a sub-page must expand its parent like a click on the sub-item does.
+  const [expansionKey, setExpansionKey] = useState<{ role: typeof user.role; pathname: string | null } | null>(null)
+  if (!expansionKey || expansionKey.role !== user.role || expansionKey.pathname !== pathname) {
+    setExpansionKey({ role: user.role, pathname })
     let next: string[] = []
     for (const item of navigationItems) {
       if (!item.subItems) continue
@@ -520,10 +523,11 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 text-ui font-medium rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
             isActive ? "bg-surface-active text-foreground [&_i]:text-brand-primary" : "text-text-muted hover:bg-surface-hover hover:text-foreground"
           }`
-          return withTooltip(
+          return (
+            <Fragment key={item.name}>
+            {withTooltip(
             item.name,
             <Link
-              key={item.name}
               href={item.href}
               className={className}
             >
@@ -532,6 +536,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               </span>
               {!isCollapsed && item.name}
             </Link>,
+          )}
+            </Fragment>
           )
         })}
       </div>
