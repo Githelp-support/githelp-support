@@ -1,7 +1,10 @@
 "use client"
 
 import { useEffect } from "react"
+import "./globals.css"
 
+// Replaces the root layout when it throws, so it brings its own <html>/<body>
+// and imports globals.css itself to get the tokens.
 export default function GlobalError({
   error,
   reset,
@@ -15,27 +18,16 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, padding: 24, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f7f9ff" }}>
-        <div style={{ textAlign: "center", maxWidth: 400 }}>
-          <h1 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#0f0f11", marginBottom: 8 }}>
-            Something went wrong
-          </h1>
-          <p style={{ color: "#55555d", marginBottom: 24 }}>
+      <body className="m-0 flex min-h-screen items-center justify-center bg-page-muted p-6 font-sans text-foreground">
+        <div className="max-w-sm text-center">
+          <h1 className="mb-2 text-xl font-semibold text-text-heading">Something went wrong</h1>
+          <p className="mb-6 text-text-muted">
             A critical error occurred. Please refresh the page or try again later.
           </p>
           <button
             type="button"
             onClick={() => reset()}
-            style={{
-              padding: "8px 16px",
-              fontSize: 14,
-              fontWeight: 500,
-              color: "#fff",
-              background: "#3c2ec5",
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}
+            className="h-8 cursor-pointer rounded-md bg-brand-primary px-4 text-sm font-medium text-brand-foreground hover:bg-brand-primary-hover"
           >
             Try again
           </button>

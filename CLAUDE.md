@@ -17,7 +17,21 @@ Next.js 16 (App Router) with React 19, Supabase backend at `../backend`.
 | Realtime        | Supabase subscriptions (tickets, messages)     |
 | Testing         | Vitest + React Testing Library                |
 | Icons           | Lucide React, Flaticon UIcons                 |
-| Fonts           | Open Sans (body), Geist Mono (mono)           |
+| Fonts           | Inter (body), Geist Mono (mono), Outfit (avatar initials) |
+
+## Design tokens
+
+All tokens live in `src/app/globals.css` (`@theme` + `:root`/`.dark`). Use them as Tailwind classes.
+
+**Rule:** Never hardcode hex, rgba or pixel sizes in components. Use tokens. Allowed exceptions: colours from data (project branding `primary_color`, logos, the avatar palette from `getAvatarColorHexForId`), third-party brand tiles (Stripe, GitHub), and the chat code-block styles in `globals.css`.
+
+| Group | Tokens |
+|-------|--------|
+| Type scale | `text-2xs` 11/14 (count badges only), `text-xs` 12/16, `text-ui` 13/18 (sidebar, table cells, buttons, secondary text, header subtitles), `text-sm` 14/20, `text-base` 15/24, `text-stat` 22/28 (KPI numbers, with `tabular-nums`), `text-title` 24/32 −0.01em (page titles), `text-display` 30/36 −0.02em (public support welcome page only). Weights: 400, 500 (`font-medium`), 600 (`font-semibold`) only. |
+| Radius | `rounded-sm` 4px, `rounded-md` 6px (controls), `rounded-lg` 8px (cards), `rounded-xl` 12px (modals, drawers). Avatars and icon tiles use the proportional squircle map in `lib/constants`. |
+| Colour | `brand-primary` #554ABF, `brand-primary-hover` #4A3FA3, `brand-foreground` #fff; text: `foreground` #2E2D31, `text-heading`, `text-secondary` #444, `text-muted` #55555D, `muted-foreground` (#737373), `text-tertiary` #666B77; surfaces: `background`, `card`, `page-muted` #F7F9FF, `bg-subtle` #F6F6F6, `sidebar`, `surface-hover` rgba(0,0,0,.04), `surface-active` rgba(0,0,0,.08); borders: `border-subtle` #E1E1E1, `border-control` rgba(0,0,0,.1), `border-avatar` #E1E4EA; status: `status-success-*`, `status-warning-*`, `status-high-*`; avatar palette `avatar-1…9`. |
+| Shadow | `shadow-control` (button inset + hairline), `shadow-soft` (0 4px 15px rgba(134,140,152,.2)), `shadow-popover`, `shadow-modal`, `shadow-tab` (active tab glow). |
+| Motion | `duration-fast` 120ms, `duration-base` 180ms, `duration-slow` 240ms; `ease-out` cubic-bezier(0.16,1,0.3,1), `ease-in-out` cubic-bezier(0.65,0,0.35,1). A global `prefers-reduced-motion` rule makes animations and transitions near-instant. |
 
 ## Structure
 

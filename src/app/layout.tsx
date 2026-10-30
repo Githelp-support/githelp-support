@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Open_Sans, Outfit } from "next/font/google"
+import { Inter, Outfit } from "next/font/google"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { UserProvider } from "@/contexts/user-context"
@@ -14,10 +14,10 @@ import { Toaster } from "@/components/ui/sonner"
 import { GuestAdoptionConfirmDialog } from "@/components/auth/guest-adoption-confirm-dialog"
 import { Suspense } from "react"
 
-const openSans = Open_Sans({
+// Variable font: every weight the app uses (400/500/600) renders from one file.
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "600"],
-  variable: "--font-open-sans",
+  variable: "--font-inter",
 })
 
 const outfit = Outfit({
@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className={`font-sans ${openSans.variable} ${GeistMono.variable} ${outfit.variable} h-full`}>
+      <body className={`font-sans ${inter.variable} ${GeistMono.variable} ${outfit.variable} h-full`}>
         <Suspense fallback={<LoadingFallback />}>
           <ReactQueryProvider>
             <UserProvider>
