@@ -799,13 +799,13 @@ export default function PaymentSettingsPage() {
                         <>
                           <span className="block font-semibold">Stripe fee</span>
                           When a ticket opens, an authorization hold for the estimated time is placed on the
-                          customer&apos;s card and captured when the ticket ends. Time beyond the hold is charged
+                          user&apos;s card and captured when the ticket ends. Time beyond the hold is charged
                           as a separate transaction, long-running tickets are captured once a week, and a declined
                           card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
                           fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
                           from that charge before the helper and project shares above are applied, so a ticket paid in
                           two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
-                          what the customer is charged.
+                          what the user is charged.
                         </>
                       }
                     />
