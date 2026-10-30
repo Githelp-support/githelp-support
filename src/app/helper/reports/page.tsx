@@ -48,6 +48,7 @@ import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -529,7 +530,7 @@ export default function HelperReportsPage() {
         {/* Payouts Table */}
         {activeTab === "payouts" && (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+            <ListHeader>
               <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                 <div className="flex items-center">
                   <input
@@ -555,14 +556,14 @@ export default function HelperReportsPage() {
                 </div>
                 <div />
               </div>
-            </div>
+            </ListHeader>
 
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border-subtle">
               {isBusy ? (
                 <ListSkeleton rows={5} />
               ) : showPreview ? (
                 PAYOUT_PREVIEW_ROWS.map((payout) => (
-                  <div key={payout.id} role="presentation" className="px-6 py-4 opacity-80">
+                  <div key={payout.id} role="presentation" className={listRowClass({ className: "opacity-80" })}>
                     <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                       <div className="flex items-center">
                         <Checkbox disabled checked={false} />
@@ -782,7 +783,7 @@ export default function HelperReportsPage() {
         {/* Monthly Reports Tab Content */}
         {activeTab === "monthly" && (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+            <ListHeader>
               <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                 <div className="flex items-center">
                   <input
@@ -808,13 +809,13 @@ export default function HelperReportsPage() {
                 </div>
                 <div />
               </div>
-            </div>
-            <div className="divide-y divide-border">
+            </ListHeader>
+            <div className="divide-y divide-border-subtle">
               {isBusy ? (
                 <ListSkeleton rows={5} />
               ) : showPreview ? (
                 HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
-                  <div key={row.id} role="presentation" className="px-6 py-4 opacity-80">
+                  <div key={row.id} role="presentation" className={listRowClass({ className: "opacity-80" })}>
                     <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                       <div className="flex items-center">
                         <Checkbox disabled checked={false} />
@@ -832,7 +833,7 @@ export default function HelperReportsPage() {
                         {row.earnings.replace(/^USD\s+/, "")}
                       </div>
                       <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
-                        <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-ui px-3 py-1`}>
+                        <Badge className={getStatusBadgeClass(row.status)}>
                           {row.status}
                         </Badge>
                       </div>
@@ -862,7 +863,7 @@ export default function HelperReportsPage() {
                     role="button"
                     tabIndex={0}
                     aria-label={`View payouts for ${row.period}`}
-                    className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
+                    className={listRowClass({ interactive: true })}
                     onClick={() => openMonthPayouts(row.period)}
                     onKeyDown={(e) => {
                       if (e.target !== e.currentTarget) return
@@ -890,7 +891,7 @@ export default function HelperReportsPage() {
                         {formatPayoutAmount(row.earningsSmallestUnit, row.currency)}
                       </div>
                       <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
-                        <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-ui px-3 py-1`}>
+                        <Badge className={getStatusBadgeClass(row.status)}>
                           {row.status}
                         </Badge>
                       </div>

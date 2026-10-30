@@ -282,7 +282,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Rates beyond support included */}
-            <Card className="border-border py-0">
+            <Card className="py-0">
               <CardContent className="p-0">
                 <h3 className="font-medium text-foreground mb-4">Rates beyond support included</h3>
                 <div className="space-y-3">
@@ -309,7 +309,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             </Card>
 
             {/* Included support */}
-            <Card className="border-border py-0">
+            <Card className="py-0">
               <CardContent className="p-0">
                 <h3 className="font-medium text-foreground mb-4">Included support</h3>
                 <div className="space-y-3">
@@ -332,7 +332,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             </Card>
 
             {/* Response times */}
-            <Card className="border-border py-0">
+            <Card className="py-0">
               <CardContent className="p-0">
                 <h3 className="font-medium text-foreground mb-4">Response times</h3>
                 <div className="space-y-3">
@@ -395,7 +395,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="border-border">
+            <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Number of tickets solved</span>
@@ -404,25 +404,25 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                 <div className="text-2xl font-semibold text-foreground">{stats.solved}</div>
               </CardContent>
             </Card>
-            <Card className="border-border">
+            <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Total time spent</span>
                   <Info className="w-3 h-3 text-muted-foreground" />
                 </div>
-                <div className="text-2xl font-semibold text-foreground">{formatMs(stats.totalMs)}</div>
+                <div className="text-2xl font-semibold text-foreground tabular-nums">{formatMs(stats.totalMs)}</div>
               </CardContent>
             </Card>
-            <Card className="border-border">
+            <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Support time remaining</span>
                   <Info className="w-3 h-3 text-muted-foreground" />
                 </div>
-                <div className="text-2xl font-semibold text-foreground">{formatMs(stats.remainingMs)}</div>
+                <div className="text-2xl font-semibold text-foreground tabular-nums">{formatMs(stats.remainingMs)}</div>
               </CardContent>
             </Card>
-            <Card className="border-border">
+            <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Percentage solved</span>
@@ -482,16 +482,16 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               </Button>
             </div>
 
-            <Card className="border-border py-0">
+            <Card className="py-0">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border bg-brand-primary/10">
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Name</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">No of tickets</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Total time</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground"></th>
+                      <tr className="border-b border-border-subtle bg-brand-primary/10">
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Name</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">No of tickets</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Total time</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -501,8 +501,8 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                         </tr>
                       ) : (
                         helpersSummary.map((helper) => (
-                          <tr key={helper.id} className="border-b border-border hover:bg-muted">
-                            <td className="p-4">
+                          <tr key={helper.id} className="border-b border-border-subtle text-ui transition-colors duration-fast ease-out hover:bg-surface-hover">
+                            <td className="px-6 py-3">
                               <div className="flex items-center gap-3">
                                 <div
                                   className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
@@ -513,9 +513,9 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                 <span className="text-sm text-foreground font-medium">{helper.name}</span>
                               </div>
                             </td>
-                            <td className="p-4 text-sm text-muted-foreground">{helper.tickets}</td>
-                            <td className="p-4 text-sm text-muted-foreground">{formatMs(helper.totalMs)}</td>
-                            <td className="p-4">
+                            <td className="px-6 py-3 text-ui text-muted-foreground">{helper.tickets}</td>
+                            <td className="p-4 text-sm text-muted-foreground tabular-nums">{formatMs(helper.totalMs)}</td>
+                            <td className="px-6 py-3">
                               <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                                 <ExternalLink className="w-4 h-4" />
                               </Button>
@@ -533,15 +533,15 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
           {/* Issue types — not yet available in DB schema; show placeholder */}
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-4">Issue types</h2>
-            <Card className="border-border py-0">
+            <Card className="py-0">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border bg-brand-primary/10">
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Name</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">No of tickets</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Total time</th>
+                      <tr className="border-b border-border-subtle bg-brand-primary/10">
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Name</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">No of tickets</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Total time</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -559,21 +559,21 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         {/* All tickets */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-4">All tickets ({filteredTickets.length})</h2>
-          <Card className="border-border py-0">
+          <Card className="py-0">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border bg-brand-primary/10">
-                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                    <tr className="border-b border-border-subtle bg-brand-primary/10">
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">
                         <input type="checkbox" className="mr-3" />
                         Ticket ID
                       </th>
-                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Helper</th>
-                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
-                      <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                      <th className="text-left p-4 text-sm font-medium text-muted-foreground"></th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Date</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Helper</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Amount</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Status</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -598,17 +598,17 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                         const isCancelled = ticket.status === "cancelled"
 
                         return (
-                          <tr key={ticket.id} className="border-b border-border hover:bg-muted">
-                            <td className="p-4">
+                          <tr key={ticket.id} className="border-b border-border-subtle text-ui transition-colors duration-fast ease-out hover:bg-surface-hover">
+                            <td className="px-6 py-3">
                               <div className="flex items-center gap-3">
                                 <input type="checkbox" />
                                 <span className="text-sm text-foreground font-medium font-mono tabular-nums">{ticket.id.slice(0, 8)}</span>
                               </div>
                             </td>
-                            <td className="p-4 text-sm text-muted-foreground">
+                            <td className="px-6 py-3 text-ui text-muted-foreground">
                               {new Date(ticket.created_at).toLocaleDateString("en-GB")}
                             </td>
-                            <td className="p-4">
+                            <td className="px-6 py-3">
                               <div className="flex items-center gap-2">
                                 <div
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
@@ -619,10 +619,10 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                 <span className="text-sm text-muted-foreground">{primaryHelperName}</span>
                               </div>
                             </td>
-                            <td className="p-4 text-sm text-muted-foreground">
+                            <td className="px-6 py-3 text-ui text-muted-foreground">
                               {ticketMs > 0 ? formatMs(ticketMs) : `${currency} 0.00`}
                             </td>
-                            <td className="p-4">
+                            <td className="px-6 py-3">
                               {(isCompleted || isCancelled) ? (
                                 <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
                                   ✓ {isCompleted ? "Completed" : "Cancelled"}
@@ -633,7 +633,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                                 </Badge>
                               )}
                             </td>
-                            <td className="p-4">
+                            <td className="px-6 py-3">
                               <div className="flex gap-2">
                                 <Button
                                   title={ILLUSTRATIVE_BUTTON_TOOLTIP}

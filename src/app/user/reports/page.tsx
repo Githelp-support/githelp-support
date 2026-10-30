@@ -46,6 +46,7 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { cn } from "@/lib/utils"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 // dd/mm/yyyy, matching the helper reports page
 const formatDate = (dateString: string) => {
@@ -377,7 +378,7 @@ export default function UserReportsPage() {
 
       <main className="flex-1 overflow-auto px-8 py-6 space-y-6">
         {!isAuthenticated && !userLoading && (
-          <Card className="border-border">
+          <Card>
             <CardContent className="p-6">
               <p className="text-muted-foreground">
                 Sign in to see the payments and monthly reports for the support tickets you have created.
@@ -457,8 +458,8 @@ export default function UserReportsPage() {
             {/* Payments Table */}
             {activeTab === "payments" && (
               <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
-                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={PAYMENTS_GRID}>
+                <ListHeader>
+                  <div className="grid gap-4 items-center" style={PAYMENTS_GRID}>
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -485,13 +486,13 @@ export default function UserReportsPage() {
                     </div>
                     <div />
                   </div>
-                </div>
+                </ListHeader>
 
                 {isBusy ? (
                   <ListSkeleton rows={5} />
                 ) : showPreview ? (
                   USER_PAYMENT_PREVIEW_ROWS.map((row) => (
-                    <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
+                    <div key={row.id} role="presentation" className={listRowClass({ bordered: true, className: "opacity-80" })}>
                       <div className="grid gap-4 items-center" style={PAYMENTS_GRID}>
                         <div className="flex items-center">
                           <Checkbox disabled checked={false} />
@@ -700,8 +701,8 @@ export default function UserReportsPage() {
             {/* Monthly Reports Tab Content */}
             {activeTab === "monthly" && (
               <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
-                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid gap-4 items-center text-sm font-medium text-foreground" style={MONTHLY_GRID}>
+                <ListHeader>
+                  <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -721,18 +722,18 @@ export default function UserReportsPage() {
                       <SortHeader label="Amount (USD)" field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
                     </div>
                     <div className="col-span-2 flex items-center">
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <span>Status</span>
                     </div>
                     <div className="col-span-2 flex items-center">
-                      <span className="text-sm font-medium text-foreground">Actions</span>
+                      <span>Actions</span>
                     </div>
                   </div>
-                </div>
+                </ListHeader>
                 {isBusy ? (
                   <ListSkeleton rows={5} />
                 ) : showPreview ? (
                   USER_MONTHLY_PREVIEW_ROWS.map((row) => (
-                    <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
+                    <div key={row.id} role="presentation" className={listRowClass({ bordered: true, className: "opacity-80" })}>
                       <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                         <div className="flex items-center">
                           <Checkbox disabled checked={false} />
@@ -767,7 +768,7 @@ export default function UserReportsPage() {
                   </div>
                 ) : (
                   monthlyReports.map((row) => (
-                    <div key={row.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-page-muted">
+                    <div key={row.id} className={listRowClass({ bordered: true })}>
                       <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                         <div className="flex items-center">
                           <Checkbox

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { FormField } from "@/components/ui/form-field"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { useState } from "react"
 import { validateLoggedDuration, type TimeEntryReviewStatus } from "@/lib/time-entries"
@@ -118,42 +119,40 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
           <h3 className="font-medium text-foreground mb-4">Duration</h3>
           <div className="flex items-center gap-3">
             <div className="flex-1">
-              <Label htmlFor="hours" className="text-sm text-muted-foreground mb-2 block">
-                Hours
-              </Label>
-              <Input
-                id="hours"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="24"
-                step="1"
-                value={hours}
-                onChange={(e) => handleHoursChange(e.target.value)}
-                placeholder="0"
-                aria-invalid={!!durationError}
-                aria-describedby={durationError ? "duration-error" : undefined}
-                className="border-input"
-              />
+              <FormField label="Hours" id="hours">
+                <Input
+                  id="hours"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="24"
+                  step="1"
+                  value={hours}
+                  onChange={(e) => handleHoursChange(e.target.value)}
+                  placeholder="0"
+                  aria-invalid={!!durationError}
+                  aria-describedby={durationError ? "duration-error" : undefined}
+                  className="border-input"
+                />
+              </FormField>
             </div>
             <div className="flex-1">
-              <Label htmlFor="minutes" className="text-sm text-muted-foreground mb-2 block">
-                Minutes
-              </Label>
-              <Input
-                id="minutes"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="59"
-                step="1"
-                value={minutes}
-                onChange={(e) => handleMinutesChange(e.target.value)}
-                placeholder="0"
-                aria-invalid={!!durationError}
-                aria-describedby={durationError ? "duration-error" : undefined}
-                className="border-input"
-              />
+              <FormField label="Minutes" id="minutes">
+                <Input
+                  id="minutes"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="59"
+                  step="1"
+                  value={minutes}
+                  onChange={(e) => handleMinutesChange(e.target.value)}
+                  placeholder="0"
+                  aria-invalid={!!durationError}
+                  aria-describedby={durationError ? "duration-error" : undefined}
+                  className="border-input"
+                />
+              </FormField>
             </div>
           </div>
           {durationError && (
@@ -164,16 +163,15 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
         </div>
 
         <div>
-          <Label htmlFor="note" className="text-sm text-muted-foreground mb-2 block">
-            Note (optional)
-          </Label>
-          <Textarea
-            id="note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Add a note about what you worked on..."
-            className="border-input min-h-[80px] resize-none"
-          />
+          <FormField label="Note (optional)" id="note">
+            <Textarea
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add a note about what you worked on..."
+              className="border-input min-h-[80px] resize-none"
+            />
+          </FormField>
         </div>
 
         <div className="bg-muted/50 rounded-lg p-4 border border-border">

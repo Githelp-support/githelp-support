@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { FormField } from "@/components/ui/form-field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -119,39 +120,36 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-foreground">Contact details</h3>
 
-              <div className="space-y-2">
-                <label className="text-sm text-text-secondary">Contract name</label>
+              <FormField label="Contract name">
                 <Input
                   placeholder="Choose name"
                   value={formData.contractName}
                   onChange={(e) => handleInputChange("contractName", e.target.value)}
-                  className="h-9 text-sm border-border-control focus:border-brand-primary"
+                  className="border-border-control"
                   required
                 />
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <label className="text-sm text-text-secondary">Main contact person</label>
+              <FormField label="Main contact person">
                 <Input
                   placeholder="First and last name"
                   value={formData.mainContactPerson}
                   onChange={(e) => handleInputChange("mainContactPerson", e.target.value)}
-                  className="h-9 text-sm border-border-control focus:border-brand-primary"
+                  className="border-border-control"
                   required
                 />
-              </div>
+              </FormField>
 
-              <div className="space-y-2">
-                <label className="text-sm text-text-secondary">Email address</label>
+              <FormField label="Email address">
                 <Input
                   type="email"
                   placeholder="Type in address"
                   value={formData.emailAddress}
                   onChange={(e) => handleInputChange("emailAddress", e.target.value)}
-                  className="h-9 text-sm border-border-control focus:border-brand-primary"
+                  className="border-border-control"
                   required
                 />
-              </div>
+              </FormField>
             </div>
 
             {/* Support limitations */}
@@ -190,16 +188,15 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-foreground">Hours included</h3>
 
-                <div className="space-y-2">
-                  <label className="text-sm text-text-secondary">Monthly hours included in contract</label>
+                <FormField label="Monthly hours included in contract">
                   <Input
                     placeholder="Number of hours"
                     type="number"
                     value={formData.monthlyHours}
                     onChange={(e) => handleInputChange("monthlyHours", e.target.value)}
-                    className="h-9 text-sm border-border-control focus:border-brand-primary"
+                    className="border-border-control"
                   />
-                </div>
+                </FormField>
 
                 <div className="flex items-center space-x-3">
                   <Checkbox
@@ -223,15 +220,14 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                 <Info className="w-4 h-4 text-text-tertiary" />
               </h3>
 
-              <div className="space-y-2">
-                <label className="text-sm text-text-secondary">Cost</label>
+              <FormField label="Cost">
                 <Input
                   placeholder="USD 0.00"
                   value={formData.subscriptionCost}
                   onChange={(e) => handleInputChange("subscriptionCost", e.target.value)}
-                  className="h-9 text-sm border-border-control focus:border-brand-primary"
+                  className="border-border-control"
                 />
-              </div>
+              </FormField>
 
               <div className="space-y-2">
                 <label className="text-sm text-text-secondary flex items-center gap-2">
@@ -242,7 +238,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   value={formData.paymentFrequency}
                   onValueChange={(value) => handleInputChange("paymentFrequency", value)}
                 >
-                  <SelectTrigger className="h-9 text-sm border-border-control focus:border-brand-primary">
+                  <SelectTrigger className="border-border-control">
                     <SelectValue placeholder="Choose" />
                   </SelectTrigger>
                   <SelectContent>
@@ -268,29 +264,27 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                     placeholder="USD 0.00"
                     value={formData.startPrice}
                     onChange={(e) => handleInputChange("startPrice", e.target.value)}
-                    className="h-9 text-sm border-border-control focus:border-brand-primary"
+                    className="border-border-control"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm text-text-secondary">USD/min - First 60 min</label>
+                <FormField label="USD/min - First 60 min">
                   <Input
                     placeholder="USD 0.00"
                     value={formData.firstSixtyMinRate}
                     onChange={(e) => handleInputChange("firstSixtyMinRate", e.target.value)}
-                    className="h-9 text-sm border-border-control focus:border-brand-primary"
+                    className="border-border-control"
                   />
-                </div>
+                </FormField>
 
-                <div className="space-y-2">
-                  <label className="text-sm text-text-secondary">USD/min - After 60 min</label>
+                <FormField label="USD/min - After 60 min">
                   <Input
                     placeholder="USD 0.00"
                     value={formData.afterSixtyMinRate}
                     onChange={(e) => handleInputChange("afterSixtyMinRate", e.target.value)}
-                    className="h-9 text-sm border-border-control focus:border-brand-primary"
+                    className="border-border-control"
                   />
-                </div>
+                </FormField>
               </div>
             )}
 
@@ -307,7 +301,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="0.0 hours"
                   value={formData.maxResponseTime}
                   onChange={(e) => handleInputChange("maxResponseTime", e.target.value)}
-                  className="h-9 text-sm border-border-control focus:border-brand-primary"
+                  className="border-border-control"
                 />
               </div>
 
@@ -320,7 +314,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   placeholder="0.0 hours"
                   value={formData.maxDownTime}
                   onChange={(e) => handleInputChange("maxDownTime", e.target.value)}
-                  className="h-9 text-sm border-border-control focus:border-brand-primary"
+                  className="border-border-control"
                 />
               </div>
             </div>

@@ -91,7 +91,7 @@ export function GuestLinkBanner() {
     >
       <p className="text-sm text-foreground">You have a guest conversation from this browser.</p>
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="lavender" className="cursor-pointer" disabled={pending} onClick={() => void handleLink()}>
+        <Button variant="lavender" className="cursor-pointer" disabled={pending} onClick={() => void handleLink()}>
           Link it to your account
         </Button>
         <button

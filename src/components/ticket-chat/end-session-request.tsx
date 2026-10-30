@@ -87,7 +87,7 @@ export function EndSessionRequestedBanner({
           cancel this request at any time until the helper ends the session.
         </p>
       </div>
-      <Button variant="outline" size="sm" onClick={onCancel} disabled={pending} className="shrink-0 cursor-pointer">
+      <Button variant="outline" onClick={onCancel} disabled={pending} className="shrink-0 cursor-pointer">
         {pending ? "Cancelling…" : "Cancel request"}
       </Button>
     </div>
@@ -140,11 +140,11 @@ export function EndSessionRequestedHelperBanner({
       </div>
       <div className="flex shrink-0 gap-2">
         {onLogTime && (
-          <Button variant="outline" size="sm" onClick={onLogTime} className="cursor-pointer">
+          <Button variant="outline" onClick={onLogTime} className="cursor-pointer">
             Log time
           </Button>
         )}
-        <Button size="sm" onClick={onEndSession} className="cursor-pointer">
+        <Button onClick={onEndSession} className="cursor-pointer">
           End session
         </Button>
       </div>

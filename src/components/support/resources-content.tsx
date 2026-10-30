@@ -64,7 +64,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
       {resourcesLoading ? (
         <ListSkeleton rows={3} avatar={false} badge={false} className="max-w-xl divide-y-0 [&>div]:px-0" />
       ) : resources.length === 0 ? (
-        <EmptyState size="sm" icon={FolderOpen} title="No resources available yet." className="items-start px-0 text-left" />
+        <EmptyState icon={FolderOpen} title="No resources available yet." className="items-start px-0 text-left" />
       ) : (
         <div className="flex flex-wrap gap-3">
           {resources.map((resource) => (
@@ -81,7 +81,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
         </div>
       )}
 
-      <Card className="max-w-3xl border-border-subtle shadow-none rounded-lg">
+      <Card className="max-w-3xl">
         <CardContent className="p-0">
           <div className="px-6 py-6">
             <h3 className="text-sm font-semibold text-text-secondary mb-6">Do you have any questions on how support works?</h3>

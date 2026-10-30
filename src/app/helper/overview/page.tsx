@@ -20,6 +20,7 @@ import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 const RECENT_TICKETS_LIMIT = 5
 
@@ -110,7 +111,7 @@ export default function HelperOverviewPage() {
             <HelpCircle className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -119,7 +120,7 @@ export default function HelperOverviewPage() {
                 <div className="text-stat font-medium text-foreground tabular-nums">{ticketsSolvedInPeriod}</div>
               </CardContent>
             </Card>
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -128,7 +129,7 @@ export default function HelperOverviewPage() {
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
               </CardContent>
             </Card>
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Percentage solved</span>
@@ -148,16 +149,16 @@ export default function HelperOverviewPage() {
               View all tickets
             </Link>
           </div>
-          <Card className="border-border-subtle rounded-lg py-0 shadow-none overflow-hidden">
+          <Card className="py-0 overflow-hidden">
             <CardContent className="p-0">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+              <ListHeader>
+                <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-6">Ticket</div>
                   <div className="col-span-3">Status</div>
                   <div className="col-span-2">Last interaction</div>
                   <div className="col-span-1" />
                 </div>
-              </div>
+              </ListHeader>
               {isRecentLoading ? (
                 <ListSkeleton rows={3} />
               ) : isError ? (
@@ -178,7 +179,7 @@ export default function HelperOverviewPage() {
                       key={ticket.id}
                       href={`/helper/tickets/${ticket.id}`}
                       className={cn(
-                        "block px-6 py-2.5 border-b border-border-subtle last:border-b-0",
+                        listRowClass({ interactive: true, bordered: true, className: "block" }),
                         ticket.has_unread ? "bg-brand-primary/10 hover:bg-brand-primary/15" : "hover:bg-muted/50"
                       )}
                     >
@@ -216,7 +217,7 @@ export default function HelperOverviewPage() {
                           </div>
                         </div>
                         <div className="col-span-3">
-                          <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.status)}`}>
+                          <Badge className={getTicketStatusBadgeClass(ticket.status)}>
                             {ticket.status}
                           </Badge>
                         </div>

@@ -210,7 +210,7 @@ export default function Dashboard() {
             <HelpCircle className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -219,7 +219,7 @@ export default function Dashboard() {
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
               </CardContent>
             </Card>
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -228,7 +228,7 @@ export default function Dashboard() {
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
               </CardContent>
             </Card>
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Percentage solved</span>
@@ -257,7 +257,7 @@ export default function Dashboard() {
                 onChange={(value) => setHelperFilter(value as typeof helperFilter)}
               />
             </div>
-            <Card className="border-border-subtle rounded-lg py-0 shadow-none overflow-hidden">
+            <Card className="py-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="bg-muted/60 px-6 py-3 border-b border-border-subtle">
                   <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
@@ -323,7 +323,7 @@ export default function Dashboard() {
                 onChange={(value) => setIssueFilter(value as typeof issueFilter)}
               />
             </div>
-            <Card className="border-border-subtle rounded-lg py-0 shadow-none overflow-hidden">
+            <Card className="py-0 overflow-hidden">
               <CardContent className="p-0">
                 <div className="bg-muted/60 px-6 py-3 border-b border-border-subtle">
                   <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">

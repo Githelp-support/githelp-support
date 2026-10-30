@@ -44,6 +44,7 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 type SortDirection = "asc" | "desc"
 type TicketsSortField = "ticket" | "date" | "amount" | "status"
@@ -459,7 +460,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
       <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
         {/* Profile header + Contact information */}
-        <Card className="border-0 rounded-lg shadow-none py-0">
+        <Card className="border-0 py-0">
           <CardContent className="px-0 py-8 space-y-5">
             <div className="flex items-center gap-4">
               <div
@@ -522,7 +523,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             <HelpCircle className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -531,7 +532,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
               </CardContent>
             </Card>
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -540,7 +541,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.totalTime}</div>
               </CardContent>
             </Card>
-            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+            <Card className="h-28 py-0 justify-center">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Percentage solved</span>
@@ -556,7 +557,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         <div className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">All tickets</h2>
           <div className="bg-card rounded-lg border border-border overflow-hidden">
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+            <ListHeader>
               <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
                 <div>
                   <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
@@ -575,8 +576,8 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 </div>
                 <div />
               </div>
-            </div>
-            <div className="divide-y divide-border">
+            </ListHeader>
+            <div className="divide-y divide-border-subtle">
               {ticketsLoading ? (
                 <ListSkeleton rows={5} />
               ) : helper.tickets.length === 0 ? (
@@ -598,7 +599,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                       aria-expanded={expanded}
                       aria-controls={expanded ? panelId : undefined}
                       aria-label={`Transactions for ticket ${ticket.shortId}`}
-                      className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
+                      className={listRowClass({ interactive: true })}
                       onClick={() => toggle(ticket.key)}
                       onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
                         // Only when the row itself has focus, not a control inside it.

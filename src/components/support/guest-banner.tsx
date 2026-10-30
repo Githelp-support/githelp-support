@@ -44,7 +44,7 @@ export function GuestBanner({ redirectTo, onSignIn }: GuestBannerProps) {
       <p className="text-sm text-foreground">
         You&rsquo;re chatting as a guest. Sign in to get notified when a helper replies and to get help.
       </p>
-      <Button variant="lavender" size="sm" className="cursor-pointer" onClick={() => void handleSignIn()} disabled={pending}>
+      <Button variant="lavender" className="cursor-pointer" onClick={() => void handleSignIn()} disabled={pending}>
         {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
         Sign in
       </Button>

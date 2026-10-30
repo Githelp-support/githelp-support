@@ -74,7 +74,7 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation =
 export function VisitorLeftAction({ onStartNewConversation }: { onStartNewConversation: () => void }) {
   return (
     <div className="mt-2">
-      <Button type="button" size="sm" variant="lavender" className="cursor-pointer" onClick={onStartNewConversation}>
+      <Button type="button" variant="lavender" className="cursor-pointer" onClick={onStartNewConversation}>
         Start a new conversation
       </Button>
     </div>

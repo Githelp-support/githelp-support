@@ -23,6 +23,7 @@ import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 interface Ticket {
   id: string
@@ -317,7 +318,7 @@ export default function TicketsPage() {
             aria-pressed={statusFilter === "all"}
             className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
           >
-            <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
+            <Card className="relative overflow-hidden py-0 transition-colors hover:bg-muted/40">
               {statusFilter === "all" && (
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
               )}
@@ -337,7 +338,7 @@ export default function TicketsPage() {
             aria-pressed={statusFilter === "available"}
             className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
           >
-            <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
+            <Card className="relative overflow-hidden py-0 transition-colors hover:bg-muted/40">
               {statusFilter === "available" && (
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
               )}
@@ -357,7 +358,7 @@ export default function TicketsPage() {
             aria-pressed={statusFilter === "in-progress"}
             className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
           >
-            <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
+            <Card className="relative overflow-hidden py-0 transition-colors hover:bg-muted/40">
               {statusFilter === "in-progress" && (
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
               )}
@@ -377,7 +378,7 @@ export default function TicketsPage() {
             aria-pressed={statusFilter === "completed"}
             className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
           >
-            <Card className="relative overflow-hidden rounded-lg border-border-subtle py-0 shadow-none transition-colors hover:bg-muted/40">
+            <Card className="relative overflow-hidden py-0 transition-colors hover:bg-muted/40">
               {statusFilter === "completed" && (
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
               )}
@@ -462,29 +463,29 @@ export default function TicketsPage() {
         <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
           {showAvailablePreviewCards ? (
           <>
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+            <ListHeader>
+              <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-9 flex items-center space-x-2">
                   <button type="button"
                     onClick={() => handleSort("title")}
-                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                    className="flex items-center space-x-2"
                   >
-                    <span className="text-sm font-medium text-foreground">Ticket</span>
+                    <span>Ticket</span>
                     <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
                   </button>
                 </div>
                 <div className="col-span-2 flex items-center space-x-2">
                   <button type="button"
                     onClick={() => handleSort("createdAt")}
-                    className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                    className="flex items-center space-x-2"
                   >
-                    <span className="text-sm font-medium text-foreground">Created</span>
+                    <span>Created</span>
                     <TicketsSortIcon field="createdAt" sortField={sortField} sortDirection={sortDirection} />
                   </button>
                 </div>
                 <div className="col-span-1" aria-hidden="true" />
               </div>
-            </div>
+            </ListHeader>
             {sortedPreviewCards.map((card) => {
               const isExpanded = expandedPreviewCards.includes(card.id)
               return (
@@ -500,7 +501,7 @@ export default function TicketsPage() {
                     }
                   }}
                   aria-expanded={isExpanded}
-                  className="px-6 py-4 border-b border-border last:border-b-0 bg-bg-subtle/50 cursor-pointer hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
+                  className={listRowClass({ interactive: true, tone: "subtle", bordered: true })}
                 >
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-9">
@@ -611,55 +612,55 @@ export default function TicketsPage() {
           </>
           ) : (
           <>
-          <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-            <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+          <ListHeader>
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-4 flex items-center space-x-2">
                 <button type="button"
                   onClick={() => handleSort("title")}
-                  className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  className="flex items-center space-x-2"
                 >
-                  <span className="text-sm font-medium text-foreground">Ticket</span>
+                  <span>Ticket</span>
                   <TicketsSortIcon field="title" sortField={sortField} sortDirection={sortDirection} />
                 </button>
               </div>
               <div className="col-span-2 flex items-center space-x-2">
                 <button type="button"
                   onClick={() => handleSort("type")}
-                  className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  className="flex items-center space-x-2"
                 >
-                  <span className="text-sm font-medium text-foreground">Type</span>
+                  <span>Type</span>
                   <TicketsSortIcon field="type" sortField={sortField} sortDirection={sortDirection} />
                 </button>
               </div>
               <div className="col-span-2 flex items-center space-x-2">
                 <button type="button"
                   onClick={() => handleSort("priority")}
-                  className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  className="flex items-center space-x-2"
                 >
-                  <span className="text-sm font-medium text-foreground">Priority</span>
+                  <span>Priority</span>
                   <TicketsSortIcon field="priority" sortField={sortField} sortDirection={sortDirection} />
                 </button>
               </div>
               <div className="col-span-2 flex items-center space-x-2">
                 <button type="button"
                   onClick={() => handleSort("status")}
-                  className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  className="flex items-center space-x-2"
                 >
-                  <span className="text-sm font-medium text-foreground">Status</span>
+                  <span>Status</span>
                   <TicketsSortIcon field="status" sortField={sortField} sortDirection={sortDirection} />
                 </button>
               </div>
               <div className="col-span-2 flex items-center space-x-2">
                 <button type="button"
                   onClick={() => handleSort("createdAt")}
-                  className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                  className="flex items-center space-x-2"
                 >
-                  <span className="text-sm font-medium text-foreground">Created</span>
+                  <span>Created</span>
                   <TicketsSortIcon field="createdAt" sortField={sortField} sortDirection={sortDirection} />
                 </button>
               </div>
             </div>
-          </div>
+          </ListHeader>
           {isLoading ? (
             <ListSkeleton rows={5} />
           ) : isError ? (
@@ -684,7 +685,7 @@ export default function TicketsPage() {
                       }
                     }}
                     aria-expanded={isExpanded}
-                    className="px-6 py-4 border-b border-border last:border-b-0 bg-bg-subtle/50 cursor-pointer hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary"
+                    className={listRowClass({ interactive: true, tone: "subtle", bordered: true })}
                   >
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-4">
@@ -714,12 +715,12 @@ export default function TicketsPage() {
                         </Badge>
                       </div>
                       <div className="col-span-2">
-                        <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
+                        <Badge className={getPriorityColor(ticket.priority)}>
                           {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
                         </Badge>
                       </div>
                       <div className="col-span-2">
-                        <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
+                        <Badge className={getStatusColor(ticket.status)}>
                           {getStatusLabel(ticket.status)}
                         </Badge>
                       </div>
@@ -782,7 +783,7 @@ export default function TicketsPage() {
               }
 
               return (
-            <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-surface-hover">
+            <div key={ticket.id} className={listRowClass({ bordered: true })}>
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-4">
                   <div className="flex items-start gap-4">
@@ -813,13 +814,13 @@ export default function TicketsPage() {
                   </Badge>
                 </div>
                 <div className="col-span-2">
-                  <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>
+                  <Badge className={getPriorityColor(ticket.priority)}>
                     {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
                   </Badge>
                 </div>
                 <div className="col-span-2">
                   <div className="flex items-start gap-2">
-                    <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>
+                    <Badge className={getStatusColor(ticket.status)}>
                       {getStatusLabel(ticket.status)}
                     </Badge>
                     {ticket.helper && (

@@ -35,6 +35,7 @@ import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/const
 import Link from "next/link"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 function isPendingInvite(invite: {
   is_active: boolean
@@ -596,25 +597,25 @@ export default function HelpersPage() {
           {/* Table */}
           <div className="bg-card rounded-lg border border-border-subtle shadow-none overflow-hidden">
             {/* Table Header */}
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+            <ListHeader>
               {currentView === "invited" ? (
                 <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                   <div>
                     <input type="checkbox" className="rounded border-border" />
                   </div>
                   <div className="col-span-2">
-                    <span className="text-sm font-medium text-foreground">Helper</span>
+                    <span>Helper</span>
                   </div>
                   <div className="col-span-1"></div>
                   <div className="col-span-2">
-                    <span className="text-sm font-medium text-foreground">Category</span>
+                    <span>Category</span>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-sm font-medium text-foreground">Created</span>
+                    <span>Created</span>
                   </div>
                   <div className="col-span-1"></div>
                   <div className="col-span-1">
-                    <span className="text-sm font-medium text-foreground">Status</span>
+                    <span>Status</span>
                   </div>
                   <div className="col-span-2"></div>
                 </div>
@@ -628,7 +629,7 @@ export default function HelpersPage() {
                       onClick={() => handleSort("name")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
                     >
-                      <span className="text-sm font-medium text-foreground">Helper</span>
+                      <span>Helper</span>
                       <HelpersSortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
@@ -637,7 +638,7 @@ export default function HelpersPage() {
                       onClick={() => handleSort("githubAccount")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
                     >
-                      <span className="text-sm font-medium text-foreground">Github user</span>
+                      <span>Github user</span>
                       <HelpersSortIcon field="githubAccount" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
@@ -646,17 +647,17 @@ export default function HelpersPage() {
                       onClick={() => handleSort("category")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
                     >
-                      <span className="text-sm font-medium text-foreground">Category</span>
+                      <span>Category</span>
                       <HelpersSortIcon field="category" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
                   <div className="col-span-3"></div>
                 </div>
               )}
-            </div>
+            </ListHeader>
 
             {/* Table Body */}
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border-subtle">
               {(() => {
                 if (!projectId) {
                   return (
@@ -672,7 +673,7 @@ export default function HelpersPage() {
                 if (currentView === "invited") {
                   if (filteredInvites.length > 0) {
                   return filteredInvites.map((invite) => (
-                      <div key={invite.id} className="px-6 py-4 hover:bg-page-muted">
+                      <div key={invite.id} className={listRowClass()}>
                         <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                           <div>
                             <input type="checkbox" className="rounded border-border" />
@@ -749,7 +750,7 @@ export default function HelpersPage() {
                 if (currentView === "added") {
                   if (filteredHelpers.length > 0) {
                     return filteredHelpers.map((helper, index) => (
-                    <div key={index} className="px-6 py-4 hover:bg-page-muted">
+                    <div key={index} className={listRowClass()}>
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
                           <input type="checkbox" className="rounded border-border" />
@@ -840,7 +841,7 @@ export default function HelpersPage() {
                 }
                 return filteredRequests.length > 0 ? (
                   filteredRequests.map((request, index) => (
-                    <div key={request.user_id || index} className="px-6 py-4 hover:bg-page-muted">
+                    <div key={request.user_id || index} className={listRowClass()}>
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
                           <input type="checkbox" className="rounded border-border" />

@@ -53,7 +53,7 @@ export function RatesAndDetailsContent({
           {/* Ticket start price */}
           <div className="rounded-lg overflow-hidden border border-border-subtle shadow-none flex flex-col">
             <div className="bg-gradient-to-br from-[#c5b0ef] to-[#b8a0e8] px-6 py-4 text-center">
-              <div className="text-lg font-semibold text-support-header">{rates.startPrice} USD</div>
+              <div className="text-lg font-semibold text-support-header tabular-nums">{rates.startPrice} USD</div>
             </div>
             <div className="bg-background p-6 flex-1">
               <h3 className="text-sm font-semibold text-text-secondary mb-2">Ticket start price</h3>
@@ -66,7 +66,7 @@ export function RatesAndDetailsContent({
           {/* First 60 minutes */}
           <div className="rounded-lg overflow-hidden border border-border-subtle shadow-none flex flex-col">
             <div className="bg-gradient-to-br from-[#e7e5fd] to-[#d8d4f7] px-6 py-4 text-center">
-              <div className="text-lg font-semibold text-support-header">{rates.first60Price} USD/min</div>
+              <div className="text-lg font-semibold text-support-header tabular-nums">{rates.first60Price} USD/min</div>
             </div>
             <div className="bg-background p-6 flex-1">
               <h3 className="text-sm font-semibold text-text-secondary mb-2">First 60 minutes</h3>
@@ -79,7 +79,7 @@ export function RatesAndDetailsContent({
           {/* After 60 minutes */}
           <div className="rounded-lg overflow-hidden border border-border-subtle shadow-none flex flex-col">
             <div className="bg-gradient-to-br from-[#f9f7ff] to-[#f0ecff] px-6 py-4 text-center">
-              <div className="text-lg font-semibold text-support-header">{rates.after60Price} USD/min</div>
+              <div className="text-lg font-semibold text-support-header tabular-nums">{rates.after60Price} USD/min</div>
             </div>
             <div className="bg-background p-6 flex-1">
               <h3 className="text-sm font-semibold text-text-secondary mb-2">After 60 minutes</h3>

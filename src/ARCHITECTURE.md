@@ -27,7 +27,8 @@ This document describes the structure and conventions used in the codebase to ke
 5. **Formatting and dates** – Use `@/lib/format` (e.g. `formatRelativeTime`) for relative timestamps and shared date formatting.
 
 6. **Loading, empty and error states** – Use the shared components instead of ad-hoc text: `ListSkeleton` / `PageSkeleton` while a list or page loads, `EmptyState` when a list has nothing to show (keep the existing copy where there is some), `ErrorState` with the query's `refetch` when a React Query `isError` would otherwise show nothing. Tooltips come from `@/components/ui/tooltip`; the provider is mounted once in the root layout.
-7. **Form fields** – Use `FormField` from `@/components/ui/form-field` when you need a label + control + optional hint; pass `label`, `id`, `hint`, and `children` (the input/select/textarea).
+7. **Lists, cards and controls** – Lists use `ListHeader` and `ListRow`/`listRowClass` from `@/components/ui/list` (pages keep their column grids, sorting and links). `Card` is flat by default (bg-card, border-subtle, rounded-lg, no shadow); don't nest cards. Buttons are h-8 (`sm` h-7, `lg` h-10) and Inputs/Selects h-8. Every interactive element shows a `focus-visible` ring.
+8. **Form fields** – Use `FormField` from `@/components/ui/form-field` when you need a label + control + optional hint; pass `label`, `id`, `hint`, and `children` (the input/select/textarea).
 
 ## Adding a new drawer or modal
 

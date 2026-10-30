@@ -422,7 +422,7 @@ export function TimeEntrySummaryBanner({
           {autoAcceptHint ? ` It is confirmed automatically ${autoAcceptHint} if you don't respond.` : ""}
         </p>
       </div>
-      <Button size="sm" onClick={onReview} className="shrink-0 cursor-pointer">
+      <Button onClick={onReview} className="shrink-0 cursor-pointer">
         Review &amp; confirm
       </Button>
     </div>

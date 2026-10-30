@@ -173,7 +173,7 @@ export default function ProjectSettingsPage() {
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-4xl space-y-4">
             {/* Admins */}
-            <Card className="border-0 shadow-none rounded-lg py-0">
+            <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Admins</h2>
@@ -300,7 +300,7 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Keywords / Topics */}
-            <Card className="border-0 shadow-none rounded-lg py-0">
+            <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Keywords & topics</h2>
@@ -360,7 +360,7 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Help categories */}
-            <Card className="border-0 shadow-none rounded-lg py-0">
+            <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
                   <h2 className="text-base font-semibold text-foreground">Help categories</h2>

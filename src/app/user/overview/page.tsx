@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { Button } from "@/components/ui/button"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 const RECENT_TICKETS_LIMIT = 5
 
@@ -173,15 +174,15 @@ export default function UserOverviewPage() {
               View all tickets
             </Link>
           </div>
-          <Card className="border-border-subtle rounded-lg py-0 shadow-none overflow-hidden">
+          <Card className="py-0 overflow-hidden">
             <CardContent className="p-0">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+              <ListHeader>
+                <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-6">Ticket</div>
                   <div className="col-span-3">Status</div>
                   <div className="col-span-3">Last interaction</div>
                 </div>
-              </div>
+              </ListHeader>
               {isRecentLoading ? (
                 <ListSkeleton rows={3} />
               ) : isError ? (
@@ -210,7 +211,7 @@ export default function UserOverviewPage() {
                     <Link
                       key={ticket.id}
                       href={`/support/chat?ticket=${ticket.id}&project=${ticket.project_id}`}
-                      className="block px-6 py-2.5 border-b border-border-subtle last:border-b-0 hover:bg-muted/50"
+                      className={listRowClass({ interactive: true, bordered: true, className: "block" })}
                     >
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6">
@@ -246,7 +247,7 @@ export default function UserOverviewPage() {
                           </div>
                         </div>
                         <div className="col-span-3">
-                          <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.status)}`}>
+                          <Badge className={getTicketStatusBadgeClass(ticket.status)}>
                             {ticket.status}
                           </Badge>
                         </div>

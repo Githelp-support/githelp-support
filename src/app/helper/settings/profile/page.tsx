@@ -230,7 +230,7 @@ export default function HelperProfilePage() {
 
           <div className="space-y-8">
           {/* Editable contact information */}
-          <Card className="border-0 shadow-none rounded-lg py-0">
+          <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-foreground">Contact information</h2>
@@ -292,7 +292,7 @@ export default function HelperProfilePage() {
           </Card>
 
           {/* Category — read-only: it sets the payout share, so only project admins change it */}
-          <Card className="border-0 shadow-none rounded-lg py-0">
+          <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-foreground">Helper category</h2>
@@ -310,7 +310,7 @@ export default function HelperProfilePage() {
           </Card>
 
           {/* Project keywords / topics */}
-          <Card className="border-0 shadow-none rounded-lg py-0">
+          <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-foreground">Topics & keywords</h2>

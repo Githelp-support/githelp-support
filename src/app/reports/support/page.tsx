@@ -40,6 +40,7 @@ import { buildProjectPayoutReport, reportToCsv, type ReportDocument } from "@/li
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 type Tab = "monthly" | "tickets" | "helpers"
 type SortDirection = "asc" | "desc"
@@ -552,7 +553,7 @@ export default function ReportsSupportPage() {
           {/* Monthly: the project's income per month */}
           {activeTab === "monthly" && (
             <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <ListHeader>
                 <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                   <div>
                     <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all months" />
@@ -571,8 +572,8 @@ export default function ReportsSupportPage() {
                   </div>
                   <div />
                 </div>
-              </div>
-              <div className="divide-y divide-border">
+              </ListHeader>
+              <div className="divide-y divide-border-subtle">
                 {isLoading ? (
                   <ListSkeleton rows={5} />
                 ) : monthlyRows.length === 0 ? (
@@ -584,7 +585,7 @@ export default function ReportsSupportPage() {
                       role="button"
                       tabIndex={0}
                       aria-label={`View tickets for ${row.period}`}
-                      className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
+                      className={listRowClass({ interactive: true })}
                       onClick={() => openMonthTickets(row.period)}
                       onKeyDown={(e) => {
                         if (e.target !== e.currentTarget) return
@@ -653,7 +654,7 @@ export default function ReportsSupportPage() {
           {/* Tickets: the project's income per ticket */}
           {activeTab === "tickets" && (
             <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <ListHeader>
                 <div className="grid gap-4 items-center" style={TICKETS_GRID}>
                   <div>
                     <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
@@ -672,8 +673,8 @@ export default function ReportsSupportPage() {
                   </div>
                   <div />
                 </div>
-              </div>
-              <div className="divide-y divide-border">
+              </ListHeader>
+              <div className="divide-y divide-border-subtle">
                 {isLoading ? (
                   <ListSkeleton rows={5} />
                 ) : ticketRows.length === 0 ? (
@@ -832,7 +833,7 @@ export default function ReportsSupportPage() {
           {/* Helpers: each helper's income per month, with that month's tickets underneath */}
           {activeTab === "helpers" && (
             <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <ListHeader>
                 <div className="grid gap-4 items-center" style={HELPERS_GRID}>
                   <div>
                     <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all helpers" />
@@ -851,8 +852,8 @@ export default function ReportsSupportPage() {
                   </div>
                   <div />
                 </div>
-              </div>
-              <div className="divide-y divide-border">
+              </ListHeader>
+              <div className="divide-y divide-border-subtle">
                 {isLoading ? (
                   <ListSkeleton rows={5} />
                 ) : helperRows.length === 0 ? (
@@ -869,7 +870,7 @@ export default function ReportsSupportPage() {
                       aria-expanded={expanded}
                       aria-controls={expanded ? panelId : undefined}
                       aria-label={`Tickets for ${row.helper}, ${row.period}`}
-                      className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
+                      className={listRowClass({ interactive: true })}
                       onClick={() => toggle(row.id)}
                       onKeyDown={(e) => {
                         // Only when the row itself has focus, not a control inside it.

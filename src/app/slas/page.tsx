@@ -13,6 +13,7 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 const slaColors = ["#cbbcf6", "#d0f6bc", "#f6e6bc", "#bcedf6"]
 
@@ -198,7 +199,7 @@ export default function SLAsPage() {
           {/* Table */}
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             {/* Table Header */}
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+            <ListHeader>
               <div className="grid grid-cols-12 gap-4 items-center">
                 <div className="col-span-1">
                   <input type="checkbox" className="rounded border-border" />
@@ -208,7 +209,7 @@ export default function SLAsPage() {
                     onClick={() => handleSort("name")}
                     className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
                   >
-                    <span className="text-sm font-medium text-foreground">Entity</span>
+                    <span>Entity</span>
                     <SLASortIcon column="name" sortConfig={sortConfig} />
                   </button>
                 </div>
@@ -217,7 +218,7 @@ export default function SLAsPage() {
                     onClick={() => handleSort("created")}
                     className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
                   >
-                    <span className="text-sm font-medium text-foreground">Created</span>
+                    <span>Created</span>
                     <SLASortIcon column="created" sortConfig={sortConfig} />
                   </button>
                 </div>
@@ -226,23 +227,23 @@ export default function SLAsPage() {
                     onClick={() => handleSort("agreementCategory")}
                     className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
                   >
-                    <span className="text-sm font-medium text-foreground">Agreement category</span>
+                    <span>Agreement category</span>
                     <SLASortIcon column="agreementCategory" sortConfig={sortConfig} />
                   </button>
                 </div>
                 <div className="col-span-2"></div>
               </div>
-            </div>
+            </ListHeader>
 
             {/* Table Body */}
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border-subtle">
               {isLoading ? (
                 <ListSkeleton rows={5} />
               ) : isError ? (
                 <ErrorState size="sm" onRetry={() => refetch()} />
               ) : filteredAndSortedSLAs.length > 0 ? (
                 filteredAndSortedSLAs.map((sla, index) => (
-                <div key={index} className="px-6 py-4 hover:bg-page-muted">
+                <div key={index} className={listRowClass()}>
                   <div className="grid grid-cols-12 gap-4 items-center">
                     <div className="col-span-1">
                       <input type="checkbox" className="rounded border-border" />

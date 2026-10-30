@@ -50,7 +50,7 @@ export function FormField({
         <p
           className={cn(
             "text-xs leading-relaxed",
-            error ? "text-destructive" : "text-muted-foreground/70"
+            error ? "text-destructive" : "text-muted-foreground"
           )}
         >
           {hint}

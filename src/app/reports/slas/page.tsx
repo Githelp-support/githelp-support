@@ -13,6 +13,7 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 interface ReportData {
   id: string
@@ -375,7 +376,7 @@ export default function ReportsSLAsPage() {
           {activeTab === "monthly" && (
             <div className="bg-card rounded-lg border border-border overflow-hidden">
               {/* Table Header */}
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <ListHeader>
                 <div className="grid grid-cols-12 gap-4 items-center">
                   <div className="col-span-1">
                     <input
@@ -389,9 +390,9 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleMonthlySort("period")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Period</span>
+                      <span>Period</span>
                       <ReportsSortIcon field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} />
                     </button>
                   </div>
@@ -399,9 +400,9 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleMonthlySort("entity")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Entity</span>
+                      <span>Entity</span>
                       <ReportsSortIcon field="entity" sortField={monthlySortField} sortDirection={monthlySortDirection} />
                     </button>
                   </div>
@@ -409,9 +410,9 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleMonthlySort("amount")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <span>Amount</span>
                       <ReportsSortIcon field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} />
                     </button>
                   </div>
@@ -419,18 +420,18 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleMonthlySort("status")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <span>Status</span>
                       <ReportsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
                     </button>
                   </div>
                   <div className="col-span-2"></div>
                 </div>
-              </div>
+              </ListHeader>
 
               {/* Table Body */}
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border-subtle">
                 {isLoading ? (
                   <ListSkeleton rows={5} />
                 ) : isError ? (
@@ -439,7 +440,7 @@ export default function ReportsSLAsPage() {
                   <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("reports")}</div>
                 ) : (
                   sortedReports.map((report) => (
-                  <div key={report.id} className="px-6 py-4 hover:bg-page-muted">
+                  <div key={report.id} className={listRowClass()}>
                     <div className="grid grid-cols-12 gap-4 items-center">
                       <div className="col-span-1">
                         <Checkbox
@@ -488,7 +489,7 @@ export default function ReportsSLAsPage() {
           {activeTab === "tickets" && (
             <div className="bg-card rounded-lg border border-border overflow-hidden">
               {/* Table Header */}
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <ListHeader>
                 <div className="grid grid-cols-12 gap-4 items-center">
                   <div className="col-span-1">
                     <input
@@ -502,9 +503,9 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleTicketsSort("date")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Date</span>
+                      <span>Date</span>
                       <ReportsSortIcon field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
                     </button>
                   </div>
@@ -512,9 +513,9 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleTicketsSort("entity")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Entity</span>
+                      <span>Entity</span>
                       <ReportsSortIcon field="entity" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
                     </button>
                   </div>
@@ -522,9 +523,9 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleTicketsSort("amount")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Amount</span>
+                      <span>Amount</span>
                       <ReportsSortIcon field="amount" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
                     </button>
                   </div>
@@ -532,18 +533,18 @@ export default function ReportsSLAsPage() {
                     <button
                       type="button"
                       onClick={() => handleTicketsSort("status")}
-                      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                      className="flex items-center space-x-2"
                     >
-                      <span className="text-sm font-medium text-foreground">Status</span>
+                      <span>Status</span>
                       <ReportsSortIcon field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
                     </button>
                   </div>
                   <div className="col-span-2"></div>
                 </div>
-              </div>
+              </ListHeader>
 
               {/* Table Body */}
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border-subtle">
                 {isLoading ? (
                   <ListSkeleton rows={5} />
                 ) : isError ? (
@@ -552,7 +553,7 @@ export default function ReportsSLAsPage() {
                   <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("tickets")}</div>
                 ) : (
                   sortedTickets.map((ticket) => (
-                  <div key={ticket.id} className="px-6 py-4 hover:bg-page-muted">
+                  <div key={ticket.id} className={listRowClass()}>
                     <div className="grid grid-cols-12 gap-4 items-center">
                       <div className="col-span-1">
                         <Checkbox

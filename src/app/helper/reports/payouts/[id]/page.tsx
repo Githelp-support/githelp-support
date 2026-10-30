@@ -140,11 +140,11 @@ export default function HelperPayoutStatementPage() {
                 <section className="px-8 py-6 border-b border-border">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr className="text-left text-xs font-medium text-text-muted">
                         <th className="pb-2 font-medium">Description</th>
                         <th className="pb-2 font-medium">Ticket</th>
                         <th className="pb-2 font-medium">Type</th>
-                        <th className="pb-2 font-medium text-right">Amount</th>
+                        <th className="pb-2 font-medium text-right tabular-nums">Amount</th>
                       </tr>
                     </thead>
                     <tbody>
