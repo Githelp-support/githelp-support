@@ -1,4 +1,6 @@
 import type { UserRole } from "@/contexts/user-context"
+import { GUEST_ADOPTION_KEY, OWN_GUEST_ID_KEY } from "@/lib/guest-adoption-storage"
+import { clearAllSupportDrafts } from "@/lib/support-draft"
 
 /**
  * The landing page for a given active role. Used wherever the app switches
@@ -41,11 +43,15 @@ export function getLastProjectForRole(role: ProjectRole): string | null {
  * one's role, selected project or pending redirect. Called on sign-out.
  */
 export function clearAccountUiState(): void {
+  clearAllSupportDrafts()
   const localKeys = [
     "userRole",
     "selectedProjectId",
     lastProjectKey("admin"),
     lastProjectKey("helper"),
+    // Guest session saved for ticket adoption (lib/guest-adoption).
+    GUEST_ADOPTION_KEY,
+    OWN_GUEST_ID_KEY,
   ]
   const sessionKeys = ["selectedProjectId", "pendingRedirect"]
   try {

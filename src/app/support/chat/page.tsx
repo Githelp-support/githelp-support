@@ -12,7 +12,16 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { useState, useEffect, useMemo, useRef } from "react"
 import { usePathname, useSearchParams, useRouter } from "next/navigation"
-import { SignInToStartTicket } from "@/components/support/sign-in-to-start-ticket"
+import { GuestBanner } from "@/components/support/guest-banner"
+import { TicketUnavailableNotice } from "@/components/support/ticket-unavailable-notice"
+import { wasGuestAdoptionExpired } from "@/lib/guest-adoption-storage"
+import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft, takeSupportDraft } from "@/lib/support-draft"
+import { startGuestSignIn } from "@/lib/guest-adoption"
+import { ensureSupportSession, findGuestOpenTicket, isOwnGuestSession } from "@/lib/guest-session"
+import { useResumableGuestTicket } from "@/hooks/useResumableGuestTicket"
+import { useGuestAdoptionRetry } from "@/hooks/useGuestAdoptionRetry"
+import { GUEST_OPEN_TICKET_ELSEWHERE_MESSAGE, guestTicketCreateAction } from "@/lib/guest-ticket-errors"
+import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/support-sign-in-redirect"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects, PROJECT_SEARCH_MIN_LENGTH } from "@/hooks/useProject"
 import { useRequestProjectSupport } from "@/hooks/useRequestProjectSupport"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
@@ -37,6 +46,7 @@ import {
   describeChargedLine,
   findPendingSca,
   formatChatTimestamp,
+  hasVisitorLeft,
 } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
@@ -69,6 +79,10 @@ export default function UserSupportChatPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { user, setProjectRole } = useUser()
+  // Guests (anonymous session, see user-context) chat without an account:
+  // `user.id` stays undefined for them, `guestId` carries their auth id.
+  const sessionUserId = user?.id ?? user?.guestId
+  const isGuest = !user?.id && !!user?.guestId
   // Where sign-in should bring the visitor back to (this page incl. its query).
   const currentHref = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
   const [message, setMessage] = useState("")
@@ -116,7 +130,7 @@ export default function UserSupportChatPage() {
   // them pick a project to get support from. These hooks only fetch when
   // `noParams` is true so they don't run on the normal chat flow.
   const { data: latestUserTicket, isLoading: userTicketsLoadingForResolve } =
-    useLatestUserActiveTicket(noParams && user?.id ? user.id : undefined)
+    useLatestUserActiveTicket(noParams && sessionUserId ? sessionUserId : undefined)
   const { data: allProjects = [], isLoading: allProjectsLoading } = useProjects({
     enabled: noParams,
   })
@@ -140,6 +154,22 @@ export default function UserSupportChatPage() {
   const project = projectIdParam ? projectById : (slugParam ? projectBySlug : projectById)
   // Use the project's UUID when only a slug is provided, or fall back to projectId from URL/ticket
   const effectiveProjectId = project?.project_id || projectId || ""
+
+  // A guest on ?project=/?slug= without ?ticket= resumes their open guest
+  // ticket (after a reload) instead of an empty composer — a guest can't
+  // open a second one. Signed-in users may open several tickets, so they
+  // are never bounced (their post-sign-in redirect carries ?ticket=).
+  const { data: resumableTicket } = useResumableGuestTicket(
+    !ticketIdParam && !createdTicketId ? user?.guestId : undefined,
+    isGuest,
+    effectiveProjectId || undefined,
+  )
+  useEffect(() => {
+    if (!resumableTicket || ticketIdParam) return
+    router.replace(
+      `/support/chat?ticket=${encodeURIComponent(resumableTicket.id)}&project=${encodeURIComponent(resumableTicket.project_id)}`,
+    )
+  }, [resumableTicket, ticketIdParam, router])
   const projectPageHref = project?.slug
     ? `/support/${encodeURIComponent(project.slug)}`
     : effectiveProjectId
@@ -176,9 +206,9 @@ export default function UserSupportChatPage() {
   const requestEndSession = useRequestEndSession()
   const endSessionRequestedAt = existingTicket?.end_requested_at ?? null
   const handleRequestEndSession = async (cancel: boolean) => {
-    if (!existingTicket?.id || !user?.id) return
+    if (!existingTicket?.id || !sessionUserId) return
     try {
-      await requestEndSession.mutateAsync({ ticketId: existingTicket.id, userId: user.id, cancel })
+      await requestEndSession.mutateAsync({ ticketId: existingTicket.id, userId: sessionUserId, cancel })
       toast.success(cancel ? "End request cancelled." : "The helper has been notified.")
     } catch (error) {
       console.error("Failed to update end-session request:", error)
@@ -310,10 +340,10 @@ export default function UserSupportChatPage() {
   const updateLastReadMessage = useUpdateLastReadMessage()
   const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
   useEffect(() => {
-    if (!ticketId || !user?.id || !lastMessageId) return
-    updateLastReadMessage.mutate({ ticketId, participantId: user.id, messageId: lastMessageId })
+    if (!ticketId || !sessionUserId || !lastMessageId) return
+    updateLastReadMessage.mutate({ ticketId, participantId: sessionUserId, messageId: lastMessageId })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
-  }, [ticketId, user?.id, lastMessageId])
+  }, [ticketId, sessionUserId, lastMessageId])
   // Right sidebar data (participants / logged time / active tickets) — shared
   // with the /support Get support tab so both entry points render the same.
   const {
@@ -324,10 +354,51 @@ export default function UserSupportChatPage() {
     totalLoggedFormatted,
     activeTicketsSidebar,
     activeTicketsCount,
-  } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
+  } = useCustomerTicketSidebar(ticketId || undefined, sessionUserId)
 
-  // Check if user is authenticated (has an id)
+  // Signed in with a real account (guests are not).
   const isAuthenticated = !!user?.id
+
+  // Presence for a guest's open ticket runs in the support layout
+  // (SupportGuestPresence), on every /support page.
+
+  // Guest → sign in: save the guest session (its tickets are adopted after
+  // sign-in), then come back to this chat.
+  // Sign-in returns to this conversation (with ?ticket=); the sidebar and top
+  // bar use the same target.
+  const guestSignInRedirect = chooseSupportSignInRedirect({
+    ticketId: ticketIdParam || createdTicketId || ticketId || null,
+    projectId: effectiveProjectId || null,
+    fallback: currentHref,
+  })
+  useEffect(() => {
+    setSupportSignInRedirect(guestSignInRedirect)
+    return () => setSupportSignInRedirect(null)
+  }, [guestSignInRedirect])
+  // A guest adoption that failed transiently at sign-in is retried here.
+  const adoptionRetry = useGuestAdoptionRetry(isAuthenticated, router.replace)
+  const handleGuestSignIn = () => {
+    // Keep an unsent question across the sign-in round-trip.
+    saveSupportDraft(effectiveProjectId, message)
+    void startGuestSignIn(guestSignInRedirect, (href) => router.push(href))
+  }
+  // …and put it back once they return (shown in the composer, not sent).
+  // Taken once: it never pre-fills a later new-ticket composer.
+  useEffect(() => {
+    if (!effectiveProjectId) return
+    const draft = takeSupportDraft(effectiveProjectId)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time restore from storage
+    if (draft) setMessage((current) => current || draft)
+  }, [effectiveProjectId])
+  // The top-bar / sidebar "Sign in" keep the unsent message too.
+  const messageRef = useRef(message)
+  useEffect(() => {
+    messageRef.current = message
+  }, [message])
+  useEffect(() => {
+    registerSupportDraftSource(() => ({ projectId: effectiveProjectId, text: messageRef.current }))
+    return () => registerSupportDraftSource(null)
+  }, [effectiveProjectId])
 
   // Confirm the logged-time summary the helper sent (one action for every
   // pending entry; declines carry a reason the RPC posts into the chat).
@@ -395,10 +466,13 @@ export default function UserSupportChatPage() {
       pendingFirstMessage,
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
-      currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+      ticketStatus: existingTicket?.status ?? null,
+      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
       avgResponseSeconds,
     })
-    if (ticketEnded) {
+    // A guest ticket closed because the visitor left carries its own
+    // visitor_left message — no helper "session ended" summary.
+    if (ticketEnded && !hasVisitorLeft(messagesData, existingTicket?.status)) {
       const cancelled = existingTicket?.status === "cancelled"
       list.push(
         buildSessionEndedMessage({
@@ -432,7 +506,8 @@ export default function UserSupportChatPage() {
     paymentStatus.status,
     paymentStatus.capturedAmountSmallestUnit,
     paymentStatus.failureReason,
-    user?.id,
+    sessionUserId,
+    isGuest,
     user?.name,
     user?.avatarUrl,
   ])
@@ -461,7 +536,7 @@ export default function UserSupportChatPage() {
     // While we look up the user's latest ticket, show a small loading state.
     // The redirect to that ticket is handled by the effect above.
     const resolving =
-      (isAuthenticated && userTicketsLoadingForResolve) || !!latestUserTicket
+      (!!sessionUserId && userTicketsLoadingForResolve) || !!latestUserTicket
     if (resolving) {
       return (
         <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f7f9ff]">
@@ -492,6 +567,10 @@ export default function UserSupportChatPage() {
     }
 
     const handleRequestProjectSupport = async () => {
+      if (isGuest) {
+        handleGuestSignIn()
+        return
+      }
       if (!isAuthenticated) {
         setIsSignInModalOpen(true)
         return
@@ -629,12 +708,17 @@ export default function UserSupportChatPage() {
         <Sidebar projectPageHref={projectPageHref} />
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
-            <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-              <h1 className="text-2xl font-semibold text-foreground mb-2">Ticket not found</h1>
-              <p className="text-muted-foreground">
-                This ticket may have been removed or you may not have access to it.
-              </p>
-            </div>
+            <TicketUnavailableNotice
+              linking={adoptionRetry.linking}
+              failedFinal={adoptionRetry.failedFinal}
+              deferred={adoptionRetry.deferred}
+              onLink={adoptionRetry.linkNow}
+              // The guest conversation's key ran out before it was linked.
+              expired={isAuthenticated && !adoptionRetry.linking && wasGuestAdoptionExpired()}
+              newConversationHref={
+                projectIdParam ? `/support/chat?project=${encodeURIComponent(projectIdParam)}` : "/support/chat"
+              }
+            />
           </div>
         </main>
       </div>
@@ -643,12 +727,6 @@ export default function UserSupportChatPage() {
 
   const handleSendMessage = async () => {
     if (!message.trim()) return
-    // Tickets need a signed-in creator (RLS: created_by = auth.uid()); the
-    // composer is replaced by a sign-in CTA while signed out, this is a guard.
-    if (!user?.id) {
-      setIsSignInModalOpen(true)
-      return
-    }
     if (ticketEnded) {
       toast.error("This ticket is closed, so new messages can't be sent.")
       return
@@ -663,6 +741,18 @@ export default function UserSupportChatPage() {
     setIsSending(true)
 
     try {
+      // No session yet: start an anonymous guest session so the visitor can
+      // ask without an account (tickets need created_by = auth.uid()).
+      let senderId = sessionUserId
+      if (!senderId) {
+        const guest = await ensureSupportSession()
+        if (!guest.ok) {
+          toast.error("Couldn't start the conversation. Please try again.", { description: guest.message })
+          return
+        }
+        senderId = guest.userId
+      }
+
       if (!ticketCreated && effectiveProjectId) {
         let ticket
         try {
@@ -670,7 +760,7 @@ export default function UserSupportChatPage() {
             project_id: effectiveProjectId,
             title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
             description: message,
-            created_by: user.id,
+            created_by: senderId,
             status: "available",
             priority: "medium",
             // The prices the customer was shown; the database refuses the ticket if
@@ -688,6 +778,7 @@ export default function UserSupportChatPage() {
         } catch (error) {
           console.error("Failed to create ticket:", error)
           const hint = (error as { hint?: string } | null)?.hint
+          const guestAction = guestTicketCreateAction(error)
           if (hint === "ticket_prices_changed") {
             toast.error("The project's prices just changed.", {
               description: "Please review the updated rates, then send your message again.",
@@ -697,6 +788,23 @@ export default function UserSupportChatPage() {
             toast.error("This project isn't accepting tickets yet.", {
               description: "Its pricing hasn't been set up. Please try again later.",
             })
+          } else if (guestAction?.kind === "resume") {
+            // guest_open_ticket_exists: reopen their conversation here (the
+            // typed message stays in the composer); if it's on another
+            // project, say so.
+            const existing = await findGuestOpenTicket(senderId, effectiveProjectId)
+            if (existing) {
+              toast.info("You already have an open conversation here, so we reopened it.")
+              router.replace(
+                `/support/chat?ticket=${encodeURIComponent(existing.id)}&project=${encodeURIComponent(existing.project_id)}`,
+              )
+            } else {
+              toast.error(GUEST_OPEN_TICKET_ELSEWHERE_MESSAGE, {
+                action: { label: "Sign in", onClick: handleGuestSignIn },
+              })
+            }
+          } else if (guestAction?.kind === "sign-in") {
+            toast.error(guestAction.message, { action: { label: "Sign in", onClick: handleGuestSignIn } })
           } else {
             toast.error("Couldn't create your ticket. Please try again.", {
               description: error instanceof Error ? error.message : undefined,
@@ -706,6 +814,7 @@ export default function UserSupportChatPage() {
         }
 
         setTicketCreated(true)
+        clearSupportDraft(effectiveProjectId)
         setTicketId(ticket.id)
         setCreatedTicketId(ticket.id)
         const firstMessageContent = await prepareOutgoingMessage(message)
@@ -717,12 +826,12 @@ export default function UserSupportChatPage() {
         try {
           await ensureParticipant.mutateAsync({
             ticketId: ticket.id,
-            participantId: user.id,
+            participantId: senderId,
             claimed: false,
           })
           await sendMessage.mutateAsync({
             ticket_id: ticket.id,
-            sender_id: user.id,
+            sender_id: senderId,
             sender_type: "user",
             content: firstMessageContent,
           })
@@ -760,7 +869,7 @@ export default function UserSupportChatPage() {
       try {
         await sendMessage.mutateAsync({
           ticket_id: ticketId,
-          sender_id: user.id,
+          sender_id: senderId,
           sender_type: "user",
           content: await prepareOutgoingMessage(message),
         })
@@ -777,14 +886,33 @@ export default function UserSupportChatPage() {
     }
   }
 
-  const handleSignIn = () => setIsSignInModalOpen(true)
+  // Decide "guest" from the session itself (not only user.guestId, which
+  // lags right after the first send), so the guest is always saved.
+  const handleSignIn = () => {
+    void isOwnGuestSession().then((ownGuest) => (ownGuest ? handleGuestSignIn() : setIsSignInModalOpen(true)))
+  }
+
+  // visitor_left: the guest ticket was closed; start over on this project.
+  const handleStartNewConversation = () => {
+    void queryClient.removeQueries({ queryKey: ["resumable-ticket"] })
+    setTicketId("")
+    setTicketCreated(false)
+    setCreatedTicketId(null)
+    setPendingFirstMessage(null)
+    setMessage("")
+    router.push(
+      effectiveProjectId
+        ? `/support/chat?project=${encodeURIComponent(effectiveProjectId)}`
+        : "/support/chat",
+    )
+  }
 
   // "People in this chat": tickets_participants, plus the ticket creator if
   // they have no participant row (e.g. old tickets).
   const creatorUser = existingTicket?.user as { name?: string; avatar_url?: string | null } | null | undefined
   const chatParticipants: TicketChatParticipant[] = toChatParticipants(
     participants,
-    user?.id,
+    sessionUserId,
     existingTicket?.created_by && creatorUser
       ? { id: existingTicket.created_by, name: creatorUser.name, avatar_url: creatorUser.avatar_url }
       : null,
@@ -827,13 +955,17 @@ export default function UserSupportChatPage() {
         sending={isSending}
         isEnded={ticketEnded}
         paymentStatus={paymentStatus.status}
-        // No session → no ticket can be created (RLS requires created_by =
-        // auth.uid()), so offer sign-in instead of a composer that fails.
-        composerReplacement={
-          !isAuthenticated ? <SignInToStartTicket redirectTo={currentHref} /> : undefined
-        }
+        // Signed-out visitors get the composer: the first send starts a guest
+        // session. While a guest, a banner above it offers sign-in.
+        composerBanner={isGuest ? <GuestBanner redirectTo={guestSignInRedirect} onSignIn={handleGuestSignIn} /> : undefined}
+        onStartNewConversation={handleStartNewConversation}
+        paymentRequiresSignIn={isGuest}
+        onSignInClick={handleGuestSignIn}
+        // Nobody but an admin can end a guest ticket: no "End session" for the guest.
         onRequestEndSession={
-          existingTicket?.id && user?.id ? () => handleRequestEndSession(false) : undefined
+          existingTicket?.id && sessionUserId && !isGuest && !existingTicket.guest
+            ? () => handleRequestEndSession(false)
+            : undefined
         }
         onCancelEndSessionRequest={() => handleRequestEndSession(true)}
         endSessionRequestedAt={endSessionRequestedAt}
@@ -845,7 +977,7 @@ export default function UserSupportChatPage() {
         timeReviewHelperName={claimer?.name ?? null}
         // Before the first message there is no ticket yet: uploads go to the
         // user's own folder (see lib/ticket-attachments).
-        attachmentStoragePrefix={user?.id && effectiveProjectId ? `${effectiveProjectId}/${ticketId || user.id}` : undefined}
+        attachmentStoragePrefix={sessionUserId && effectiveProjectId ? `${effectiveProjectId}/${ticketId || sessionUserId}` : undefined}
         onPaymentCtaClick={async (msg) => {
           const metaTicketId = msg.paymentMetadata?.ticket_id as string | undefined
           const target = metaTicketId || ticketId

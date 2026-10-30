@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/lib/supabase/client"
+import { hasSignedInSession } from "@/lib/supabase/auth-state"
 import { Loader2, CheckCircle, LogIn, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -85,7 +86,8 @@ export default function InviteAcceptancePage() {
             // synchronous setState calls (react-hooks/set-state-in-effect).
             setIsLoading(true)
             setError(null)
-            const userId = session?.user?.id ?? null
+            // Anonymous guests (public support chat) count as signed out.
+            const userId = hasSignedInSession(session) ? session?.user?.id ?? null : null
             loadedForUserId.current = userId
             setIsAuthenticated(!!userId)
 
@@ -125,11 +127,11 @@ export default function InviteAcceptancePage() {
             setProject(projectData)
 
             // If authenticated, check if user is already a member and profile status
-            if (session?.user && projectData) {
+            if (userId && projectData) {
                 const { data: memberData } = await supabase
                     .from("projects_members")
                     .select("user_id, role")
-                    .eq("user_id", session.user.id)
+                    .eq("user_id", userId)
                     .eq("project_id", projectData.project_id)
                     .is("deleted_at", null)
                     .maybeSingle()
@@ -147,7 +149,7 @@ export default function InviteAcceptancePage() {
                     const { data: profile } = await supabase
                         .from("users_public")
                         .select("name, username")
-                        .eq("id", session.user.id)
+                        .eq("id", userId)
                         .maybeSingle()
                     if (signal.cancelled) return
 
@@ -178,7 +180,7 @@ export default function InviteAcceptancePage() {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return
-            const userId = session?.user?.id ?? null
+            const userId = hasSignedInSession(session) ? session?.user?.id ?? null : null
             if (loadedForUserId.current === undefined || userId === loadedForUserId.current) return
             current.cancelled = true
             current = { cancelled: false }

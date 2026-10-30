@@ -20,6 +20,8 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
     "Only an admin of this organization can add projects to it. Ask one of its admins for an invite.",
   github_permission_required:
     "Sign in with a GitHub account that has write access to this repository to connect it.",
+  github_owner_admin_required:
+    "Only the GitHub account owner, or an admin of the GitHub organization, can connect the first repository for it.",
   invite_email_unverified:
     "Confirm your email address first, then open the invite link again.",
   not_authorized_for_ticket:
@@ -36,6 +38,34 @@ const FRIENDLY_MESSAGES: Record<string, string> = {
     "This ticket is already closed, so no payment can be requested for it.",
   ticket_not_ended:
     "The ticket has to be ended before the payment can be captured.",
+  // Guest tickets (visitors chatting without an account)
+  sign_in_required:
+    "Please sign in to continue. Your conversation stays where it is.",
+  guest_ticket_requires_sign_in:
+    "The visitor needs to sign in before this ticket can be claimed or billed. You can still reply.",
+  guest_ticket_limit:
+    "You've reached the limit for guest conversations today. Sign in to open more tickets.",
+  guest_open_ticket_exists:
+    "You already have an open guest conversation. Sign in to open more.",
+  guest_project_busy:
+    "This project is receiving a lot of guest conversations right now. Sign in to open your ticket.",
+  guest_not_allowed:
+    "Please sign in to do that.",
+  invalid_guest_token:
+    "Your guest session has expired, so the conversation couldn't be moved to your account.",
+}
+
+/** Postgres error hints (RAISE ... HINT) for guest tickets, mapped to user-facing copy. */
+export const GUEST_HINT_MESSAGES: Record<string, string> = {
+  guest_ticket_limit: FRIENDLY_MESSAGES.guest_ticket_limit,
+  guest_ticket_requires_sign_in: FRIENDLY_MESSAGES.guest_ticket_requires_sign_in,
+  guest_not_allowed: FRIENDLY_MESSAGES.guest_not_allowed,
+}
+
+/** The `hint` of a PostgREST/Postgres error, if any. */
+export function getPostgresHint(error: unknown): string | null {
+  const hint = (error as { hint?: unknown } | null)?.hint
+  return typeof hint === "string" && hint.length > 0 ? hint : null
 }
 
 const GENERIC_SUPABASE_MESSAGE = /non-2xx status code/i

@@ -33,6 +33,21 @@ const nextConfig: NextConfig = {
         dangerouslyAllowLocalIP: process.env.NODE_ENV === "development",
     },
     devIndicators: false,
+    // Nothing embeds the app: refuse framing (clickjacking on the guest-link
+    // dialog, Checkout and claim buttons) and MIME sniffing everywhere.
+    async headers() {
+        return [
+            {
+                source: "/:path*",
+                headers: [
+                    { key: "X-Frame-Options", value: "DENY" },
+                    { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+                    { key: "X-Content-Type-Options", value: "nosniff" },
+                    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+                ],
+            },
+        ];
+    },
 };
 
 export default nextConfig;

@@ -1,7 +1,16 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
+import { QueryClientContext } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { isAnonymousUser } from "@/lib/supabase/auth-state"
+import {
+  OWN_GUEST_CHANGED_EVENT,
+  clearAllGuestAdoptionState,
+  isOwnGuestId,
+  resetGuestAdoptionConfirmation,
+} from "@/lib/guest-adoption-storage"
+import { cancelGuestAdoptionConfirm } from "@/lib/guest-adoption-confirm"
 
 export type UserRole = "helper" | "user" | "admin"
 
@@ -13,6 +22,33 @@ interface User {
   id?: string
   email?: string
   projectRole?: UserRole | null // Highest role from project membership
+  /**
+   * Set (instead of `id`) while the session is an anonymous guest: they can
+   * use their own ticket on the public support pages, but everywhere else
+   * they are signed out — `id` stays undefined so every "signed in?" check
+   * (`!!user.id`) treats them as a visitor.
+   */
+  guestId?: string
+}
+
+const SIGNED_OUT_USER: User = {
+  name: "Incognito",
+  role: "user",
+  avatar: "I",
+  avatarUrl: null,
+}
+
+/**
+ * Anonymous guest: the signed-out user plus the guest's auth id — but only
+ * for a guest this browser created itself (githelp.ownGuestId). A foreign
+ * anonymous session (e.g. planted via a crafted link) counts as no session:
+ * the first send on a support page replaces it with a guest of our own.
+ */
+function guestUser(guestId: string): User {
+  // No projectRole carried over: a guest never inherits the previous
+  // account's role-specific navigation.
+  const base = { ...SIGNED_OUT_USER, projectRole: null }
+  return isOwnGuestId(guestId) ? { ...base, guestId } : base
 }
 
 interface UserContextType {
@@ -56,6 +92,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   })
   const [isLoading, setIsLoading] = useState(true)
+  // Optional so a UserProvider without a QueryClientProvider (tests) works.
+  const queryClient = useContext(QueryClientContext)
+  const accountRef = useRef<string | null>(null)
+  // Called from onAuthStateChange: the reset (which refetches through the
+  // Supabase client) is deferred so the auth callback never waits on it.
+  const noteAccount = useCallback((account: string) => {
+    const previous = accountRef.current
+    accountRef.current = account
+    // A signed-out visitor becoming a guest (first send on /support) has
+    // nothing private cached: resetting would only blank the page mid-send.
+    const firstGuest = previous === "signed-out" && account.startsWith("guest:")
+    if (previous !== null && previous !== account && !firstGuest && queryClient) {
+      setTimeout(() => void queryClient.resetQueries(), 0)
+    }
+  }, [queryClient])
 
   // Re-sync auth when user returns to tab (recovers from Supabase client corruption
   // after tab suspension/backgrounding). See: https://github.com/supabase/supabase/issues/36046
@@ -70,7 +121,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         )
         const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise])
 
-        if (session?.user) {
+        if (session?.user && isAnonymousUser(session.user)) {
+          const guestId = session.user.id
+          setUser(guestUser(guestId))
+        } else if (session?.user) {
           const { data: profile } = await supabase
             .from("users_public")
             .select("*")
@@ -84,6 +138,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             id: session.user.id,
             email: session.user.email || undefined,
             role: prev.role || resolveInitialRole(prev.projectRole),
+            guestId: undefined,
           }))
         } else {
           setUser({ name: "Incognito", role: "user", avatar: "I", avatarUrl: null })
@@ -101,7 +156,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     document.addEventListener("visibilitychange", onVisibilityChange)
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange)
+    // ensureSupportSession just marked a new guest as ours: pick it up.
+    const onOwnGuestChanged = () => {
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user && isAnonymousUser(session.user)) {
+          const guestId = session.user.id
+          setUser(guestUser(guestId))
+        }
+      })
+    }
+    window.addEventListener(OWN_GUEST_CHANGED_EVENT, onOwnGuestChanged)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange)
+      window.removeEventListener(OWN_GUEST_CHANGED_EVENT, onOwnGuestChanged)
+    }
   }, [])
 
   useEffect(() => {
@@ -110,7 +178,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Check if user is already logged in
         const { data: { session } } = await supabase.auth.getSession()
 
-        if (session?.user) {
+        if (session?.user && isAnonymousUser(session.user)) {
+          // Guest session: signed out everywhere except their own support ticket.
+          const guestId = session.user.id
+          setUser(guestUser(guestId))
+        } else if (session?.user) {
           // User is already logged in, fetch profile
           const { data: profile } = await supabase
             .from('users_public')
@@ -162,7 +234,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // This causes deadlocks with the auth lock, especially with multiple tabs open.
     // See: https://supabase.com/docs/reference/javascript/auth-onauthstatechange
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Another account (or signed out / guest) in this browser: drop cached
+      // queries so the previous account's tickets and messages never show.
+      noteAccount(
+        event === 'SIGNED_OUT' || !session?.user
+          ? "signed-out"
+          : isAnonymousUser(session.user) ? `guest:${session.user.id}` : session.user.id,
+      )
       if (event === 'SIGNED_OUT') {
+        // Session expiry / global sign-out: a saved guest session (and this
+        // browser's guest id) must not outlive it.
+        clearAllGuestAdoptionState()
+        // …and an open "Link your guest conversation?" dialog is moot.
+        cancelGuestAdoptionConfirm()
         setUser({
           name: "Incognito",
           role: "user",
@@ -170,7 +254,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
           avatarUrl: null,
           projectRole: null,
         })
+      } else if (event === 'SIGNED_IN' && session?.user && isAnonymousUser(session.user)) {
+        const guestId = session.user.id
+        // Deferred: signInAnonymously() resolves (and ensureSupportSession
+        // marks the guest as ours) right after this callback.
+        setTimeout(() => setUser(guestUser(guestId)), 0)
       } else if (event === 'SIGNED_IN' && session?.user) {
+        // A guest-link confirmation given by another account no longer counts.
+        resetGuestAdoptionConfirmation(session.user.id)
         // Defer async work to avoid deadlock - callback must not await Supabase calls
         setTimeout(async () => {
           const { data: profile } = await supabase
@@ -207,7 +298,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [noteAccount])
 
   // Memoized so hooks built on it (useEnterProject) keep a stable identity
   // and can safely be listed as effect dependencies.

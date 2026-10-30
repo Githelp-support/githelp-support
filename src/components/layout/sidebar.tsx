@@ -17,6 +17,8 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useUser } from "@/contexts/user-context"
+import { SignInLink } from "@/components/auth/sign-in-link"
+import { isSupportRoute } from "@/lib/sign-in-href"
 
 interface SidebarProps {
   className?: string
@@ -175,7 +177,18 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
     },
   ]
 
+  // A guest (anonymous support visitor) only gets the public support
+  // routes: protected ones would bounce them to sign-in without saving their
+  // guest session for adoption (the Sign in link below does that).
+  // No "Tickets" either: a guest has no ticket list.
+  const guestNavigationItems = userNavigationItems.filter((item) =>
+    item.subItems
+      ? item.subItems.every((sub) => sub.href.startsWith("/support"))
+      : item.href.startsWith("/support") && item.href !== "/support/tickets",
+  )
+
   const getNavigationItems = () => {
+    if (!user.id && user.guestId) return guestNavigationItems
     if (user.role === "helper") return helperNavigationItems
     if (user.role === "user") return userNavigationItems
     return adminNavigationItems
@@ -294,9 +307,16 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         <div className="px-3 pb-3 shrink-0">
           <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
             <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
-              <Link href={`/auth/signin?redirect=${encodeURIComponent(pathname || "/")}`}>
+              <SignInLink
+                redirectTo={
+                  // Support routes carry their project / ticket in the query.
+                  isSupportRoute(pathname) && searchParams?.toString()
+                    ? `${pathname}?${searchParams.toString()}`
+                    : pathname || "/"
+                }
+              >
                 Sign in
-              </Link>
+              </SignInLink>
             </Button>
           </div>
         </div>

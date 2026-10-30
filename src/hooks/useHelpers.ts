@@ -91,7 +91,7 @@ export function useCreateHelper() {
             }
 
             // Return the helper record from the response
-            // The edge function returns: { success, user_id, user_exists, helper }
+            // The edge function returns: { success, helper }
             return data.helper as Helper;
         },
         onSuccess: (data) => {

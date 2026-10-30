@@ -180,15 +180,17 @@ export function useCreateProject() {
 
             // Determine the organization to attach the project to. The
             // projects INSERT policy requires created_by = auth.uid() and an
-            // organization_id the caller ADMINISTERS (or null), so only
-            // consider organizations where the user holds the admin role:
-            // the selected one if it qualifies, else the first admin org.
+            // organization_id the caller OWNS (or null): admin of it in their
+            // own right, not via being co-admin of one of its projects
+            // (sync_prior_role set). Use the selected one if it qualifies,
+            // else the first owned org; none → the project gets no org.
             let selectedOrganizationId: string | null = null;
             const { data: adminMemberships } = await supabase
                 .from("organizations_members")
                 .select("organization_id")
                 .eq("id", user.id)
-                .eq("role", "admin");
+                .eq("role", "admin")
+                .is("sync_prior_role", null);
             const adminOrgIds = (adminMemberships ?? []).map(
                 (m) => m.organization_id as string,
             );

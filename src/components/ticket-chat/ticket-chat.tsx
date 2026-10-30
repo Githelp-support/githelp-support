@@ -24,6 +24,7 @@ import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { isPaymentFailedCtaLive } from "@/lib/customer-chat-messages"
+import { VisitorLeftAction } from "@/components/ticket-chat/guest-ticket"
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 
 export type PaymentSystemMessageKind =
@@ -61,6 +62,10 @@ export type SystemMessageKind =
   | "time_entry_deleted"
   | "time_review_requested"
   | "time_entries_confirmed"
+  // Guest tickets (migration 20261029150000_guest_tickets): the cron closed it
+  // because the visitor left / the visitor signed in (adopt-guest-tickets).
+  | "visitor_left"
+  | "guest_signed_in"
 
 export type TicketChatMessage = {
   id: string
@@ -124,6 +129,19 @@ export interface TicketChatProps {
    * call-to-action for a visitor without a session.
    */
   composerReplacement?: React.ReactNode
+  /** Rendered directly above the composer, e.g. the guest "Sign in" banner. */
+  composerBanner?: React.ReactNode
+  /**
+   * "Start a new conversation" on a `visitor_left` system message (the guest
+   * ticket was closed because the visitor left). Omit to hide the action.
+   */
+  onStartNewConversation?: () => void
+  /**
+   * The viewer is a guest: payment CTAs (add / update card, pay yourself)
+   * need an account, so they become "Sign in" prompts calling `onSignInClick`.
+   */
+  paymentRequiresSignIn?: boolean
+  onSignInClick?: () => void
 
   /**
    * Customer-side "End session". Pressing the toolbar button does not end the
@@ -200,6 +218,10 @@ export function TicketChat(props: TicketChatProps) {
     sending,
     isEnded,
     composerReplacement,
+    composerBanner,
+    onStartNewConversation,
+    paymentRequiresSignIn,
+    onSignInClick,
     onRequestEndSession,
     onCancelEndSessionRequest,
     endSessionRequestedAt,
@@ -280,6 +302,12 @@ export function TicketChat(props: TicketChatProps) {
   // no longer failed (index order = chronological order).
   const isFailedCtaLive = (msg: (typeof thread)[number]) =>
     isPaymentFailedCtaLive(thread, thread.indexOf(msg), { ticketClosed: isEnded, paymentStatus })
+  // Guests have no account to attach a card to: every payment CTA asks them to sign in.
+  const handlePaymentCta = (msg: (typeof thread)[number]) => {
+    if (paymentRequiresSignIn) onSignInClick?.()
+    else onPaymentCtaClick?.(msg)
+  }
+  const ctaLabel = (label: string) => (paymentRequiresSignIn ? "Sign in to continue" : paymentCtaLoading ? "Opening Stripe…" : label)
 
   return (
     <div className="flex-1 flex overflow-hidden">
@@ -391,7 +419,8 @@ export function TicketChat(props: TicketChatProps) {
                                 <div
                                   className={
                                     msg.senderType === "system"
-                                      ? msg.paymentMetadata?.kind === "payment_authorized"
+                                      ? msg.paymentMetadata?.kind === "payment_authorized" ||
+                                        msg.paymentMetadata?.kind === "guest_signed_in"
                                         ? "bg-status-success-bg text-status-success-text py-2 px-4 rounded-lg text-sm text-left ml-11"
                                         : msg.paymentMetadata?.kind === "payment_cap_exceeded"
                                           ? "bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
@@ -418,15 +447,20 @@ export function TicketChat(props: TicketChatProps) {
                                         : msg.content
                                     }
                                   />
+                                  {msg.senderType === "system" &&
+                                    msg.paymentMetadata?.kind === "visitor_left" &&
+                                    onStartNewConversation && (
+                                    <VisitorLeftAction onStartNewConversation={onStartNewConversation} />
+                                  )}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !isPromptResolved(msg) && (
                                     <div className="mt-2">
                                       <button
                                         type="button"
-                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        onClick={() => handlePaymentCta(msg)}
                                         disabled={paymentCtaLoading}
                                         className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
                                       >
-                                        {paymentCtaLoading ? "Opening Stripe…" : "Add payment method"}
+                                        {ctaLabel("Add payment method")}
                                       </button>
                                       {typeof msg.paymentMetadata?.hold_amount_smallest_unit === "number" &&
                                         msg.paymentMetadata.hold_amount_smallest_unit > 0 && (
@@ -444,11 +478,11 @@ export function TicketChat(props: TicketChatProps) {
                                     <div className="mt-2">
                                       <button
                                         type="button"
-                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        onClick={() => handlePaymentCta(msg)}
                                         disabled={paymentCtaLoading}
                                         className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
                                       >
-                                        {paymentCtaLoading ? "Opening Stripe…" : "Update payment method"}
+                                        {ctaLabel("Update payment method")}
                                       </button>
                                     </div>
                                   )}
@@ -456,11 +490,11 @@ export function TicketChat(props: TicketChatProps) {
                                     <div className="mt-2">
                                       <button
                                         type="button"
-                                        onClick={() => onPaymentCtaClick?.(msg)}
+                                        onClick={() => handlePaymentCta(msg)}
                                         disabled={paymentCtaLoading}
                                         className="inline-flex items-center gap-2 rounded-md bg-amber-900 hover:bg-amber-800 text-amber-50 px-4 py-2 text-sm font-medium disabled:opacity-60"
                                       >
-                                        {paymentCtaLoading ? "Opening Stripe…" : "Pay yourself instead"}
+                                        {ctaLabel("Pay yourself instead")}
                                       </button>
                                     </div>
                                   )}
@@ -497,6 +531,8 @@ export function TicketChat(props: TicketChatProps) {
               onCancel={() => void onCancelEndSessionRequest?.()}
             />
           )}
+
+          {composerBanner}
 
           {composerReplacement ?? (
           <TicketChatInput

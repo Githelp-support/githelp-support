@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Clock, MessageCircle, User, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
+import { GuestTicketBadge, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { truncateText } from "@/lib/format"
@@ -37,6 +38,8 @@ interface Ticket {
   priority: "low" | "medium" | "high"
   createdAt: string
   messages?: number
+  /** Opened by a visitor who hasn't signed in yet. */
+  guest?: boolean
   helper?: {
     name: string
     avatar: string
@@ -119,9 +122,10 @@ export default function TicketsPage() {
         description: ticket.description,
         user: {
           id: ticket.created_by ?? null,
-          name: ticket.user?.name || "Unknown",
-          avatar: (ticket.user?.name || "U")[0].toUpperCase(),
+          name: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "Unknown"),
+          avatar: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "U")[0].toUpperCase(),
         },
+        guest: !!ticket.guest,
         // Type = the ticket's first help category (projects_help_categories.value).
         type: firstCategory?.value || GENERAL_TYPE,
         topics: ticket.keywords?.map((k) => k.value) || [],
@@ -694,6 +698,7 @@ export default function TicketsPage() {
                               <h4 className="text-sm font-medium text-foreground truncate">
                                 {ticket.user.name}
                               </h4>
+                              {ticket.guest && <GuestTicketBadge className="mt-1" />}
                               <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                               <div className="flex items-center gap-1 mt-1">
                                 <MessageCircle className="w-3 h-3 text-muted-foreground" />
@@ -792,6 +797,7 @@ export default function TicketsPage() {
                             {ticket.user.name}
                           </h4>
                         </Link>
+                        {ticket.guest && <GuestTicketBadge className="mt-1" />}
                         <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <MessageCircle className="w-3 h-3 text-muted-foreground" />

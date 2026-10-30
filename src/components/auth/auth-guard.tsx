@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { SandboxBanner } from "@/components/layout/sandbox-banner"
+import { hasSignedInSession } from "@/lib/supabase/auth-state"
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -26,7 +27,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         
-        if (!session?.user) {
+        // Anonymous guests (public support chat) are signed out here.
+        if (!hasSignedInSession(session)) {
           // Not authenticated, redirect to sign in with return URL
           const redirectUrl = encodeURIComponent(pathname || "/")
           router.push(`/auth/signin?redirect=${redirectUrl}`)
@@ -47,10 +49,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || !session) {
+      if (event === "SIGNED_OUT" || !hasSignedInSession(session)) {
+        setIsAuthenticated(false)
         const redirectUrl = encodeURIComponent(pathname || "/")
         router.push(`/auth/signin?redirect=${redirectUrl}`)
-      } else if (event === "SIGNED_IN" && session) {
+      } else if (event === "SIGNED_IN") {
         setIsAuthenticated(true)
       }
     })

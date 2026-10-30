@@ -16,6 +16,8 @@ export interface TicketWithDetails {
     end_requested_by?: string | null;
     /** SLA covering this ticket (billing goes through metered usage, not a card hold). */
     sla_id?: string | null;
+    /** Opened by a visitor who hasn't signed in (guest ticket). */
+    guest?: boolean;
     keywords?: Array<{ value: string }>;
     help_categories?: Array<{ value: string; type: string }>;
     user?: {

@@ -1,5 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { isSignedInUser } from "@/lib/supabase/auth-state";
+import { useUser } from "@/contexts/user-context";
 
 export interface OnboardingStatus {
     needsOnboarding: boolean;
@@ -19,14 +21,24 @@ export interface OnboardingStatus {
  * Hook to check if user needs onboarding and their membership status
  */
 export function useOnboardingStatus() {
-    return useQuery({
-        queryKey: ["onboarding-status"],
+    // Keyed by the account so a guest who signs in (or another account on
+    // this browser) never reuses a cached status. Prefix invalidations of
+    // ["onboarding-status"] still match.
+    // Wait for the user context so the first fetch already has the right
+    // key; otherwise every hard load fetched twice and AuthGuard remounted
+    // the page when the key changed from "signed-out" to the account id.
+    const { user, isLoading: userLoading } = useUser();
+    const accountKey = user.id ?? (user.guestId ? `guest:${user.guestId}` : "signed-out");
+    const query = useQuery({
+        queryKey: ["onboarding-status", accountKey],
         queryFn: async (): Promise<OnboardingStatus> => {
             const {
                 data: { user },
             } = await supabase.auth.getUser();
 
-            if (!user) {
+            // Anonymous guests (public support chat) never onboard: they are
+            // signed out everywhere but their own support ticket.
+            if (!isSignedInUser(user)) {
                 return {
                     needsOnboarding: false,
                     isMember: false,
@@ -93,7 +105,23 @@ export function useOnboardingStatus() {
         staleTime: 60_000,
         refetchOnReconnect: true,
         refetchOnWindowFocus: true,
+        enabled: !userLoading,
     });
+    return userLoading ? ({ ...query, isLoading: true } as typeof query) : query;
+}
+
+/**
+ * The most recently fetched onboarding status in the cache. The query is
+ * keyed per account (["onboarding-status", account]), so a bare
+ * getQueryData(["onboarding-status"]) never matches.
+ */
+export function latestOnboardingStatus(queryClient: QueryClient): OnboardingStatus | undefined {
+    const queries = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ["onboarding-status"] })
+        .filter((q) => q.state.data !== undefined)
+        .sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt);
+    return queries[0]?.state.data as OnboardingStatus | undefined;
 }
 
 /**
@@ -108,7 +136,7 @@ export function useCompleteOnboarding() {
                 data: { user },
             } = await supabase.auth.getUser();
 
-            if (!user) {
+            if (!isSignedInUser(user)) {
                 throw new Error("User not authenticated");
             }
 

@@ -49,6 +49,8 @@ import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
+import { ClaimTicketButton, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { guestSystemMessageCopy } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
@@ -136,6 +138,10 @@ export default function TicketDetailPage() {
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading, isError: ticketError } = useTicket(ticketId)
   const { data: ticketDetails } = useTicketWithDetails(ticketId)
+  // Opened by a visitor who hasn't signed in: helpers can reply, but nobody
+  // can claim / log time / bill until they do. Realtime clears the flag after
+  // adoption (adopt-guest-tickets), which re-enables the claim button.
+  const isGuestTicket = !!(ticket as { guest?: boolean } | null | undefined)?.guest
   // Fetch payment settings (the payment gate needs them: free support opens it)
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
   // Billing uses the prices snapshotted when the ticket was opened; prefer them over
@@ -279,13 +285,13 @@ export default function TicketDetailPage() {
         created_at: "",
         user: {
           id: creatorId,
-          name: (creatorUser as { name?: string })?.name ?? "User",
+          name: ticketCreatorDisplayName((creatorUser as { name?: string })?.name, isGuestTicket),
           avatar_url: (creatorUser as { avatar_url?: string | null })?.avatar_url ?? null,
         },
       })
     }
     return list
-  }, [participants, ticket?.created_by, ticketDetails?.user])
+  }, [participants, ticket?.created_by, ticketDetails?.user, isGuestTicket])
 
   const isTicketEnded = (ticket?.status === "completed" || ticket?.status === "cancelled") || justEndedLocal
 
@@ -406,7 +412,9 @@ export default function TicketDetailPage() {
         content:
           msg.sender_type === "system" && (msg.metadata as { kind?: string } | null | undefined)?.kind === "payment_authorized"
             ? HELPER_PAYMENT_AUTHORIZED_MESSAGE
-            : msg.content,
+            : (msg.sender_type === "system"
+                ? guestSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind, "helper")
+                : null) ?? msg.content,
         timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
           day: "2-digit",
           month: "2-digit",
@@ -435,7 +443,7 @@ export default function TicketDetailPage() {
     if (firstUser) {
       return {
         content: firstUser.content,
-        senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "User",
+        senderName: ticketCreatorDisplayName((firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name, isGuestTicket),
         senderId: (firstUser as { sender_id?: string }).sender_id ?? ticketCreatorId,
         senderAvatarUrl:
           (firstUser as { sender?: { avatar_url?: string | null } }).sender?.avatar_url ?? ticketCreatorAvatarUrl,
@@ -445,7 +453,7 @@ export default function TicketDetailPage() {
     if (ticket?.description || ticketDetails?.description) {
       return {
         content: ticket?.description ?? ticketDetails?.description ?? "",
-        senderName: ticketDetails?.user?.name ?? "User",
+        senderName: ticketCreatorDisplayName(ticketDetails?.user?.name, isGuestTicket),
         senderId: ticketCreatorId,
         senderAvatarUrl: ticketCreatorAvatarUrl,
         timestamp: ticket?.created_at ?? "",
@@ -453,12 +461,12 @@ export default function TicketDetailPage() {
     }
     return {
       content: "",
-      senderName: ticketDetails?.user?.name ?? "User",
+      senderName: ticketCreatorDisplayName(ticketDetails?.user?.name, isGuestTicket),
       senderId: ticketCreatorId,
       senderAvatarUrl: ticketCreatorAvatarUrl,
       timestamp: ticket?.created_at ?? "",
     }
-  }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description])
+  }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description, isGuestTicket])
 
   // Images attached via the toolbar button, paste or drag & drop end up as
   // markdown in the draft message.
@@ -552,6 +560,10 @@ export default function TicketDetailPage() {
       console.error("Cannot claim ticket: missing ticketId or user")
       return
     }
+    if (canClaim && isGuestTicket) {
+      toast.error(GUEST_CLAIM_BLOCKED_COPY)
+      return
+    }
     if (!canClaim) {
       toast.error(
         isTicketCreator
@@ -604,6 +616,10 @@ export default function TicketDetailPage() {
       }
       if (hint === "ticket_already_claimed") {
         toast.error("Another helper has already claimed this ticket.")
+        return
+      }
+      if (hint === "guest_ticket_requires_sign_in") {
+        toast.error(GUEST_CLAIM_BLOCKED_COPY)
         return
       }
       toast.error("Couldn't claim the ticket. Please try again.", {
@@ -725,7 +741,9 @@ export default function TicketDetailPage() {
       },
       {
         onError: (error) =>
-          isPaymentNotAuthorizedError(error)
+          (error as { hint?: string } | null)?.hint === "guest_ticket_requires_sign_in"
+            ? toast.error("Time can be logged once the visitor has signed in.")
+            : isPaymentNotAuthorizedError(error)
             ? toast.error("Time can't be logged yet", {
                 description: "The payment for this ticket isn't authorized. Ask the user to add a payment method.",
               })
@@ -891,7 +909,10 @@ export default function TicketDetailPage() {
             showBackButton={true}
             titleClassName="text-xl"
             inlineRightContent={
-              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
+              <span className="flex items-center gap-2">
+                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
+                {isGuestTicket && <GuestTicketBadge />}
+              </span>
             }
           />
         </div>
@@ -1018,16 +1039,11 @@ export default function TicketDetailPage() {
                         (never for its creator); End ticket only for the claimed
                         helper or a project admin. */}
                     {canClaim && (
-                      <div className="flex gap-3">
-                        <Button
-                          onClick={() => void handleClaimTicket()}
-                          disabled={claimTicket.isPending}
-                          variant="lavender"
-                          className="cursor-pointer"
-                        >
-                          {claimTicket.isPending ? "Claiming…" : "Claim ticket"}
-                        </Button>
-                      </div>
+                      <ClaimTicketButton
+                        isGuest={isGuestTicket}
+                        pending={claimTicket.isPending}
+                        onClaim={() => void handleClaimTicket()}
+                      />
                     )}
 
                     {isClaimed && !isTicketEnded && canManageTicket && (
@@ -1290,14 +1306,12 @@ export default function TicketDetailPage() {
               imagesUploading={imagesUploading}
               toolbarEndContent={
                 canClaim ? (
-                  <Button
-                    onClick={() => void handleClaimTicket()}
-                    disabled={claimTicket.isPending}
-                    variant="lavender"
-                    className="cursor-pointer"
-                  >
-                    {claimTicket.isPending ? "Claiming…" : "Claim ticket"}
-                  </Button>
+                  <ClaimTicketButton
+                    isGuest={isGuestTicket}
+                    pending={claimTicket.isPending}
+                    onClaim={() => void handleClaimTicket()}
+                    showExplanation={false}
+                  />
                 ) : isClaimed && !isTicketEnded && canManageTicket ? (
                   <Button
                     variant="ghost"

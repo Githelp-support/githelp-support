@@ -38,6 +38,10 @@ import {
 import { RoleOptionCards } from "@/components/auth/role-option-cards"
 import type { UserRole } from "@/contexts/user-context"
 import { supabase } from "@/lib/supabase/client"
+import { isAnonymousUser } from "@/lib/supabase/auth-state"
+import { signInHref } from "@/lib/sign-in-href"
+import { findGuestOpenTicket } from "@/lib/guest-session"
+import { isOwnGuestId } from "@/lib/guest-adoption-storage"
 import { signInWithGitHub } from "@/lib/supabase/auth"
 import { toast } from "sonner"
 
@@ -134,13 +138,28 @@ export default function OnboardingPage() {
     useEffect(() => {
         const checkGithubSession = async () => {
             const { data: { session } } = await supabase.auth.getSession()
+            // A guest (anonymous support visitor) is signed out here: creating
+            // a project would fail (guest_not_allowed). Send them to sign in,
+            // returning to their support conversation as a customer.
+            if (isAnonymousUser(session?.user) && session?.user) {
+                // Back to their open guest conversation if they have one,
+                // otherwise to sign-in (returning to support as a customer).
+                // Only this browser's own guest; a foreign one has nothing here.
+                const open = isOwnGuestId(session.user.id) ? await findGuestOpenTicket(session.user.id, null) : null
+                router.replace(
+                    open
+                        ? `/support/chat?ticket=${encodeURIComponent(open.id)}&project=${encodeURIComponent(open.project_id)}`
+                        : signInHref("/support/chat", { support: true }),
+                )
+                return
+            }
             const providers = session?.user?.app_metadata?.providers as string[] | undefined
             const hasGithub = providers?.includes("github")
             const token = hasGithub && session?.provider_token ? session.provider_token : null
             setGithubToken(token)
         }
         checkGithubSession()
-    }, [])
+    }, [router])
 
     // Entry params: `import=github` jumps to the GitHub importer, and
     // `role=admin|helper` (from the "I am acting as" chooser) skips the role

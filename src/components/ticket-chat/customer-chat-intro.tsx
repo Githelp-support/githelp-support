@@ -142,7 +142,7 @@ export function CustomerChatIntro({
             </Button>
             {signedOutExtra}
             <p className="text-xs text-[#868c98] mt-2">
-              Sign in to start a ticket. Your account keeps your support history and lets the helper reach you.
+              No account needed: just type your question below. Sign in to get notified when a helper replies and to keep your support history.
             </p>
           </div>
         )}

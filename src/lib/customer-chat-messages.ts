@@ -22,6 +22,52 @@ export function buildAutoReply(avgResponseSeconds: number | null | undefined): s
     return `Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **${responseTime}**.`;
 }
 
+/**
+ * Guest-ticket system messages (migration 20261029150000_guest_tickets):
+ * `visitor_left` is posted by the cron that closes a guest ticket nobody has
+ * seen for 15 minutes; `guest_signed_in` by adopt-guest-tickets when the
+ * visitor signs in. The stored text is generic, so each side gets its own copy.
+ */
+export const VISITOR_LEFT_CUSTOMER_COPY = "This conversation was closed because you left before signing in.";
+export const VISITOR_LEFT_HELPER_COPY = "The visitor left before signing in.";
+export const GUEST_SIGNED_IN_CUSTOMER_COPY = "You signed in — this conversation is now linked to your account.";
+export const GUEST_SIGNED_IN_HELPER_COPY = "The visitor signed in — you can claim this ticket now.";
+
+/** Side-specific copy for a guest system message, or null for any other kind. */
+export function guestSystemMessageCopy(kind: unknown, audience: "customer" | "helper"): string | null {
+    if (kind === "visitor_left") return audience === "customer" ? VISITOR_LEFT_CUSTOMER_COPY : VISITOR_LEFT_HELPER_COPY;
+    if (kind === "guest_signed_in") return audience === "customer" ? GUEST_SIGNED_IN_CUSTOMER_COPY : GUEST_SIGNED_IN_HELPER_COPY;
+    return null;
+}
+
+type KindMessage = { id?: string; sender_type: string; metadata?: Record<string, unknown> | null };
+
+/**
+ * The `visitor_left` message that explains the ticket's CURRENT closure, if
+ * any. Adoption can reopen such a ticket (posting `guest_signed_in`), so it
+ * only counts while the ticket is cancelled and no `guest_signed_in` came
+ * after it.
+ */
+function activeVisitorLeft<T extends KindMessage>(messages: T[] | undefined, ticketStatus: string | null | undefined): T | null {
+    if (ticketStatus !== "cancelled" || !messages) return null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i];
+        if (m.sender_type !== "system") continue;
+        if (m.metadata?.kind === "guest_signed_in") return null;
+        if (m.metadata?.kind === "visitor_left") return m;
+    }
+    return null;
+}
+
+/**
+ * The ticket is currently closed because the guest left (no helper "session
+ * ended" summary applies). Keys on the ticket's status, not just on the
+ * message being there.
+ */
+export function hasVisitorLeft(messages: KindMessage[] | undefined, ticketStatus: string | null | undefined): boolean {
+    return activeVisitorLeft(messages, ticketStatus) !== null;
+}
+
 /** dd/mm/yyyy, hh:mm — the timestamp format used throughout the chat UI. */
 export function formatChatTimestamp(date: Date | string): string {
     const d = typeof date === "string" ? new Date(date) : date;
@@ -66,6 +112,12 @@ export interface CustomerThreadOptions {
     currentUser: { id?: string; name?: string | null; avatarUrl?: string | null };
     /** Project's average response time in seconds (`null` until one exists). */
     avgResponseSeconds?: number | null;
+    /**
+     * The ticket's current status. A `visitor_left` notice (and its "Start a
+     * new conversation" action) only shows while the ticket is cancelled; a
+     * ticket reopened by adoption hides it.
+     */
+    ticketStatus?: string | null;
 }
 
 /**
@@ -84,6 +136,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         fallbackTimestamp,
         currentUser,
         avgResponseSeconds,
+        ticketStatus,
     } = opts;
 
     const userName = currentUser.name || "You";
@@ -130,13 +183,18 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         });
     }
 
+    // Only the visitor_left notice explaining the current closure is shown
+    // (with its "Start a new conversation" action); a reopened ticket hides it.
+    const visitorLeftNow = activeVisitorLeft(messagesData, ticketStatus);
     messagesData?.forEach((msg) => {
+        if (msg.sender_type === "system" && msg.metadata?.kind === "visitor_left" && msg !== visitorLeftNow) return;
         const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";
         list.push({
             id: msg.id,
             senderType,
-            content: msg.content,
+            content:
+                (senderType === "system" ? guestSystemMessageCopy(msg.metadata?.kind, "customer") : null) ?? msg.content,
             senderName:
                 msg.sender?.name ||
                 (senderType === "user" ? userName : senderType === "helper" ? "Helper" : `${projectName} Team`),

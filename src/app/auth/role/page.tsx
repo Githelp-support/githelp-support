@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
+import { hasSignedInSession } from "@/lib/supabase/auth-state"
 import { useAccountRoles } from "@/hooks/useAccountRoles"
 import { homeRouteForRole } from "@/lib/roles"
 import { safeInternalPathOrNull } from "@/lib/safe-redirect"
@@ -39,7 +40,7 @@ export default function RolePage() {
     // holds no roles — distinguish via the session. Accounts with no roles
     // at all are normally caught by onboarding before they get here.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+      if (hasSignedInSession(session)) {
         localStorage.setItem("userRole", "user")
         router.replace(redirect || homeRouteForRole("user"))
       } else {

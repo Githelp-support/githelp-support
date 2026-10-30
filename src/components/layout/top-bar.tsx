@@ -20,6 +20,9 @@ import { Logo } from "@/components/brand/logo"
 import { NotificationsPanel } from "./notifications-panel"
 import type { Notification } from "@/hooks/useNotifications"
 import { useUser, type UserRole } from "@/contexts/user-context"
+import { getSupportSignInRedirect } from "@/lib/support-sign-in-redirect"
+import { saveRegisteredSupportDraft } from "@/lib/support-draft"
+import { isSupportRoute } from "@/lib/sign-in-href"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context"
 import { useUserProjects, useProjectBranding } from "@/hooks/useProject"
@@ -236,6 +239,21 @@ export function TopBar() {
     if (isSignedIn) {
       confirmNavigation(() => {
         void signOut()
+      })
+    } else if (isSupportRoute(pathname)) {
+      // Visitor on a support page: come back to it (or its conversation, the
+      // same target as the guest banner). startGuestSignIn saves the guest
+      // session for adoption when the session is this browser's own guest —
+      // checked on the session itself, not user.guestId, which can lag.
+      const here =
+        getSupportSignInRedirect() ??
+        (typeof window !== "undefined" ? window.location.pathname + window.location.search : pathname ?? "/support")
+      confirmNavigation(() => {
+        saveRegisteredSupportDraft()
+        // Loaded lazily: it pulls in the Supabase client.
+        void import("@/lib/guest-adoption").then(({ startGuestSignIn }) =>
+          startGuestSignIn(here, (href) => router.push(href)),
+        )
       })
     } else {
       confirmNavigation(() => router.push("/auth/signin"))

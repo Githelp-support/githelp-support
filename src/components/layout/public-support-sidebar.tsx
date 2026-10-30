@@ -4,10 +4,10 @@ import { ChevronsLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useUser } from "@/contexts/user-context"
+import { SignInLink } from "@/components/auth/sign-in-link"
 
 interface PublicSupportSidebarProps {
   className?: string
@@ -118,9 +118,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
         <div className="px-3 pb-3 shrink-0">
           <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
             <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
-              <Link href={`/auth/signin?redirect=${encodeURIComponent(redirectTarget)}`}>
-                Sign in
-              </Link>
+              <SignInLink redirectTo={redirectTarget}>Sign in</SignInLink>
             </Button>
           </div>
         </div>

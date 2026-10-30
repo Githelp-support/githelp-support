@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
@@ -11,14 +12,18 @@ import { useEnterProject } from "@/hooks/useEnterProject"
 import { homeRouteForRole } from "@/lib/roles"
 import { ensureUserOrganization } from "@/lib/organizations"
 import { safeInternalPathOrNull, storePendingRedirect } from "@/lib/safe-redirect"
+import { hasSignedInSession } from "@/lib/supabase/auth-state"
+import { adoptionLandingForRedirect, runGuestAdoptionFlow } from "@/lib/guest-adoption"
+import {
+  AUTH_CALLBACK_FAILURE_COPY,
+  authCallbackFailure,
+  handlesOwnOnboarding,
+  signInRetryHref,
+  type AuthCallbackFailure,
+} from "@/lib/sign-in-href"
+import { notifyGuestAdoptionResult } from "@/lib/guest-adoption-toast"
+import { useGuestSignInPresence } from "@/hooks/useGuestPresence"
 
-/**
- * Pages that run their own onboarding (accepting an invite / requesting to
- * join a project marks the user as onboarded). New accounts heading there
- * must not be diverted into the generic wizard, which would lose the token.
- */
-const handlesOwnOnboarding = (path: string | null): boolean =>
-  !!path && (path.startsWith("/invite/") || path.startsWith("/projects/"))
 
 export default function AuthConfirmedPage() {
   const router = useRouter()
@@ -32,24 +37,65 @@ export default function AuthConfirmedPage() {
   // The callback below accepts an invite, so it must run once per mount even
   // if a dependency changes identity while it is in flight.
   const hasHandledCallback = useRef(false)
+  // Until the real session lands, keep the guest's open tickets alive.
+  useGuestSignInPresence()
 
   // Open-redirect guard: only same-origin paths are ever navigated to.
-  const redirectTo = safeInternalPathOrNull(searchParams.get("redirect"))
+  const requestedRedirect = safeInternalPathOrNull(searchParams.get("redirect"))
+  // After linking a guest conversation (or discarding one), land on the
+  // right chat instead of the requested page (see landingAfterGuestAdoption).
+  const [adoptionLanding, setAdoptionLanding] = useState<string | null>(null)
+  // The sign-in link couldn't complete in this browser (PKCE) or expired.
+  const [linkFailed, setLinkFailed] = useState<Exclude<AuthCallbackFailure, "cancelled"> | null>(null)
+  const redirectTo = adoptionLanding ?? requestedRedirect
 
   useEffect(() => {
     if (hasHandledCallback.current) return
     hasHandledCallback.current = true
 
     const handleAuthCallback = async () => {
-      // Wait a bit for Supabase to process the OAuth callback
-      await new Promise(resolve => setTimeout(resolve, 500))
-
+      // getSession() awaits the client's start-up, which exchanges the PKCE
+      // ?code= of this callback.
       const { data: { session } } = await supabase.auth.getSession()
 
-      if (!session?.user) {
-        router.push("/auth/signin")
+      // A still-anonymous guest session (or none) means the real sign-in
+      // didn't land. A link that can't complete here (other browser, expired)
+      // gets an explanation; a cancelled sign-in goes back to sign-in —
+      // both keep where they were heading and the support-customer flag.
+      if (!session?.user || !hasSignedInSession(session)) {
+        // initialize() returns the (cached) start-up result, incl. a failed
+        // PKCE exchange's error code.
+        const { error: initError } = await supabase.auth.initialize()
+        const failure =
+          typeof window !== "undefined"
+            ? authCallbackFailure(
+                window.location.search,
+                window.location.hash,
+                initError ? ((initError as { code?: string }).code ?? "unknown") : null,
+              )
+            : null
+        if (failure && failure !== "cancelled") {
+          setLinkFailed(failure)
+          return
+        }
+        router.push(signInRetryHref(requestedRedirect, searchParams.get("skipOnboarding") === "true"))
         return
       }
+
+      // Shared post-sign-in step (OAuth and e-mail links both land here):
+      // after the user confirms the preview, move tickets opened as a guest
+      // to this account. Network steps are capped at ~10 s; a transient
+      // failure keeps the key for a later retry. Never blocks sign-in.
+      const adoption = await runGuestAdoptionFlow({ timeoutMs: 10_000 })
+      notifyGuestAdoptionResult(adoption)
+      if (adoption.status === "adopted" || adoption.status === "elsewhere") {
+        void queryClient.invalidateQueries()
+      }
+      // Linked: land on the open conversation; discarded while heading to
+      // that conversation: a fresh composer instead of "Ticket not found".
+      // Invite / project-join destinations win (adoption still happened).
+      const landing = adoptionLandingForRedirect(adoption, requestedRedirect)
+      if (landing) setAdoptionLanding(landing)
 
       // If user signed in with GitHub and is NOT already a project member,
       // check for pending helper invite by github_username and auto-accept.
@@ -57,7 +103,7 @@ export default function AuthConfirmedPage() {
       // doesn't hijack every subsequent login, and when the user arrived
       // from a specific invite link — that page accepts its own token.
       const providers = (session.user.app_metadata?.providers as string[] | undefined) ?? []
-      const cameFromInviteLink = !!redirectTo && redirectTo.startsWith("/invite/")
+      const cameFromInviteLink = !!requestedRedirect && requestedRedirect.startsWith("/invite/")
       if (providers.includes("github") && !cameFromInviteLink) {
         try {
           // Check if user is already an active member of any project
@@ -97,7 +143,8 @@ export default function AuthConfirmedPage() {
                 // held there (helper for helper invites), same as the
                 // /invite/[token] page.
                 const role = await enterProject(joinedProjectId)
-                router.push(homeRouteForRole(role))
+                // A linked guest conversation's landing beats the role home.
+                router.push(landing ?? homeRouteForRole(role))
                 return
               }
               // If accept failed (e.g. needs profile), redirect to invite page
@@ -114,7 +161,7 @@ export default function AuthConfirmedPage() {
     }
 
     handleAuthCallback()
-  }, [router, queryClient, acceptInviteAsync, enterProject, redirectTo])
+  }, [router, queryClient, acceptInviteAsync, enterProject, requestedRedirect, searchParams])
 
   // Handle redirect after onboarding status is loaded
   useEffect(() => {
@@ -175,6 +222,25 @@ export default function AuthConfirmedPage() {
     // highest held) and lands in the app, forwarding any redirect URL
     router.push(redirectTo ? `/auth/role?redirect=${encodeURIComponent(redirectTo)}` : "/auth/role")
   }, [isProcessing, onboardingLoading, onboardingStatus, router, searchParams, redirectTo])
+
+  if (linkFailed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+        <div className="max-w-md rounded-lg border border-border bg-white p-6 text-center">
+          <h1 className="text-lg font-semibold text-foreground mb-2">Sign-in didn&rsquo;t complete</h1>
+          <p className="text-[14px] text-muted-foreground">
+            {AUTH_CALLBACK_FAILURE_COPY[linkFailed].message}{" "}
+            <Link
+              href={signInRetryHref(requestedRedirect, searchParams.get("skipOnboarding") === "true")}
+              className="text-brand-primary font-medium hover:underline"
+            >
+              {AUTH_CALLBACK_FAILURE_COPY[linkFailed].action}
+            </Link>
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">

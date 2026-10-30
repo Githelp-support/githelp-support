@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCreateProject } from "@/hooks/useProject"
 import { useEnterProject } from "@/hooks/useEnterProject"
-import { useOnboardingStatus, type OnboardingStatus } from "@/hooks/useOnboardingStatus"
+import { latestOnboardingStatus, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { homeRouteForRole } from "@/lib/roles"
 import { Loader2, Plus, Users, Mail, ArrowRight, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
@@ -50,7 +50,8 @@ export default function WaitingPage() {
                 queryClient.refetchQueries({ queryKey: ["user-roles"] }),
                 queryClient.refetchQueries({ queryKey: ["account-roles"] }),
             ])
-            const fresh = queryClient.getQueryData<OnboardingStatus>(["onboarding-status"])
+            // The status is cached per account (["onboarding-status", account]).
+            const fresh = latestOnboardingStatus(queryClient)
             if (fresh && !fresh.needsWaiting && !fresh.needsOnboarding) {
                 router.push("/")
                 return

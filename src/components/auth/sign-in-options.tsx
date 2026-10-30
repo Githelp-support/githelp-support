@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { loginUserGoogle, signInWithEmail, signInWithGitHub } from "@/lib/supabase/auth"
 import { Loader2, Mail } from "lucide-react"
+import { refreshSavedGuestAdoption } from "@/lib/guest-adoption"
 
 interface SignInOptionsProps {
   /**
@@ -37,6 +38,9 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true)
+      // Freshen the guest tokens a support-page sign-in click saved (never
+      // creates a key here); adopted after sign-in, see /auth/confirmed.
+      await refreshSavedGuestAdoption()
       await loginUserGoogle(confirmPath)
     } catch (error) {
       console.error("Sign in error:", error)
@@ -47,6 +51,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
   const handleGitHubSignIn = async () => {
     try {
       setIsLoading(true)
+      await refreshSavedGuestAdoption()
       await signInWithGitHub(confirmPath)
     } catch (error) {
       console.error("Sign in error:", error)
@@ -61,6 +66,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
     setEmailLinkError(null)
     setIsSendingEmailLink(true)
     try {
+      await refreshSavedGuestAdoption()
       await signInWithEmail(trimmed, window.location.origin + confirmPath)
       setEmailLinkSentTo(trimmed)
     } catch (error) {
@@ -145,7 +151,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
           <p className="font-medium">Check your inbox</p>
           <p className="text-muted-foreground mt-1">
             We sent a sign-in link to <span className="font-medium text-foreground">{emailLinkSentTo}</span>.
-            Click it to finish signing in.
+            Open it in this browser to finish signing in.
           </p>
           <button
             type="button"
@@ -192,6 +198,8 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
               </>
             )}
           </Button>
+          {/* PKCE: the link only completes in the browser that requested it. */}
+          <p className="text-xs text-muted-foreground text-center">Open the link in this browser.</p>
         </form>
       )}
     </div>

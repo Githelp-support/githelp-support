@@ -1,5 +1,6 @@
 import { supabase } from "./supabase/client"
 import { logger } from "./logger"
+import { isAnonymousUser } from "./supabase/auth-state"
 
 type EnsureOrgContext = "support" | "admin" | "helper" | "invite" | undefined
 
@@ -18,6 +19,9 @@ export async function ensureUserOrganization(context?: EnsureOrgContext): Promis
       logger.error("ensureUserOrganization: no authenticated user")
       return null
     }
+    // Guests (anonymous sign-in) can't own organizations (create_organization
+    // refuses them with hint guest_not_allowed).
+    if (isAnonymousUser(user)) return null
 
     const userId = user.id
 

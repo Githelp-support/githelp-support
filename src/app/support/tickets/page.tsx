@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
+import { SignInLink } from "@/components/auth/sign-in-link"
 import { useUser } from "@/contexts/user-context"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
@@ -225,9 +226,7 @@ export default function SupportTicketsPage() {
                   variant="outline"
                   className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-primary/10"
                 >
-                  <Link href={`/auth/signin?redirect=${encodeURIComponent("/support/tickets")}`}>
-                    Sign in
-                  </Link>
+                  <SignInLink redirectTo="/support/tickets">Sign in</SignInLink>
                 </Button>
               </CardContent>
             </Card>
