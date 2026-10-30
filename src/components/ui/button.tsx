@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -50,18 +51,44 @@ function Button({
   variant,
   size,
   asChild = false,
+  loading = false,
+  disabled,
   children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    /**
+     * Shows a centred spinner over the (still rendered, invisible) label so the
+     * button keeps its width, and disables the button. Use for submit/confirm
+     * buttons that wait on a request instead of swapping the label text.
+     */
+    loading?: boolean
   }) {
   const Comp = asChild ? Slot : "button"
+
+  if (loading && !asChild) {
+    return (
+      <Comp
+        data-slot="button"
+        aria-busy="true"
+        disabled
+        className={cn(buttonVariants({ variant, size, className }), "relative")}
+        {...props}
+      >
+        <span className="invisible contents">{children}</span>
+        <span data-slot="button-spinner" className="absolute inset-0 flex items-center justify-center" aria-hidden>
+          <Loader2 className="size-4 animate-spin" />
+        </span>
+      </Comp>
+    )
+  }
 
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled}
       {...props}
     >
       {children}

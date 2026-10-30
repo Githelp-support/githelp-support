@@ -7,7 +7,7 @@ import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useSetProjectPageHref } from "@/components/layout/app-shell"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
-import { Search, Loader2 } from "lucide-react"
+import { Search } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useState, useEffect, useMemo, useRef } from "react"
@@ -649,10 +649,9 @@ export default function UserSupportChatPage() {
                     </p>
                     <Button
                       onClick={handleRequestProjectSupport}
-                      disabled={requestProjectSupport.isPending}
+                      loading={requestProjectSupport.isPending}
                       variant="brand"
                     >
-                      {requestProjectSupport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                       Request to get help
                     </Button>
                   </div>

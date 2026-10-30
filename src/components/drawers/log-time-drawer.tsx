@@ -40,6 +40,19 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
   const [note, setNote] = useState("") // Added note state
   const [durationError, setDurationError] = useState<string | null>(null)
 
+  // The drawer stays mounted while closed (exit animation); reset the form on close.
+  const resetForm = () => {
+    setTimeType("together")
+    setHours("")
+    setMinutes("")
+    setNote("")
+    setDurationError(null)
+  }
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const handleSubmit = () => {
     // Whole numbers only, minutes < 60, total between 1 minute and 24 hours;
     // a zero or negative entry must never reach the database.
@@ -60,13 +73,7 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     }
 
     onLogTime(entry)
-
-    // Reset form
-    setTimeType("together")
-    setHours("")
-    setMinutes("")
-    setNote("") // Reset note field
-    onClose()
+    handleClose()
   }
 
   const handleHoursChange = (value: string) => {
@@ -78,16 +85,14 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     if (durationError) setDurationError(null)
   }
 
-  if (!isOpen) return null
-
   return (
     <DrawerPanel
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Log time"
       footer={
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="outline" onClick={handleClose} className="flex-1">
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!hours && !minutes} variant="default" className="flex-1">

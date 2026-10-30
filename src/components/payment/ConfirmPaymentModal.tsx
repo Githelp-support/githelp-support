@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { getStripe, type StripeMode } from "@/lib/stripe"
 
 interface Props {
@@ -51,26 +52,29 @@ export function ConfirmPaymentModal({ clientSecret, mode, onResolved, onCancel }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-card rounded-xl shadow-modal max-w-md w-full p-6 max-sm:h-full max-sm:max-w-none max-sm:rounded-none">
-        <h2 className="text-lg font-semibold mb-2">Confirm the hold on your card</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Your bank wants you to confirm the temporary hold for this ticket. This is not a charge: you only pay for the time your helper logs, and the rest is released.
-        </p>
+    <Dialog open onOpenChange={(open) => !open && !busy && onCancel()}>
+      <DialogContent showCloseButton={false} className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Confirm the hold on your card</DialogTitle>
+          <DialogDescription className="leading-relaxed">
+            Your bank wants you to confirm the temporary hold for this ticket. This is not a charge: you only pay for the
+            time your helper logs, and the rest is released.
+          </DialogDescription>
+        </DialogHeader>
         {error && (
-          <p className="text-sm text-red-600 mb-3" role="alert">
+          <p className="text-sm text-destructive" role="alert">
             {error}
           </p>
         )}
-        <div className="flex justify-end gap-2">
+        <DialogFooter>
           <Button variant="outline" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={busy}>
-            {busy ? "Confirming…" : "Confirm hold"}
+          <Button onClick={handleConfirm} loading={busy} className="tabular-nums">
+            Confirm hold
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

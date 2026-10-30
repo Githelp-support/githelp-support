@@ -53,8 +53,8 @@ export function DeleteTimeEntryDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
             Keep it
           </Button>
-          <Button variant="destructive" onClick={() => void onConfirm()} disabled={pending}>
-            {pending ? "Deleting…" : "Delete"}
+          <Button variant="destructive" onClick={() => void onConfirm()} loading={pending}>
+            Delete
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -409,7 +409,7 @@ export function TimeEntrySummaryBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >
@@ -451,7 +451,7 @@ export function TimeEntryAwaitingApprovalBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >

@@ -33,7 +33,7 @@ function ListSkeleton({ rows = 5, avatar = true, badge = true, className, ...pro
       role="status"
       aria-label="Loading"
       aria-live="polite"
-      className={cn("divide-y divide-border-subtle", className)}
+      className={cn("animate-fade-in divide-y divide-border-subtle", className)}
       {...props}
     >
       {Array.from({ length: rows }).map((_, i) => (
@@ -60,7 +60,7 @@ function PageSkeleton({ className, ...props }: React.ComponentProps<"div">) {
       role="status"
       aria-label="Loading"
       aria-live="polite"
-      className={cn("flex flex-1 min-h-0 flex-col overflow-hidden", className)}
+      className={cn("animate-fade-in flex flex-1 min-h-0 flex-col overflow-hidden", className)}
       {...props}
     >
       <div className="border-b border-border-subtle px-8 py-5">

@@ -47,6 +47,12 @@ export function EndTicketDrawer({
   const [supportOutcome, setSupportOutcome] = useState("")
   const [ending, setEnding] = useState(false)
 
+  // The drawer stays mounted while closed (exit animation); reset the form on close.
+  const handleClose = () => {
+    setSupportOutcome("")
+    onClose()
+  }
+
   const formatTimeEntry = (entry: TimeEntry) => {
     return {
       type: entry.type === "together" ? "Together" : "Solo",
@@ -80,7 +86,7 @@ export function EndTicketDrawer({
     setEnding(true)
     try {
       await onEndTicket(supportOutcome)
-      onClose()
+      handleClose()
     } catch {
       // The page already reported the failure; keep the drawer open to retry.
     } finally {
@@ -88,38 +94,37 @@ export function EndTicketDrawer({
     }
   }
 
-  if (!isOpen) return null
-
   return (
     <DrawerPanel
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="End ticket"
       footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="outline" onClick={handleClose} className="flex-1">
             Cancel
           </Button>
           {needsSummary ? (
             <Button
               onClick={() => void onRequestTimeReview?.()}
-              disabled={requestTimeReviewPending}
+              loading={requestTimeReviewPending}
               title="The user confirms all logged time at once before the session ends"
               variant="default"
               className="flex-1"
             >
-              {requestTimeReviewPending ? "Sending…" : "Send summary to user"}
+              Send summary to user
             </Button>
           ) : (
             <Button
               onClick={() => void handleEndTicket()}
-              disabled={!canEnd || ending}
+              disabled={!canEnd}
+              loading={ending}
               title={waitingForUser ? "Waiting for the user to confirm the logged time" : undefined}
               variant="default"
               className="flex-1"
             >
-              {ending ? "Ending…" : waitingForUser ? "Waiting for user confirmation" : "End ticket"}
+              {waitingForUser ? "Waiting for user confirmation" : "End ticket"}
             </Button>
           )}
         </div>

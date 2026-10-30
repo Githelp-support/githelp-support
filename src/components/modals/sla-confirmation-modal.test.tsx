@@ -71,7 +71,7 @@ describe("SLAConfirmationModal", () => {
   })
 
   it("has no header close button and clicking the backdrop does not call onClose", () => {
-    const { container, onClose } = renderModal()
+    const { onClose } = renderModal()
 
     // No X / close button anywhere in the modal.
     expect(screen.queryByRole("button", { name: /close/i })).not.toBeInTheDocument()
@@ -80,8 +80,8 @@ describe("SLAConfirmationModal", () => {
     expect(header).not.toBeNull()
     expect(header!.querySelector("button")).toBeNull()
 
-    // Clicking the backdrop does nothing.
-    const backdrop = container.querySelector(".fixed.inset-0")
+    // Clicking the backdrop does nothing (the dialog portals into document.body).
+    const backdrop = document.querySelector(".fixed.inset-0")
     expect(backdrop).not.toBeNull()
     fireEvent.click(backdrop!)
     expect(onClose).not.toHaveBeenCalled()

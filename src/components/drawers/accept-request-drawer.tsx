@@ -22,8 +22,13 @@ interface AcceptRequestDrawerProps {
 
 export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: AcceptRequestDrawerProps) {
   const [category, setCategory] = useState("community")
+  // Keep the last request while the drawer closes so the exit animation can
+  // play (the parent clears `requestData` on close).
+  const [lastRequest, setLastRequest] = useState(requestData)
+  if (requestData && requestData !== lastRequest) setLastRequest(requestData)
+  const request = requestData ?? lastRequest
 
-  if (!requestData) return null
+  if (!request) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,7 +40,7 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
     }
   }
 
-  const generatedEmail = `${requestData.discordUser}@gmail.com`
+  const generatedEmail = `${request.discordUser}@gmail.com`
 
   return (
     <DrawerPanel
@@ -58,11 +63,11 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
         <div className="flex-1 p-6 space-y-6 overflow-auto">
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Discord username</label>
-            <Input value={requestData.discordUser} disabled className="bg-muted border-input text-muted-foreground" />
+            <Input value={request.discordUser} disabled className="bg-muted border-input text-muted-foreground" />
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Full name</label>
-            <Input value={requestData.name} disabled className="bg-muted border-input text-muted-foreground" />
+            <Input value={request.name} disabled className="bg-muted border-input text-muted-foreground" />
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Email address</label>
@@ -83,7 +88,7 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
           </div>
           <div className="bg-muted/50 border border-border rounded-lg p-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              When accepting this request, {requestData.discordUser} will be validated as a helper and be eligible to
+              When accepting this request, {request.discordUser} will be validated as a helper and be eligible to
               receive and accept support requests.
             </p>
           </div>

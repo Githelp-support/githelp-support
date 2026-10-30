@@ -290,6 +290,13 @@ export function TicketChat(props: TicketChatProps) {
   }, [messages.length, isEnded])
 
   const thread = useMemo(() => messages ?? [], [messages])
+  // Messages present when the thread first loaded don't animate; later ones do.
+  // (State set during render, once, when the first non-empty thread arrives.)
+  const [initialMessageIds, setInitialMessageIds] = useState<Set<string> | null>(null)
+  if (initialMessageIds === null && thread.length > 0) {
+    setInitialMessageIds(new Set(thread.map((m) => m.id)))
+  }
+  const isNewMessage = (id: string) => initialMessageIds !== null && !initialMessageIds.has(id)
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
@@ -311,7 +318,8 @@ export function TicketChat(props: TicketChatProps) {
     if (paymentRequiresSignIn) onSignInClick?.()
     else onPaymentCtaClick?.(msg)
   }
-  const ctaLabel = (label: string) => (paymentRequiresSignIn ? "Sign in to continue" : paymentCtaLoading ? "Opening Stripe…" : label)
+  const ctaLabel = (label: string) => (paymentRequiresSignIn ? "Sign in to continue" : label)
+  const ctaLoading = !paymentRequiresSignIn && !!paymentCtaLoading
 
   return (
     <div className="flex-1 flex overflow-hidden">
@@ -371,7 +379,7 @@ export function TicketChat(props: TicketChatProps) {
                     {/* Chat Messages */}
                     <div className="flex flex-col" style={{ rowGap: '16px' }}>
                       {thread.map((msg) => (
-                        <div key={msg.id} className="flex gap-3 items-start">
+                        <div key={msg.id} className={cn("flex gap-3 items-start", isNewMessage(msg.id) && "animate-enter")}>
                           {msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended") ? (
                             <div className="flex items-start gap-3 w-full">
                               <ProfileAvatar
@@ -470,14 +478,14 @@ export function TicketChat(props: TicketChatProps) {
                                   )}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !isPromptResolved(msg) && (
                                     <div className="mt-2">
-                                      <button
+                                      <Button
                                         type="button"
+                                        variant="brand"
                                         onClick={() => handlePaymentCta(msg)}
-                                        disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-brand-foreground hover:bg-brand-primary/90 disabled:opacity-60"
+                                        loading={ctaLoading}
                                       >
                                         {ctaLabel("Add payment method")}
-                                      </button>
+                                      </Button>
                                       {typeof msg.paymentMetadata?.hold_amount_smallest_unit === "number" &&
                                         msg.paymentMetadata.hold_amount_smallest_unit > 0 && (
                                           <p className="mt-1.5 text-xs text-muted-foreground">
@@ -492,26 +500,26 @@ export function TicketChat(props: TicketChatProps) {
                                     msg.paymentMetadata?.kind === "payment_failed" &&
                                     isFailedCtaLive(msg) && (
                                     <div className="mt-2">
-                                      <button
+                                      <Button
                                         type="button"
+                                        variant="brand"
                                         onClick={() => handlePaymentCta(msg)}
-                                        disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-brand-foreground hover:bg-brand-primary/90 disabled:opacity-60"
+                                        loading={ctaLoading}
                                       >
                                         {ctaLabel("Update payment method")}
-                                      </button>
+                                      </Button>
                                     </div>
                                   )}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_cap_exceeded" && !isPromptResolved(msg) && (
                                     <div className="mt-2">
-                                      <button
+                                      <Button
                                         type="button"
                                         onClick={() => handlePaymentCta(msg)}
-                                        disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-amber-900 hover:bg-amber-800 text-amber-50 px-4 py-2 text-sm font-medium disabled:opacity-60"
+                                        loading={ctaLoading}
+                                        className="bg-amber-900 text-amber-50 hover:bg-amber-800"
                                       >
                                         {ctaLabel("Pay yourself instead")}
-                                      </button>
+                                      </Button>
                                     </div>
                                   )}
                                 </div>

@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { X, Info } from "lucide-react"
+import { Info } from "lucide-react"
+import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { SLAConfirmationModal } from "@/components/modals/sla-confirmation-modal"
 
 export interface SLAPayload {
@@ -96,23 +97,9 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  if (!isOpen) return null
-
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-[500px] max-sm:w-full max-sm:rounded-none bg-background shadow-modal z-50 flex flex-col rounded-l-xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle flex-shrink-0">
-          <h2 className="text-lg font-semibold text-foreground">Creating new SLA</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-text-tertiary hover:text-text-muted p-1">
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
+      <DrawerPanel isOpen={isOpen} onClose={onClose} title="Creating new SLA" width="w-[500px]">
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto max-h-full">
@@ -335,7 +322,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             </Button>
           </div>
         </form>
-      </div>
+      </DrawerPanel>
 
       {/* Confirmation Modal */}
       <SLAConfirmationModal

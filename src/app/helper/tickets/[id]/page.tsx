@@ -435,6 +435,13 @@ export default function TicketDetailPage() {
       }))
     )
   }, [messagesData, isClaimed, claimer])
+  // Messages present when the thread first loaded don't animate; later ones do.
+  // (State set during render, once, when the first non-empty thread arrives.)
+  const [initialMessageIds, setInitialMessageIds] = useState<Set<string> | null>(null)
+  if (initialMessageIds === null && messagesData && messagesData.length > 0) {
+    setInitialMessageIds(new Set(messages.map((m) => m.id)))
+  }
+  const isNewMessage = (id: string) => initialMessageIds !== null && !initialMessageIds.has(id)
 
   /** First user message in the chat, or ticket description as fallback (for "Info about issue"). */
   const firstIssueMessage = useMemo(() => {
@@ -1065,7 +1072,7 @@ export default function TicketDetailPage() {
                 {/* Chat Messages */}
                 <div className="flex flex-col" style={{ rowGap: '16px' }}>
                   {messages.map((msg) => (
-                    <div key={msg.id} className="flex gap-3 items-start">
+                    <div key={msg.id} className={cn("flex gap-3 items-start", isNewMessage(msg.id) && "animate-enter")}>
                       {msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended") ? (
                         <div className="flex items-start gap-3 w-full">
                           <ProfileAvatar
