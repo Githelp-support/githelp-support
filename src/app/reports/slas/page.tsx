@@ -374,7 +374,7 @@ export default function ReportsSLAsPage() {
 
           {/* Monthly Reports Table */}
           {activeTab === "monthly" && (
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
               {/* Table Header */}
               <ListHeader>
                 <div className="grid grid-cols-12 gap-4 items-center">
@@ -487,7 +487,7 @@ export default function ReportsSLAsPage() {
           )}
 
           {activeTab === "tickets" && (
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
               {/* Table Header */}
               <ListHeader>
                 <div className="grid grid-cols-12 gap-4 items-center">

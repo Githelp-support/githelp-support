@@ -595,7 +595,7 @@ export default function HelpersPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-card rounded-lg border border-border-subtle shadow-none overflow-hidden">
+          <div className="bg-card rounded-lg border border-border-subtle shadow-none overflow-x-auto">
             {/* Table Header */}
             <ListHeader>
               {currentView === "invited" ? (

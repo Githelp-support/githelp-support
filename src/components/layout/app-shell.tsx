@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
+import { MobileSidebarSheet } from "@/components/layout/mobile-nav"
 
 /**
  * The app shell renders the Sidebar and the page frame once, in the root
@@ -79,7 +80,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     <ShellContext.Provider value={ctx}>
       {/* `min-h-0` lets the row shrink inside the h-screen column so the page scrolls, not the window. */}
       <div className="flex flex-1 min-h-0 overflow-hidden print:block print:h-auto print:overflow-visible">
-        <Sidebar projectPageHref={projectPageHref} className="print:hidden" />
+        {/* Desktop: the sidebar sits in the row. Below lg it becomes the off-canvas sheet. */}
+        <div className="hidden lg:contents">
+          <Sidebar projectPageHref={projectPageHref} className="print:hidden" />
+        </div>
+        <MobileSidebarSheet label="Main menu">
+          <Sidebar projectPageHref={projectPageHref} forceExpanded />
+        </MobileSidebarSheet>
         {/* The content column. Pages render a sticky Header plus a scrolling <main> inside it. */}
         <div className="flex flex-1 flex-col min-w-0 min-h-0 overflow-hidden">{children}</div>
       </div>

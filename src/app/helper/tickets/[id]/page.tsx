@@ -42,6 +42,7 @@ import {
   Mic,
   Video,
   Trash2,
+  PanelRight,
 } from "lucide-react"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
@@ -134,6 +135,8 @@ export default function TicketDetailPage() {
   // Collapsed state is shared across views via localStorage (see
   // right-sidebar-collapse.tsx).
   const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
+  // Below lg the right panel is an off-canvas sheet.
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
 
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading, isError: ticketError } = useTicket(ticketId)
@@ -1333,9 +1336,19 @@ export default function TicketDetailPage() {
       </div>
 
       {/* Right Sidebar — sibling of the header column so it spans the full height, like the left sidebar */}
+      {mobilePanelOpen && (
+        <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" aria-hidden onClick={() => setMobilePanelOpen(false)} />
+      )}
       <div
         suppressHydrationWarning
-        className={`${isCollapsed ? "w-16" : "w-80"} bg-background border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+        className={cn(
+          "bg-background border-l border-border flex flex-col overflow-hidden transition-all duration-300",
+          // Below lg the panel is an off-canvas sheet toggled from the header.
+          "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:w-80 max-lg:max-w-[85vw] max-lg:shadow-modal",
+          !mobilePanelOpen && "max-lg:hidden",
+          "lg:relative lg:z-20",
+          isCollapsed ? "lg:w-16" : "lg:w-80",
+        )}
       >
         <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 

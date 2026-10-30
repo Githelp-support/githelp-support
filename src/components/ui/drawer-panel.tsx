@@ -54,7 +54,8 @@ export function DrawerPanel({
       />
       <div
         className={cn(
-          "fixed right-0 top-0 h-full bg-background shadow-2xl z-50 flex flex-col border-border border-l rounded-l-2xl",
+          "fixed right-0 top-0 h-full bg-background shadow-modal z-50 flex flex-col border-border border-l rounded-l-xl",
+          "max-sm:w-full max-sm:rounded-none max-sm:border-l-0",
           width,
           className
         )}

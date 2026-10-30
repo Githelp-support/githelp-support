@@ -26,6 +26,8 @@ interface SidebarProps {
   className?: string
   /** When provided, renders a discrete "Open project page" external link above the bottom items. */
   projectPageHref?: string
+  /** Inside the mobile sheet the sidebar is always expanded and has no collapse toggle. */
+  forceExpanded?: boolean
 }
 
 interface NavigationItem {
@@ -54,7 +56,7 @@ const SUPPORT_SUB_PATHS = [
   "/support/about",
 ]
 
-export function Sidebar({ className, projectPageHref }: SidebarProps) {
+export function Sidebar({ className, projectPageHref, forceExpanded = false }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   // Preserve the active chat context (project/ticket) when navigating between
@@ -84,7 +86,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   // width. On the server `window` is undefined so we fall back to `false`;
   // the root element uses `suppressHydrationWarning` so the server/client
   // class difference on first paint doesn't warn.
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+  const [storedCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     try {
       return window.localStorage.getItem("sidebar:collapsed") === "true"
@@ -92,6 +94,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
       return false
     }
   })
+  const isCollapsed = forceExpanded ? false : storedCollapsed
   const { user } = useUser()
   const isAuthenticated = !!user?.id
 
@@ -268,7 +271,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
       // block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
+      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
           <Button
             variant="ghost"

@@ -460,7 +460,7 @@ export default function TicketsPage() {
         </div>
 
         {/* Tickets Table */}
-        <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
+        <div className="bg-card rounded-lg border border-border-subtle overflow-x-auto shadow-none">
           {showAvailablePreviewCards ? (
           <>
             <ListHeader>

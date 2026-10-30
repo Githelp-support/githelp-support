@@ -457,7 +457,7 @@ export default function UserReportsPage() {
 
             {/* Payments Table */}
             {activeTab === "payments" && (
-              <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
+              <div className="bg-card rounded-lg border border-border-subtle overflow-x-auto shadow-none">
                 <ListHeader>
                   <div className="grid gap-4 items-center" style={PAYMENTS_GRID}>
                     <div className="flex items-center">
@@ -700,7 +700,7 @@ export default function UserReportsPage() {
 
             {/* Monthly Reports Tab Content */}
             {activeTab === "monthly" && (
-              <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
+              <div className="bg-card rounded-lg border border-border-subtle overflow-x-auto shadow-none">
                 <ListHeader>
                   <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                     <div className="flex items-center">

@@ -4,8 +4,9 @@ import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Check, Plus } from "lucide-react"
+import { Check, Plus, PanelRight } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
@@ -244,6 +245,8 @@ export function TicketChat(props: TicketChatProps) {
   // Collapsed state is shared across views via localStorage (see
   // right-sidebar-collapse.tsx).
   const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
+  // Below lg the right panel is an off-canvas sheet.
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
 
   // Logged-time summary the customer confirms before the session ends. The
@@ -326,6 +329,19 @@ export function TicketChat(props: TicketChatProps) {
               headerSubtitle ? (
                 <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
               ) : undefined
+            }
+            actions={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-text-muted"
+                aria-label="Ticket details"
+                aria-expanded={mobilePanelOpen}
+                onClick={() => setMobilePanelOpen((v) => !v)}
+              >
+                <PanelRight className="size-4" aria-hidden />
+              </Button>
             }
           />
         </div>
@@ -607,9 +623,19 @@ export function TicketChat(props: TicketChatProps) {
       </div>
 
       {/* Right Sidebar */}
+      {mobilePanelOpen && (
+        <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" aria-hidden onClick={() => setMobilePanelOpen(false)} />
+      )}
       <div
         suppressHydrationWarning
-        className={`${isCollapsed ? "w-16" : "w-80"} bg-background border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+        className={cn(
+          "bg-background border-l border-border flex flex-col overflow-hidden transition-all duration-300",
+          // Below lg the panel is an off-canvas sheet toggled from the header.
+          "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:w-80 max-lg:max-w-[85vw] max-lg:shadow-modal",
+          !mobilePanelOpen && "max-lg:hidden",
+          "lg:relative lg:z-20",
+          isCollapsed ? "lg:w-16" : "lg:w-80",
+        )}
       >
           <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 

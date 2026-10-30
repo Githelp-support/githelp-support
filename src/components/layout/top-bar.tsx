@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Logo } from "@/components/brand/logo"
+import { MobileNavToggle } from "@/components/layout/mobile-nav"
 import { NotificationsPanel } from "./notifications-panel"
 import type { Notification } from "@/hooks/useNotifications"
 import { useUser, type UserRole } from "@/contexts/user-context"
@@ -341,9 +342,10 @@ export function TopBar() {
 
   return (
     <>
-      <div className="sticky top-0 z-40 w-full min-h-[60px] bg-sidebar border-b border-border px-8 py-3 flex items-center justify-between">
-        {/* Left cluster: Logo, Role dropdown, Project dropdown */}
-        <div className="flex items-center gap-4">
+      <div className="sticky top-0 z-40 w-full min-h-[60px] bg-sidebar border-b border-border px-4 md:px-8 py-3 flex items-center justify-between gap-2">
+        {/* Left cluster: menu (below lg), Logo, Role dropdown, Project dropdown */}
+        <div className="flex min-w-0 items-center gap-2 md:gap-4">
+          <MobileNavToggle />
           <Logo />
 
           {/* Role dropdown */}
@@ -400,7 +402,7 @@ export function TopBar() {
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <PrivateContextIcon size="w-[22px] h-[22px]" />
-                    <span className="font-sans text-sm font-medium text-sidebar-foreground truncate">Private</span>
+                    <span className="font-sans text-sm font-medium text-sidebar-foreground truncate max-w-[32vw] md:max-w-[16rem]">Private</span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </button>
@@ -458,7 +460,7 @@ export function TopBar() {
                       size="w-[22px] h-[22px]"
                       primaryColor={selectedProjectBranding?.primary_color}
                     />
-                    <span className="font-sans text-sm font-medium text-sidebar-foreground truncate">
+                    <span className="font-sans text-sm font-medium text-sidebar-foreground truncate max-w-[32vw] md:max-w-[16rem]">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -499,7 +501,7 @@ export function TopBar() {
         </div>
 
         {/* Right cluster: Sign in/out, Bell, Avatar */}
-        <div className="flex items-center gap-5">
+        <div className="flex shrink-0 items-center gap-2 md:gap-5">
           <button
             type="button"
             onClick={handleAuthClick}

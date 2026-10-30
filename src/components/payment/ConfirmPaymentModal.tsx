@@ -52,7 +52,7 @@ export function ConfirmPaymentModal({ clientSecret, mode, onResolved, onCancel }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-card rounded-lg shadow-lg max-w-md w-full p-6">
+      <div className="bg-card rounded-xl shadow-modal max-w-md w-full p-6 max-sm:h-full max-sm:max-w-none max-sm:rounded-none">
         <h2 className="text-lg font-semibold mb-2">Confirm the hold on your card</h2>
         <p className="text-sm text-muted-foreground mb-4">
           Your bank wants you to confirm the temporary hold for this ticket. This is not a charge: you only pay for the time your helper logs, and the rest is released.

@@ -21,6 +21,7 @@ import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/sup
 import { signInHref } from "@/lib/sign-in-href"
 import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft } from "@/lib/support-draft"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
+import { MobileSidebarSheet, useMobileNav } from "@/components/layout/mobile-nav"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
@@ -80,6 +81,8 @@ export default function SupportPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const pathname = usePathname()
+  const { setOpen: setMobileNavOpen } = useMobileNav()
+  const closeMobileNav = () => setMobileNavOpen(false)
   const searchParams = useSearchParams()
   const params = useParams<{ slug?: string }>()
   // Where sign-in should bring the visitor back to (this page incl. ?project/?slug).
@@ -634,18 +637,31 @@ export default function SupportPage() {
     //   • the right sidebar with its own internal scroll when needed,
     // while eliminating the blank space at the bottom.
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
-      <PublicSupportSidebar
-        activeTab={TAB_KEY_TO_LABEL[activeTab]}
-        onTabChange={(label) => {
-          const next = TAB_LABEL_TO_KEY[label]
-          if (next) setActiveTab(next)
-        }}
-      />
+      <div className="hidden lg:contents">
+        <PublicSupportSidebar
+          activeTab={TAB_KEY_TO_LABEL[activeTab]}
+          onTabChange={(label) => {
+            const next = TAB_LABEL_TO_KEY[label]
+            if (next) setActiveTab(next)
+          }}
+        />
+      </div>
+      <MobileSidebarSheet label="Support menu">
+        <PublicSupportSidebar
+          forceExpanded
+          activeTab={TAB_KEY_TO_LABEL[activeTab]}
+          onTabChange={(label) => {
+            const next = TAB_LABEL_TO_KEY[label]
+            if (next) setActiveTab(next)
+            closeMobileNav()
+          }}
+        />
+      </MobileSidebarSheet>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === "get-support" ? (
           !hasEnteredChat ? (
-            <div className="flex-1 flex flex-col px-18 pt-40">
+            <div className="flex-1 flex flex-col px-6 pt-16 md:px-18 md:pt-40">
               <div className="flex flex-col items-start space-y-6">
                 {projectLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -777,7 +793,7 @@ export default function SupportPage() {
           )
         ) : (
           <div className="flex-1 overflow-y-auto">
-            <div className={`max-w-7xl mx-auto py-12 ${activeTab === "rates" ? "px-18" : "px-6"}`}>
+            <div className={`max-w-7xl mx-auto py-8 px-6 md:py-12 ${activeTab === "rates" ? "md:px-18" : ""}`}>
               {activeTab === "rates" && (
                 <RatesAndDetailsContent
                   projectName={projectName}

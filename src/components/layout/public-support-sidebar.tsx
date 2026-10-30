@@ -14,6 +14,8 @@ interface PublicSupportSidebarProps {
   className?: string
   activeTab: string
   onTabChange: (tab: string) => void
+  /** Inside the mobile sheet the sidebar is always expanded and has no collapse toggle. */
+  forceExpanded?: boolean
 }
 
 interface NavigationItem {
@@ -30,7 +32,7 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
-export function PublicSupportSidebar({ className, activeTab, onTabChange }: PublicSupportSidebarProps) {
+export function PublicSupportSidebar({ className, activeTab, onTabChange, forceExpanded = false }: PublicSupportSidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user } = useUser()
@@ -42,7 +44,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
   // server `window` is undefined so we fall back to `false`; the root element
   // uses `suppressHydrationWarning` so the server/client class difference on
   // first paint doesn't warn.
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+  const [storedCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     try {
       return window.localStorage.getItem("public-support-sidebar:collapsed") === "true"
@@ -50,6 +52,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       return false
     }
   })
+  const isCollapsed = forceExpanded ? false : storedCollapsed
 
   const navigationItems: NavigationItem[] = [
     { name: "Get support", icon: "fi-rr-comments" },
@@ -75,7 +78,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       // the TopBar and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
+      <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
           <Button
             variant="ghost"

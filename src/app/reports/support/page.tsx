@@ -552,7 +552,7 @@ export default function ReportsSupportPage() {
 
           {/* Monthly: the project's income per month */}
           {activeTab === "monthly" && (
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
               <ListHeader>
                 <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                   <div>
@@ -653,7 +653,7 @@ export default function ReportsSupportPage() {
 
           {/* Tickets: the project's income per ticket */}
           {activeTab === "tickets" && (
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
               <ListHeader>
                 <div className="grid gap-4 items-center" style={TICKETS_GRID}>
                   <div>
@@ -832,7 +832,7 @@ export default function ReportsSupportPage() {
 
           {/* Helpers: each helper's income per month, with that month's tickets underneath */}
           {activeTab === "helpers" && (
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
               <ListHeader>
                 <div className="grid gap-4 items-center" style={HELPERS_GRID}>
                   <div>

@@ -23,7 +23,8 @@ export default function SupportLayout({
       {/* "Link your guest conversation" for a signed-in user with a pending key. */}
       <GuestLinkBanner />
       <SupportSandboxBanner slug={slugParam ?? null} projectId={projectIdParam ?? null} />
-      <main className="flex-1 min-h-0 bg-bg-subtle flex flex-col">{children}</main>
+      {/* `touch-targets`: buyer pages get ≥40px controls below md (see globals.css). */}
+      <main className="flex-1 min-h-0 bg-bg-subtle flex flex-col touch-targets">{children}</main>
     </div>
   )
 }

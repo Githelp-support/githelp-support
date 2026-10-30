@@ -529,7 +529,7 @@ export default function HelperReportsPage() {
 
         {/* Payouts Table */}
         {activeTab === "payouts" && (
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-x-auto">
             <ListHeader>
               <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
                 <div className="flex items-center">
@@ -782,7 +782,7 @@ export default function HelperReportsPage() {
 
         {/* Monthly Reports Tab Content */}
         {activeTab === "monthly" && (
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-x-auto">
             <ListHeader>
               <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
                 <div className="flex items-center">

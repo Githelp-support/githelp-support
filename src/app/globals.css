@@ -335,6 +335,13 @@
   }
 }
 
+/* Buyer-facing pages: comfortable touch targets on phones. */
+@media (max-width: 47.99rem) {
+  .touch-targets :where(button, [role="button"], [role="tab"], a.inline-flex, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: 2.5rem;
+  }
+}
+
 /* Reduced motion: keep state changes, drop the choreography. */
 @media (prefers-reduced-motion: reduce) {
   *,

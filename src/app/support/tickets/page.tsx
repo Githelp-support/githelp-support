@@ -301,7 +301,7 @@ export default function SupportTicketsPage() {
                   />
                 </Card>
               ) : (
-                <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
+                <div className="bg-card rounded-lg border border-border-subtle overflow-x-auto shadow-none">
                   <ListHeader>
                     <div className="grid grid-cols-12 gap-4">
                       <div className="col-span-5 flex items-center space-x-2">

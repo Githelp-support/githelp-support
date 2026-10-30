@@ -149,7 +149,7 @@ export default function HelperOverviewPage() {
               View all tickets
             </Link>
           </div>
-          <Card className="py-0 overflow-hidden">
+          <Card className="py-0 overflow-x-auto">
             <CardContent className="p-0">
               <ListHeader>
                 <div className="grid grid-cols-12 gap-4">

@@ -556,7 +556,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         {/* All tickets */}
         <div className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">All tickets</h2>
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-x-auto">
             <ListHeader>
               <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
                 <div>

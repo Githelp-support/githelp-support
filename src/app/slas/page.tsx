@@ -197,7 +197,7 @@ export default function SLAsPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-x-auto">
             {/* Table Header */}
             <ListHeader>
               <div className="grid grid-cols-12 gap-4 items-center">

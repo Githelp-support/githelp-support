@@ -19,7 +19,7 @@ function ListHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="list-header"
       className={cn(
-        "flex min-h-10 items-center border-b border-border-subtle bg-brand-primary/10 px-6 py-2 text-xs font-medium text-text-muted",
+        "flex min-h-10 items-center border-b border-border-subtle bg-brand-primary/10 px-6 py-2 text-xs font-medium text-text-muted max-md:min-w-[40rem]",
         "[&_button]:cursor-pointer [&_button]:rounded-sm [&_button:hover]:text-brand-primary [&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-brand-primary/40",
         "[&>*]:flex-1",
         className,
@@ -42,7 +42,7 @@ export interface ListRowOptions {
 /** Class string for rows rendered as links or buttons (see `ListRow` for a div). */
 function listRowClass({ interactive = false, tone = "default", bordered = false, className }: ListRowOptions = {}) {
   return cn(
-    "min-h-12 px-6 py-3 text-ui transition-colors duration-fast ease-out hover:bg-surface-hover",
+    "min-h-12 px-6 py-3 text-ui transition-colors duration-fast ease-out hover:bg-surface-hover max-md:min-w-[40rem]",
     tone === "subtle" && "bg-bg-subtle/50",
     bordered && "border-b border-border-subtle last:border-b-0",
     interactive &&
