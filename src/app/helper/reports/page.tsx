@@ -113,7 +113,7 @@ const MONTHLY_GRID = {
 }
 // Monthly reports column offsets (header and rows alike):
 // Description sits 30px closer to Period (142px -> 112px between the texts).
-const MONTHLY_DESCRIPTION_CLASS = "-ml-8"
+const MONTHLY_DESCRIPTION_CLASS = "-ml-8 pr-28"
 // Earnings sits a further 80px closer to Description (180px -> 100px between the texts).
 const MONTHLY_EARNINGS_CLASS = "-ml-28"
 // Status sits 70px closer to the kebab menu (134px -> 64px between the badge and the menu).
@@ -579,7 +579,7 @@ export default function HelperReportsPage() {
                         </div>
                         <TicketText text={payout.ticketTitle} />
                       </div>
-                      <div className={cn("min-w-0 text-sm text-muted-foreground", COLUMN_SPACING_CLASS)}>{payout.date}</div>
+                      <div className={cn("min-w-0 truncate text-sm text-muted-foreground", COLUMN_SPACING_CLASS)} title={payout.date}>{payout.date}</div>
                       <div className="min-w-0 text-sm text-foreground whitespace-nowrap">
                         {payout.amount.replace(/^USD\s+/, "")}
                       </div>
@@ -826,7 +826,7 @@ export default function HelperReportsPage() {
                           Preview
                         </Badge>
                       </div>
-                      <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
+                      <div className={cn("min-w-0 truncate", MONTHLY_DESCRIPTION_CLASS)} title={row.description}>
                         <span className="text-sm text-muted-foreground">{row.description}</span>
                       </div>
                       <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
@@ -884,7 +884,7 @@ export default function HelperReportsPage() {
                       <div className="min-w-0">
                         <span className="text-sm font-medium text-foreground">{row.period}</span>
                       </div>
-                      <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
+                      <div className={cn("min-w-0 truncate", MONTHLY_DESCRIPTION_CLASS)} title={row.description}>
                         <span className="text-sm text-muted-foreground">{row.description}</span>
                       </div>
                       <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>

@@ -311,7 +311,7 @@ export default function TicketsPage() {
 
       <main className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
         {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <button
             type="button"
             onClick={() => setStatusFilter("all")}

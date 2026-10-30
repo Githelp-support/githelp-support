@@ -398,7 +398,7 @@ export function TopBar() {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
+                  className="flex min-w-0 max-w-full items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <PrivateContextIcon size="w-[22px] h-[22px]" />
@@ -451,7 +451,7 @@ export function TopBar() {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors focus-visible:outline-none"
+                  className="flex min-w-0 max-w-full items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <ProjectLogo
@@ -505,7 +505,7 @@ export function TopBar() {
           <button
             type="button"
             onClick={handleAuthClick}
-            className="font-sans text-ui text-muted-foreground hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
+            className="font-sans text-ui text-muted-foreground hover:bg-surface-hover rounded-md px-2 py-1 transition-colors duration-fast ease-out cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
           >
             {isSignedIn ? "Sign out" : "Sign in"}
           </button>
