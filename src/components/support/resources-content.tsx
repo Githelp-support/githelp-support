@@ -73,7 +73,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center h-8 px-6 text-sm bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-support-header rounded-md font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-all cursor-pointer shadow-sm hover:shadow-md"
+              className="inline-flex items-center h-8 px-6 text-sm bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-support-header rounded-md font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-colors duration-fast ease-out cursor-pointer shadow-sm hover:shadow-md"
             >
               {resource.name}
             </a>

@@ -104,8 +104,9 @@ describe("Sidebar — Support sub-categories", () => {
     render(<Sidebar />)
 
     expect(screen.getByText("Tickets")).toBeInTheDocument()
-    expect(screen.queryByText("Chat")).not.toBeInTheDocument()
-    expect(screen.queryByText("Rates and details")).not.toBeInTheDocument()
+    // Sub-items stay mounted for the height animation; the collapsed branch is inert.
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "closed")
+    expect(screen.getByText("Rates and details").closest("[data-state]")).toHaveAttribute("data-state", "closed")
   })
 })
 
@@ -117,8 +118,10 @@ describe("Sidebar — user-role menu order", () => {
 
     const nav = container.querySelector("nav")
     expect(nav).not.toBeNull()
+    // Each item's own row is a link (leaf) or a role=button (parent); sub-menus
+    // stay mounted below the row, so read the row rather than the whole item.
     const topLevelLabels = Array.from(nav!.firstElementChild!.children).map(
-      (el) => el.textContent?.trim(),
+      (el) => el.querySelector("a, [role='button']")?.textContent?.trim(),
     )
     expect(topLevelLabels).toEqual([
       "Overview",

@@ -76,7 +76,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
       // content height). Stretching as a flex item uses the row's actual
       // laid-out height instead, so the sidebar always fills the area below
       // the TopBar and the profile block stays pinned to the bottom.
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
       <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (

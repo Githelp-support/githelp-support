@@ -1342,7 +1342,7 @@ export default function TicketDetailPage() {
       <div
         suppressHydrationWarning
         className={cn(
-          "bg-background border-l border-border flex flex-col overflow-hidden transition-all duration-300",
+          "bg-background border-l border-border flex flex-col overflow-hidden transition-[width] duration-slow ease-in-out",
           // Below lg the panel is an off-canvas sheet toggled from the header.
           "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:w-80 max-lg:max-w-[85vw] max-lg:shadow-modal",
           !mobilePanelOpen && "max-lg:hidden",

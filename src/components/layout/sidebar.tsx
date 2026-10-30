@@ -269,7 +269,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       // laid-out height (a `flex-1 min-h-0` chain, where percentage heights don't
       // resolve), so it always fills the area below the TopBar and the profile
       // block stays pinned to the bottom.
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
       <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
@@ -429,11 +429,20 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                           className="shrink-0 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                         >
                           <ChevronRight
-                            className={`h-4 w-4 opacity-70 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                            className={`h-4 w-4 opacity-70 transition-transform duration-base ease-out ${isExpanded ? "rotate-90" : ""}`}
                           />
                         </button>
                       </div>
-                      {isExpanded && (
+                      {/* Sub-items stay mounted; the height animates with grid-template-rows and
+                          the collapsed branch is inert so it is skipped by Tab and screen readers. */}
+                      <div
+                        data-state={isExpanded ? "open" : "closed"}
+                        inert={!isExpanded}
+                        className={`grid transition-[grid-template-rows] duration-base ease-out ${
+                          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                        }`}
+                      >
+                        <div className="min-h-0 overflow-hidden">
                         <div className="relative mt-0.5 space-y-0.5">
                           {/* Vertical guide line, centered under the parent icon column.
                               Clamped to start/end at the center of the first/last dot. */}
@@ -463,7 +472,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                             )
                           })}
                         </div>
-                      )}
+                        </div>
+                      </div>
                     </div>
                   )
                 ) : (

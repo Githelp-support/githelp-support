@@ -145,11 +145,11 @@ export default function UserOverviewPage() {
             <h2 className="text-base font-semibold text-foreground">Key stats</h2>
             <HelpCircle className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
             {stats.map((stat) => (
               <Card
                 key={stat.label}
-                className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg"
+                className="h-28 py-0 justify-center animate-enter"
               >
                 <CardContent className="px-7">
                   <div className="flex items-center gap-2 mb-3">

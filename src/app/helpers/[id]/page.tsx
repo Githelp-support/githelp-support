@@ -522,8 +522,8 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             <h2 className="text-base font-semibold text-foreground">Key stats</h2>
             <HelpCircle className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="h-28 py-0 justify-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
+            <Card className="h-28 py-0 justify-center animate-enter">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Number of tickets solved</span>
@@ -532,7 +532,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
               </CardContent>
             </Card>
-            <Card className="h-28 py-0 justify-center">
+            <Card className="h-28 py-0 justify-center animate-enter">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Total time spent</span>
@@ -541,7 +541,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.totalTime}</div>
               </CardContent>
             </Card>
-            <Card className="h-28 py-0 justify-center">
+            <Card className="h-28 py-0 justify-center animate-enter">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Percentage solved</span>
