@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
@@ -168,42 +167,37 @@ export default function HelperProfilePage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto p-8">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile for the selected project" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to view and edit your helper profile.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (!currentHelperLoading && projectId && helperId === null) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto p-6">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile for the selected project" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-sm text-left pl-2 text-muted-foreground">You are not registered as a helper in this project.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (isLoading || !helperData) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile" />
-          <main className="flex-1 overflow-auto p-8 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </main>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile" />
+        <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </main>
       </div>
     )
   }
@@ -212,13 +206,11 @@ export default function HelperProfilePage() {
   const displayAvatar = (displayName || "U")[0].toUpperCase()
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="My profile" subtitle="View and edit your helper details" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="My profile" subtitle="View and edit your helper details" />
-
-        <main className="flex-1 overflow-auto p-8">
+      <main className="flex-1 overflow-auto px-8 py-6">
+        <div className="max-w-3xl divide-y divide-border-subtle">
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
@@ -358,8 +350,8 @@ export default function HelperProfilePage() {
             </CardContent>
           </Card>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

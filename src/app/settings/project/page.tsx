@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -156,24 +155,22 @@ export default function ProjectSettingsPage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Project Settings" subtitle="Manage keywords and help categories" />
-          <main className="flex-1 py-6 px-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="Project Settings" subtitle="Manage keywords and help categories" />
+        <main className="flex-1 px-8 py-6 overflow-y-auto">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to manage its keywords and help categories.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
-        <main className="flex-1 py-6 px-8 overflow-y-auto">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
+      <main className="flex-1 px-8 py-6 overflow-y-auto">
+        <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-4xl space-y-4">
             {/* Admins */}
             <Card className="border-0 shadow-none rounded-lg py-0">
@@ -422,8 +419,8 @@ export default function ProjectSettingsPage() {
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

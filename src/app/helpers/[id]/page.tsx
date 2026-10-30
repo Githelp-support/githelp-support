@@ -26,7 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
 import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeEntries"
@@ -418,28 +417,22 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
   if (helperLoading) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Helper Details" aboveTitle={backLink} />
-          <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
-            <div className="text-sm">Loading helper...</div>
-          </main>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="Helper Details" aboveTitle={backLink} />
+        <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+          <div className="text-sm">Loading helper...</div>
+        </main>
       </div>
     )
   }
 
   if (!helperData) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Helper Details" aboveTitle={backLink} />
-          <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
-            <div>Helper not found</div>
-          </main>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="Helper Details" aboveTitle={backLink} />
+        <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+          <div>Helper not found</div>
+        </main>
       </div>
     )
   }
@@ -459,310 +452,306 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Helper Details" aboveTitle={backLink} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Helper Details" aboveTitle={backLink} />
-
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
-          {/* Profile header + Contact information */}
-          <Card className="border-0 rounded-lg shadow-none py-0">
-            <CardContent className="px-0 py-8 space-y-5">
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
-                  style={{ backgroundColor: helper.avatarColor }}
-                >
-                  {helper.avatar}
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-base font-semibold text-foreground">{helper.name}</h1>
-                  <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                    {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
+      <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+        {/* Profile header + Contact information */}
+        <Card className="border-0 rounded-lg shadow-none py-0">
+          <CardContent className="px-0 py-8 space-y-5">
+            <div className="flex items-center gap-4">
+              <div
+                className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
+                style={{ backgroundColor: helper.avatarColor }}
+              >
+                {helper.avatar}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-base font-semibold text-foreground">{helper.name}</h1>
+                <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
+                  {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
+                </Badge>
+                {helper.isRemoved && (
+                  <Badge variant="secondary" className="bg-muted text-muted-foreground border-0 text-xs font-medium">
+                    Removed
                   </Badge>
-                  {helper.isRemoved && (
-                    <Badge variant="secondary" className="bg-muted text-muted-foreground border-0 text-xs font-medium">
-                      Removed
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-3 pl-6">
-                <div className="flex items-center gap-2.5">
-                  <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
-                  <span className="text-sm text-foreground/80 truncate">{helper.discord}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" />
-                  <span className="text-sm text-foreground/80 truncate">{helper.email}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <GithubIcon className="w-4 h-4 text-muted-foreground/70 shrink-0" />
-                  <span className="text-sm text-brand-primary truncate">{helper.github}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Filters */}
-          <div className="flex gap-2">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                <SelectValue placeholder="Choose period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="current">Current month</SelectItem>
-                {months.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {month}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Key stats */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-base font-semibold text-foreground">Key stats</h2>
-              <HelpCircle className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-7">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-7">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Total time spent</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.totalTime}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-7">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Percentage solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.percentageSolved}%</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* All tickets */}
-          <div className="space-y-4">
-            <h2 className="text-base font-semibold text-foreground">All tickets</h2>
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
-                  <div>
-                    <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
-                  </div>
-                  <div className="min-w-0">
-                    <SortHeader label="Ticket ID" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                  </div>
-                  <div className="min-w-0">
-                    <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                  </div>
-                  <div className="min-w-0 whitespace-nowrap">
-                    <SortHeader label="Helper income (USD)" field="amount" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                  </div>
-                  <div className="min-w-0">
-                    <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                  </div>
-                  <div />
-                </div>
-              </div>
-              <div className="divide-y divide-border">
-                {ticketsLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
-                ) : helper.tickets.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">No tickets for this period.</div>
-                ) : (
-                  helper.tickets.map((ticket) => {
-                    const count = ticket.transfers.length
-                    const expanded = isExpanded(ticket.key)
-                    const panelId = transactionsPanelId(ticket.key)
-                    const ticketHref = ticket.id ? `/helper/tickets/${ticket.id}` : null
-                    // Receipts per payout need each payout linked to its charge;
-                    // older payouts aren't, so keep the per-ticket receipt list then.
-                    const receiptsPerPayout = count > 1 && ticket.transfers.every((t) => !!t.payment_id)
-                    return (
-                      <div
-                        key={ticket.key}
-                        role="button"
-                        tabIndex={0}
-                        aria-expanded={expanded}
-                        aria-controls={expanded ? panelId : undefined}
-                        aria-label={`Transactions for ticket ${ticket.shortId}`}
-                        className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
-                        onClick={() => toggle(ticket.key)}
-                        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-                          // Only when the row itself has focus, not a control inside it.
-                          if (event.target !== event.currentTarget) return
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault()
-                            toggle(ticket.key)
-                          }
-                        }}
-                      >
-                        <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
-                          <div className="flex items-center">
-                            <Checkbox
-                              checked={selectedRows.includes(ticket.key)}
-                              onCheckedChange={() => handleRowSelect(ticket.key)}
-                              onClick={stopRowNavigation}
-                              aria-label={`Select ticket ${ticket.shortId}`}
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            {ticketHref ? (
-                              <Link
-                                href={ticketHref}
-                                onClick={stopRowNavigation}
-                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
-                              >
-                                {ticket.shortId}
-                              </Link>
-                            ) : (
-                              <span className="text-sm font-medium text-foreground">—</span>
-                            )}
-                            <div className="text-xs text-muted-foreground" title={ticket.title}>
-                              {ticketPreview(ticket.title)}
-                            </div>
-                          </div>
-                          <div className="min-w-0 text-sm text-muted-foreground">{ticket.dateIso ? formatDate(ticket.dateIso) : "—"}</div>
-                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
-                            {ticket.amountRaw === null ? "—" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
-                          </div>
-                          <div className="min-w-0">
-                            <Badge className={statusBadgeClass(ticket.status)}>{ticket.status}</Badge>
-                          </div>
-                          <div className="flex items-center justify-end">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={KEBAB_BUTTON_CLASS}
-                                  aria-label={`More actions for ticket ${ticket.shortId}`}
-                                  onClick={stopRowNavigation}
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              {/* Portalled, but React events still bubble to the row. */}
-                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
-                                {ticketHref ? (
-                                  <DropdownMenuItem asChild>
-                                    <Link href={ticketHref}>
-                                      <ExternalLink />
-                                      Open
-                                    </Link>
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem disabled>
-                                    <ExternalLink />
-                                    Open
-                                  </DropdownMenuItem>
-                                )}
-                                {/* Opens the same list as clicking the row; an already open list stays open. */}
-                                <DropdownMenuItem
-                                  title={`Show the transactions on ticket ${ticket.shortId}`}
-                                  onSelect={() => {
-                                    if (!expanded) toggle(ticket.key)
-                                  }}
-                                >
-                                  <List />
-                                  See transactions
-                                </DropdownMenuItem>
-                                {receiptsPerPayout ? (
-                                  <DropdownMenuItem title="Each payout links to the receipt of the charge it came from" onSelect={() => toggle(ticket.key)}>
-                                    <ExternalLink />
-                                    Receipts
-                                  </DropdownMenuItem>
-                                ) : ticket.receipts.length > 1 ? (
-                                  ticket.receipts.map((url, index) => (
-                                    <ReceiptMenuItem key={`${index}-${url}`} url={url} label={`Receipt ${index + 1}`} />
-                                  ))
-                                ) : (
-                                  <ReceiptMenuItem url={ticket.receipts[0] ?? null} />
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                        {count > 1 && (
-                          <div className="w-fit" onClick={stopRowNavigation}>
-                            <TransactionsToggle
-                              className="ml-12 mt-2"
-                              count={count}
-                              expanded={expanded}
-                              onToggle={() => toggle(ticket.key)}
-                              panelId={panelId}
-                              noun="payout"
-                            />
-                          </div>
-                        )}
-                        {expanded && (
-                          <div className="cursor-default" onClick={stopRowNavigation}>
-                            {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
-                            <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
-                              {count === 0 && (
-                                // Same grid as the payout lines so the text lines up under the ticket ID.
-                                <div className="grid items-center gap-4 px-3 py-2 text-sm" style={HELPER_TICKETS_GRID}>
-                                  <span />
-                                  <span className="col-[2/-1] min-w-0 text-muted-foreground">No transactions for this ticket yet.</span>
-                                </div>
-                              )}
-                              {ticket.transfers.map((transfer, index) => (
-                                <div
-                                  key={transfer.id}
-                                  role="listitem"
-                                  className="grid items-center gap-4 px-3 py-2 text-sm"
-                                  style={HELPER_TICKETS_GRID}
-                                >
-                                  <span />
-                                  <span className="min-w-0 text-xs text-muted-foreground tabular-nums" title={payoutReference(transfer)}>
-                                    {index + 1} of {count}
-                                  </span>
-                                  <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
-                                  <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
-                                    {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency || ticket.currency)}
-                                  </span>
-                                  <span className="min-w-0">
-                                    <Badge className={TRANSFER_STATUS_BADGE_CLASS[transfer.status]}>{TRANSFER_STATUS_LABEL[transfer.status]}</Badge>
-                                  </span>
-                                  {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
-                                  <span className="flex items-center justify-end [&>*]:shrink-0">
-                                    <ReceiptButton url={receiptForTransfer(transfer)} />
-                                  </span>
-                                </div>
-                              ))}
-                            </TransactionsPanel>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })
                 )}
               </div>
             </div>
-          </div>
-        </main>
+            <div className="space-y-3 pl-6">
+              <div className="flex items-center gap-2.5">
+                <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                <span className="text-sm text-foreground/80 truncate">{helper.discord}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                <span className="text-sm text-foreground/80 truncate">{helper.email}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <GithubIcon className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                <span className="text-sm text-brand-primary truncate">{helper.github}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      </div>
+        {/* Filters */}
+        <div className="flex gap-2">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+              <SelectValue placeholder="Choose period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="current">Current month</SelectItem>
+              {months.map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Key stats */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-base font-semibold text-foreground">Key stats</h2>
+            <HelpCircle className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+              <CardContent className="px-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Number of tickets solved</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
+              </CardContent>
+            </Card>
+            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+              <CardContent className="px-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Total time spent</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.totalTime}</div>
+              </CardContent>
+            </Card>
+            <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
+              <CardContent className="px-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Percentage solved</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.percentageSolved}%</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* All tickets */}
+        <div className="space-y-4">
+          <h2 className="text-base font-semibold text-foreground">All tickets</h2>
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+              <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
+                <div>
+                  <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
+                </div>
+                <div className="min-w-0">
+                  <SortHeader label="Ticket ID" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                </div>
+                <div className="min-w-0">
+                  <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                </div>
+                <div className="min-w-0 whitespace-nowrap">
+                  <SortHeader label="Helper income (USD)" field="amount" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                </div>
+                <div className="min-w-0">
+                  <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                </div>
+                <div />
+              </div>
+            </div>
+            <div className="divide-y divide-border">
+              {ticketsLoading ? (
+                <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
+              ) : helper.tickets.length === 0 ? (
+                <div className="px-6 py-8 text-center text-muted-foreground text-sm">No tickets for this period.</div>
+              ) : (
+                helper.tickets.map((ticket) => {
+                  const count = ticket.transfers.length
+                  const expanded = isExpanded(ticket.key)
+                  const panelId = transactionsPanelId(ticket.key)
+                  const ticketHref = ticket.id ? `/helper/tickets/${ticket.id}` : null
+                  // Receipts per payout need each payout linked to its charge;
+                  // older payouts aren't, so keep the per-ticket receipt list then.
+                  const receiptsPerPayout = count > 1 && ticket.transfers.every((t) => !!t.payment_id)
+                  return (
+                    <div
+                      key={ticket.key}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={expanded}
+                      aria-controls={expanded ? panelId : undefined}
+                      aria-label={`Transactions for ticket ${ticket.shortId}`}
+                      className="px-6 py-4 hover:bg-page-muted cursor-pointer focus-visible:outline-none focus-visible:bg-page-muted"
+                      onClick={() => toggle(ticket.key)}
+                      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+                        // Only when the row itself has focus, not a control inside it.
+                        if (event.target !== event.currentTarget) return
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault()
+                          toggle(ticket.key)
+                        }
+                      }}
+                    >
+                      <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={selectedRows.includes(ticket.key)}
+                            onCheckedChange={() => handleRowSelect(ticket.key)}
+                            onClick={stopRowNavigation}
+                            aria-label={`Select ticket ${ticket.shortId}`}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          {ticketHref ? (
+                            <Link
+                              href={ticketHref}
+                              onClick={stopRowNavigation}
+                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                            >
+                              {ticket.shortId}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-medium text-foreground">—</span>
+                          )}
+                          <div className="text-xs text-muted-foreground" title={ticket.title}>
+                            {ticketPreview(ticket.title)}
+                          </div>
+                        </div>
+                        <div className="min-w-0 text-sm text-muted-foreground">{ticket.dateIso ? formatDate(ticket.dateIso) : "—"}</div>
+                        <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
+                          {ticket.amountRaw === null ? "—" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
+                        </div>
+                        <div className="min-w-0">
+                          <Badge className={statusBadgeClass(ticket.status)}>{ticket.status}</Badge>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={KEBAB_BUTTON_CLASS}
+                                aria-label={`More actions for ticket ${ticket.shortId}`}
+                                onClick={stopRowNavigation}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            {/* Portalled, but React events still bubble to the row. */}
+                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                              {ticketHref ? (
+                                <DropdownMenuItem asChild>
+                                  <Link href={ticketHref}>
+                                    <ExternalLink />
+                                    Open
+                                  </Link>
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem disabled>
+                                  <ExternalLink />
+                                  Open
+                                </DropdownMenuItem>
+                              )}
+                              {/* Opens the same list as clicking the row; an already open list stays open. */}
+                              <DropdownMenuItem
+                                title={`Show the transactions on ticket ${ticket.shortId}`}
+                                onSelect={() => {
+                                  if (!expanded) toggle(ticket.key)
+                                }}
+                              >
+                                <List />
+                                See transactions
+                              </DropdownMenuItem>
+                              {receiptsPerPayout ? (
+                                <DropdownMenuItem title="Each payout links to the receipt of the charge it came from" onSelect={() => toggle(ticket.key)}>
+                                  <ExternalLink />
+                                  Receipts
+                                </DropdownMenuItem>
+                              ) : ticket.receipts.length > 1 ? (
+                                ticket.receipts.map((url, index) => (
+                                  <ReceiptMenuItem key={`${index}-${url}`} url={url} label={`Receipt ${index + 1}`} />
+                                ))
+                              ) : (
+                                <ReceiptMenuItem url={ticket.receipts[0] ?? null} />
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      {count > 1 && (
+                        <div className="w-fit" onClick={stopRowNavigation}>
+                          <TransactionsToggle
+                            className="ml-12 mt-2"
+                            count={count}
+                            expanded={expanded}
+                            onToggle={() => toggle(ticket.key)}
+                            panelId={panelId}
+                            noun="payout"
+                          />
+                        </div>
+                      )}
+                      {expanded && (
+                        <div className="cursor-default" onClick={stopRowNavigation}>
+                          {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                          <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                            {count === 0 && (
+                              // Same grid as the payout lines so the text lines up under the ticket ID.
+                              <div className="grid items-center gap-4 px-3 py-2 text-sm" style={HELPER_TICKETS_GRID}>
+                                <span />
+                                <span className="col-[2/-1] min-w-0 text-muted-foreground">No transactions for this ticket yet.</span>
+                              </div>
+                            )}
+                            {ticket.transfers.map((transfer, index) => (
+                              <div
+                                key={transfer.id}
+                                role="listitem"
+                                className="grid items-center gap-4 px-3 py-2 text-sm"
+                                style={HELPER_TICKETS_GRID}
+                              >
+                                <span />
+                                <span className="min-w-0 text-xs text-muted-foreground tabular-nums" title={payoutReference(transfer)}>
+                                  {index + 1} of {count}
+                                </span>
+                                <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
+                                <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                  {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency || ticket.currency)}
+                                </span>
+                                <span className="min-w-0">
+                                  <Badge className={TRANSFER_STATUS_BADGE_CLASS[transfer.status]}>{TRANSFER_STATUS_LABEL[transfer.status]}</Badge>
+                                </span>
+                                {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                <span className="flex items-center justify-end [&>*]:shrink-0">
+                                  <ReceiptButton url={receiptForTransfer(transfer)} />
+                                </span>
+                              </div>
+                            ))}
+                          </TransactionsPanel>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+
     </div>
   )
 }

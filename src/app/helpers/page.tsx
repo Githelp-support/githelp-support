@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { AddHelperDrawer } from "@/components/drawers/add-helper-drawer"
 import { AcceptRequestDrawer } from "@/components/drawers/accept-request-drawer"
@@ -459,15 +458,22 @@ export default function HelpersPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-
+    <>
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="List of helpers" subtitle="Manage your support team" />
+        <Header
+          title="List of helpers"
+          subtitle="Manage your support team"
+          actions={
+            <Button variant="brand" onClick={() => setIsDrawerOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Add new helper
+            </Button>
+          }
+        />
 
         {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 px-8 py-6 overflow-y-auto">
           {/* Filter tabs and Add button */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex space-x-1">
@@ -544,10 +550,6 @@ export default function HelpersPage() {
                   Copy invitation link
                 </Button>
               )}
-              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground rounded-md px-5 py-2.5 text-ui font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
-                <Plus className="w-4 h-4" />
-                Add new helper
-              </Button>
             </div>
           </div>
 
@@ -905,7 +907,7 @@ export default function HelpersPage() {
         isRemoving={removeHelper.isPending}
         onConfirm={handleConfirmRemoveHelper}
       />
-    </div>
+    </>
   )
 }
 

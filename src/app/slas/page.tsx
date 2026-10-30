@@ -5,7 +5,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { MoreHorizontal, Plus, Search, ChevronDown, Info, ChevronsUpDown, ChevronUp } from "lucide-react"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { CreateSLADrawer } from "@/components/drawers/create-sla-drawer"
 import { useSLAs } from "@/hooks/useSLAs"
@@ -123,15 +122,22 @@ export default function SLAsPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-
+    <>
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Your SLAs" subtitle="Manage your Support Level Agreements" />
+        <Header
+          title="Your SLAs"
+          subtitle="Manage your Support Level Agreements"
+          actions={
+            <Button variant="lavender" onClick={() => setIsCreateSLADrawerOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Create new SLA
+            </Button>
+          }
+        />
 
         {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 px-8 py-6 overflow-y-auto">
           {/* Filter tabs */}
           <div className="mb-6">
             <div className="flex gap-1">
@@ -184,13 +190,6 @@ export default function SLAsPage() {
                 className="pl-10 border-border"
               />
             </div>
-            <Button
-              variant="lavender"
-              onClick={() => setIsCreateSLADrawerOpen(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Create new SLA
-            </Button>
           </div>
 
           {/* Table */}
@@ -294,6 +293,6 @@ export default function SLAsPage() {
         onClose={() => setIsCreateSLADrawerOpen(false)}
         onSubmit={handleCreateSLA}
       />
-    </div>
+    </>
   )
 }

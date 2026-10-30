@@ -4,7 +4,6 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { useUser } from "@/contexts/user-context"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -200,16 +199,14 @@ export default function SupportTicketsPage() {
   }, [tickets, statusFilter, sortField, sortDirection])
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
-      <Sidebar />
-
+    <>
       <div className="flex flex-1 flex-col overflow-hidden bg-background">
         <Header
           title="My tickets"
           subtitle="View and manage your support requests"
         />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-background">
+        <main className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-background">
           <p className="text-sm text-muted-foreground">
             {isAuthenticated
               ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`
@@ -448,6 +445,6 @@ export default function SupportTicketsPage() {
         isOpen={isNewTicketModalOpen}
         onClose={() => setIsNewTicketModalOpen(false)}
       />
-    </div>
+    </>
   )
 }

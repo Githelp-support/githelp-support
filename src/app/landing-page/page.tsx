@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -91,138 +90,135 @@ export default function LandingPageSettings() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Landing page" subtitle="Customize your landing page branding and resources" className="pl-14" />
-        <main className="flex-1 px-8 py-6 overflow-auto">
-          <div className="max-w-4xl">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Landing page" subtitle="Customize your landing page branding and resources" className="pl-14" />
+      <main className="flex-1 px-8 py-6 overflow-auto">
+        <div className="max-w-4xl">
 
-            <div className="bg-background rounded-lg p-6 mb-3">
-              <h2 className="text-base font-semibold text-foreground mb-5">Your support page</h2>
-              <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
-              <div className="flex items-center gap-2 mt-3">
-                <Link
-                  href={
-                    project?.slug
-                      ? `/support/${encodeURIComponent(project.slug)}`
-                      : projectId
-                        ? `/support?project=${encodeURIComponent(projectId)}`
-                        : "/support"
-                  }
-                  target="_blank"
-                >
-                  <Button variant="outline" size="sm" className="text-text-muted border-border bg-transparent cursor-pointer">
-                    <ExternalLink className="w-4 h-4" />
-                    Open
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyLink}
-                  className="text-text-muted border-border bg-transparent cursor-pointer"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      Copy link
-                    </>
-                  )}
+          <div className="bg-background rounded-lg p-6 mb-3">
+            <h2 className="text-base font-semibold text-foreground mb-5">Your support page</h2>
+            <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
+            <div className="flex items-center gap-2 mt-3">
+              <Link
+                href={
+                  project?.slug
+                    ? `/support/${encodeURIComponent(project.slug)}`
+                    : projectId
+                      ? `/support?project=${encodeURIComponent(projectId)}`
+                      : "/support"
+                }
+                target="_blank"
+              >
+                <Button variant="outline" size="sm" className="text-text-muted border-border bg-transparent cursor-pointer">
+                  <ExternalLink className="w-4 h-4" />
+                  Open
                 </Button>
-              </div>
-            </div>
-
-            {/* Resources Section */}
-            <div className="space-y-3">
-              {/* Add Resource Section */}
-                <div className="bg-background rounded-lg p-6">
-                  <h2 className="text-base font-semibold text-foreground mb-5">Add resource</h2>
-
-                  <div className="space-y-4">
-                    <FormField label="Name" id="resource-name">
-                      <Input
-                        id="resource-name"
-                        type="text"
-                        value={newResourceName}
-                        onChange={(e) => setNewResourceName(e.target.value)}
-                        className="bg-background border-border"
-                        placeholder="e.g., Documentation"
-                      />
-                    </FormField>
-
-                    <FormField label="URL" id="resource-url">
-                      <Input
-                        id="resource-url"
-                        type="url"
-                        value={newResourceUrl}
-                        onChange={(e) => setNewResourceUrl(e.target.value)}
-                        className="bg-background border-border"
-                        placeholder="https://example.com"
-                      />
-                    </FormField>
-
-                    <Button
-                      onClick={handleAddResource}
-                      disabled={!newResourceName || !newResourceUrl || createResource.isPending}
-                      variant="lavender"
-                      className="text-ui"
-                    >
-                      <Plus className="w-4 h-4" />
-                      {createResource.isPending ? "Adding..." : "Add resource"}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Resources List Section */}
-                <div className="bg-background rounded-lg p-6">
-                  <h2 className="text-base font-semibold text-foreground mb-5">Resources</h2>
-
-                  {resourcesLoading ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-text-tertiary">Loading resources...</p>
-                    </div>
-                  ) : resources.length === 0 ? (
-                    <div className="text-left py-8">
-                      <p className="text-sm text-text-tertiary">No resources added yet</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {resources.map((resource) => (
-                        <div
-                          key={resource.id}
-                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-page-muted transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-sm font-medium text-foreground">{resource.name}</h3>
-                              <ExternalLink className="w-3 h-3 text-text-tertiary" />
-                            </div>
-                            <p className="text-xs text-text-tertiary mt-1">{resource.url}</p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteResource(resource.id)}
-                            disabled={deleteResource.isPending}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyLink}
+                className="text-text-muted border-border bg-transparent cursor-pointer"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copy link
+                  </>
+                )}
+              </Button>
             </div>
           </div>
-        </main>
-      </div>
+
+          {/* Resources Section */}
+          <div className="space-y-3">
+            {/* Add Resource Section */}
+              <div className="bg-background rounded-lg p-6">
+                <h2 className="text-base font-semibold text-foreground mb-5">Add resource</h2>
+
+                <div className="space-y-4">
+                  <FormField label="Name" id="resource-name">
+                    <Input
+                      id="resource-name"
+                      type="text"
+                      value={newResourceName}
+                      onChange={(e) => setNewResourceName(e.target.value)}
+                      className="bg-background border-border"
+                      placeholder="e.g., Documentation"
+                    />
+                  </FormField>
+
+                  <FormField label="URL" id="resource-url">
+                    <Input
+                      id="resource-url"
+                      type="url"
+                      value={newResourceUrl}
+                      onChange={(e) => setNewResourceUrl(e.target.value)}
+                      className="bg-background border-border"
+                      placeholder="https://example.com"
+                    />
+                  </FormField>
+
+                  <Button
+                    onClick={handleAddResource}
+                    disabled={!newResourceName || !newResourceUrl || createResource.isPending}
+                    variant="lavender"
+                    className="text-ui"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {createResource.isPending ? "Adding..." : "Add resource"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Resources List Section */}
+              <div className="bg-background rounded-lg p-6">
+                <h2 className="text-base font-semibold text-foreground mb-5">Resources</h2>
+
+                {resourcesLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-text-tertiary">Loading resources...</p>
+                  </div>
+                ) : resources.length === 0 ? (
+                  <div className="text-left py-8">
+                    <p className="text-sm text-text-tertiary">No resources added yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {resources.map((resource) => (
+                      <div
+                        key={resource.id}
+                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-page-muted transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-medium text-foreground">{resource.name}</h3>
+                            <ExternalLink className="w-3 h-3 text-text-tertiary" />
+                          </div>
+                          <p className="text-xs text-text-tertiary mt-1">{resource.url}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteResource(resource.id)}
+                          disabled={deleteResource.isPending}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }

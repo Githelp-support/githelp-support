@@ -5,7 +5,6 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ArrowLeft, Download, ExternalLink } from "lucide-react"
 import { Logo } from "@/components/brand/logo"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,17 +46,12 @@ export default function HelperPayoutStatementPage() {
   const ticketHref = statement?.ticketId ? `/helper/tickets/${statement.ticketId}` : null
 
   return (
-    <div className="h-screen flex overflow-hidden print:h-auto print:overflow-visible print:block">
-      <div className="print:hidden contents">
-        <Sidebar />
-      </div>
-
-      <div className="flex-1 flex flex-col overflow-hidden print:overflow-visible print:block">
+    <div className="flex-1 flex flex-col overflow-hidden print:overflow-visible print:block">
         <div className="print:hidden">
           <Header title="Payout statement" subtitle="Proof of payment for a single payout" />
         </div>
 
-        <main className="flex-1 overflow-auto p-6 print:overflow-visible print:p-0">
+        <main className="flex-1 overflow-auto px-8 py-6 print:overflow-visible print:p-0">
           <div className="max-w-3xl mx-auto space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap print:hidden">
               <Button asChild variant="outline" size="sm" className="text-muted-foreground border-border bg-transparent">
@@ -208,7 +202,6 @@ export default function HelperPayoutStatementPage() {
             )}
           </div>
         </main>
-      </div>
     </div>
   )
 }

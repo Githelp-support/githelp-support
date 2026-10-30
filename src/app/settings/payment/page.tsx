@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -447,378 +446,406 @@ export default function PaymentSettingsPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden [&>header]:pl-14">
-        <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="Configure what users pay for support, and how each payment is split between your project and its helpers." />
-        <main className="flex-1 px-8 py-6 overflow-y-auto">
-          {/* Tab Navigation */}
-          <div className="mb-8">
-            <div className="flex gap-1 pl-6">
+    <div className="flex-1 flex flex-col overflow-hidden [&>header]:pl-14">
+      <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="Configure what users pay for support, and how each payment is split between your project and its helpers." />
+      <main className="flex-1 px-8 py-6 overflow-y-auto">
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="flex gap-1 pl-6">
 
-              <button
-                onClick={() => setActiveTab("user")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                  activeTab === "user"
-                    ? "text-brand-primary border-brand-primary"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                }`}
-              >
-                User
-              </button>
-                            <button
-                onClick={() => setActiveTab("helper")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                  activeTab === "helper"
-                    ? "text-brand-primary border-brand-primary"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                }`}
-              >
-                Helper
-              </button>
-            </div>
-            {/* Full-width line below tabs */}
-            <div className="h-px bg-border -mx-8"></div>
+            <button
+              onClick={() => setActiveTab("user")}
+              className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                activeTab === "user"
+                  ? "text-brand-primary border-brand-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              User
+            </button>
+                          <button
+              onClick={() => setActiveTab("helper")}
+              className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                activeTab === "helper"
+                  ? "text-brand-primary border-brand-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              Helper
+            </button>
           </div>
+          {/* Full-width line below tabs */}
+          <div className="h-px bg-border -mx-8"></div>
+        </div>
 
-          <div className="max-w-5xl">
-            {activeTab === "helper" && (
-              <div className="space-y-6">
-                {/* Team Section */}
-                <div className="bg-card rounded-lg p-6">
-                  <div className="flex flex-col sm:flex-row gap-10">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-base font-semibold text-foreground">Team</h2>
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <Button
-                          variant="lavender"
-                          size="sm"
-                          onClick={handleSaveTeamSettings}
-                          disabled={!hasTeamChanges || !teamPercentageValid || updatePaymentSettings.isPending || settingsLoading}
-                        >
-                          {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                        </Button>
+        <div className="max-w-5xl">
+          {activeTab === "helper" && (
+            <div className="space-y-6">
+              {/* Team Section */}
+              <div className="bg-card rounded-lg p-6">
+                <div className="flex flex-col sm:flex-row gap-10">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base font-semibold text-foreground">Team</h2>
+                        <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
-
-                      <div className="space-y-4">
-                        <h3 className="text-ui font-semibold text-foreground">Sharing ratio</h3>
-
-                        <div className="space-y-6">
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm text-muted-foreground">Payment to team-member</span>
-                              <span className="text-sm font-semibold text-foreground">{teamMemberRatio[0]}%</span>
-                            </div>
-                            <div className="relative">
-                              <Slider
-                                value={teamMemberRatio}
-                                onValueChange={handleTeamMemberChange}
-                                max={100}
-                                step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm text-muted-foreground">Payment to project</span>
-                              <span className="text-sm font-semibold text-foreground">{teamProjectRatio[0]}%</span>
-                            </div>
-                            <div className="relative">
-                              <Slider
-                                value={teamProjectRatio}
-                                onValueChange={handleTeamProjectChange}
-                                max={100}
-                                step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <Button
+                        variant="lavender"
+                        size="sm"
+                        onClick={handleSaveTeamSettings}
+                        disabled={!hasTeamChanges || !teamPercentageValid || updatePaymentSettings.isPending || settingsLoading}
+                      >
+                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                      </Button>
                     </div>
-                    <DistributionPreview
-                      helperPercentage={teamMemberRatio[0]}
-                      oneHourTotal={oneHourTotal}
-                    />
-                  </div>
-                </div>
 
-                {/* Community Section */}
-                <div className="bg-card rounded-lg p-6">
-                  <div className="flex flex-col sm:flex-row gap-10">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-base font-semibold text-foreground">Community</h2>
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <Button
-                          variant="lavender"
-                          size="sm"
-                          onClick={handleSaveCommunitySettings}
-                          disabled={!hasCommunityChanges || !communityPercentageValid || updatePaymentSettings.isPending || settingsLoading}
-                        >
-                          {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                        </Button>
-                      </div>
-
-                      <div className="space-y-4">
-                        <h3 className="text-ui font-semibold text-foreground">Sharing ratio</h3>
-
-                        <div className="space-y-6">
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm text-muted-foreground">Payment to community helper</span>
-                              <span className="text-sm font-semibold text-foreground">{communityHelperRatio[0]}%</span>
-                            </div>
-                            <div className="relative">
-                              <Slider
-                                value={communityHelperRatio}
-                                onValueChange={handleCommunityHelperChange}
-                                min={85}
-                                max={100}
-                                step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm text-muted-foreground">Payment to project</span>
-                              <span className="text-sm font-semibold text-foreground">{communityProjectRatio[0]}%</span>
-                            </div>
-                            <div className="relative">
-                              <Slider
-                                value={communityProjectRatio}
-                                onValueChange={handleCommunityProjectChange}
-                                min={0}
-                                max={15}
-                                step={1}
-                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-muted rounded-md px-5 py-3 mt-4">
-                          <p className="text-ui text-muted-foreground">Payment to community helper can&apos;t be below 85%</p>
-                        </div>
-                      </div>
-                    </div>
-                    <DistributionPreview
-                      helperPercentage={communityHelperRatio[0]}
-                      oneHourTotal={oneHourTotal}
-                    />
-                  </div>
-                </div>
-
-                {/* External Consultants Section */}
-                <div className="bg-card rounded-lg p-6">
-                  <div className="flex flex-col sm:flex-row gap-10">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-base font-semibold text-foreground">External Consultants and Companies</h2>
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <Button
-                          variant="lavender"
-                          size="sm"
-                          onClick={handleSaveConsultantSettings}
-                          disabled={!hasConsultantChanges || !consultantPercentageValid || updatePaymentSettings.isPending || settingsLoading}
-                        >
-                          {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                        </Button>
-                      </div>
+                    <div className="space-y-4">
+                      <h3 className="text-ui font-semibold text-foreground">Sharing ratio</h3>
 
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-ui font-semibold text-foreground mb-4">Type of contract</h3>
-                          <div className="space-y-3">
-                            <label className="flex items-center gap-3 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="contractType"
-                                value="ticket"
-                                checked={contractType === "ticket"}
-                                onChange={(e) => setContractType(e.target.value as "ticket")}
-                                className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
-                              />
-                              <span className="text-sm text-muted-foreground">By the ticket</span>
-                            </label>
-                            <label className="flex items-center gap-3 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="contractType"
-                                value="outside"
-                                checked={contractType === "outside"}
-                                onChange={(e) => setContractType(e.target.value as "outside")}
-                                className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
-                              />
-                              <span className="text-sm text-muted-foreground">Payment outside Githelp</span>
-                            </label>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm text-muted-foreground">Payment to team-member</span>
+                            <span className="text-sm font-semibold text-foreground">{teamMemberRatio[0]}%</span>
+                          </div>
+                          <div className="relative">
+                            <Slider
+                              value={teamMemberRatio}
+                              onValueChange={handleTeamMemberChange}
+                              max={100}
+                              step={1}
+                              className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
+                            />
                           </div>
                         </div>
 
                         <div>
-                          <h3 className="text-ui font-semibold text-foreground mb-4">Sharing ratio</h3>
-                          <div className="space-y-6">
-                            <div>
-                              <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm text-muted-foreground">Payment to consultant/company</span>
-                                <span className="text-sm font-semibold text-foreground">{consultantRatio[0]}%</span>
-                              </div>
-                              <div className="relative">
-                                <Slider
-                                  value={consultantRatio}
-                                  onValueChange={handleConsultantChange}
-                                  max={100}
-                                  step={1}
-                                  className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
-                                />
-                              </div>
-                            </div>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm text-muted-foreground">Payment to project</span>
+                            <span className="text-sm font-semibold text-foreground">{teamProjectRatio[0]}%</span>
+                          </div>
+                          <div className="relative">
+                            <Slider
+                              value={teamProjectRatio}
+                              onValueChange={handleTeamProjectChange}
+                              max={100}
+                              step={1}
+                              className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <DistributionPreview
+                    helperPercentage={teamMemberRatio[0]}
+                    oneHourTotal={oneHourTotal}
+                  />
+                </div>
+              </div>
 
-                            <div>
-                              <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm text-muted-foreground">Payment to project</span>
-                                <span className="text-sm font-semibold text-foreground">{consultantProjectRatio[0]}%</span>
-                              </div>
-                              <div className="relative">
-                                <Slider
-                                  value={consultantProjectRatio}
-                                  onValueChange={handleConsultantProjectChange}
-                                  max={100}
-                                  step={1}
-                                  className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
-                                />
-                              </div>
+              {/* Community Section */}
+              <div className="bg-card rounded-lg p-6">
+                <div className="flex flex-col sm:flex-row gap-10">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base font-semibold text-foreground">Community</h2>
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <Button
+                        variant="lavender"
+                        size="sm"
+                        onClick={handleSaveCommunitySettings}
+                        disabled={!hasCommunityChanges || !communityPercentageValid || updatePaymentSettings.isPending || settingsLoading}
+                      >
+                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-ui font-semibold text-foreground">Sharing ratio</h3>
+
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm text-muted-foreground">Payment to community helper</span>
+                            <span className="text-sm font-semibold text-foreground">{communityHelperRatio[0]}%</span>
+                          </div>
+                          <div className="relative">
+                            <Slider
+                              value={communityHelperRatio}
+                              onValueChange={handleCommunityHelperChange}
+                              min={85}
+                              max={100}
+                              step={1}
+                              className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm text-muted-foreground">Payment to project</span>
+                            <span className="text-sm font-semibold text-foreground">{communityProjectRatio[0]}%</span>
+                          </div>
+                          <div className="relative">
+                            <Slider
+                              value={communityProjectRatio}
+                              onValueChange={handleCommunityProjectChange}
+                              min={0}
+                              max={15}
+                              step={1}
+                              className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-muted rounded-md px-5 py-3 mt-4">
+                        <p className="text-ui text-muted-foreground">Payment to community helper can&apos;t be below 85%</p>
+                      </div>
+                    </div>
+                  </div>
+                  <DistributionPreview
+                    helperPercentage={communityHelperRatio[0]}
+                    oneHourTotal={oneHourTotal}
+                  />
+                </div>
+              </div>
+
+              {/* External Consultants Section */}
+              <div className="bg-card rounded-lg p-6">
+                <div className="flex flex-col sm:flex-row gap-10">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base font-semibold text-foreground">External Consultants and Companies</h2>
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <Button
+                        variant="lavender"
+                        size="sm"
+                        onClick={handleSaveConsultantSettings}
+                        disabled={!hasConsultantChanges || !consultantPercentageValid || updatePaymentSettings.isPending || settingsLoading}
+                      >
+                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-ui font-semibold text-foreground mb-4">Type of contract</h3>
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="contractType"
+                              value="ticket"
+                              checked={contractType === "ticket"}
+                              onChange={(e) => setContractType(e.target.value as "ticket")}
+                              className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                            />
+                            <span className="text-sm text-muted-foreground">By the ticket</span>
+                          </label>
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="contractType"
+                              value="outside"
+                              checked={contractType === "outside"}
+                              onChange={(e) => setContractType(e.target.value as "outside")}
+                              className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                            />
+                            <span className="text-sm text-muted-foreground">Payment outside Githelp</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-ui font-semibold text-foreground mb-4">Sharing ratio</h3>
+                        <div className="space-y-6">
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm text-muted-foreground">Payment to consultant/company</span>
+                              <span className="text-sm font-semibold text-foreground">{consultantRatio[0]}%</span>
+                            </div>
+                            <div className="relative">
+                              <Slider
+                                value={consultantRatio}
+                                onValueChange={handleConsultantChange}
+                                max={100}
+                                step={1}
+                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm text-muted-foreground">Payment to project</span>
+                              <span className="text-sm font-semibold text-foreground">{consultantProjectRatio[0]}%</span>
+                            </div>
+                            <div className="relative">
+                              <Slider
+                                value={consultantProjectRatio}
+                                onValueChange={handleConsultantProjectChange}
+                                max={100}
+                                step={1}
+                                className="w-full [&_[data-slot='slider-thumb']]:border-brand-primary [&_[data-slot='slider-thumb']]:bg-brand-primary [&_[data-slot='slider-range']]:bg-brand-primary"
+                              />
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <DistributionPreview
-                      helperPercentage={consultantRatio[0]}
-                      oneHourTotal={oneHourTotal}
-                    />
                   </div>
+                  <DistributionPreview
+                    helperPercentage={consultantRatio[0]}
+                    oneHourTotal={oneHourTotal}
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === "user" && (
-              <div className="space-y-6">
-                {/* Users of support Section */}
-                <div className="bg-card rounded-lg p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <h2 className="text-base font-semibold text-foreground">Payment options</h2>
-                    <InfoTooltip
-                      label="About payment options"
-                      content="Choose how users can pay for support. With pay per ticket, users pay for each ticket that gets claimed. With SLAs, users get support under the terms of an agreement. You can offer one or both."
-                    />
-                  </div>
+          {activeTab === "user" && (
+            <div className="space-y-6">
+              {/* Users of support Section */}
+              <div className="bg-card rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <h2 className="text-base font-semibold text-foreground">Payment options</h2>
+                  <InfoTooltip
+                    label="About payment options"
+                    content="Choose how users can pay for support. With pay per ticket, users pay for each ticket that gets claimed. With SLAs, users get support under the terms of an agreement. You can offer one or both."
+                  />
+                </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-3">
-                      <label
-                        htmlFor="by-ticket"
-                        className={cn(
-                          "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
-                          paymentByTicket && "border-brand-primary bg-brand-primary/5"
-                        )}
-                      >
-                        <Checkbox
-                          id="by-ticket"
-                          checked={paymentByTicket}
-                          onCheckedChange={(checked) => setPaymentByTicket(checked === true)}
-                          className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
-                        />
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">By the ticket</span>
-                            <Info className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Users pay per support ticket based on the configured ticket cost below.
-                          </p>
-                        </div>
-                      </label>
-
-                      <label
-                        htmlFor="sla"
-                        className={cn(
-                          "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
-                          paymentBySLA && "border-brand-primary bg-brand-primary/5"
-                        )}
-                      >
-                        <Checkbox
-                          id="sla"
-                          checked={paymentBySLA}
-                          onCheckedChange={(checked) => setPaymentBySLA(checked === true)}
-                          className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
-                        />
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">SLA</span>
-                            <Info className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Users subscribe to a service-level agreement with guaranteed response times.
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="flex mt-6">
-                    <Button
-                      variant="lavender"
-                      size="sm"
-                      onClick={handleSaveUserOptions}
-                      disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <label
+                      htmlFor="by-ticket"
+                      className={cn(
+                        "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                        paymentByTicket && "border-brand-primary bg-brand-primary/5"
+                      )}
                     >
-                      {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                    </Button>
+                      <Checkbox
+                        id="by-ticket"
+                        checked={paymentByTicket}
+                        onCheckedChange={(checked) => setPaymentByTicket(checked === true)}
+                        className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
+                      />
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">By the ticket</span>
+                          <Info className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Users pay per support ticket based on the configured ticket cost below.
+                        </p>
+                      </div>
+                    </label>
+
+                    <label
+                      htmlFor="sla"
+                      className={cn(
+                        "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
+                        paymentBySLA && "border-brand-primary bg-brand-primary/5"
+                      )}
+                    >
+                      <Checkbox
+                        id="sla"
+                        checked={paymentBySLA}
+                        onCheckedChange={(checked) => setPaymentBySLA(checked === true)}
+                        className="mt-0.5 data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary"
+                      />
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">SLA</span>
+                          <Info className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Users subscribe to a service-level agreement with guaranteed response times.
+                        </p>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
-                {/* Ticket cost Section */}
-                <div className="bg-card rounded-lg p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
-                    <InfoTooltip
-                      label="About Stripe fees"
-                      className="max-w-sm"
-                      content={
-                        <>
-                          <span className="block font-semibold">Stripe fee</span>
-                          When a ticket opens, an authorization hold for the estimated time is placed on the
-                          user&apos;s card and captured when the ticket ends. Time beyond the hold is charged
-                          as a separate transaction, long-running tickets are captured once a week, and a declined
-                          card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
-                          fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
-                          from that charge before the helper and project shares above are applied, so a ticket paid in
-                          two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
-                          what the user is charged.
-                        </>
-                      }
-                    />
+                <div className="flex mt-6">
+                  <Button
+                    variant="lavender"
+                    size="sm"
+                    onClick={handleSaveUserOptions}
+                    disabled={!hasUserOptionsChanges || updatePaymentSettings.isPending || settingsLoading}
+                  >
+                    {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Ticket cost Section */}
+              <div className="bg-card rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
+                  <InfoTooltip
+                    label="About Stripe fees"
+                    className="max-w-sm"
+                    content={
+                      <>
+                        <span className="block font-semibold">Stripe fee</span>
+                        When a ticket opens, an authorization hold for the estimated time is placed on the
+                        user&apos;s card and captured when the ticket ends. Time beyond the hold is charged
+                        as a separate transaction, long-running tickets are captured once a week, and a declined
+                        card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
+                        fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
+                        from that charge before the helper and project shares above are applied, so a ticket paid in
+                        two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
+                        what the user is charged.
+                      </>
+                    }
+                  />
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-ui font-semibold text-foreground">Start price</span>
+                      <InfoTooltip
+                        label="About start price"
+                        content="A fixed fee charged when a helper claims a ticket, added on top of any per-minute cost."
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={MAX_PRICE_DOLLARS}
+                        step="0.01"
+                        inputMode="decimal"
+                        value={startPrice}
+                        onChange={(e) => setStartPrice(e.target.value)}
+                        aria-invalid={!!priceErrors.start}
+                        className={cn(
+                          "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
+                          priceErrors.start && "border-destructive"
+                        )}
+                        placeholder="10.00"
+                      />
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">USD/ticket</span>
+                    </div>
+                    {priceErrors.start && <p className="text-xs text-destructive">{priceErrors.start}</p>}
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="flex flex-wrap gap-10">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-ui font-semibold text-foreground">Start price</span>
+                        <span className="text-ui font-semibold text-foreground">Cost/minute - first 60 minutes</span>
                         <InfoTooltip
-                          label="About start price"
-                          content="A fixed fee charged when a helper claims a ticket, added on top of any per-minute cost."
+                          label="About cost per minute for the first 60 minutes"
+                          content="Per-minute rate for the first 60 minutes of support on a ticket."
                         />
                       </div>
                       <div className="flex items-center gap-2">
@@ -828,217 +855,186 @@ export default function PaymentSettingsPage() {
                           max={MAX_PRICE_DOLLARS}
                           step="0.01"
                           inputMode="decimal"
-                          value={startPrice}
-                          onChange={(e) => setStartPrice(e.target.value)}
-                          aria-invalid={!!priceErrors.start}
+                          value={costPerMinuteFirst60}
+                          onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
+                          aria-invalid={!!priceErrors.first60}
                           className={cn(
                             "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
-                            priceErrors.start && "border-destructive"
+                            priceErrors.first60 && "border-destructive"
                           )}
-                          placeholder="10.00"
+                          placeholder="1.50"
                         />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/ticket</span>
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
                       </div>
-                      {priceErrors.start && <p className="text-xs text-destructive">{priceErrors.start}</p>}
+                      {priceErrors.first60 && <p className="text-xs text-destructive">{priceErrors.first60}</p>}
                     </div>
 
-                    <div className="flex flex-wrap gap-10">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-ui font-semibold text-foreground">Cost/minute - first 60 minutes</span>
-                          <InfoTooltip
-                            label="About cost per minute for the first 60 minutes"
-                            content="Per-minute rate for the first 60 minutes of support on a ticket."
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            max={MAX_PRICE_DOLLARS}
-                            step="0.01"
-                            inputMode="decimal"
-                            value={costPerMinuteFirst60}
-                            onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
-                            aria-invalid={!!priceErrors.first60}
-                            className={cn(
-                              "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
-                              priceErrors.first60 && "border-destructive"
-                            )}
-                            placeholder="1.50"
-                          />
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
-                        </div>
-                        {priceErrors.first60 && <p className="text-xs text-destructive">{priceErrors.first60}</p>}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-ui font-semibold text-foreground">Cost/minute - after 60 minutes</span>
+                        <InfoTooltip
+                          label="About cost per minute after 60 minutes"
+                          content="Per-minute rate for support on a ticket after the first 60 minutes."
+                        />
                       </div>
-
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-ui font-semibold text-foreground">Cost/minute - after 60 minutes</span>
-                          <InfoTooltip
-                            label="About cost per minute after 60 minutes"
-                            content="Per-minute rate for support on a ticket after the first 60 minutes."
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            max={MAX_PRICE_DOLLARS}
-                            step="0.01"
-                            inputMode="decimal"
-                            value={costPerMinuteAfter60}
-                            onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
-                            aria-invalid={!!priceErrors.after60}
-                            className={cn(
-                              "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
-                              priceErrors.after60 && "border-destructive"
-                            )}
-                            placeholder="1.00"
-                          />
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
-                        </div>
-                        {priceErrors.after60 && <p className="text-xs text-destructive">{priceErrors.after60}</p>}
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={MAX_PRICE_DOLLARS}
+                          step="0.01"
+                          inputMode="decimal"
+                          value={costPerMinuteAfter60}
+                          onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
+                          aria-invalid={!!priceErrors.after60}
+                          className={cn(
+                            "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
+                            priceErrors.after60 && "border-destructive"
+                          )}
+                          placeholder="1.00"
+                        />
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
                       </div>
-                    </div>
-
-                    <div className="flex mt-6">
-                      <Button
-                        variant="lavender"
-                        size="sm"
-                        onClick={handleSaveUserSettings}
-                        disabled={!hasUserChanges || !pricesValid || updatePaymentSettings.isPending || settingsLoading}
-                      >
-                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                      </Button>
+                      {priceErrors.after60 && <p className="text-xs text-destructive">{priceErrors.after60}</p>}
                     </div>
                   </div>
-                </div>
 
-                {/* Spending caps Section (temporarily hidden — see SHOW_SPENDING_CAPS) */}
-                {SHOW_SPENDING_CAPS && (
-                <div className="bg-card rounded-lg border border-border p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-semibold text-foreground">Spending caps</h2>
-                      <Info className="w-4 h-4 text-muted-foreground" />
-                    </div>
+                  <div className="flex mt-6">
                     <Button
                       variant="lavender"
                       size="sm"
-                      onClick={handleSaveCaps}
-                      disabled={!orgId || !hasCapsChanges || updateCaps.isPending}
+                      onClick={handleSaveUserSettings}
+                      disabled={!hasUserChanges || !pricesValid || updatePaymentSettings.isPending || settingsLoading}
                     >
-                      {updateCaps.isPending ? "Saving..." : "Save"}
+                      {updatePaymentSettings.isPending ? "Saving..." : "Save"}
                     </Button>
                   </div>
-
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Monthly limits enforced when employer-billed tickets are
-                    authorized. Leave blank for no cap.
-                  </p>
-
-                  <div className="flex flex-wrap gap-10">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-ui font-semibold text-foreground">Org-wide monthly cap</span>
-                        <Info className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={orgMonthlyCap}
-                          onChange={(e) => setOrgMonthlyCap(e.target.value)}
-                          className={cn(
-                            "w-[230px] text-right pr-1 border-border"
-                          )}
-                          placeholder="No cap"
-                          disabled={!orgId}
-                        />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/month</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-ui font-semibold text-foreground">Default per-user monthly cap</span>
-                        <Info className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={defaultUserCap}
-                          onChange={(e) => setDefaultUserCap(e.target.value)}
-                          className={cn(
-                            "w-[230px] text-right pr-1 border-border"
-                          )}
-                          placeholder="No cap"
-                          disabled={!orgId}
-                        />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">USD/user/month</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
-                )}
+              </div>
 
-                {/* Set up payouts Section */}
-                <div className="bg-card rounded-lg p-6">
+              {/* Spending caps Section (temporarily hidden — see SHOW_SPENDING_CAPS) */}
+              {SHOW_SPENDING_CAPS && (
+              <div className="bg-card rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold text-foreground">Set up payouts</h2>
-                    <InfoTooltip
-                      label="About setting up payouts"
-                      content="Payouts are set up through Stripe. You will be sent to Stripe's own website to complete the set up."
-                    />
+                    <h2 className="text-base font-semibold text-foreground">Spending caps</h2>
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <Button
+                    variant="lavender"
+                    size="sm"
+                    onClick={handleSaveCaps}
+                    disabled={!orgId || !hasCapsChanges || updateCaps.isPending}
+                  >
+                    {updateCaps.isPending ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-6">
+                  Monthly limits enforced when employer-billed tickets are
+                  authorized. Leave blank for no cap.
+                </p>
+
+                <div className="flex flex-wrap gap-10">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-ui font-semibold text-foreground">Org-wide monthly cap</span>
+                      <Info className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={orgMonthlyCap}
+                        onChange={(e) => setOrgMonthlyCap(e.target.value)}
+                        className={cn(
+                          "w-[230px] text-right pr-1 border-border"
+                        )}
+                        placeholder="No cap"
+                        disabled={!orgId}
+                      />
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">USD/month</span>
+                    </div>
                   </div>
 
-                  <div className="mt-8 flex flex-col gap-10">
-                    {/* GitHub → Stripe connection */}
-                    <div className="flex items-center gap-1">
-                      {/* Third-party brand colour (GitHub); kept on purpose, not a token. */}
-                      <div className={`flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] ${SQUIRCLE_RADIUS[42]}`}>
-                        <Logo className="size-6 text-[#24292f]" variant="dark" />
-                      </div>
-                      <div className="flex items-center gap-1.5 px-0.5">
-                        <span className="size-1 rounded-full bg-muted-foreground/40" />
-                        <span className="size-1 rounded-full bg-muted-foreground/40" />
-                        <span className="size-1 rounded-full bg-muted-foreground/40" />
-                      </div>
-                      {/* Third-party brand colour (Stripe); kept on purpose, not a token. */}
-                      <div className={`flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] ${SQUIRCLE_RADIUS[42]}`}>
-                        <img
-                          src="/images/stripe-svg.svg"
-                          alt="Stripe"
-                          className="size-[22px] object-contain"
-                        />
-                      </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-ui font-semibold text-foreground">Default per-user monthly cap</span>
+                      <Info className="w-4 h-4 text-muted-foreground" />
                     </div>
-
-                    <p className="max-w-[502px] text-sm leading-normal tracking-tight text-text-muted">
-                      All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
-                      payouts from support.
-                    </p>
-
-                    <div className="flex items-center gap-3">
-                      <Button
-                        className="w-fit px-5 py-2.5 text-ui font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
-                        onClick={handleSetupPayouts}
-                        disabled={!project?.organization_id || startConnect.isPending}
-                      >
-                        <Landmark className="w-4 h-4" />
-                        {startConnect.isPending ? "Starting..." : "Set up payouts"}
-                      </Button>
-                      <span className="text-sm text-muted-foreground">
-                        Status: <span className="font-medium text-foreground">{orgStatusLabel}</span>
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={defaultUserCap}
+                        onChange={(e) => setDefaultUserCap(e.target.value)}
+                        className={cn(
+                          "w-[230px] text-right pr-1 border-border"
+                        )}
+                        placeholder="No cap"
+                        disabled={!orgId}
+                      />
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">USD/user/month</span>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </main>
-      </div>
+              )}
+
+              {/* Set up payouts Section */}
+              <div className="bg-card rounded-lg p-6">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-foreground">Set up payouts</h2>
+                  <InfoTooltip
+                    label="About setting up payouts"
+                    content="Payouts are set up through Stripe. You will be sent to Stripe's own website to complete the set up."
+                  />
+                </div>
+
+                <div className="mt-8 flex flex-col gap-10">
+                  {/* GitHub → Stripe connection */}
+                  <div className="flex items-center gap-1">
+                    {/* Third-party brand colour (GitHub); kept on purpose, not a token. */}
+                    <div className={`flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] ${SQUIRCLE_RADIUS[42]}`}>
+                      <Logo className="size-6 text-[#24292f]" variant="dark" />
+                    </div>
+                    <div className="flex items-center gap-1.5 px-0.5">
+                      <span className="size-1 rounded-full bg-muted-foreground/40" />
+                      <span className="size-1 rounded-full bg-muted-foreground/40" />
+                      <span className="size-1 rounded-full bg-muted-foreground/40" />
+                    </div>
+                    {/* Third-party brand colour (Stripe); kept on purpose, not a token. */}
+                    <div className={`flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] ${SQUIRCLE_RADIUS[42]}`}>
+                      <img
+                        src="/images/stripe-svg.svg"
+                        alt="Stripe"
+                        className="size-[22px] object-contain"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="max-w-[502px] text-sm leading-normal tracking-tight text-text-muted">
+                    All payouts to the repository are processed with Stripe. Set up payouts, so you can receive any
+                    payouts from support.
+                  </p>
+
+                  <div className="flex items-center gap-3">
+                    <Button
+                      className="w-fit px-5 py-2.5 text-ui font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                      onClick={handleSetupPayouts}
+                      disabled={!project?.organization_id || startConnect.isPending}
+                    >
+                      <Landmark className="w-4 h-4" />
+                      {startConnect.isPending ? "Starting..." : "Set up payouts"}
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Status: <span className="font-medium text-foreground">{orgStatusLabel}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }

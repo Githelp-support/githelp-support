@@ -8,7 +8,7 @@ This document describes the structure and conventions used in the codebase to ke
 - **`components/`** – React components.
   - **`ui/`** – Reusable primitives (Button, Input, DrawerPanel, FormField, Sonner, etc.). Prefer single responsibility; use design tokens (e.g. `text-foreground`, `border-border`, `bg-brand-primary`) so themes stay consistent.
   - **`brand/`** – Brand assets (e.g. Logo).
-  - **`layout/`** – App shell: header, sidebar, protected-layout, notifications-panel.
+  - **`layout/`** – App shell: app-shell (renders the Sidebar and page frame once), header, sidebar, top-bar, protected-layout, notifications-panel.
   - **`auth/`** – Auth guard and invite flows: auth-guard, helper-invite-acceptance.
   - **`modals/`** – Dialog-style overlays: ai-rephrase-modal, image-upload-modal, sla-confirmation-modal.
   - **`drawers/`** – Side panels: add-helper-drawer, accept-request-drawer, log-time-drawer, end-ticket-drawer, create-sla-drawer.
@@ -35,6 +35,6 @@ This document describes the structure and conventions used in the codebase to ke
 
 ## Adding a new page or feature
 
-- Create the page under `app/` and use existing layout (e.g. `ProtectedLayout`, support layout).
+- Create the page under `app/`. The Sidebar and the page frame come from `AppShell` (root layout); a page renders only `<Header … />` plus a scrolling `<main>` inside a `flex-1 flex flex-col overflow-hidden` column. Add the route to `isShellRoute` in `components/layout/app-shell.tsx` if it is a new top-level section. Put the page's primary action in `Header`'s `actions` prop.
 - Add data fetching in a hook under `hooks/` and use it in the page.
 - Reuse UI from `components/ui` and, when needed, add new UI primitives there so other features can use them.

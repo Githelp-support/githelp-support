@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
@@ -117,42 +116,37 @@ export default function ProfileSettingsPage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto px-8 py-6">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile for the selected project" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to view and edit your helper profile.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (!currentHelperLoading && projectId && helperId === null) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto px-8 py-6">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile for the selected project" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-sm text-muted-foreground">You are not registered as a helper in this project.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (isLoading || !helperData) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile" />
-          <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </main>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile" />
+        <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </main>
       </div>
     )
   }
@@ -161,13 +155,11 @@ export default function ProfileSettingsPage() {
   const displayAvatar = (displayName || "U")[0].toUpperCase()
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="My profile" subtitle="View and edit your profile details" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="My profile" subtitle="View and edit your profile details" />
-
-        <main className="flex-1 overflow-auto px-8 py-6">
+      <main className="flex-1 overflow-auto px-8 py-6">
+        <div className="max-w-3xl divide-y divide-border-subtle">
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
@@ -182,7 +174,7 @@ export default function ProfileSettingsPage() {
           </div>
 
           {/* Editable contact information */}
-          <section className="mb-8 rounded-lg py-6">
+          <section className="py-6 first:pt-0">
             <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">
@@ -238,8 +230,8 @@ export default function ProfileSettingsPage() {
               </Button>
             </div>
           </section>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

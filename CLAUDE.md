@@ -95,7 +95,10 @@ src/
 
 ## Key Things to Know
 
-- **Provider chain:** `ReactQueryProvider` → `UserProvider` → `ProjectProvider` → `ProtectedLayout`
+- **Provider chain:** `ReactQueryProvider` → `UserProvider` → `ProjectProvider` → `ProtectedLayout` → `UnsavedChangesProvider` → `TopBar` + `AppShell`
+- **App shell:** `components/layout/app-shell.tsx` renders the `Sidebar` and the page frame once, in the root layout, for every app route (`isShellRoute`). New pages never render `<Sidebar />` or an `h-screen` wrapper themselves: a page returns `<div className="flex-1 flex flex-col overflow-hidden"><Header … /><main className="flex-1 overflow-y-auto px-8 py-6">…</main></div>`. Loading, error and empty branches render inside the same frame. Support pages publish the sidebar's "Open project page" link with `useSetProjectPageHref(href)`.
+- **Header:** `components/layout/header.tsx` is the standard page header (title `text-title`, subtitle `text-ui`, hairline below, sticky). Put a page's primary action in its `actions` prop instead of at the top of the content.
+- **Page layout:** content gutters `px-8 py-6`, 32px between sections. List pages use the full width up to `max-w-7xl`; settings pages use a `max-w-3xl` column with sections separated by hairline dividers.
 - **Auth guard:** `AuthGuard` checks `supabase.auth.getSession()` and redirects unauthenticated users to `/auth/signin`
 - **Onboarding redirect:** `useOnboardingStatus` sends new users to `/onboarding` or `/onboarding/waiting`
 - **React Query defaults:** staleTime 3 hours, retry 1, refetchOnWindowFocus enabled (see `src/lib/react-query/provider.tsx`)

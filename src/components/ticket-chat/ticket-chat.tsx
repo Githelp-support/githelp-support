@@ -313,7 +313,7 @@ export function TicketChat(props: TicketChatProps) {
     <div className="flex-1 flex overflow-hidden">
       {/* Left column: Header + main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="relative border-b border-border z-10">
+        <div className="relative z-10">
           <Header
             title={headerTitle}
             titleClassName={headerTitleClassName}

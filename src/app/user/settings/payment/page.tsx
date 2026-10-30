@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Info, CreditCard } from "lucide-react"
@@ -194,56 +193,53 @@ export default function UserPaymentSettingsPage() {
   const syncingCard = confirmingCard
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden [&>header]:pl-14">
-        <Header title="Payment" subtitle="Manage how you pay for support" />
-        <main className="flex-1 px-8 py-6 overflow-y-auto">
-          <div className="max-w-3xl space-y-6">
-            <div className="bg-card rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-base font-semibold text-foreground">Card and payment</h2>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Add a card to pay for support tickets. When you open a ticket, we
-                place a temporary authorization hold and only charge you for the
-                time spent helping you. Your card is stored securely with Stripe.
-              </p>
-              <div className="mt-6 flex items-center gap-3">
-                <Button
-                  className="w-fit px-5 py-2.5 text-ui font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
-                  onClick={handleAddOrReplaceCard}
-                  disabled={!userId || setupCard.isPending || syncingCard}
-                >
-                  {setupCard.isPending
-                    ? "Starting..."
-                    : hasCardOnFile ? "Replace card" : "Add card"}
-                </Button>
-                {status.isLoading || syncingCard ? (
-                  <span className="text-sm text-muted-foreground">
-                    {syncingCard ? "Confirming your card…" : "Checking…"}
+    <div className="flex-1 flex flex-col overflow-hidden [&>header]:pl-14">
+      <Header title="Payment" subtitle="Manage how you pay for support" />
+      <main className="flex-1 px-8 py-6 overflow-y-auto">
+        <div className="max-w-3xl space-y-6">
+          <div className="bg-card rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="text-base font-semibold text-foreground">Card and payment</h2>
+              <Info className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Add a card to pay for support tickets. When you open a ticket, we
+              place a temporary authorization hold and only charge you for the
+              time spent helping you. Your card is stored securely with Stripe.
+            </p>
+            <div className="mt-6 flex items-center gap-3">
+              <Button
+                className="w-fit px-5 py-2.5 text-ui font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                onClick={handleAddOrReplaceCard}
+                disabled={!userId || setupCard.isPending || syncingCard}
+              >
+                {setupCard.isPending
+                  ? "Starting..."
+                  : hasCardOnFile ? "Replace card" : "Add card"}
+              </Button>
+              {status.isLoading || syncingCard ? (
+                <span className="text-sm text-muted-foreground">
+                  {syncingCard ? "Confirming your card…" : "Checking…"}
+                </span>
+              ) : hasCardOnFile ? (
+                <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5">
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">
+                    {cardBrandLabel}
+                    {cardLast4 ? (
+                      <span className="text-muted-foreground font-normal">
+                        {" "}•••• {cardLast4}
+                      </span>
+                    ) : null}
                   </span>
-                ) : hasCardOnFile ? (
-                  <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5">
-                    <CreditCard className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">
-                      {cardBrandLabel}
-                      {cardLast4 ? (
-                        <span className="text-muted-foreground font-normal">
-                          {" "}•••• {cardLast4}
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">No card yet</span>
-                )}
-              </div>
+                </div>
+              ) : (
+                <span className="text-sm text-muted-foreground">No card yet</span>
+              )}
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

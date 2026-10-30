@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Input } from "@/components/ui/input"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
-import { Sidebar } from "@/components/layout/sidebar"
+import { useSetProjectPageHref } from "@/components/layout/app-shell"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -175,6 +175,7 @@ export default function UserSupportChatPage() {
     : effectiveProjectId
       ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
       : undefined
+  useSetProjectPageHref(projectPageHref)
   const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
@@ -539,12 +540,9 @@ export default function UserSupportChatPage() {
       (!!sessionUserId && userTicketsLoadingForResolve) || !!latestUserTicket
     if (resolving) {
       return (
-        <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
-          <Sidebar />
-          <main className="flex-1 flex items-center justify-center">
-            <div className="text-sm text-muted-foreground">Loading your support…</div>
-          </main>
-        </div>
+        <main className="flex-1 flex items-center justify-center bg-page-muted">
+          <div className="text-sm text-muted-foreground">Loading your support…</div>
+        </main>
       )
     }
 
@@ -585,9 +583,8 @@ export default function UserSupportChatPage() {
     }
 
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
+      <>
+        <main className="flex-1 overflow-y-auto bg-page-muted">
           <div className="max-w-3xl mx-auto px-6 py-12">
             <h1 className="text-2xl font-semibold text-foreground mb-2">
               Which project do you need support with?
@@ -684,7 +681,7 @@ export default function UserSupportChatPage() {
           </div>
         </main>
         <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
-      </div>
+      </>
     )
   }
 
@@ -693,35 +690,29 @@ export default function UserSupportChatPage() {
   const openingOtherTicket = !!ticketIdParam && ticketIdParam !== createdTicketId
   if (openingOtherTicket && existingTicketLoading) {
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
-        <Sidebar projectPageHref={projectPageHref} />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-sm text-muted-foreground">Loading ticket…</div>
-        </main>
-      </div>
+      <main className="flex-1 flex items-center justify-center bg-page-muted">
+        <div className="text-sm text-muted-foreground">Loading ticket…</div>
+      </main>
     )
   }
 
   if (openingOtherTicket && !existingTicket?.id) {
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-page-muted">
-        <Sidebar projectPageHref={projectPageHref} />
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-6 py-12">
-            <TicketUnavailableNotice
-              linking={adoptionRetry.linking}
-              failedFinal={adoptionRetry.failedFinal}
-              deferred={adoptionRetry.deferred}
-              onLink={adoptionRetry.linkNow}
-              // The guest conversation's key ran out before it was linked.
-              expired={isAuthenticated && !adoptionRetry.linking && wasGuestAdoptionExpired()}
-              newConversationHref={
-                projectIdParam ? `/support/chat?project=${encodeURIComponent(projectIdParam)}` : "/support/chat"
-              }
-            />
-          </div>
-        </main>
-      </div>
+      <main className="flex-1 overflow-y-auto bg-page-muted">
+        <div className="max-w-3xl mx-auto px-6 py-12">
+          <TicketUnavailableNotice
+            linking={adoptionRetry.linking}
+            failedFinal={adoptionRetry.failedFinal}
+            deferred={adoptionRetry.deferred}
+            onLink={adoptionRetry.linkNow}
+            // The guest conversation's key ran out before it was linked.
+            expired={isAuthenticated && !adoptionRetry.linking && wasGuestAdoptionExpired()}
+            newConversationHref={
+              projectIdParam ? `/support/chat?project=${encodeURIComponent(projectIdParam)}` : "/support/chat"
+            }
+          />
+        </div>
+      </main>
     )
   }
 
@@ -919,9 +910,7 @@ export default function UserSupportChatPage() {
   )
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
-      <Sidebar projectPageHref={projectPageHref} />
-
+    <>
       <TicketChat
         headerTitle={`Ticket with ${projectName}`}
         headerTitleClassName="text-xl"
@@ -1025,6 +1014,6 @@ export default function UserSupportChatPage() {
         />
       )}
       <SignInModal isOpen={isSignInModalOpen} onClose={() => setIsSignInModalOpen(false)} />
-    </div>
+    </>
   )
 }

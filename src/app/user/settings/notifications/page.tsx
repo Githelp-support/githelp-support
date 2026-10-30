@@ -1,6 +1,5 @@
 "use client"
 
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import {
   PersonalNotificationSettings,
@@ -32,18 +31,16 @@ const EMAIL_GROUPS: EmailGroupOption[] = [
 
 export default function UserNotificationsSettingsPage() {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Notification preferences" subtitle="Manage how you want to be notified" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Notification preferences" subtitle="Manage how you want to be notified" />
-
-        <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto px-8 py-6">
+        <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-2xl">
             <PersonalNotificationSettings emailGroups={EMAIL_GROUPS} />
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { UnsavedChangesProvider } from "@/contexts/unsaved-changes-context"
 import { ReactQueryProvider } from "@/lib/react-query/provider"
 import { ProtectedLayout } from "@/components/layout/protected-layout"
 import { TopBar } from "@/components/layout/top-bar"
+import { AppShell } from "@/components/layout/app-shell"
 import { LoadingFallback } from "@/components/ui/loading-fallback"
 import { Toaster } from "@/components/ui/sonner"
 import { GuestAdoptionConfirmDialog } from "@/components/auth/guest-adoption-confirm-dialog"
@@ -48,7 +49,8 @@ export default function RootLayout({
                   <UnsavedChangesProvider>
                     <div className="flex flex-col h-screen">
                       <TopBar />
-                      {children}
+                      {/* Sidebar + page frame, rendered once; pages only render Header + content. */}
+                      <AppShell>{children}</AppShell>
                     </div>
                   </UnsavedChangesProvider>
                 </ProtectedLayout>

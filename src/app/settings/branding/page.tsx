@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,98 +67,99 @@ export default function BrandingSettingsPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <>
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Branding" subtitle="Customize your project logo and primary color" />
         <main className="flex-1 px-8 py-6 overflow-auto">
-          <div className="max-w-4xl space-y-6">
-            {/* Logo Upload Section */}
-            <div className="bg-background rounded-lg py-6">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-base font-semibold text-foreground">Logo</h2>
+          <div className="max-w-3xl divide-y divide-border-subtle">
+            <div className="max-w-4xl space-y-6">
+              {/* Logo Upload Section */}
+              <div className="bg-background rounded-lg py-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-base font-semibold text-foreground">Logo</h2>
+                </div>
+
+                <div className="space-y-6">
+                  <Label className="text-sm leading-normal tracking-tight text-text-muted">
+                    Project logo
+                  </Label>
+                  <div className="flex items-center gap-4">
+                    {brandingData?.logo_url ? (
+                      <div className="relative w-32 h-32 border-2 border-border-subtle rounded-lg overflow-hidden">
+                        <Image
+                          src={brandingData.logo_url}
+                          alt="Logo preview"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 border-2 border-dashed border-border-subtle rounded-lg flex items-center justify-center bg-muted/50">
+                        <span className="text-4xl text-muted-foreground">
+                          {project?.name?.[0]?.toUpperCase() || "?"}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsUploadModalOpen(true)}
+                        className="text-muted-foreground border-border-control bg-transparent"
+                      >
+                        {brandingData?.logo_url ? "Change logo" : "Upload logo"}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Recommended size: 200x200px. Max file size: 6MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-6">
-                <Label className="text-sm leading-normal tracking-tight text-text-muted">
-                  Project logo
-                </Label>
-                <div className="flex items-center gap-4">
-                  {brandingData?.logo_url ? (
-                    <div className="relative w-32 h-32 border-2 border-border-subtle rounded-lg overflow-hidden">
-                      <Image
-                        src={brandingData.logo_url}
-                        alt="Logo preview"
-                        fill
-                        className="object-contain"
+              {/* Primary Color Section */}
+              <div className="bg-background rounded-lg py-6">
+                <h2 className="text-base font-semibold text-foreground mb-2">Primary color</h2>
+
+                <div className="space-y-6">
+                  <Label htmlFor="primary-color" className="text-sm leading-normal tracking-tight text-text-muted">
+                    Choose a primary color
+                  </Label>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-16 h-16 rounded-lg border-2 border-border-control cursor-pointer"
+                      style={{ backgroundColor: primaryColor }}
+                      onClick={() => document.getElementById("primary-color")?.click()}
+                    />
+                    <div className="flex-1">
+                      <input
+                        id="primary-color"
+                        type="color"
+                        value={primaryColor}
+                        onChange={(e) => setEditedColor(e.target.value)}
+                        className="hidden"
                       />
+                      <Input
+                        type="text"
+                        value={primaryColor}
+                        onChange={(e) => setEditedColor(e.target.value)}
+                        className="max-w-xs border-border-control"
+                        placeholder="#554abf"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        This color will be used for buttons, links, and other primary elements on your landing page
+                      </p>
                     </div>
-                  ) : (
-                    <div className="w-32 h-32 border-2 border-dashed border-border-subtle rounded-lg flex items-center justify-center bg-muted/50">
-                      <span className="text-4xl text-muted-foreground">
-                        {project?.name?.[0]?.toUpperCase() || "?"}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsUploadModalOpen(true)}
-                      className="text-muted-foreground border-border-control bg-transparent"
-                    >
-                      {brandingData?.logo_url ? "Change logo" : "Upload logo"}
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Recommended size: 200x200px. Max file size: 6MB
-                    </p>
                   </div>
+                  <Button
+                    variant="lavender"
+                    size="sm"
+                    onClick={handleSaveColor}
+                    disabled={updateBranding.isPending}
+                  >
+                    {updateBranding.isPending ? "Saving..." : "Save"}
+                  </Button>
                 </div>
-              </div>
-            </div>
-
-            {/* Primary Color Section */}
-            <div className="bg-background rounded-lg py-6">
-              <h2 className="text-base font-semibold text-foreground mb-2">Primary color</h2>
-
-              <div className="space-y-6">
-                <Label htmlFor="primary-color" className="text-sm leading-normal tracking-tight text-text-muted">
-                  Choose a primary color
-                </Label>
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-16 h-16 rounded-lg border-2 border-border-control cursor-pointer"
-                    style={{ backgroundColor: primaryColor }}
-                    onClick={() => document.getElementById("primary-color")?.click()}
-                  />
-                  <div className="flex-1">
-                    <input
-                      id="primary-color"
-                      type="color"
-                      value={primaryColor}
-                      onChange={(e) => setEditedColor(e.target.value)}
-                      className="hidden"
-                    />
-                    <Input
-                      type="text"
-                      value={primaryColor}
-                      onChange={(e) => setEditedColor(e.target.value)}
-                      className="max-w-xs border-border-control"
-                      placeholder="#554abf"
-                    />
-                    <p className="text-xs text-muted-foreground mt-2">
-                      This color will be used for buttons, links, and other primary elements on your landing page
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="lavender"
-                  size="sm"
-                  onClick={handleSaveColor}
-                  disabled={updateBranding.isPending}
-                >
-                  {updateBranding.isPending ? "Saving..." : "Save"}
-                </Button>
               </div>
             </div>
           </div>
@@ -180,7 +180,7 @@ export default function BrandingSettingsPage() {
           currentImageUrl={brandingData?.logo_url || null}
         />
       )}
-    </div>
+    </>
   )
 }
 
