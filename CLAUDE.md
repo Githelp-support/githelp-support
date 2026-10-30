@@ -80,6 +80,7 @@ src/
 - **Component variants:** Use `class-variance-authority` (cva) for variant-driven components
 - **Button variants:** `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`, `lavender`
 - **Data attributes:** `data-slot` for styling hooks on UI primitives
+- **Shared states (use these; don't build ad-hoc versions):** `Tooltip`/`TooltipTrigger`/`TooltipContent` from `components/ui/tooltip` (one `TooltipProvider` lives in the root layout; collapsed sidebar items and `Header`'s `info` prop use it); `Skeleton`, `ListSkeleton` (4–5 placeholder rows for a loading list) and `PageSkeleton` (route-level loading inside the shell) from `components/ui/skeleton`; `EmptyState` (tinted squircle icon tile, title, optional one-line description and action) from `components/ui/empty-state`; `ErrorState` (same layout plus a "Try again" button wired to the query's `refetch`) from `components/ui/error-state`. Keep `Loader2` only inside buttons, the chat composer, image upload and small inline actions.
 
 ## Scripts
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Copy, Check } from "lucide-react"
 import { SLA_CREATION_UNAVAILABLE_TOOLTIP } from "@/lib/constants"
@@ -61,9 +61,8 @@ export function SLAConfirmationModal({ isOpen, onClose, slaId }: SLAConfirmation
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cancel
           </Button>
-          <TooltipPrimitive.Provider delayDuration={150}>
-            <TooltipPrimitive.Root open={tipOpen} onOpenChange={setTipOpen}>
-              <TooltipPrimitive.Trigger asChild>
+            <Tooltip open={tipOpen} onOpenChange={setTipOpen}>
+              <TooltipTrigger asChild>
                 <Button
                   type="button"
                   variant="lavender"
@@ -76,19 +75,14 @@ export function SLAConfirmationModal({ isOpen, onClose, slaId }: SLAConfirmation
                 >
                   Confirm creation
                 </Button>
-              </TooltipPrimitive.Trigger>
-              <TooltipPrimitive.Portal>
-                <TooltipPrimitive.Content
+              </TooltipTrigger>
+                <TooltipContent
                   side="top"
                   sideOffset={8}
-                  className="z-[60] max-w-xs rounded-md bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-white shadow-md"
                 >
                   {SLA_CREATION_UNAVAILABLE_TOOLTIP}
-                  <TooltipPrimitive.Arrow className="fill-foreground" />
-                </TooltipPrimitive.Content>
-              </TooltipPrimitive.Portal>
-            </TooltipPrimitive.Root>
-          </TooltipPrimitive.Provider>
+                </TooltipContent>
+            </Tooltip>
         </div>
       </div>
     </>

@@ -45,6 +45,7 @@ import {
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { cn } from "@/lib/utils"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 // dd/mm/yyyy, matching the helper reports page
 const formatDate = (dateString: string) => {
@@ -487,7 +488,7 @@ export default function UserReportsPage() {
                 </div>
 
                 {isBusy ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading payments...</div>
+                  <ListSkeleton rows={5} />
                 ) : showPreview ? (
                   USER_PAYMENT_PREVIEW_ROWS.map((row) => (
                     <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
@@ -728,7 +729,7 @@ export default function UserReportsPage() {
                   </div>
                 </div>
                 {isBusy ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading reports...</div>
+                  <ListSkeleton rows={5} />
                 ) : showPreview ? (
                   USER_MONTHLY_PREVIEW_ROWS.map((row) => (
                     <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">

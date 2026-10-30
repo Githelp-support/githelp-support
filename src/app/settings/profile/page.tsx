@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
 import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -144,8 +145,8 @@ export default function ProfileSettingsPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="Helper profile" />
-        <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <ListSkeleton rows={4} avatar={false} badge={false} className="max-w-3xl divide-y-0" />
         </main>
       </div>
     )

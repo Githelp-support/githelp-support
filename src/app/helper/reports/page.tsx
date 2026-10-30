@@ -47,6 +47,7 @@ import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -558,7 +559,7 @@ export default function HelperReportsPage() {
 
             <div className="divide-y divide-border">
               {isBusy ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading payouts...</div>
+                <ListSkeleton rows={5} />
               ) : showPreview ? (
                 PAYOUT_PREVIEW_ROWS.map((payout) => (
                   <div key={payout.id} role="presentation" className="px-6 py-4 opacity-80">
@@ -810,7 +811,7 @@ export default function HelperReportsPage() {
             </div>
             <div className="divide-y divide-border">
               {isBusy ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading reports...</div>
+                <ListSkeleton rows={5} />
               ) : showPreview ? (
                 HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
                   <div key={row.id} role="presentation" className="px-6 py-4 opacity-80">

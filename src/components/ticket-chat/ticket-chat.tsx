@@ -26,6 +26,7 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { isPaymentFailedCtaLive } from "@/lib/customer-chat-messages"
 import { VisitorLeftAction } from "@/components/ticket-chat/guest-ticket"
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -619,7 +620,7 @@ export function TicketChat(props: TicketChatProps) {
               <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
 
               {participantsLoading ? (
-                <SidebarEmpty className="text-sm">Loading...</SidebarEmpty>
+                <ListSkeleton rows={2} badge={false} className="divide-y-0 [&>div]:px-0" />
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (

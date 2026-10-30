@@ -1,13 +1,10 @@
-import { Loader2 } from "lucide-react"
+import { PageSkeleton } from "@/components/ui/skeleton"
 
-/** Shared loading UI for Suspense fallbacks and initial load. */
+/** Shared loading UI for Suspense fallbacks and initial load: a content-area skeleton. */
 export function LoadingFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-page-muted">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" aria-hidden />
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
+    <div className="flex min-h-screen flex-col bg-background">
+      <PageSkeleton />
     </div>
   )
 }

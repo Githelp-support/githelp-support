@@ -38,6 +38,8 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { buildProjectPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 
 type Tab = "monthly" | "tickets" | "helpers"
 type SortDirection = "asc" | "desc"
@@ -572,11 +574,9 @@ export default function ReportsSupportPage() {
               </div>
               <div className="divide-y divide-border">
                 {isLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
+                  <ListSkeleton rows={5} />
                 ) : monthlyRows.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">
-                    {targetMonth ? `No income found for ${targetMonth}` : "No income found"}
-                  </div>
+                  <EmptyState size="sm" title={targetMonth ? `No income found for ${targetMonth}` : "No income found"} />
                 ) : (
                   monthlyRows.map((row) => (
                     <div
@@ -675,7 +675,7 @@ export default function ReportsSupportPage() {
               </div>
               <div className="divide-y divide-border">
                 {isLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
+                  <ListSkeleton rows={5} />
                 ) : ticketRows.length === 0 ? (
                   <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("ticket payments")}</div>
                 ) : (
@@ -854,7 +854,7 @@ export default function ReportsSupportPage() {
               </div>
               <div className="divide-y divide-border">
                 {isLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
+                  <ListSkeleton rows={5} />
                 ) : helperRows.length === 0 ? (
                   <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("helper payouts")}</div>
                 ) : (

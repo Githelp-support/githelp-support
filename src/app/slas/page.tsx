@@ -10,6 +10,9 @@ import { CreateSLADrawer } from "@/components/drawers/create-sla-drawer"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 
 const slaColors = ["#cbbcf6", "#d0f6bc", "#f6e6bc", "#bcedf6"]
 
@@ -51,7 +54,7 @@ export default function SLAsPage() {
   const projectId = selectedProjectId ?? undefined
 
   // Fetch SLAs
-  const { data: slasData, isLoading } = useSLAs(projectId)
+  const { data: slasData, isLoading, isError, refetch } = useSLAs(projectId)
 
   // Transform SLAs to UI format
   const slaData = useMemo(() => {
@@ -234,7 +237,9 @@ export default function SLAsPage() {
             {/* Table Body */}
             <div className="divide-y divide-border">
               {isLoading ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading SLAs...</div>
+                <ListSkeleton rows={5} />
+              ) : isError ? (
+                <ErrorState size="sm" onRetry={() => refetch()} />
               ) : filteredAndSortedSLAs.length > 0 ? (
                 filteredAndSortedSLAs.map((sla, index) => (
                 <div key={index} className="px-6 py-4 hover:bg-page-muted">
@@ -280,7 +285,7 @@ export default function SLAsPage() {
                 </div>
               ))
               ) : (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">No SLAs found</div>
+                <EmptyState size="sm" title="No SLAs found" />
               )}
             </div>
           </div>

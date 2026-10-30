@@ -12,6 +12,7 @@ import { TopBar } from "@/components/layout/top-bar"
 import { AppShell } from "@/components/layout/app-shell"
 import { LoadingFallback } from "@/components/ui/loading-fallback"
 import { Toaster } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { GuestAdoptionConfirmDialog } from "@/components/auth/guest-adoption-confirm-dialog"
 import { Suspense } from "react"
 
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className={`font-sans ${inter.variable} ${GeistMono.variable} ${outfit.variable} h-full`}>
+        <TooltipProvider delayDuration={300}>
         <Suspense fallback={<LoadingFallback />}>
           <ReactQueryProvider>
             <UserProvider>
@@ -58,6 +60,7 @@ export default function RootLayout({
             </UserProvider>
           </ReactQueryProvider>
         </Suspense>
+        </TooltipProvider>
         {/* Single global Toaster: sonner renders every toast in each mounted
             Toaster without an id, so a second one shows everything twice.
             Mounted at body level so public routes (invite, onboarding) and

@@ -42,6 +42,8 @@ import {
   transactionsPanelId,
   useExpandedRows,
 } from "@/components/reports/ticket-transactions"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 type SortDirection = "asc" | "desc"
 type TicketsSortField = "ticket" | "date" | "amount" | "status"
@@ -420,7 +422,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Helper Details" aboveTitle={backLink} />
         <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
-          <div className="text-sm">Loading helper...</div>
+          <ListSkeleton rows={4} className="rounded-lg border border-border-subtle" />
         </main>
       </div>
     )
@@ -576,9 +578,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             </div>
             <div className="divide-y divide-border">
               {ticketsLoading ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
+                <ListSkeleton rows={5} />
               ) : helper.tickets.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">No tickets for this period.</div>
+                <EmptyState size="sm" title="No tickets for this period." />
               ) : (
                 helper.tickets.map((ticket) => {
                   const count = ticket.transfers.length

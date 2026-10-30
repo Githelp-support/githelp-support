@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Info, Landmark } from "lucide-react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Logo } from "@/components/brand/logo"
 import { useProject, useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
 import { useStartPaymentConnect } from "@/hooks/usePaymentConnect"
@@ -1053,9 +1053,8 @@ function InfoTooltip({
   const [open, setOpen] = useState(false)
 
   return (
-    <TooltipPrimitive.Provider delayDuration={150}>
-      <TooltipPrimitive.Root open={open} onOpenChange={setOpen}>
-        <TooltipPrimitive.Trigger asChild>
+      <Tooltip open={open} onOpenChange={setOpen}>
+        <TooltipTrigger asChild>
           <button
             type="button"
             aria-label={label}
@@ -1064,21 +1063,14 @@ function InfoTooltip({
           >
             <Info className="w-4 h-4 text-muted-foreground" />
           </button>
-        </TooltipPrimitive.Trigger>
-        <TooltipPrimitive.Portal>
-          <TooltipPrimitive.Content
+        </TooltipTrigger>
+          <TooltipContent
             side="top"
             sideOffset={6}
-            className={cn(
-              "z-[60] max-w-xs rounded-md bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-white shadow-md",
-              className
-            )}
+            className={className}
           >
             {content}
-            <TooltipPrimitive.Arrow className="fill-foreground" />
-          </TooltipPrimitive.Content>
-        </TooltipPrimitive.Portal>
-      </TooltipPrimitive.Root>
-    </TooltipPrimitive.Provider>
+          </TooltipContent>
+      </Tooltip>
   )
 }

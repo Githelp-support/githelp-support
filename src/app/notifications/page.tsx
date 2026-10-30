@@ -16,6 +16,9 @@ import {
   type Notification,
 } from "@/hooks/useNotifications"
 import { formatRelativeTime } from "@/lib/format"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 
 const PAGE_SIZE = 25
 
@@ -23,7 +26,7 @@ type Filter = "all" | "unread"
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const { data: notifications = [], isLoading } = useNotifications()
+  const { data: notifications = [], isLoading, isError, refetch } = useNotifications()
   const markNotificationRead = useMarkNotificationRead()
   const markAllRead = useMarkAllNotificationsRead()
 
@@ -90,15 +93,16 @@ export default function NotificationsPage() {
           </div>
 
           {isLoading ? (
-            <div className="p-10 text-center text-muted-foreground">Loading notifications…</div>
+            <ListSkeleton rows={5} />
+          ) : isError ? (
+            <ErrorState size="sm" onRetry={() => refetch()} />
           ) : visible.length === 0 ? (
-            <Card className="border-border-subtle shadow-none rounded-lg">
-              <CardContent className="p-10 flex flex-col items-center text-center gap-2">
-                <Bell className="w-8 h-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  {filter === "unread" ? "You're all caught up." : "No notifications yet."}
-                </p>
-              </CardContent>
+            <Card>
+              <EmptyState
+                icon={Bell}
+                title={filter === "unread" ? "You're all caught up." : "No notifications yet."}
+                description={filter === "unread" ? undefined : "Updates about your tickets and payments will appear here."}
+              />
             </Card>
           ) : (
             <div className="space-y-3">

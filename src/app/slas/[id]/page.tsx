@@ -12,6 +12,7 @@ import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -203,8 +204,8 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-muted">
         <Header title="SLA Details" subtitle="View and manage SLA configuration" />
-        <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
-          <span className="text-muted-foreground text-sm">Loading…</span>
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <ListSkeleton rows={4} className="rounded-lg border border-border-subtle bg-card" />
         </main>
       </div>
     )

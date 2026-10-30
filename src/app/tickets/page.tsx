@@ -20,6 +20,9 @@ import { useUser } from "@/contexts/user-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 
 interface Ticket {
   id: string
@@ -90,7 +93,7 @@ export default function TicketsPage() {
   const isHelper = user.role === "helper"
 
   // Fetch tickets
-  const { data: ticketsData, isLoading } = useTicketsWithDetails(projectId)
+  const { data: ticketsData, isLoading, isError, refetch } = useTicketsWithDetails(projectId)
 
   // Ticket IDs in this project where the current auth user has a
   // tickets_participants row (covers both 'claimed' and 'invited' cases).
@@ -658,7 +661,9 @@ export default function TicketsPage() {
             </div>
           </div>
           {isLoading ? (
-            <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading tickets...</div>
+            <ListSkeleton rows={5} />
+          ) : isError ? (
+            <ErrorState size="sm" onRetry={() => refetch()} />
           ) : filteredTickets.length > 0 ? (
             filteredTickets.map((ticket) => {
               // Unclaimed tickets reuse the expandable gray-row layout from the
@@ -835,7 +840,7 @@ export default function TicketsPage() {
               )
             })
           ) : (
-            <div className="px-6 py-8 text-center text-muted-foreground text-sm">No tickets found</div>
+            <EmptyState size="sm" title="No tickets found" />
           )}
           </>
           )}

@@ -19,6 +19,8 @@ import { useState, useEffect } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { isSupportRoute } from "@/lib/sign-in-href"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import type { ReactElement } from "react"
 
 interface SidebarProps {
   className?: string
@@ -92,6 +94,19 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   })
   const { user } = useUser()
   const isAuthenticated = !!user?.id
+
+  // Collapsed rows have no visible label: show it in a tooltip to the right.
+  const withTooltip = (label: string, node: ReactElement) =>
+    isCollapsed ? (
+      <Tooltip>
+        <TooltipTrigger asChild>{node}</TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    ) : (
+      node
+    )
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
@@ -331,10 +346,11 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                     // Collapsed: open sub-items as a hovering dropdown menu to
                     // the right of the sidebar (matches the role dropdown UX).
                     <DropdownMenu>
+                      <Tooltip>
+                      <TooltipTrigger asChild>
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          title={item.name}
                           aria-label={item.name}
                           className={`w-full flex items-center justify-center h-8 px-2.5 rounded-md text-ui font-medium transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                             hasActiveSubItem ? activeClasses : inactiveClasses
@@ -345,6 +361,11 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                           </span>
                         </button>
                       </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={8}>
+                        {item.name}
+                      </TooltipContent>
+                      </Tooltip>
                       <DropdownMenuContent
                         side="right"
                         align="start"
@@ -443,19 +464,21 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                     </div>
                   )
                 ) : (
+                  withTooltip(
+                    item.name,
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
                       className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 rounded-md text-ui font-medium transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
-                      title={isCollapsed ? item.name : undefined}
                     >
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
                         <FlaticonIcon iconClass={item.icon} />
                       </span>
                       {!isCollapsed && item.name}
                     </div>
-                  </Link>
+                  </Link>,
+                  )
                 )}
               </div>
             )
@@ -464,37 +487,38 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
       </nav>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5 shrink-0">
-        {projectPageHref && (
+        {projectPageHref &&
+          withTooltip(
+            "Open project page",
           <a
             href={projectPageHref}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 h-8 px-2.5 text-ui font-medium rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 text-text-muted hover:bg-surface-hover hover:text-foreground"
-            title={isCollapsed ? "Open project page" : undefined}
           >
             <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
               <FlaticonIcon iconClass="fi-rr-browser" />
             </span>
             {!isCollapsed && "Open project page"}
-          </a>
-        )}
+          </a>,
+          )}
         {bottomItems.map((item) => {
           const isActive = pathname === item.href
           const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 text-ui font-medium rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
             isActive ? "bg-surface-active text-foreground [&_i]:text-brand-primary" : "text-text-muted hover:bg-surface-hover hover:text-foreground"
           }`
-          return (
+          return withTooltip(
+            item.name,
             <Link
               key={item.name}
               href={item.href}
               className={className}
-              title={isCollapsed ? item.name : undefined}
             >
               <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
                 <FlaticonIcon iconClass={item.icon} />
               </span>
               {!isCollapsed && item.name}
-            </Link>
+            </Link>,
           )
         })}
       </div>

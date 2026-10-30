@@ -11,6 +11,8 @@ import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 
 interface ReportData {
   id: string
@@ -101,7 +103,7 @@ export default function ReportsSLAsPage() {
 
   // Fetch SLAs and payment transfers
   const { data: slasData } = useSLAs(projectId)
-  const { data: transfersData, isLoading } = usePaymentTransfers({ projectId })
+  const { data: transfersData, isLoading, isError, refetch } = usePaymentTransfers({ projectId })
 
   // Generate months for dropdown
   const months = useMemo(() => {
@@ -430,7 +432,9 @@ export default function ReportsSLAsPage() {
               {/* Table Body */}
               <div className="divide-y divide-border">
                 {isLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading reports...</div>
+                  <ListSkeleton rows={5} />
+                ) : isError ? (
+                  <ErrorState size="sm" onRetry={() => refetch()} />
                 ) : sortedReports.length === 0 ? (
                   <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("reports")}</div>
                 ) : (
@@ -541,7 +545,9 @@ export default function ReportsSLAsPage() {
               {/* Table Body */}
               <div className="divide-y divide-border">
                 {isLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading tickets...</div>
+                  <ListSkeleton rows={5} />
+                ) : isError ? (
+                  <ErrorState size="sm" onRetry={() => refetch()} />
                 ) : sortedTickets.length === 0 ? (
                   <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("tickets")}</div>
                 ) : (

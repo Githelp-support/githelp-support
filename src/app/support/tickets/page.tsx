@@ -12,15 +12,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { NewTicketModal } from "@/components/modals/new-ticket-modal"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
-import {
-  MessageCircle,
-  Plus,
-  User,
-  ChevronUp,
-  ChevronDown,
-  ChevronsUpDown,
-} from "lucide-react"
+import { MessageCircle, Plus, User, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 
 type TicketFilter = "in-progress" | "completed"
 type SortField = "title" | "createdAt" | "status" | "type"
@@ -80,7 +76,7 @@ function TicketsSortIcon({
 export default function SupportTicketsPage() {
   const { user } = useUser()
   const isAuthenticated = !!user?.id
-  const { data: ticketsData = [], isLoading } = useUserTickets(user?.id)
+  const { data: ticketsData = [], isLoading, isError, refetch } = useUserTickets(user?.id)
   const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<TicketFilter>("in-progress")
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -286,21 +282,22 @@ export default function SupportTicketsPage() {
 
               {/* Loading / Empty / Table */}
               {isLoading ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">Loading your tickets...</div>
+                <ListSkeleton rows={5} />
+              ) : isError ? (
+                <ErrorState size="sm" onRetry={() => refetch()} />
               ) : tickets.length === 0 ? (
-                <Card className="border-border">
-                  <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground mb-4 text-sm">
-                      You have not created any support tickets yet.
-                    </p>
-                    <Button
-                      onClick={() => setIsNewTicketModalOpen(true)}
-                      className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-ui"
-                    >
-                      <Plus className="h-4 w-4" />
-                      New ticket
-                    </Button>
-                  </CardContent>
+                <Card>
+                  <EmptyState
+                    icon={MessageCircle}
+                    title="No tickets yet"
+                    description="You have not created any support tickets yet."
+                    action={
+                      <Button variant="brand" onClick={() => setIsNewTicketModalOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                        New ticket
+                      </Button>
+                    }
+                  />
                 </Card>
               ) : (
                 <div className="bg-card rounded-lg border border-border-subtle overflow-hidden shadow-none">
@@ -430,9 +427,7 @@ export default function SupportTicketsPage() {
                       )
                     })
                   ) : (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">
-                      No tickets found
-                    </div>
+                    <EmptyState size="sm" title="No tickets found" />
                   )}
                 </div>
               )}

@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X } from "lucide-react"
+import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, Users } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,8 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import Link from "next/link"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 
 function isPendingInvite(invite: {
   is_active: boolean
@@ -665,7 +667,7 @@ export default function HelpersPage() {
                   )
                 }
                 if (helpersLoading || requestsLoading || invitesLoading) {
-                  return <div className="px-6 py-8 text-center text-sm text-muted-foreground">Loading...</div>
+                  return <ListSkeleton rows={5} />
                 }
                 if (currentView === "invited") {
                   if (filteredInvites.length > 0) {
@@ -815,21 +817,25 @@ export default function HelpersPage() {
                   const noRealHelpers = (helpersData?.length ?? 0) === 0
                   if (noRealHelpers && projectId) {
                     return (
-                      <div className="px-6 py-12 text-center">
-                        <p className="text-ui text-muted-foreground mb-2">No helpers yet.</p>
-                        <p className="text-ui text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                        <Button className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground rounded-md px-5 py-2.5 text-ui font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
-                          <Plus className="w-4 h-4" />
-                          Add new helper
-                        </Button>
-                      </div>
+                      <EmptyState
+                        icon={Users}
+                        title="No helpers yet."
+                        description="Add helpers by inviting them via email or sharing an invite link."
+                        action={
+                          <Button variant="brand" onClick={() => setIsDrawerOpen(true)}>
+                            <Plus className="w-4 h-4" />
+                            Add new helper
+                          </Button>
+                        }
+                      />
                     )
                   }
                   return (
-                    <div className="px-6 py-12 text-center text-muted-foreground">
-                      <p className="text-ui mb-2">No helpers match your filters.</p>
-                      <p className="text-ui">Try clearing search or switching category to see your team.</p>
-                    </div>
+                    <EmptyState
+                      icon={Users}
+                      title="No helpers match your filters."
+                      description="Try clearing search or switching category to see your team."
+                    />
                   )
                 }
                 return filteredRequests.length > 0 ? (

@@ -16,6 +16,7 @@ import { parseTimeDisplayToMinutes } from "@/lib/format"
 import { homeRouteForRole } from "@/lib/roles"
 import { monthLabel } from "@/lib/user-payment-reports"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
+import { PageSkeleton } from "@/components/ui/skeleton"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -175,12 +176,7 @@ export default function Dashboard() {
 
   if (isResolvingRole || isRedirectingNonAdmin) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Overview" subtitle="Stats and insight" />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-sm text-muted-foreground">Loading…</div>
-        </main>
-      </div>
+      <PageSkeleton />
     )
   }
 

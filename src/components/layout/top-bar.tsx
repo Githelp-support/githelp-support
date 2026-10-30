@@ -1,7 +1,7 @@
 "use client"
 
 import { Bell, ChevronDown, Check, Plus, Lock } from "lucide-react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { usePathname, useRouter } from "next/navigation"
@@ -415,9 +415,8 @@ export function TopBar() {
                   <span className="font-sans truncate text-sm font-medium">Private</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <TooltipPrimitive.Provider delayDuration={150}>
-                  <TooltipPrimitive.Root open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
-                    <TooltipPrimitive.Trigger asChild>
+                  <Tooltip open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
+                    <TooltipTrigger asChild>
                       <DropdownMenuItem
                         className="font-sans text-sm text-brand-primary"
                         // Keep the menu open and show the explanation on tap as
@@ -430,20 +429,15 @@ export function TopBar() {
                         <Plus className="w-4 h-4" />
                         Add employer
                       </DropdownMenuItem>
-                    </TooltipPrimitive.Trigger>
-                    <TooltipPrimitive.Portal>
-                      <TooltipPrimitive.Content
+                    </TooltipTrigger>
+                      <TooltipContent
                         side="right"
                         sideOffset={8}
-                        className="z-[60] max-w-xs rounded-md bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-white shadow-md"
                       >
                         We do not support the possibility to connect your account to an employer at the moment.
                         This functionality will be released in the coming months.
-                        <TooltipPrimitive.Arrow className="fill-foreground" />
-                      </TooltipPrimitive.Content>
-                    </TooltipPrimitive.Portal>
-                  </TooltipPrimitive.Root>
-                </TooltipPrimitive.Provider>
+                      </TooltipContent>
+                  </Tooltip>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : projectsLoading ? (

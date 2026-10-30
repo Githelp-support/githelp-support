@@ -9,6 +9,7 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface HeaderProps {
   title: string
@@ -98,13 +99,20 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
             <div ref={titleRowRef} className="flex items-center gap-3">
               <h1 className={cn("truncate text-title font-semibold text-foreground", titleClassName)}>{title}</h1>
               {info && (
-                <div className="group relative">
-                  <Info className="h-5 w-5 cursor-help text-muted-foreground" />
-                  <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 hidden w-64 rounded-md bg-foreground p-2 text-xs text-background shadow-popover group-hover:block">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="More information"
+                      className="inline-flex cursor-help items-center justify-center rounded-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                    >
+                      <Info className="h-5 w-5" aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="start" className="max-w-64">
                     {info}
-                    <div className="absolute bottom-full left-4 h-0 w-0 border-b-4 border-l-4 border-r-4 border-transparent border-b-foreground" />
-                  </div>
-                </div>
+                  </TooltipContent>
+                </Tooltip>
               )}
               {inlineRightContent && (
                 <div ref={inlineRef} className="flex items-center">

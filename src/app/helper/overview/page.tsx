@@ -17,6 +17,9 @@ import { getTicketStatusBadgeClass } from "@/lib/status-colors"
 import { monthLabel } from "@/lib/user-payment-reports"
 import { cn } from "@/lib/utils"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
 
 const RECENT_TICKETS_LIMIT = 5
 
@@ -63,7 +66,7 @@ export default function HelperOverviewPage() {
   // Recent tickets are keyed by the helper's auth user id (not projects_helpers.helper_id).
   const { user, isLoading: userLoading } = useUser()
   const userId = user?.id
-  const { data: recentTickets = [], isLoading: recentLoading } = useHelperRecentTicketInteractions(
+  const { data: recentTickets = [], isLoading: recentLoading, isError, refetch } = useHelperRecentTicketInteractions(
     userId,
     RECENT_TICKETS_LIMIT
   )
@@ -156,13 +159,16 @@ export default function HelperOverviewPage() {
                 </div>
               </div>
               {isRecentLoading ? (
-                <div className="px-6 py-2.5">
-                  <div className="text-sm text-muted-foreground">Loading your tickets...</div>
-                </div>
+                <ListSkeleton rows={3} />
+              ) : isError ? (
+                <ErrorState size="sm" onRetry={() => refetch()} />
               ) : recentTickets.length === 0 ? (
-                <div className="px-6 py-2.5">
-                  <div className="text-sm text-muted-foreground">No tickets to show</div>
-                </div>
+                <EmptyState
+                  size="sm"
+                  icon={MessageCircle}
+                  title="No tickets to show"
+                  description="Tickets you work on will appear here."
+                />
               ) : (
                 recentTickets.map((ticket) => {
                   const projectName = ticket.project_name || "Project"

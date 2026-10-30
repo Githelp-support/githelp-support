@@ -1,6 +1,6 @@
 "use client"
 
-import { Info, Landmark, Loader2 } from "lucide-react"
+import { Info, Landmark } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
@@ -11,6 +11,7 @@ import { useUser } from "@/contexts/user-context"
 import { useStartHelperPaymentConnect } from "@/hooks/usePaymentConnect"
 import { usePaymentStatus } from "@/hooks/usePaymentStatus"
 import { connectStatusLabel } from "@/lib/payment-status"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 export default function HelperPayoutPage() {
   const { user } = useUser()
@@ -69,8 +70,8 @@ export default function HelperPayoutPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payout" subtitle="Set up payout details for support" />
-        <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <ListSkeleton rows={4} avatar={false} badge={false} className="max-w-3xl divide-y-0" />
         </main>
       </div>
     )

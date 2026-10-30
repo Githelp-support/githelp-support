@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeAll } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 
 import { SLAConfirmationModal } from "./sla-confirmation-modal"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { SLA_CREATION_UNAVAILABLE_TOOLTIP } from "@/lib/constants"
 
 // Radix Tooltip positions its content with Popper, which relies on
@@ -22,14 +23,17 @@ beforeAll(() => {
 function renderModal(overrides: Partial<React.ComponentProps<typeof SLAConfirmationModal>> = {}) {
   const onClose = vi.fn()
   const onConfirm = vi.fn()
+  // The app mounts one TooltipProvider in the root layout; mirror it here.
   const utils = render(
-    <SLAConfirmationModal
-      isOpen
-      onClose={onClose}
-      onConfirm={onConfirm}
-      slaId="sla_123"
-      {...overrides}
-    />,
+    <TooltipProvider>
+      <SLAConfirmationModal
+        isOpen
+        onClose={onClose}
+        onConfirm={onConfirm}
+        slaId="sla_123"
+        {...overrides}
+      />
+    </TooltipProvider>,
   )
   return { ...utils, onClose, onConfirm }
 }

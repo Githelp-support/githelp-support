@@ -59,6 +59,7 @@ import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typesc
 import python from "react-syntax-highlighter/dist/esm/languages/prism/python"
 import { prepareOutgoingMessage } from "@/lib/code-format"
 import { stripTicketAttachments } from "@/lib/ticket-attachments"
+import { PageSkeleton } from "@/components/ui/skeleton"
 
 interface Person {
   name: string
@@ -540,9 +541,7 @@ export default function UserSupportChatPage() {
       (!!sessionUserId && userTicketsLoadingForResolve) || !!latestUserTicket
     if (resolving) {
       return (
-        <main className="flex-1 flex items-center justify-center bg-page-muted">
-          <div className="text-sm text-muted-foreground">Loading your support…</div>
-        </main>
+        <PageSkeleton />
       )
     }
 
@@ -690,9 +689,7 @@ export default function UserSupportChatPage() {
   const openingOtherTicket = !!ticketIdParam && ticketIdParam !== createdTicketId
   if (openingOtherTicket && existingTicketLoading) {
     return (
-      <main className="flex-1 flex items-center justify-center bg-page-muted">
-        <div className="text-sm text-muted-foreground">Loading ticket…</div>
-      </main>
+      <PageSkeleton />
     )
   }
 

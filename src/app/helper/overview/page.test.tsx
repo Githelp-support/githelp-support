@@ -243,7 +243,7 @@ describe("HelperOverviewPage", () => {
 
       render(<HelperOverviewPage />)
 
-      expect(screen.getByText("Loading your tickets...")).toBeInTheDocument()
+      expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
       expect(screen.queryByText("No tickets to show")).not.toBeInTheDocument()
     })
   })

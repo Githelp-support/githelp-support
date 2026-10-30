@@ -80,6 +80,7 @@ import { prepareOutgoingMessage } from "@/lib/code-format"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 interface Message {
   id: string
@@ -1344,7 +1345,7 @@ export default function TicketDetailPage() {
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
             {participantsLoading ? (
-              <div className="text-center text-muted-foreground text-sm py-4">Loading...</div>
+              <ListSkeleton rows={2} badge={false} className="divide-y-0 [&>div]:px-0" />
             ) : allParticipants.length > 0 ? (
               <div className="space-y-2 mb-3">
                 {allParticipants.map((participant) => {

@@ -7,11 +7,13 @@ import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
-import { Plus, Trash2, ExternalLink, Copy, Check } from "lucide-react"
+import { Plus, Trash2, ExternalLink, Copy, Check, FolderOpen } from "lucide-react"
 import Link from "next/link"
 import { useUserProjects, useProjectResources, useCreateProjectResource, useDeleteProjectResource } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { toast } from "sonner"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 
 const errorMessage = (error: unknown, fallback: string) =>
   (error instanceof Error && error.message) ||
@@ -181,13 +183,9 @@ export default function LandingPageSettings() {
                 <h2 className="text-base font-semibold text-foreground mb-5">Resources</h2>
 
                 {resourcesLoading ? (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-text-tertiary">Loading resources...</p>
-                  </div>
+                  <ListSkeleton rows={3} avatar={false} badge={false} className="divide-y-0 [&>div]:px-0" />
                 ) : resources.length === 0 ? (
-                  <div className="text-left py-8">
-                    <p className="text-sm text-text-tertiary">No resources added yet</p>
-                  </div>
+                  <EmptyState size="sm" icon={FolderOpen} title="No resources added yet" description="Links you add here show on the support page." />
                 ) : (
                   <div className="space-y-3">
                     {resources.map((resource) => (

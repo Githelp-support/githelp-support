@@ -4,7 +4,9 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Search } from "lucide-react"
+import { Search, FolderOpen } from "lucide-react"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export interface SupportResource {
   id: string | number
@@ -60,9 +62,9 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
       <h2 className="text-title font-normal text-text-secondary mb-8">{projectName}&apos;s resources</h2>
 
       {resourcesLoading ? (
-        <p className="text-sm text-text-tertiary">Loading resources...</p>
+        <ListSkeleton rows={3} avatar={false} badge={false} className="max-w-xl divide-y-0 [&>div]:px-0" />
       ) : resources.length === 0 ? (
-        <p className="text-text-tertiary">No resources available yet.</p>
+        <EmptyState size="sm" icon={FolderOpen} title="No resources available yet." className="items-start px-0 text-left" />
       ) : (
         <div className="flex flex-wrap gap-3">
           {resources.map((resource) => (
