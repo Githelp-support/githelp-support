@@ -47,15 +47,16 @@ import {
 } from "@/hooks/useNotifications"
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications"
 import type { Database } from "@/types/database"
+import { SQUIRCLE_RADIUS, squircleRadiusClass } from "@/lib/constants"
 
 type Project = Database["public"]["Tables"]["projects"]["Row"]
 
-// Corner radius map: 11/32 of the element pixel size (matches sidebar avatar sizing)
+// Corner radius per size class, from the shared squircle map (about 34% of the size).
 const sizeRadiusMap: Record<string, string> = {
-  "w-5 h-5": "rounded-[7px]",
-  "w-[22px] h-[22px]": "rounded-[8px]",
-  "w-6 h-6": "rounded-[8px]",
-  "w-8 h-8": "rounded-[11px]",
+  "w-5 h-5": SQUIRCLE_RADIUS[20],
+  "w-[22px] h-[22px]": SQUIRCLE_RADIUS[22],
+  "w-6 h-6": SQUIRCLE_RADIUS[24],
+  "w-8 h-8": SQUIRCLE_RADIUS[32],
 }
 
 // Project Logo Component with Avatar Placeholder.
@@ -72,7 +73,7 @@ const ProjectLogo = ({
   primaryColor?: string | null
 }) => {
   const firstLetter = projectName?.[0]?.toUpperCase() || "?"
-  const radius = sizeRadiusMap[size] || "rounded-[9px]"
+  const radius = sizeRadiusMap[size] || squircleRadiusClass(0)
   const hasLogo = typeof logoUrl === "string" && logoUrl.length > 0
 
   return (
@@ -91,7 +92,7 @@ const ProjectLogo = ({
 // Avatar-sized stand-in for the private user context in the project control.
 const PrivateContextIcon = ({ size }: { size: string }) => (
   <span
-    className={`${size} ${sizeRadiusMap[size] || "rounded-[9px]"} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
+    className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
   >
     <Lock className="w-3 h-3" strokeWidth={2.2} />
   </span>
@@ -348,7 +349,7 @@ export function TopBar() {
           {/* Role dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
-              <span className="font-sans text-[14px] text-muted-foreground">{getRoleDisplayName(user.role)}</span>
+              <span className="font-sans text-sm text-muted-foreground">{getRoleDisplayName(user.role)}</span>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
@@ -373,7 +374,7 @@ export function TopBar() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer font-sans text-[14px] text-brand-primary"
+                    className="cursor-pointer font-sans text-sm text-brand-primary"
                     onClick={goToAddRole}
                   >
                     <Plus className="w-4 h-4" />
@@ -399,7 +400,7 @@ export function TopBar() {
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <PrivateContextIcon size="w-[22px] h-[22px]" />
-                    <span className="font-sans text-[14px] font-[550] text-sidebar-foreground truncate">Private</span>
+                    <span className="font-sans text-sm font-medium text-sidebar-foreground truncate">Private</span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 </button>
@@ -411,14 +412,14 @@ export function TopBar() {
               >
                 <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
                   <PrivateContextIcon size="w-5 h-5" />
-                  <span className="font-sans truncate text-[14px] font-[500]">Private</span>
+                  <span className="font-sans truncate text-sm font-medium">Private</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <TooltipPrimitive.Provider delayDuration={150}>
                   <TooltipPrimitive.Root open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
                     <TooltipPrimitive.Trigger asChild>
                       <DropdownMenuItem
-                        className="font-sans text-[14px] text-brand-primary"
+                        className="font-sans text-sm text-brand-primary"
                         // Keep the menu open and show the explanation on tap as
                         // well as on hover.
                         onSelect={(e) => {
@@ -447,7 +448,7 @@ export function TopBar() {
             </DropdownMenu>
           ) : projectsLoading ? (
             <div className="flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg">
-              <div className="font-sans text-[14px] text-muted-foreground">Loading projects...</div>
+              <div className="font-sans text-sm text-muted-foreground">Loading projects...</div>
             </div>
           ) : userProjects.length > 0 ? (
             <DropdownMenu>
@@ -463,7 +464,7 @@ export function TopBar() {
                       size="w-[22px] h-[22px]"
                       primaryColor={selectedProjectBranding?.primary_color}
                     />
-                    <span className="font-sans text-[14px] font-[550] text-sidebar-foreground truncate">
+                    <span className="font-sans text-sm font-medium text-sidebar-foreground truncate">
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
@@ -492,7 +493,7 @@ export function TopBar() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="font-sans text-[14px] text-brand-primary"
+                  className="font-sans text-sm text-brand-primary"
                   onClick={goToAddRole}
                 >
                   <Plus className="w-4 h-4" />
@@ -508,14 +509,14 @@ export function TopBar() {
           <button
             type="button"
             onClick={handleAuthClick}
-            className="font-sans text-[13px] text-muted-foreground hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
+            className="font-sans text-ui text-muted-foreground hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer"
           >
             {isSignedIn ? "Sign out" : "Sign in"}
           </button>
           <button
             ref={bellButtonRef}
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
-            className="relative p-1 mt-[2px] hover:bg-muted rounded-md transition-colors cursor-pointer"
+            className="relative p-1 mt-0.5 hover:bg-muted rounded-md transition-colors cursor-pointer"
           >
             <Bell className="w-[18px] h-[18px] text-text-muted" strokeWidth={1.95} />
             {unreadCount > 0 && (
@@ -570,9 +571,9 @@ function ProjectLogoWithBranding({
         primaryColor={branding?.primary_color}
       />
       <span
-        className={`font-sans truncate text-[14px] ${
+        className={`font-sans truncate text-sm ${
           isSelected
-            ? "font-[500]"
+            ? "font-medium"
             : "font-medium text-text-muted group-focus:text-sidebar-foreground"
         }`}
       >

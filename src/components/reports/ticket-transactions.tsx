@@ -57,7 +57,7 @@ export function TransactionsToggle({
       aria-expanded={expanded}
       aria-controls={expanded ? panelId : undefined}
       className={cn(
-        "mt-1 inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2 py-0.5 text-[11px] font-medium text-brand-primary hover:bg-brand-primary/15 cursor-pointer",
+        "mt-1 inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2 py-0.5 text-xs font-medium text-brand-primary hover:bg-brand-primary/15 cursor-pointer",
         className,
       )}
     >

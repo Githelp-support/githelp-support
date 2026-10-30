@@ -143,7 +143,7 @@ export default function NotificationsPage() {
                         {notification.title}
                       </p>
                       <p
-                        className={`text-[13px] leading-relaxed ${
+                        className={`text-ui leading-relaxed ${
                           !notification.is_read ? "text-foreground/80" : "text-muted-foreground"
                         }`}
                       >

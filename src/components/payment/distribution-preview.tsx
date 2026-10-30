@@ -62,7 +62,7 @@ export function DistributionPreview({
 
   return (
     <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-5">
-      <h4 className="text-[14px] font-semibold text-foreground mb-4">
+      <h4 className="text-sm font-semibold text-foreground mb-4">
         1st hour of support - Distribution
       </h4>
       <div className="space-y-3">
@@ -71,11 +71,11 @@ export function DistributionPreview({
           return (
             <div
               key={label}
-              className="grid grid-cols-3 items-center text-[14px]"
+              className="grid grid-cols-3 items-center text-sm"
             >
-              <span className="col-span-2 pl-[10px] text-muted-foreground">{label}</span>
+              <span className="col-span-2 pl-2.5 text-muted-foreground">{label}</span>
               <span className="text-foreground font-medium tabular-nums">
-                <span className="mr-[3px]">{money.symbol}</span>
+                <span className="mr-1">{money.symbol}</span>
                 {money.amount}
               </span>
             </div>
@@ -83,13 +83,13 @@ export function DistributionPreview({
         })}
       </div>
       <div className="border-t border-border mt-3 pt-3 grid grid-cols-3 items-center">
-        <span className="col-span-2 text-[14px] font-bold text-brand-primary">Sum</span>
-        <span className="text-[14px] font-bold text-brand-primary tabular-nums">
-          <span className="mr-[3px]">{sumMoney.symbol}</span>
+        <span className="col-span-2 text-sm font-semibold text-brand-primary">Sum</span>
+        <span className="text-sm font-semibold text-brand-primary tabular-nums">
+          <span className="mr-1">{sumMoney.symbol}</span>
           {sumMoney.amount}
         </span>
       </div>
-      <p className="mt-3 text-[12px] leading-snug text-muted-foreground">
+      <p className="mt-3 text-xs leading-snug text-muted-foreground">
         Stripe charges a fee (typically 2.9% + $0.30 for US cards) on every
         card transaction. This preview
         assumes one transaction; a ticket charged in several transactions

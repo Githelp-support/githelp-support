@@ -229,7 +229,7 @@ export function TicketChatInput({
   return (
     <div
       className={cn(
-        "bg-card border border-border rounded-[10px] shadow-soft mx-4 mb-4 overflow-hidden",
+        "bg-card border border-border rounded-lg shadow-soft mx-4 mb-4 overflow-hidden",
         dragActive && "border-brand-primary ring-2 ring-brand-primary/30"
       )}
       onDragOver={handleDragOver}
@@ -280,7 +280,7 @@ export function TicketChatInput({
           placeholder={disabled ? "This ticket is closed. New messages can't be sent." : placeholder}
           disabled={!!disabled}
           aria-disabled={!!disabled}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[17px] text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
+          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           spellCheck={!isInsideOpenFence(value, value.length)}

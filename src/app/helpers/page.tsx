@@ -524,7 +524,7 @@ export default function HelpersPage() {
               {showAddSelfAsHelper && (
                 <Button
                   variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-ui font-medium"
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
@@ -535,7 +535,7 @@ export default function HelpersPage() {
               {isAdmin && (
                 <Button
                   variant="ghost"
-                  className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/10 rounded-md text-ui font-medium"
                   onClick={handleCopyInvitationLink}
                   disabled={!projectId}
                   title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
@@ -544,7 +544,7 @@ export default function HelpersPage() {
                   Copy invitation link
                 </Button>
               )}
-              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
+              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground rounded-md px-5 py-2.5 text-ui font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
                 <Plus className="w-4 h-4" />
                 Add new helper
               </Button>
@@ -556,20 +556,20 @@ export default function HelpersPage() {
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
               <Select value={currentView} onValueChange={(value) => handleViewChange(value as "added" | "requests" | "invited")}>
-                <SelectTrigger className="w-full h-[46px] data-[size=default]:h-[46px] border-border-subtle shadow-none rounded-lg text-[14px] font-normal">
+                <SelectTrigger className="w-full h-10 data-[size=default]:h-10 border-border-subtle shadow-none rounded-lg text-sm font-normal">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="added" className="text-[14px] font-normal">Added</SelectItem>
-                  <SelectItem value="requests" className="text-[14px] font-normal">Requests</SelectItem>
-                  <SelectItem value="invited" className="text-[14px] font-normal">Invites</SelectItem>
+                  <SelectItem value="added" className="text-sm font-normal">Added</SelectItem>
+                  <SelectItem value="requests" className="text-sm font-normal">Requests</SelectItem>
+                  <SelectItem value="invited" className="text-sm font-normal">Invites</SelectItem>
                 </SelectContent>
               </Select>
               <div className="relative">
                 <Search className="w-[18px] h-[18px] absolute left-3.5 top-1/2 transform -translate-y-1/2 text-text-tertiary" />
                 <Input
                   placeholder="Search name or GitHub account"
-                  className="pl-10 h-[46px] border-border-subtle shadow-none rounded-lg text-[13px] placeholder:text-text-tertiary focus:border-brand-primary transition-colors"
+                  className="pl-10 h-10 border-border-subtle shadow-none rounded-lg text-ui placeholder:text-text-tertiary focus:border-brand-primary transition-colors"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -578,13 +578,13 @@ export default function HelpersPage() {
 
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
-              <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
+              <span className="text-ui font-medium text-foreground">Open for new helpers</span>
               <Switch
                 checked={openForNewHelpers}
                 onCheckedChange={(checked) => void handleOpenForNewHelpersChange(checked)}
                 disabled={!project || updateProject.isPending}
                 aria-label="Open for new helpers"
-                className="h-[22px] w-[38px] p-[3px] border-0"
+                className="h-[22px] w-[38px] p-1 border-0"
               />
             </div>
           </div>
@@ -657,13 +657,13 @@ export default function HelpersPage() {
                 if (!projectId) {
                   return (
                     <div className="px-6 py-12 text-center">
-                      <p className="text-[13px] text-muted-foreground mb-2">Select a project from the sidebar to view helpers.</p>
-                      <p className="text-[13px] text-muted-foreground">If you don&apos;t see any projects, you may need to create one or be invited to a project first.</p>
+                      <p className="text-ui text-muted-foreground mb-2">Select a project from the sidebar to view helpers.</p>
+                      <p className="text-ui text-muted-foreground">If you don&apos;t see any projects, you may need to create one or be invited to a project first.</p>
                     </div>
                   )
                 }
                 if (helpersLoading || requestsLoading || invitesLoading) {
-                  return <div className="px-6 py-8 text-center text-[14px] text-muted-foreground">Loading...</div>
+                  return <div className="px-6 py-8 text-center text-sm text-muted-foreground">Loading...</div>
                 }
                 if (currentView === "invited") {
                   if (filteredInvites.length > 0) {
@@ -732,13 +732,13 @@ export default function HelpersPage() {
                   const hasActiveInvites = helperInvitesData?.some((invite) => isPendingInvite(invite))
                   if (!hasActiveInvites) {
                     return (
-                      <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending invites</div>
+                      <div className="px-6 py-8 text-center text-ui text-muted-foreground">No pending invites</div>
                     )
                   }
                   return (
                     <div className="px-6 py-12 text-center text-muted-foreground">
-                      <p className="text-[13px] mb-2">No invites match your filters.</p>
-                      <p className="text-[13px]">Try clearing search or switching category to see invites.</p>
+                      <p className="text-ui mb-2">No invites match your filters.</p>
+                      <p className="text-ui">Try clearing search or switching category to see invites.</p>
                     </div>
                   )
                 }
@@ -750,7 +750,7 @@ export default function HelpersPage() {
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
+                        <div className="col-span-3 flex items-center gap-4">
                           <ProfileAvatar
                             id={helper.avatarId}
                             name={helper.name}
@@ -763,7 +763,7 @@ export default function HelpersPage() {
                           <span className="text-sm text-text-heading">{helper.githubAccount || "-"}</span>
                         </div>
                         <div className="col-span-2">
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-[13px] px-3 py-1">
+                          <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-ui px-3 py-1">
                             {helper.category
                               ? mapCategoryToLabel[helper.category as keyof typeof mapCategoryToLabel]
                               : ""}
@@ -814,9 +814,9 @@ export default function HelpersPage() {
                   if (noRealHelpers && projectId) {
                     return (
                       <div className="px-6 py-12 text-center">
-                        <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
-                        <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                        <Button className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
+                        <p className="text-ui text-muted-foreground mb-2">No helpers yet.</p>
+                        <p className="text-ui text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
+                        <Button className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground rounded-md px-5 py-2.5 text-ui font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
                           <Plus className="w-4 h-4" />
                           Add new helper
                         </Button>
@@ -825,8 +825,8 @@ export default function HelpersPage() {
                   }
                   return (
                     <div className="px-6 py-12 text-center text-muted-foreground">
-                      <p className="text-[13px] mb-2">No helpers match your filters.</p>
-                      <p className="text-[13px]">Try clearing search or switching category to see your team.</p>
+                      <p className="text-ui mb-2">No helpers match your filters.</p>
+                      <p className="text-ui">Try clearing search or switching category to see your team.</p>
                     </div>
                   )
                 }
@@ -837,7 +837,7 @@ export default function HelpersPage() {
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
+                        <div className="col-span-3 flex items-center gap-4">
                           <ProfileAvatar
                             id={request.user_id ?? request.email ?? request.name}
                             name={request.name}
@@ -873,7 +873,7 @@ export default function HelpersPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending requests</div>
+                  <div className="px-6 py-8 text-center text-ui text-muted-foreground">No pending requests</div>
                 )
               })()}
             </div>

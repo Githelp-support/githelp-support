@@ -15,6 +15,7 @@ import { useUserPayments, formatAmount } from "@/hooks/usePayments"
 import { useUserRecentTicketInteractions } from "@/hooks/useUserRecentTicketInteractions"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
 import { monthLabel, toUserPaymentRow } from "@/lib/user-payment-reports"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 const RECENT_TICKETS_LIMIT = 5
 
@@ -118,7 +119,7 @@ export default function UserOverviewPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Overview" subtitle="Stats and insight" />
 
-        <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
+        <main className="flex-1 px-8 py-6 space-y-16 overflow-y-auto">
           {/* Filters */}
           <div className="flex gap-2">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -149,12 +150,12 @@ export default function UserOverviewPage() {
                   key={stat.label}
                   className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg"
                 >
-                  <CardContent className="px-[30px]">
+                  <CardContent className="px-7">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-xs text-muted-foreground">{stat.label}</span>
                       <Info className="w-3 h-3 text-muted-foreground" />
                     </div>
-                    <div className="text-[22px] font-[550] text-foreground tabular-nums">{stat.value}</div>
+                    <div className="text-stat font-medium text-foreground tabular-nums">{stat.value}</div>
                   </CardContent>
                 </Card>
               ))}
@@ -205,15 +206,15 @@ export default function UserOverviewPage() {
                       >
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-6">
-                            <div className="flex items-start gap-[18px]">
+                            <div className="flex items-start gap-4">
                               <Avatar
                                 key={`${ticket.project_logo_url ?? ""}|${projectName}`}
-                                className="w-8 h-8 rounded-[11px] shrink-0"
+                                className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} shrink-0`}
                               >
                                 {ticket.project_logo_url ? (
                                   <AvatarImage src={ticket.project_logo_url} alt={projectName} />
                                 ) : null}
-                                <AvatarFallback className="bg-brand-primary text-brand-foreground text-sm font-medium rounded-[11px]">
+                                <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                                   {(projectName?.[0] || "?").toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>

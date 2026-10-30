@@ -212,7 +212,7 @@ export default function UserPaymentSettingsPage() {
               </p>
               <div className="mt-6 flex items-center gap-3">
                 <Button
-                  className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                  className="w-fit px-5 py-2.5 text-ui font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
                   onClick={handleAddOrReplaceCard}
                   disabled={!userId || setupCard.isPending || syncingCard}
                 >

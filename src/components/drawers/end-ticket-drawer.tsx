@@ -230,7 +230,7 @@ export function EndTicketDrawer({
         </div>
 
         <div className="bg-muted/50 rounded-lg p-4 border border-border">
-          <h4 className="text-[13px] font-semibold text-foreground mb-2">Completed support</h4>
+          <h4 className="text-ui font-semibold text-foreground mb-2">Completed support</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
             If the support was completed successfully, log the time spent. If you were not able to help, consider
             adjusting any time spent, in accordance with the user&apos;s expectations and actual delivery.

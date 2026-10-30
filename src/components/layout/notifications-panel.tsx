@@ -117,8 +117,8 @@ export function NotificationsPanel({
         className="fixed w-96 bg-card shadow-2xl z-[2147483647] flex flex-col rounded-lg border border-border max-h-[80vh]"
         style={{ top: `${position.top}px`, right: `${position.right}px` }}
       >
-        <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
-          <h2 className="text-[15px] font-semibold text-foreground">Notifications</h2>
+        <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -153,7 +153,7 @@ export function NotificationsPanel({
                       </div>
                     </div>
                     <p
-                      className={`text-[13px] leading-relaxed ${
+                      className={`text-ui leading-relaxed ${
                         !notification.is_read ? "text-foreground" : "text-text-tertiary"
                       }`}
                     >

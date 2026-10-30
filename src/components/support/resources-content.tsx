@@ -57,10 +57,10 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
 
   return (
     <div className="space-y-8">
-      <h2 className="text-[22px] font-normal text-text-secondary mb-8">{projectName}&apos;s resources</h2>
+      <h2 className="text-title font-normal text-text-secondary mb-8">{projectName}&apos;s resources</h2>
 
       {resourcesLoading ? (
-        <p className="text-[14px] text-text-tertiary">Loading resources...</p>
+        <p className="text-sm text-text-tertiary">Loading resources...</p>
       ) : resources.length === 0 ? (
         <p className="text-text-tertiary">No resources available yet.</p>
       ) : (

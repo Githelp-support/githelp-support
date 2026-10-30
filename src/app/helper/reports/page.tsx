@@ -112,11 +112,11 @@ const MONTHLY_GRID = {
 }
 // Monthly reports column offsets (header and rows alike):
 // Description sits 30px closer to Period (142px -> 112px between the texts).
-const MONTHLY_DESCRIPTION_CLASS = "-ml-[30px]"
+const MONTHLY_DESCRIPTION_CLASS = "-ml-8"
 // Earnings sits a further 80px closer to Description (180px -> 100px between the texts).
-const MONTHLY_EARNINGS_CLASS = "-ml-[110px]"
+const MONTHLY_EARNINGS_CLASS = "-ml-28"
 // Status sits 70px closer to the kebab menu (134px -> 64px between the badge and the menu).
-const MONTHLY_STATUS_CLASS = "pl-[70px]"
+const MONTHLY_STATUS_CLASS = "pl-18"
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
 
@@ -172,7 +172,7 @@ function SortHeader({
 /** Status badge for a single payout, as on the admin Support reports. */
 function PayoutStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
   return (
-    <Badge className={`${getStatusBadgeClass(status)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+    <Badge className={`${getStatusBadgeClass(status)} flex items-center gap-1 w-fit text-ui px-3 py-1`}>
       {status === "pending" && (
         <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
           <circle cx="6" cy="6" r="2" fill="currentColor" />
@@ -562,7 +562,7 @@ export default function HelperReportsPage() {
 
               <div className="divide-y divide-border">
                 {isBusy ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payouts...</div>
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading payouts...</div>
                 ) : showPreview ? (
                   PAYOUT_PREVIEW_ROWS.map((payout) => (
                     <div key={payout.id} role="presentation" className="px-6 py-4 opacity-80">
@@ -575,7 +575,7 @@ export default function HelperReportsPage() {
                             <span className="text-sm font-medium text-foreground font-mono tabular-nums">
                               {payout.ticketId}
                             </span>
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                            <Badge variant="outline" className="text-xs uppercase tracking-wide">
                               Preview
                             </Badge>
                           </div>
@@ -606,7 +606,7 @@ export default function HelperReportsPage() {
                     </div>
                   ))
                 ) : payouts.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("payouts")}</div>
                 ) : (
                   payouts.map((payout) => {
                     const href = payout.ticketId ? `/helper/tickets/${payout.ticketId}` : null
@@ -742,7 +742,7 @@ export default function HelperReportsPage() {
                                   <div
                                     key={transfer.id}
                                     role="listitem"
-                                    className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                    className="grid items-center gap-4 px-3 py-2 text-sm"
                                     style={PAYOUTS_GRID}
                                   >
                                     <span />
@@ -814,7 +814,7 @@ export default function HelperReportsPage() {
               </div>
               <div className="divide-y divide-border">
                 {isBusy ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading reports...</div>
                 ) : showPreview ? (
                   HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
                     <div key={row.id} role="presentation" className="px-6 py-4 opacity-80">
@@ -824,7 +824,7 @@ export default function HelperReportsPage() {
                         </div>
                         <div className="min-w-0 flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-foreground">{row.period}</span>
-                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                          <Badge variant="outline" className="text-xs uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
@@ -835,7 +835,7 @@ export default function HelperReportsPage() {
                           {row.earnings.replace(/^USD\s+/, "")}
                         </div>
                         <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-ui px-3 py-1`}>
                             {row.status}
                           </Badge>
                         </div>
@@ -857,7 +857,7 @@ export default function HelperReportsPage() {
                     </div>
                   ))
                 ) : monthlyReports.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("monthly reports")}</div>
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("monthly reports")}</div>
                 ) : (
                   monthlyReports.map((row) => (
                     <div
@@ -893,7 +893,7 @@ export default function HelperReportsPage() {
                           {formatPayoutAmount(row.earningsSmallestUnit, row.currency)}
                         </div>
                         <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
+                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-ui px-3 py-1`}>
                             {row.status}
                           </Badge>
                         </div>

@@ -11,7 +11,7 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
 
 interface ReportData {
   id: string
@@ -434,9 +434,9 @@ export default function ReportsSLAsPage() {
                 {/* Table Body */}
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading reports...</div>
                   ) : sortedReports.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("reports")}</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("reports")}</div>
                   ) : (
                     sortedReports.map((report) => (
                     <div key={report.id} className="px-6 py-4 hover:bg-page-muted">
@@ -453,7 +453,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-3 flex items-center space-x-3">
                           <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                             style={{ backgroundColor: report.entityColor }}
                           >
                             {report.entityInitial}
@@ -545,9 +545,9 @@ export default function ReportsSLAsPage() {
                 {/* Table Body */}
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading tickets...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading tickets...</div>
                   ) : sortedTickets.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("tickets")}</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("tickets")}</div>
                   ) : (
                     sortedTickets.map((ticket) => (
                     <div key={ticket.id} className="px-6 py-4 hover:bg-page-muted">
@@ -564,7 +564,7 @@ export default function ReportsSLAsPage() {
                         </div>
                         <div className="col-span-3 flex items-center space-x-3">
                           <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                             style={{ backgroundColor: ticket.entityColor }}
                           >
                             {ticket.entityInitial}

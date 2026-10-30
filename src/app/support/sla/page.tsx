@@ -43,7 +43,7 @@ export default function SLAEntryPage() {
       <div className="flex items-center gap-4 mb-8">
         <div className="relative">
           <div className="w-20 h-20 bg-card rounded-lg shadow-sm flex items-center justify-center">
-            <div className="text-4xl font-bold">N</div>
+            <div className="text-4xl font-semibold">N</div>
           </div>
           <div className="absolute -top-2 -left-2 bg-text-tertiary text-white text-xs px-2 py-1 rounded">OS</div>
         </div>

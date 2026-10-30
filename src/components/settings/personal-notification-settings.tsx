@@ -93,7 +93,7 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
 
       {/* Email */}
       <div className="mb-5">
-        <h3 className="text-[13px] font-semibold text-foreground mb-3">
+        <h3 className="text-ui font-semibold text-foreground mb-3">
           Email
         </h3>
         <div className="space-y-0 divide-y divide-border-subtle">
@@ -121,7 +121,7 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
 
       {/* Personal delivery destinations (Slack / Discord / custom webhook) */}
       <div className="mb-5">
-        <h3 className="text-[13px] font-semibold text-foreground mb-1">
+        <h3 className="text-ui font-semibold text-foreground mb-1">
           My delivery channels
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
@@ -135,7 +135,7 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
         onClick={handleSave}
         disabled={savePreferences.isPending || isLoading}
         variant="lavender"
-        className="mt-[22px]"
+        className="mt-6"
       >
         {savePreferences.isPending ? (
           <Loader2 className="w-4 h-4 animate-spin" />

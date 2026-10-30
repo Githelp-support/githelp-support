@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import {
   useProjectKeywords,
@@ -222,7 +222,7 @@ export default function HelperProfilePage() {
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-[21px] font-medium text-foreground shrink-0"
+              className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
               style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
             >
               {displayAvatar}
@@ -347,7 +347,7 @@ export default function HelperProfilePage() {
               onClick={handleSaveKeywords}
               disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
               variant="lavender"
-              className="mt-[22px]"
+              className="mt-6"
             >
               {setHelperKeywords.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

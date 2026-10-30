@@ -112,7 +112,7 @@ export default function WaitingPage() {
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
-                        <CardTitle className="text-2xl font-bold">Create a new project</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">Create a new project</CardTitle>
                         <CardDescription>
                             Give your project a name to get started
                         </CardDescription>
@@ -169,7 +169,7 @@ export default function WaitingPage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-2xl">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold">You&apos;re all set up!</CardTitle>
+                    <CardTitle className="text-2xl font-semibold">You&apos;re all set up!</CardTitle>
                     <CardDescription className="text-base mt-2">
                         You&apos;ve completed onboarding, but you&apos;re not a member of any project yet. Here are your options:
                     </CardDescription>

@@ -195,7 +195,7 @@ export function NotificationChannelsManager({
         <div className="mt-4 p-4 border border-border rounded-lg space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs mb-1 block font-[550]">Type</Label>
+              <Label className="text-xs mb-1 block font-medium">Type</Label>
               <Select value={type} onValueChange={(value) => setType(value as ChannelType)}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -208,20 +208,20 @@ export function NotificationChannelsManager({
               </Select>
             </div>
             <div>
-              <Label className="text-xs mb-1 block font-[550]">Name</Label>
+              <Label className="text-xs mb-1 block font-medium">Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="#support-alerts" />
             </div>
           </div>
-          <div className="pt-[2px]">
-            <Label className="text-xs mb-1 block font-[550]">Webhook URL</Label>
+          <div className="pt-0.5">
+            <Label className="text-xs mb-1 block font-medium">Webhook URL</Label>
             <Input
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
               placeholder={URL_PLACEHOLDERS[type]}
             />
           </div>
-          <div className="pt-[2px]">
-            <Label className="text-xs mb-2 block font-[550]">Send these notification types</Label>
+          <div className="pt-0.5">
+            <Label className="text-xs mb-2 block font-medium">Send these notification types</Label>
             <div className="flex flex-wrap gap-3">
               {GROUP_OPTIONS.map((group) => (
                 <label key={group.key} className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer">
@@ -236,7 +236,7 @@ export function NotificationChannelsManager({
               ))}
             </div>
           </div>
-          <div className="flex gap-2 pt-[10px]">
+          <div className="flex gap-2 pt-2.5">
             <Button onClick={handleCreate} disabled={createChannel.isPending} variant="lavender" size="sm">
               {createChannel.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Connect channel"}
             </Button>

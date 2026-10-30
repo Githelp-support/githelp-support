@@ -58,5 +58,5 @@ export function SidebarEmpty({
   children?: ReactNode
   className?: string
 }) {
-  return <div className={cn("text-center text-muted-foreground text-[13px] py-4", className)}>{children}</div>
+  return <div className={cn("text-center text-muted-foreground text-ui py-4", className)}>{children}</div>
 }

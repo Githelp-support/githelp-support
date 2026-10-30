@@ -101,7 +101,7 @@ export function TimeEntryReviewStatusBadge({
     <span
       data-status={status}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
         status === "accepted" && "bg-emerald-50 text-emerald-700",
         status === "declined" && "bg-red-50 text-red-700",
         status === "pending" && "bg-muted text-muted-foreground",
@@ -409,7 +409,7 @@ export function TimeEntrySummaryBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >
@@ -451,7 +451,7 @@ export function TimeEntryAwaitingApprovalBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >

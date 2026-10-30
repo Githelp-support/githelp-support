@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { RATES_NOT_CONFIGURED, type TicketRates } from "@/lib/ticket-pricing"
 
 export interface CustomerChatIntroProps {
@@ -58,11 +58,11 @@ export function CustomerChatIntro({
         <img
           src={projectLogo}
           alt={`${projectName} logo`}
-          className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+          className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} object-cover shrink-0`}
         />
       ) : (
         <div
-          className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+          className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
           style={{ backgroundColor: primaryColor || getAvatarColorHexForId(projectId) }}
         >
           {projectName?.[0]?.toUpperCase() || "A"}
@@ -91,7 +91,7 @@ export function CustomerChatIntro({
         {children}
 
         <div>
-          <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+          <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
           {isFree ? (
             <div className="bg-card border border-border rounded-lg p-3">
               <p className="text-sm font-medium text-foreground">Free support</p>

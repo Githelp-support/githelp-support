@@ -75,7 +75,7 @@ export function EndSessionRequestedBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-brand-primary/30 bg-brand-primary/5 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg border border-brand-primary/30 bg-brand-primary/5 px-4 py-3",
         className,
       )}
     >
@@ -124,7 +124,7 @@ export function EndSessionRequestedHelperBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >

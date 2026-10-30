@@ -33,7 +33,7 @@ import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeE
 import { usePaymentTransfers, usePayments, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import { monthLabel } from "@/lib/user-payment-reports"
@@ -58,7 +58,7 @@ function ticketDisplayDate(ticket: { status?: string | null; completed_at?: stri
 
 // Same Badge classes as Reports: design-token colours from getStatusBadgeClass.
 const statusBadgeClass = (label: string) =>
-  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
+  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-ui px-3 py-1`
 
 // A payout line reads "Received" once the money has reached the helper; the
 // ticket row itself keeps "Completed".
@@ -423,7 +423,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="Helper Details" aboveTitle={backLink} />
           <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
-            <div className="text-[14px]">Loading helper...</div>
+            <div className="text-sm">Loading helper...</div>
           </main>
         </div>
       </div>
@@ -468,10 +468,10 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 space-y-6">
           {/* Profile header + Contact information */}
           <Card className="border-0 rounded-lg shadow-none py-0">
-            <CardContent className="px-0 py-[30px] space-y-5">
+            <CardContent className="px-0 py-8 space-y-5">
               <div className="flex items-center gap-4">
                 <div
-                  className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-[21px] font-medium text-foreground shrink-0"
+                  className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
                   style={{ backgroundColor: helper.avatarColor }}
                 >
                   {helper.avatar}
@@ -531,30 +531,30 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
+                <CardContent className="px-7">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
+                  <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
                 </CardContent>
               </Card>
               <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
+                <CardContent className="px-7">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.totalTime}</div>
+                  <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.totalTime}</div>
                 </CardContent>
               </Card>
               <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
+                <CardContent className="px-7">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{helper.stats.percentageSolved}%</div>
+                  <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -586,9 +586,9 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               </div>
               <div className="divide-y divide-border">
                 {ticketsLoading ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
                 ) : helper.tickets.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets for this period.</div>
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">No tickets for this period.</div>
                 ) : (
                   helper.tickets.map((ticket) => {
                     const count = ticket.transfers.length
@@ -721,7 +721,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                             <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
                               {count === 0 && (
                                 // Same grid as the payout lines so the text lines up under the ticket ID.
-                                <div className="grid items-center gap-4 px-[11px] py-2 text-sm" style={HELPER_TICKETS_GRID}>
+                                <div className="grid items-center gap-4 px-3 py-2 text-sm" style={HELPER_TICKETS_GRID}>
                                   <span />
                                   <span className="col-[2/-1] min-w-0 text-muted-foreground">No transactions for this ticket yet.</span>
                                 </div>
@@ -730,7 +730,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                 <div
                                   key={transfer.id}
                                   role="listitem"
-                                  className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                  className="grid items-center gap-4 px-3 py-2 text-sm"
                                   style={HELPER_TICKETS_GRID}
                                 >
                                   <span />

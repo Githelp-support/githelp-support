@@ -6,7 +6,7 @@ export function LoadingFallback() {
     <div className="min-h-screen flex items-center justify-center bg-page-muted">
       <div className="text-center">
         <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" aria-hidden />
-        <p className="text-[14px] text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">Loading...</p>
       </div>
     </div>
   )

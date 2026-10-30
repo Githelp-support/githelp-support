@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
@@ -171,7 +171,7 @@ export default function ProfileSettingsPage() {
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-[21px] font-medium text-foreground shrink-0"
+              className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
               style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
             >
               {displayAvatar}
@@ -182,7 +182,7 @@ export default function ProfileSettingsPage() {
           </div>
 
           {/* Editable contact information */}
-          <section className="mb-[34px] rounded-[10px] py-6">
+          <section className="mb-8 rounded-lg py-6">
             <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">

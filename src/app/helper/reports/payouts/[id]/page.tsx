@@ -90,11 +90,11 @@ export default function HelperPayoutStatementPage() {
             </div>
 
             {isLoading ? (
-              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-[14px]">
+              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-sm">
                 Loading payout...
               </div>
             ) : isError || !statement ? (
-              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-[14px]">
+              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-sm">
                 This payout could not be found, or you do not have access to it.
               </div>
             ) : (

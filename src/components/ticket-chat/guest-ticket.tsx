@@ -62,7 +62,7 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation =
         {pending ? "Claiming…" : "Claim ticket"}
       </Button>
       {isGuest && showExplanation && (
-        <p id="guest-claim-explanation" className="text-[13px] text-muted-foreground">
+        <p id="guest-claim-explanation" className="text-ui text-muted-foreground">
           {GUEST_CLAIM_BLOCKED_COPY}
         </p>
       )}

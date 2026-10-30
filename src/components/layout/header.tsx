@@ -88,8 +88,8 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           {leadingIcon && <div className="shrink-0 self-center">{leadingIcon}</div>}
           <div>
             {aboveTitle && <div className="mb-2">{aboveTitle}</div>}
-            <div ref={titleRowRef} className="flex items-center gap-[13px]">
-              <h1 className={cn("text-2xl font-semibold tracking-[0.005em] text-foreground", titleClassName)}>{title}</h1>
+            <div ref={titleRowRef} className="flex items-center gap-3">
+              <h1 className={cn("text-title font-semibold text-foreground", titleClassName)}>{title}</h1>
               {info && (
                 <div className="relative group">
                   <Info className="w-5 h-5 text-muted-foreground cursor-help" />
@@ -107,7 +107,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
             </div>
             {subtitle && (
               <div className="mt-0.5 flex items-center gap-2">
-                <p className="text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>
+                <p className="text-ui font-normal text-muted-foreground">{subtitle}</p>
               </div>
             )}
           </div>

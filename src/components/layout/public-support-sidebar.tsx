@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 interface PublicSupportSidebarProps {
   className?: string
@@ -192,9 +193,9 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
               size="sm"
             />
           ) : (
-            <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
+            <Avatar className={`w-7 h-7 ${SQUIRCLE_RADIUS[28]} shrink-0`}>
               <AvatarFallback
-                className="bg-text-tertiary text-white text-sm rounded-[10px] font-medium"
+                className="bg-text-tertiary text-white text-sm rounded-lg font-medium"
               >
                 {user.avatar}
               </AvatarFallback>

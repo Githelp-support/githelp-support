@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import type { CustomerTimeEntryDisplay } from "@/hooks/useCustomerTicketSidebar"
 import type { UserActiveTicketSidebarItem } from "@/hooks/useTicketsWithDetails"
@@ -51,11 +51,11 @@ export function CustomerTicketSidebarFooter({
                         <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
                           <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
                         </div>
-                        <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                        <span className="text-ui text-muted-foreground capitalize">{entry.type}</span>
                       </div>
                       <span
                         className={cn(
-                          "text-[13px] text-muted-foreground tabular-nums",
+                          "text-ui text-muted-foreground tabular-nums",
                           entry.reviewStatus === "declined" && "line-through",
                         )}
                       >
@@ -71,13 +71,13 @@ export function CustomerTicketSidebarFooter({
                   </div>
                 ))}
                 <div className="flex items-center justify-between py-2 font-medium">
-                  <span className="text-[13px] text-foreground">Total</span>
-                  <span className="text-[13px] text-foreground tabular-nums">{totalLoggedFormatted}</span>
+                  <span className="text-ui text-foreground">Total</span>
+                  <span className="text-ui text-foreground tabular-nums">{totalLoggedFormatted}</span>
                 </div>
                 <TimeEntriesReviewStatus entries={timeEntries} perspective="customer" />
               </div>
             ) : (
-              <p className="text-[13px] text-muted-foreground">No time logged yet.</p>
+              <p className="text-ui text-muted-foreground">No time logged yet.</p>
             )}
           </div>
 
@@ -90,7 +90,7 @@ export function CustomerTicketSidebarFooter({
         <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
         <div className={`-mx-3 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
           {activeTickets.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+            <p className="text-ui text-muted-foreground px-3">No active tickets</p>
           ) : (
             activeTickets.map((item) => (
               <Link
@@ -109,11 +109,11 @@ export function CustomerTicketSidebarFooter({
                       <img
                         src={item.avatarUrl}
                         alt=""
-                        className="w-8 h-8 rounded-[11px] object-cover shrink-0"
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} object-cover shrink-0`}
                       />
                     ) : (
                       <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                         style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
                       >
                         {item.avatarInitial}
@@ -121,7 +121,7 @@ export function CustomerTicketSidebarFooter({
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                        <h4 className="font-medium text-foreground text-ui truncate">{item.title}</h4>
                         {item.hasNotification && (
                           <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
                         )}

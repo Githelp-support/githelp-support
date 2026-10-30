@@ -24,7 +24,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
     <div className="space-y-16">
       {/* How support works section */}
       <div className="max-w-[37rem]">
-        <h2 className="text-[22px] font-normal text-text-secondary mb-6">How support works</h2>
+        <h2 className="text-title font-normal text-text-secondary mb-6">How support works</h2>
         <p className="text-sm text-text-secondary mb-4">
           The <span className="font-semibold">{projectName}</span> team can help out with issues related to areas such
           as:

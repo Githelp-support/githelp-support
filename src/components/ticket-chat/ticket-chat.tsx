@@ -323,7 +323,7 @@ export function TicketChat(props: TicketChatProps) {
             backgroundColor={headerBackgroundColor}
             inlineRightContent={
               headerSubtitle ? (
-                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
+                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
               ) : undefined
             }
           />
@@ -337,7 +337,7 @@ export function TicketChat(props: TicketChatProps) {
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
               <div
-                className="bg-card rounded-[10px] shadow-soft flex-1 overflow-auto"
+                className="bg-card rounded-lg shadow-soft flex-1 overflow-auto"
                 onLoadCapture={(e) => {
                   // Images load after the initial scroll and push the thread
                   // down; keep it pinned to the bottom if it was there.
@@ -552,7 +552,7 @@ export function TicketChat(props: TicketChatProps) {
                   size="sm"
                   onClick={() => setEndSessionDialogOpen(true)}
                   disabled={endSessionRequestPending}
-                  className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
+                  className="cursor-pointer text-foreground font-semibold text-sm hover:bg-transparent"
                 >
                   End session
                 </Button>
@@ -619,7 +619,7 @@ export function TicketChat(props: TicketChatProps) {
               <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
 
               {participantsLoading ? (
-                <SidebarEmpty className="text-[14px]">Loading...</SidebarEmpty>
+                <SidebarEmpty className="text-sm">Loading...</SidebarEmpty>
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
@@ -630,7 +630,7 @@ export function TicketChat(props: TicketChatProps) {
                         avatarUrl={p.avatarUrl ?? null}
                         size="md"
                       />
-                      <span className="text-[13px] text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
+                      <span className="text-ui text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
                     </div>
                   ))}
                 </div>

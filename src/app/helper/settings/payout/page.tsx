@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useUser } from "@/contexts/user-context"
@@ -103,7 +103,7 @@ export default function HelperPayoutPage() {
               {/* Stripe → helper avatar connection */}
               <div className="flex items-center gap-1">
                 {/* Third-party brand colour (Stripe); kept on purpose, not a token. */}
-                <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[14px]">
+                <div className={`flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] ${SQUIRCLE_RADIUS[42]}`}>
                   <img
                     src="/images/stripe-svg.svg"
                     alt="Stripe"
@@ -116,7 +116,7 @@ export default function HelperPayoutPage() {
                   <span className="size-1 rounded-full bg-muted-foreground/40" />
                 </div>
                 <div
-                  className="flex size-[42px] shrink-0 items-center justify-center rounded-[14px] text-foreground font-medium"
+                  className={`flex size-[42px] shrink-0 items-center justify-center ${SQUIRCLE_RADIUS[42]} text-foreground font-medium`}
                   style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
                 >
                   {displayAvatar}
@@ -129,7 +129,7 @@ export default function HelperPayoutPage() {
 
               <div className="flex items-center gap-3">
                 <Button
-                  className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                  className="w-fit px-5 py-2.5 text-ui font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
                   onClick={handleSetupPayout}
                   disabled={!userId || startConnect.isPending}
                 >

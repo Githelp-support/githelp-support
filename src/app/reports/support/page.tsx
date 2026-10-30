@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet, List, MoreVertical } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
@@ -79,7 +79,7 @@ const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted
 
 // Same Badge classes as User reports: design-token colours from getStatusBadgeClass.
 const statusBadgeClass = (label: string) =>
-  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
+  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-ui px-3 py-1`
 
 // "Received" and "Awaiting payment" are not known to getStatusBadgeClass,
 // so they use the key Monthly reports uses for the same meaning.
@@ -576,9 +576,9 @@ export default function ReportsSupportPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
                   ) : monthlyRows.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">
                       {targetMonth ? `No income found for ${targetMonth}` : "No income found"}
                     </div>
                   ) : (
@@ -610,7 +610,7 @@ export default function ReportsSupportPage() {
                             {formatPaymentAmount(row.projectIncomeSmallestUnit, row.currency)}
                           </div>
                           <div className="min-w-0">
-                            <Badge className={`${getStatusBadgeClass(row.allReceived ? "paid out" : "pending")} hover:opacity-90 text-[13px] px-3 py-1`}>
+                            <Badge className={`${getStatusBadgeClass(row.allReceived ? "paid out" : "pending")} hover:opacity-90 text-ui px-3 py-1`}>
                               {row.allReceived ? "Received" : "Pending"}
                             </Badge>
                           </div>
@@ -679,9 +679,9 @@ export default function ReportsSupportPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
                   ) : ticketRows.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("ticket payments")}</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("ticket payments")}</div>
                   ) : (
                     ticketRows.map((row) => {
                       const count = row.transactions.length
@@ -802,7 +802,7 @@ export default function ReportsSupportPage() {
                               <div
                                 key={charge.id}
                                 role="listitem"
-                                className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                className="grid items-center gap-4 px-3 py-2 text-sm"
                                 style={TICKETS_GRID}
                               >
                                 <span />
@@ -858,9 +858,9 @@ export default function ReportsSupportPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading...</div>
                   ) : helperRows.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("helper payouts")}</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("helper payouts")}</div>
                   ) : (
                     helperRows.map((row) => {
                       const expanded = isExpanded(row.id)
@@ -888,9 +888,9 @@ export default function ReportsSupportPage() {
                           <div onClick={stopRowNavigation}>
                             <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.helper}, ${row.period}`} />
                           </div>
-                          <div className="min-w-0 flex items-center gap-[18px]">
+                          <div className="min-w-0 flex items-center gap-4">
                             <div
-                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                               style={{ backgroundColor: row.helperColor }}
                             >
                               {row.helperInitial}
@@ -951,12 +951,12 @@ export default function ReportsSupportPage() {
                               <div
                                 key={transfer.id}
                                 role="listitem"
-                                className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                className="grid items-center gap-4 px-3 py-2 text-sm"
                                 style={HELPERS_GRID}
                               >
                                 <span />
                                 {/* Starts where the helper's name starts: past the avatar (32px) and its gap (18px). */}
-                                <span className="min-w-0 pl-[50px]">
+                                <span className="min-w-0 pl-12">
                                   {transfer.ticket_id ? (
                                     <Link
                                       href={`/helper/tickets/${transfer.ticket_id}`}

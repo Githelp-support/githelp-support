@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronsUpDown,
 } from "lucide-react"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 type TicketFilter = "in-progress" | "completed"
 type SortField = "title" | "createdAt" | "status" | "type"
@@ -248,7 +249,7 @@ export default function SupportTicketsPage() {
                         <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                       )}
                       <CardContent className="px-5 py-4">
-                        <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
+                        <div className="text-xl font-semibold text-foreground mb-1">{stats.inProgress}</div>
                         <div className="flex items-center gap-2">
                           <MessageCircle className="w-3 h-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">Active tickets</span>
@@ -268,7 +269,7 @@ export default function SupportTicketsPage() {
                         <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                       )}
                       <CardContent className="px-5 py-4">
-                        <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
+                        <div className="text-xl font-semibold text-foreground mb-1">{stats.completed}</div>
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">Completed tickets</span>
@@ -279,7 +280,7 @@ export default function SupportTicketsPage() {
                 </div>
                 <Button
                   onClick={() => setIsNewTicketModalOpen(true)}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-[13px]"
+                  className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-ui"
                 >
                   <Plus className="h-4 w-4" />
                   New ticket
@@ -288,16 +289,16 @@ export default function SupportTicketsPage() {
 
               {/* Loading / Empty / Table */}
               {isLoading ? (
-                <div className="py-8 text-center text-[14px] text-muted-foreground">Loading your tickets...</div>
+                <div className="py-8 text-center text-sm text-muted-foreground">Loading your tickets...</div>
               ) : tickets.length === 0 ? (
                 <Card className="border-border">
                   <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground mb-4 text-[14px]">
+                    <p className="text-muted-foreground mb-4 text-sm">
                       You have not created any support tickets yet.
                     </p>
                     <Button
                       onClick={() => setIsNewTicketModalOpen(true)}
-                      className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-[13px]"
+                      className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-ui"
                     >
                       <Plus className="h-4 w-4" />
                       New ticket
@@ -377,10 +378,10 @@ export default function SupportTicketsPage() {
                         >
                           <div className="grid grid-cols-12 gap-4 items-center">
                             <div className="col-span-5">
-                              <div className="flex items-start gap-[18px]">
+                              <div className="flex items-start gap-4">
                                 <Avatar
                                   key={`${ticket.project.logoUrl ?? ""}|${ticket.project.name}`}
-                                  className="w-8 h-8 rounded-[11px] shrink-0"
+                                  className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} shrink-0`}
                                 >
                                   {ticket.project.logoUrl ? (
                                     <AvatarImage
@@ -388,7 +389,7 @@ export default function SupportTicketsPage() {
                                       alt={ticket.project.name}
                                     />
                                   ) : null}
-                                  <AvatarFallback className="bg-brand-primary text-brand-foreground text-sm font-medium rounded-[11px]">
+                                  <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                                     {(ticket.project.name?.[0] || "?").toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
@@ -432,7 +433,7 @@ export default function SupportTicketsPage() {
                       )
                     })
                   ) : (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">
                       No tickets found
                     </div>
                   )}

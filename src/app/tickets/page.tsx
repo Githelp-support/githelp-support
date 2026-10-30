@@ -19,7 +19,7 @@ import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } fro
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 
 interface Ticket {
@@ -323,7 +323,7 @@ export default function TicketsPage() {
                   <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
-                  <div className="text-xl font-bold text-foreground mb-1">{stats.total}</div>
+                  <div className="text-xl font-semibold text-foreground mb-1">{stats.total}</div>
                   <div className="flex items-center gap-2">
                     <User className="w-3 h-3 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Total Tickets</span>
@@ -343,7 +343,7 @@ export default function TicketsPage() {
                   <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
-                  <div className="text-xl font-bold text-foreground mb-1">{stats.available}</div>
+                  <div className="text-xl font-semibold text-foreground mb-1">{stats.available}</div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-3 h-3 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Unclaimed</span>
@@ -363,7 +363,7 @@ export default function TicketsPage() {
                   <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
-                  <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
+                  <div className="text-xl font-semibold text-foreground mb-1">{stats.inProgress}</div>
                   <div className="flex items-center gap-2">
                     <MessageCircle className="w-3 h-3 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">In Progress</span>
@@ -383,7 +383,7 @@ export default function TicketsPage() {
                   <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                 )}
                 <CardContent className="px-5 py-4">
-                  <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
+                  <div className="text-xl font-semibold text-foreground mb-1">{stats.completed}</div>
                   <div className="flex items-center gap-2">
                     <User className="w-3 h-3 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Completed</span>
@@ -505,9 +505,9 @@ export default function TicketsPage() {
                   >
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-9">
-                        <div className="flex items-start gap-[18px]">
+                        <div className="flex items-start gap-4">
                           <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                             style={{ backgroundColor: getAvatarColorHexForId(card.id) }}
                           >
                             {card.avatar}
@@ -515,7 +515,7 @@ export default function TicketsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="text-sm font-medium text-foreground">{card.customer}</h4>
-                              <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                              <Badge variant="outline" className="text-xs uppercase tracking-wide">
                                 Preview
                               </Badge>
                             </div>
@@ -526,7 +526,7 @@ export default function TicketsPage() {
                               <div className="mt-4 space-y-4">
                                 {/* Other topics */}
                                 <div>
-                                  <h4 className="text-[13px] font-semibold text-foreground mb-2">Other topics</h4>
+                                  <h4 className="text-ui font-semibold text-foreground mb-2">Other topics</h4>
                                   <div className="flex gap-2 flex-wrap">
                                     {card.topics.map((topic) => (
                                       <Badge key={topic} variant="secondary" className="bg-muted text-muted-foreground">
@@ -538,7 +538,7 @@ export default function TicketsPage() {
 
                                 {/* Type of help */}
                                 <div>
-                                  <h4 className="text-[13px] font-semibold text-foreground mb-2">Type of help</h4>
+                                  <h4 className="text-ui font-semibold text-foreground mb-2">Type of help</h4>
                                   <div className="flex gap-2 flex-wrap">
                                     <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
                                       {card.helpType}
@@ -548,7 +548,7 @@ export default function TicketsPage() {
 
                                 {/* Rates */}
                                 <div>
-                                  <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                                  <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
                                   {rates == null ? (
                                     <p className="text-sm text-muted-foreground">{RATES_NOT_CONFIGURED}</p>
                                   ) : (
@@ -662,7 +662,7 @@ export default function TicketsPage() {
               </div>
             </div>
             {isLoading ? (
-              <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading tickets...</div>
+              <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading tickets...</div>
             ) : filteredTickets.length > 0 ? (
               filteredTickets.map((ticket) => {
                 // Unclaimed tickets reuse the expandable gray-row layout from the
@@ -687,9 +687,9 @@ export default function TicketsPage() {
                     >
                       <div className="grid grid-cols-12 gap-4 items-start">
                         <div className="col-span-4">
-                          <div className="flex items-start gap-[18px]">
+                          <div className="flex items-start gap-4">
                             <div
-                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                              className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                               style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
                             >
                               {ticket.user.avatar}
@@ -735,16 +735,16 @@ export default function TicketsPage() {
                         </div>
                       </div>
                       {isExpanded && (
-                        <div className="mt-4 pl-[50px] space-y-4">
+                        <div className="mt-4 pl-12 space-y-4">
                           {/* Full question asked */}
                           <div>
-                            <h4 className="text-[13px] font-semibold text-foreground mb-2">Question asked</h4>
+                            <h4 className="text-ui font-semibold text-foreground mb-2">Question asked</h4>
                             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
                           </div>
 
                           {/* Rates associated with the ticket */}
                           <div>
-                            <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                            <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
                             {rates == null ? (
                               <p className="text-sm text-muted-foreground">{RATES_NOT_CONFIGURED}</p>
                             ) : (
@@ -784,9 +784,9 @@ export default function TicketsPage() {
               <div key={ticket.id} className="px-6 py-4 border-b border-border last:border-b-0 hover:bg-surface-hover">
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-4">
-                    <div className="flex items-start gap-[18px]">
+                    <div className="flex items-start gap-4">
                       <div
-                        className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                         style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
                       >
                         {ticket.user.avatar}
@@ -822,7 +822,7 @@ export default function TicketsPage() {
                         {getStatusLabel(ticket.status)}
                       </Badge>
                       {ticket.helper && (
-                        <div className="w-5 h-5 rounded-[7px] flex items-center justify-center bg-brand-primary text-brand-foreground text-xs font-medium shrink-0">
+                        <div className={`w-5 h-5 ${SQUIRCLE_RADIUS[20]} flex items-center justify-center bg-brand-primary text-brand-foreground text-xs font-medium shrink-0`}>
                           {ticket.helper.avatar}
                         </div>
                       )}
@@ -839,7 +839,7 @@ export default function TicketsPage() {
                 )
               })
             ) : (
-              <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">No tickets found</div>
+              <div className="px-6 py-8 text-center text-muted-foreground text-sm">No tickets found</div>
             )}
             </>
             )}

@@ -69,7 +69,7 @@ type SortDirection = "asc" | "desc"
 // Same Badge classes as the Admin reports page (src/app/reports/support/page.tsx):
 // default variant + design-token colours from getStatusBadgeClass.
 const statusBadgeClass = (label: string) =>
-  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
+  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-ui px-3 py-1`
 
 // Each row (and each transaction line) is its own grid, so every column that must line up has a width that does not depend on the row's content.
 // Status: fixed, sized for the widest status badge ("Action required").
@@ -491,7 +491,7 @@ export default function UserReportsPage() {
                   </div>
 
                   {isBusy ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payments...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading payments...</div>
                   ) : showPreview ? (
                     USER_PAYMENT_PREVIEW_ROWS.map((row) => (
                       <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
@@ -502,7 +502,7 @@ export default function UserReportsPage() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-medium text-foreground font-mono tabular-nums">{row.ticketShortId}</span>
-                              <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                              <Badge variant="outline" className="text-xs uppercase tracking-wide">
                                 Preview
                               </Badge>
                             </div>
@@ -532,7 +532,7 @@ export default function UserReportsPage() {
                       </div>
                     ))
                   ) : payments.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payments")}</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("payments")}</div>
                   ) : (
                     payments.map((row) => {
                       const href = ticketHref(row)
@@ -662,7 +662,7 @@ export default function UserReportsPage() {
                                   <div
                                     key={transaction.id}
                                     role="listitem"
-                                    className="grid items-center gap-4 px-[11px] py-2 text-sm"
+                                    className="grid items-center gap-4 px-3 py-2 text-sm"
                                     style={PAYMENTS_GRID}
                                   >
                                     <span />
@@ -732,7 +732,7 @@ export default function UserReportsPage() {
                     </div>
                   </div>
                   {isBusy ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">Loading reports...</div>
                   ) : showPreview ? (
                     USER_MONTHLY_PREVIEW_ROWS.map((row) => (
                       <div key={row.id} role="presentation" className="px-6 py-4 border-b border-border last:border-b-0 opacity-80">
@@ -742,7 +742,7 @@ export default function UserReportsPage() {
                           </div>
                           <div className="col-span-3 flex items-center gap-2 text-sm text-foreground">
                             {row.period}
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                            <Badge variant="outline" className="text-xs uppercase tracking-wide">
                               Preview
                             </Badge>
                           </div>
@@ -763,7 +763,7 @@ export default function UserReportsPage() {
                       </div>
                     ))
                   ) : monthlyReports.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
+                    <div className="px-6 py-8 text-center text-muted-foreground text-sm">
                       {hasRealData && !targetMonth
                         ? "No completed payments yet. Monthly reports appear once a ticket has been paid."
                         : emptyMessage("monthly reports")}

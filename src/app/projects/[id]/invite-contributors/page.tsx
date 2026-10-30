@@ -175,7 +175,7 @@ export default function InviteContributorsPage() {
                 <CardHeader>
                     <div className="flex items-start justify-between">
                         <div>
-                            <CardTitle className="text-2xl font-bold">
+                            <CardTitle className="text-2xl font-semibold">
                                 Invite contributors as helpers
                             </CardTitle>
                             <CardDescription className="mt-1">

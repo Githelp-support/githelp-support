@@ -910,7 +910,7 @@ export default function TicketDetailPage() {
             titleClassName="text-xl"
             inlineRightContent={
               <span className="flex items-center gap-2">
-                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
+                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
                 {isGuestTicket && <GuestTicketBadge />}
               </span>
             }
@@ -924,7 +924,7 @@ export default function TicketDetailPage() {
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
                 <div
-                  className="bg-card rounded-[10px] shadow-soft flex-1 overflow-auto"
+                  className="bg-card rounded-lg shadow-soft flex-1 overflow-auto"
                   onLoadCapture={(e) => {
                     // Images load after the initial scroll and push the thread
                     // down; keep it pinned to the bottom if it was there.
@@ -1009,7 +1009,7 @@ export default function TicketDetailPage() {
                     )}
 
                     <div>
-                      <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                      <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
                       {rates == null ? (
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm font-medium text-foreground">{RATES_NOT_CONFIGURED}</p>
@@ -1055,7 +1055,7 @@ export default function TicketDetailPage() {
                     )}
 
                     {isClaimed && !isTicketEnded && !canManageTicket && (
-                      <p className="text-[13px] text-muted-foreground">
+                      <p className="text-ui text-muted-foreground">
                         {claimer?.name ? `${claimer.name} is handling this ticket.` : "Another helper is handling this ticket."}{" "}
                         You can read along, but only they (or a project admin) can log time or end it.
                       </p>
@@ -1166,7 +1166,7 @@ export default function TicketDetailPage() {
                             </Button>
                           ) : (
                             <div className="rounded-lg border border-border bg-muted/40 p-4 max-w-xs">
-                              <div className="space-y-1.5 text-[13px]">
+                              <div className="space-y-1.5 text-ui">
                                 <div className="flex items-center justify-between gap-6">
                                   <span className="text-muted-foreground">Outcome</span>
                                   <span className="font-medium text-foreground">
@@ -1210,17 +1210,17 @@ export default function TicketDetailPage() {
                               </div>
 
                               {paymentFailed && paymentFailureReason && (
-                                <p className="mt-2 text-[12px] leading-snug text-destructive">
+                                <p className="mt-2 text-xs leading-snug text-destructive">
                                   {paymentFailureReason}
                                 </p>
                               )}
                               {paymentFailed && (
-                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                <p className="mt-1 text-xs leading-snug text-muted-foreground">
                                   The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
                               {captureNeedsRetry && !paymentFailed && (
-                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                <p className="mt-1 text-xs leading-snug text-muted-foreground">
                                   {captureTicket.error?.message ?? "The payment hasn't been captured yet."}
                                 </p>
                               )}
@@ -1316,7 +1316,7 @@ export default function TicketDetailPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsEndTicketDrawerOpen(true)}
-                    className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
+                    className="cursor-pointer text-foreground font-semibold text-sm hover:bg-transparent"
                   >
                     End session
                   </Button>
@@ -1349,7 +1349,7 @@ export default function TicketDetailPage() {
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
             {participantsLoading ? (
-              <div className="text-center text-muted-foreground text-[14px] py-4">Loading...</div>
+              <div className="text-center text-muted-foreground text-sm py-4">Loading...</div>
             ) : allParticipants.length > 0 ? (
               <div className="space-y-2 mb-3">
                 {allParticipants.map((participant) => {
@@ -1362,7 +1362,7 @@ export default function TicketDetailPage() {
                         avatarUrl={participant.user?.avatar_url ?? null}
                         size="md"
                       />
-                      <span className="text-[13px] text-muted-foreground">
+                      <span className="text-ui text-muted-foreground">
                         {isCurrentUser ? "You" : participant.user?.name ?? "Unknown"}
                       </span>
                     </div>
@@ -1370,7 +1370,7 @@ export default function TicketDetailPage() {
                 })}
               </div>
             ) : (
-              <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+              <div className="text-center text-muted-foreground text-ui py-4">-</div>
             )}
             {!isTicketEnded && (
               <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
@@ -1395,7 +1395,7 @@ export default function TicketDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-[13px] text-muted-foreground">—</p>
+              <p className="text-ui text-muted-foreground">—</p>
             )}
           </div>
 
@@ -1420,12 +1420,12 @@ export default function TicketDetailPage() {
                           radius="8.25px"
                           className="w-6 h-6"
                         />
-                        <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                        <span className="text-ui text-muted-foreground capitalize">{entry.type}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span
                           className={cn(
-                            "text-[13px] text-muted-foreground tabular-nums",
+                            "text-ui text-muted-foreground tabular-nums",
                             entry.reviewStatus === "declined" && "line-through",
                           )}
                         >
@@ -1453,8 +1453,8 @@ export default function TicketDetailPage() {
                   </div>
                 ))}
                 <div className="flex items-center justify-between py-2 font-medium">
-                  <span className="text-[13px] text-foreground">Total</span>
-                  <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
+                  <span className="text-ui text-foreground">Total</span>
+                  <span className="text-ui text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                 </div>
                 <TimeEntriesReviewStatus entries={timeEntries} />
                 {pendingReviewCount > 0 && (
@@ -1499,7 +1499,7 @@ export default function TicketDetailPage() {
             <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
             <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
               {activeTicketsSidebar.length === 0 ? (
-                <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+                <p className="text-ui text-muted-foreground px-3">No active tickets</p>
               ) : (
                 activeTicketsSidebar.map((item) => (
                   <NextLink
@@ -1521,7 +1521,7 @@ export default function TicketDetailPage() {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1 mb-1">
-                            <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                            <h4 className="font-medium text-foreground text-ui truncate">{item.title}</h4>
                             {item.hasNotification && (
                               <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
                             )}

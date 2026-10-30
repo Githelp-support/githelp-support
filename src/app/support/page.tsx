@@ -645,7 +645,7 @@ export default function SupportPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === "get-support" ? (
           !hasEnteredChat ? (
-            <div className="flex-1 flex flex-col px-[72px] pt-[160px]">
+            <div className="flex-1 flex flex-col px-18 pt-40">
               <div className="flex flex-col items-start space-y-6">
                 {projectLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -662,7 +662,7 @@ export default function SupportPage() {
                     {projectName?.[0]?.toUpperCase() || "A"}
                   </div>
                 )}
-                <h1 className="text-3xl font-normal text-text-secondary text-left">
+                <h1 className="text-display font-normal text-text-secondary text-left">
                   Welcome to the support page for <span className="font-semibold">{projectName}</span>
                 </h1>
                 <p className="text-base font-medium text-text-secondary text-left">
@@ -777,7 +777,7 @@ export default function SupportPage() {
           )
         ) : (
           <div className="flex-1 overflow-y-auto">
-            <div className={`max-w-7xl mx-auto py-12 ${activeTab === "rates" ? "px-[72px]" : "px-6"}`}>
+            <div className={`max-w-7xl mx-auto py-12 ${activeTab === "rates" ? "px-18" : "px-6"}`}>
               {activeTab === "rates" && (
                 <RatesAndDetailsContent
                   projectName={projectName}

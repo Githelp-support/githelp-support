@@ -48,7 +48,7 @@ export default function UserSupportRatesPage() {
         <Header title="Rates and details" />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto py-12 px-[72px]">
+          <div className="max-w-7xl mx-auto py-12 px-18">
             <RatesAndDetailsContent
               projectName={projectName}
               isFree={isFreeSupport(paymentSettings)}

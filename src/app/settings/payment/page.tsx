@@ -22,6 +22,7 @@ import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 import { getFunctionErrorMessage } from "@/lib/functions-error"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 // Org-level spending caps are temporarily hidden from the admin Payments page.
 // The section and its wiring are kept intact below — flip this to re-enable.
@@ -503,7 +504,7 @@ export default function PaymentSettingsPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <h3 className="text-[13px] font-semibold text-foreground">Sharing ratio</h3>
+                        <h3 className="text-ui font-semibold text-foreground">Sharing ratio</h3>
 
                         <div className="space-y-6">
                           <div>
@@ -567,7 +568,7 @@ export default function PaymentSettingsPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <h3 className="text-[13px] font-semibold text-foreground">Sharing ratio</h3>
+                        <h3 className="text-ui font-semibold text-foreground">Sharing ratio</h3>
 
                         <div className="space-y-6">
                           <div>
@@ -606,7 +607,7 @@ export default function PaymentSettingsPage() {
                         </div>
 
                         <div className="bg-muted rounded-md px-5 py-3 mt-4">
-                          <p className="text-[13px] text-muted-foreground">Payment to community helper can&apos;t be below 85%</p>
+                          <p className="text-ui text-muted-foreground">Payment to community helper can&apos;t be below 85%</p>
                         </div>
                       </div>
                     </div>
@@ -638,7 +639,7 @@ export default function PaymentSettingsPage() {
 
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-[13px] font-semibold text-foreground mb-4">Type of contract</h3>
+                          <h3 className="text-ui font-semibold text-foreground mb-4">Type of contract</h3>
                           <div className="space-y-3">
                             <label className="flex items-center gap-3 cursor-pointer">
                               <input
@@ -666,7 +667,7 @@ export default function PaymentSettingsPage() {
                         </div>
 
                         <div>
-                          <h3 className="text-[13px] font-semibold text-foreground mb-4">Sharing ratio</h3>
+                          <h3 className="text-ui font-semibold text-foreground mb-4">Sharing ratio</h3>
                           <div className="space-y-6">
                             <div>
                               <div className="flex items-center justify-between mb-3">
@@ -814,7 +815,7 @@ export default function PaymentSettingsPage() {
                   <div className="space-y-6">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-foreground">Start price</span>
+                        <span className="text-ui font-semibold text-foreground">Start price</span>
                         <InfoTooltip
                           label="About start price"
                           content="A fixed fee charged when a helper claims a ticket, added on top of any per-minute cost."
@@ -831,7 +832,7 @@ export default function PaymentSettingsPage() {
                           onChange={(e) => setStartPrice(e.target.value)}
                           aria-invalid={!!priceErrors.start}
                           className={cn(
-                            "w-[230px] text-right pr-[3px] border-border-control [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                            "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
                             priceErrors.start && "border-destructive"
                           )}
                           placeholder="10.00"
@@ -844,7 +845,7 @@ export default function PaymentSettingsPage() {
                     <div className="flex flex-wrap gap-10">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-semibold text-foreground">Cost/minute - first 60 minutes</span>
+                          <span className="text-ui font-semibold text-foreground">Cost/minute - first 60 minutes</span>
                           <InfoTooltip
                             label="About cost per minute for the first 60 minutes"
                             content="Per-minute rate for the first 60 minutes of support on a ticket."
@@ -861,7 +862,7 @@ export default function PaymentSettingsPage() {
                             onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
                             aria-invalid={!!priceErrors.first60}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-border-control [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                              "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
                               priceErrors.first60 && "border-destructive"
                             )}
                             placeholder="1.50"
@@ -873,7 +874,7 @@ export default function PaymentSettingsPage() {
 
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-semibold text-foreground">Cost/minute - after 60 minutes</span>
+                          <span className="text-ui font-semibold text-foreground">Cost/minute - after 60 minutes</span>
                           <InfoTooltip
                             label="About cost per minute after 60 minutes"
                             content="Per-minute rate for support on a ticket after the first 60 minutes."
@@ -890,7 +891,7 @@ export default function PaymentSettingsPage() {
                             onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
                             aria-invalid={!!priceErrors.after60}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-border-control [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                              "w-[230px] text-right pr-1 border-border-control [&::-webkit-inner-spin-button]:ml-1.5 [&::-webkit-outer-spin-button]:ml-1.5",
                               priceErrors.after60 && "border-destructive"
                             )}
                             placeholder="1.00"
@@ -940,7 +941,7 @@ export default function PaymentSettingsPage() {
                   <div className="flex flex-wrap gap-10">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-foreground">Org-wide monthly cap</span>
+                        <span className="text-ui font-semibold text-foreground">Org-wide monthly cap</span>
                         <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <div className="flex items-center gap-2">
@@ -949,7 +950,7 @@ export default function PaymentSettingsPage() {
                           value={orgMonthlyCap}
                           onChange={(e) => setOrgMonthlyCap(e.target.value)}
                           className={cn(
-                            "w-[230px] text-right pr-[3px] border-border"
+                            "w-[230px] text-right pr-1 border-border"
                           )}
                           placeholder="No cap"
                           disabled={!orgId}
@@ -960,7 +961,7 @@ export default function PaymentSettingsPage() {
 
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-foreground">Default per-user monthly cap</span>
+                        <span className="text-ui font-semibold text-foreground">Default per-user monthly cap</span>
                         <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <div className="flex items-center gap-2">
@@ -969,7 +970,7 @@ export default function PaymentSettingsPage() {
                           value={defaultUserCap}
                           onChange={(e) => setDefaultUserCap(e.target.value)}
                           className={cn(
-                            "w-[230px] text-right pr-[3px] border-border"
+                            "w-[230px] text-right pr-1 border-border"
                           )}
                           placeholder="No cap"
                           disabled={!orgId}
@@ -995,7 +996,7 @@ export default function PaymentSettingsPage() {
                     {/* GitHub → Stripe connection */}
                     <div className="flex items-center gap-1">
                       {/* Third-party brand colour (GitHub); kept on purpose, not a token. */}
-                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] rounded-[14px]">
+                      <div className={`flex size-[42px] shrink-0 items-center justify-center bg-[#24292f] ${SQUIRCLE_RADIUS[42]}`}>
                         <Logo className="size-6 text-[#24292f]" variant="dark" />
                       </div>
                       <div className="flex items-center gap-1.5 px-0.5">
@@ -1004,7 +1005,7 @@ export default function PaymentSettingsPage() {
                         <span className="size-1 rounded-full bg-muted-foreground/40" />
                       </div>
                       {/* Third-party brand colour (Stripe); kept on purpose, not a token. */}
-                      <div className="flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] rounded-[14px]">
+                      <div className={`flex size-[42px] shrink-0 items-center justify-center bg-[#635bff] ${SQUIRCLE_RADIUS[42]}`}>
                         <img
                           src="/images/stripe-svg.svg"
                           alt="Stripe"
@@ -1020,7 +1021,7 @@ export default function PaymentSettingsPage() {
 
                     <div className="flex items-center gap-3">
                       <Button
-                        className="w-fit px-5 py-2.5 text-[13px] font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
+                        className="w-fit px-5 py-2.5 text-ui font-medium bg-[#635bff] text-white hover:bg-[#5851e5]"
                         onClick={handleSetupPayouts}
                         disabled={!project?.organization_id || startConnect.isPending}
                       >

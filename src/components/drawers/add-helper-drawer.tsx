@@ -230,7 +230,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-md text-[13px] font-medium shadow-sm"
+            className="flex-1 py-2.5 rounded-md text-ui font-medium shadow-sm"
           >
             {hasSuccessResult ? "Close" : "Cancel"}
           </Button>
@@ -240,7 +240,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
               form="add-helper-form"
               disabled={isSubmitting || !canSubmit}
               variant="default"
-              className="flex-1 py-2.5 rounded-md text-[13px] font-medium bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground shadow-md"
+              className="flex-1 py-2.5 rounded-md text-ui font-medium bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground shadow-md"
             >
               {isSubmitting ? "Creating..." : "Create invite"}
             </Button>
@@ -288,7 +288,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             </FormField>
 
             <div className="space-y-3">
-              <Label className="text-[13px] font-semibold text-foreground">Invite method</Label>
+              <Label className="text-ui font-semibold text-foreground">Invite method</Label>
               <RadioGroup
                 value={formData.inviteMethod}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, inviteMethod: value as "email" | "link" | "contributors" | "github_username" }))}

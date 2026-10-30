@@ -207,7 +207,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header title="SLA Details" subtitle="View and manage SLA configuration" />
           <main className="flex-1 overflow-auto p-6 flex items-center justify-center">
-            <span className="text-muted-foreground text-[14px]">Loading…</span>
+            <span className="text-muted-foreground text-sm">Loading…</span>
           </main>
         </div>
       </div>
@@ -506,7 +506,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                       <tbody>
                         {helpersSummary.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="p-4 text-center text-muted-foreground text-[14px]">No helpers yet</td>
+                            <td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">No helpers yet</td>
                           </tr>
                         ) : (
                           helpersSummary.map((helper) => (
@@ -555,7 +555,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                       </thead>
                       <tbody>
                         <tr>
-                          <td colSpan={3} className="p-4 text-center text-muted-foreground text-[14px]">No issue types recorded</td>
+                          <td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">No issue types recorded</td>
                         </tr>
                       </tbody>
                     </table>
@@ -588,7 +588,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                     <tbody>
                       {filteredTickets.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="p-4 text-center text-muted-foreground text-[14px]">No tickets yet</td>
+                          <td colSpan={6} className="p-4 text-center text-muted-foreground text-sm">No tickets yet</td>
                         </tr>
                       ) : (
                         filteredTickets.map((ticket) => {

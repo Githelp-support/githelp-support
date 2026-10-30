@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex w-fit items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-[13px] font-medium transition-[background-color,border-color] duration-150 ease-out cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 [&_svg]:block outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex w-fit items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-ui font-medium transition-[background-color,border-color] duration-150 ease-out cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 [&_svg]:block outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
@@ -30,9 +30,9 @@ const buttonVariants = cva(
           "bg-surface-hover border border-border-control text-foreground hover:bg-surface-active",
       },
       size: {
-        default: "h-8 px-[14px] py-2 has-[>svg]:px-[14px]",
-        sm: "h-8 px-[14px] has-[>svg]:px-[14px]",
-        lg: "h-10 px-[14px] has-[>svg]:px-[14px]",
+        default: "h-8 px-3.5 py-2 has-[>svg]:px-3.5",
+        sm: "h-8 px-3.5 has-[>svg]:px-3.5",
+        lg: "h-10 px-3.5 has-[>svg]:px-3.5",
         icon: "size-8",
         "icon-sm": "size-8",
         "icon-lg": "size-10",

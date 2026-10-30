@@ -16,6 +16,7 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
 import { homeRouteForRole } from "@/lib/roles"
 import { monthLabel } from "@/lib/user-payment-reports"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -194,7 +195,7 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Overview" subtitle="Stats and insight" />
 
-        <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
+        <main className="flex-1 px-8 py-6 space-y-16 overflow-y-auto">
           {/* Filters */}
           <div className="flex gap-2">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -221,30 +222,30 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
+                <CardContent className="px-7">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Number of tickets solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
+                  <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
                 </CardContent>
               </Card>
               <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
+                <CardContent className="px-7">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Total time spent</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
+                  <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
                 </CardContent>
               </Card>
               <Card className="border-border-subtle shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
+                <CardContent className="px-7">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-muted-foreground">Percentage solved</span>
                     <Info className="w-3 h-3 text-muted-foreground" />
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
+                  <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
                 </CardContent>
               </Card>
             </div>
@@ -299,7 +300,7 @@ export default function Dashboard() {
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-6 flex items-center gap-3">
                           <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
+                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
                             style={{ backgroundColor: helper.color }}
                           >
                             {helper.initial}

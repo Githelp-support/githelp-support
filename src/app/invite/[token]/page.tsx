@@ -270,7 +270,7 @@ export default function InviteAcceptancePage() {
             <div className="min-h-screen flex items-center justify-center bg-page-muted">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
-                    <p className="text-[14px] text-muted-foreground">Loading invite...</p>
+                    <p className="text-sm text-muted-foreground">Loading invite...</p>
                 </div>
             </div>
         )
@@ -352,7 +352,7 @@ export default function InviteAcceptancePage() {
         <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
+                    <CardTitle className="text-2xl font-semibold">You&apos;ve been invited!</CardTitle>
                     <CardDescription className="text-sm mt-2">
                         Join {project?.name ?? "this project"} {inviteTypeLabel}
                     </CardDescription>
