@@ -11,6 +11,7 @@ import { ProtectedLayout } from "@/components/layout/protected-layout"
 import { TopBar } from "@/components/layout/top-bar"
 import { LoadingFallback } from "@/components/ui/loading-fallback"
 import { Toaster } from "@/components/ui/sonner"
+import { GuestAdoptionConfirmDialog } from "@/components/auth/guest-adoption-confirm-dialog"
 import { Suspense } from "react"
 
 const openSans = Open_Sans({
@@ -50,13 +51,18 @@ export default function RootLayout({
                       {children}
                     </div>
                   </UnsavedChangesProvider>
-                  <Toaster position="top-right" richColors closeButton />
                 </ProtectedLayout>
               </ProjectProvider>
             </UserProvider>
           </ReactQueryProvider>
         </Suspense>
-        <Toaster />
+        {/* Single global Toaster: sonner renders every toast in each mounted
+            Toaster without an id, so a second one shows everything twice.
+            Mounted at body level so public routes (invite, onboarding) and
+            protected pages alike get their toasts. */}
+        <Toaster position="top-right" richColors closeButton />
+        {/* "Link your guest conversation?" after sign-in (lib/guest-adoption). */}
+        <GuestAdoptionConfirmDialog />
       </body>
     </html>
   )

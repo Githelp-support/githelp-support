@@ -5,7 +5,6 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { AIRephraseModal } from "@/components/modals/ai-rephrase-modal"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { EndTicketDrawer } from "@/components/drawers/end-ticket-drawer"
 import { cn } from "@/lib/utils"
@@ -23,6 +22,7 @@ import {
   TIME_ENTRY_AUTO_ACCEPT_HOURS,
   describeAutoAcceptDeadline,
   formatTime,
+  MAX_TIME_ENTRY_MS,
 } from "@/hooks/useTimeEntries"
 import {
   DeleteTimeEntryDialog,
@@ -39,7 +39,6 @@ import {
   Paperclip,
   Smile,
   Check,
-  Sparkles,
   AtSign,
   Mic,
   Video,
@@ -50,6 +49,8 @@ import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
+import { ClaimTicketButton, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { guestSystemMessageCopy } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
@@ -59,7 +60,7 @@ import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/
 import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
-import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
+import { formatTicketRates, isFlatFeePricing, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
@@ -99,6 +100,18 @@ interface Message {
 
 const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
 
+/** Toast for a failed capture: only card problems mention updating the card. */
+function notifyCaptureError(error: Error, cardHint: string) {
+  const code = (error as { code?: string }).code
+  if (code === "capture_recorded_in_stripe_only") {
+    toast.info("Payment captured", { description: "It will be recorded automatically in a few minutes." })
+  } else if (code === "not_ticket_helper_or_admin" || code === "ticket_not_ended" || code === "charge_outcome_unknown") {
+    toast.error("Payment not captured yet", { description: error.message })
+  } else {
+    toast.error(`Payment failed: ${error.message}`, { description: cardHint })
+  }
+}
+
 export default function TicketDetailPage() {
   const params = useParams()
   const ticketId = params.id as string
@@ -108,7 +121,11 @@ export default function TicketDetailPage() {
   const [justEndedLocal, setJustEndedLocal] = useState(false)
   const [endOutcome, setEndOutcome] = useState<string | null>(null)
   const [userHasSLA, setUserHasSLA] = useState(false)
-  const [isRephraseModalOpen, setIsRephraseModalOpen] = useState(false)
+  // In-flight guard for sending: `sendMessage.isPending` only flips once the
+  // insert starts, after the (lazy-loaded) formatter has run, so a fast
+  // double Enter would otherwise send twice.
+  const [isSending, setIsSending] = useState(false)
+  const sendingRef = useRef(false)
   const [isEndTicketDrawerOpen, setIsEndTicketDrawerOpen] = useState(false)
   const [isLogTimeDrawerOpen, setIsLogTimeDrawerOpen] = useState(false)
   const [isAddSelfAsHelperDialogOpen, setIsAddSelfAsHelperDialogOpen] = useState(false)
@@ -119,13 +136,25 @@ export default function TicketDetailPage() {
   const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
 
   // Fetch ticket and messages
-  const { data: ticket, isLoading: ticketLoading } = useTicket(ticketId)
+  const { data: ticket, isLoading: ticketLoading, isError: ticketError } = useTicket(ticketId)
   const { data: ticketDetails } = useTicketWithDetails(ticketId)
+  // Opened by a visitor who hasn't signed in: helpers can reply, but nobody
+  // can claim / log time / bill until they do. Realtime clears the flag after
+  // adoption (adopt-guest-tickets), which re-enables the claim button.
+  const isGuestTicket = !!(ticket as { guest?: boolean } | null | undefined)?.guest
   // Fetch payment settings (the payment gate needs them: free support opens it)
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
+  // Billing uses the prices snapshotted when the ticket was opened; prefer them over
+  // the live project settings so the helper sees what the customer will be charged.
+  const pricingSnapshot = (ticket as { pricing_snapshot?: Record<string, number> | null } | undefined)?.pricing_snapshot
+  const effectivePricing = pricingSnapshot && paymentSettings ? { ...paymentSettings, ...pricingSnapshot } : paymentSettings
   const paymentGate = useTicketPaymentStatus(ticketId, {
     slaId: (ticketDetails as { sla_id?: string | null } | undefined)?.sla_id ?? null,
-    isFree: isFreeSupport(paymentSettings),
+    isFree: isFreeSupport(effectivePricing),
+    ticketStatus: ticket?.status ?? null,
+    // Flat fee follows the ticket's snapshot only, like the DB gate (legacy
+    // tickets without a snapshot keep needing an authorized hold).
+    isFlatFee: !!pricingSnapshot && isFlatFeePricing(effectivePricing),
   })
   const { data: messagesData, isLoading: messagesLoading } = useTicketMessages(ticketId)
   const sendMessage = useSendMessage()
@@ -211,8 +240,9 @@ export default function TicketDetailPage() {
     [timeEntries]
   )
   
-  // Format payment values (convert cents to dollars)
-  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
+  // Format payment values (convert cents to dollars); null until the project
+  // has a payment settings row — no placeholder prices.
+  const rates = formatTicketRates(effectivePricing)
 
   // Set up real-time subscriptions
   useRealtimeMessages(ticketId)
@@ -255,13 +285,13 @@ export default function TicketDetailPage() {
         created_at: "",
         user: {
           id: creatorId,
-          name: (creatorUser as { name?: string })?.name ?? "User",
+          name: ticketCreatorDisplayName((creatorUser as { name?: string })?.name, isGuestTicket),
           avatar_url: (creatorUser as { avatar_url?: string | null })?.avatar_url ?? null,
         },
       })
     }
     return list
-  }, [participants, ticket?.created_by, ticketDetails?.user])
+  }, [participants, ticket?.created_by, ticketDetails?.user, isGuestTicket])
 
   const isTicketEnded = (ticket?.status === "completed" || ticket?.status === "cancelled") || justEndedLocal
 
@@ -297,10 +327,19 @@ export default function TicketDetailPage() {
     prevTimeReviewRequestedAtRef.current = timeReviewRequestedAt
     if (prev === undefined || isTicketEnded) return
     if (prev && !timeReviewRequestedAt) {
-      toast.info("The logged time summary has been resolved.", {
-        description: "Check the chat for the outcome, then end the session from End ticket.",
-      })
+      if (pendingReviewCount > 0) {
+        // Time changed after the summary was sent; the backend withdrew it.
+        toast.info("The summary was withdrawn because the logged time changed.", {
+          description: "Send the updated summary to the user before ending the session.",
+        })
+      } else {
+        toast.info("The logged time summary has been resolved.", {
+          description: "Check the chat for the outcome, then end the session from End ticket.",
+        })
+      }
     }
+    // pendingReviewCount is read at the moment the request clears; not a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeReviewRequestedAt, isTicketEnded])
 
   const handleRequestTimeEntryReview = async () => {
@@ -323,11 +362,24 @@ export default function TicketDetailPage() {
     }
   }
 
-  const isClaimed =
+  // Who may do what on this ticket. Server-side the `tickets` UPDATE trigger
+  // only lets the claimed participant (or a project admin) change status, so
+  // the UI mirrors that: other helpers get a read-only view.
+  const isClaimedByMe =
     justClaimedLocal ||
-    (participants && currentUser?.id && participants.some((p) => p.participant_id === currentUser.id && p.claimed === true)) ||
+    (!!currentUser?.id &&
+      !!participants?.some((p) => p.participant_id === currentUser.id && p.claimed === true))
+  const isClaimed =
+    isClaimedByMe ||
+    !!participants?.some((p) => p.claimed) ||
     ticket?.status === "claimed" ||
     ticket?.status === "in-progress"
+  const canManageTicket = isClaimedByMe || isAdmin
+  const isTicketCreator = !!currentUser?.id && ticket?.created_by === currentUser.id
+  // Claiming is only offered on an open, unclaimed ticket to someone other
+  // than the person who asked for help (the backend rejects both anyway).
+  const canClaim = !!currentUser?.id && !isClaimed && !isTicketEnded && !isTicketCreator
+  const canChat = !isTicketEnded && !!currentUser?.id
 
   // Transform messages to UI format; prepend synthetic "claimed" message when ticket is claimed
   const messages: Message[] = useMemo(() => {
@@ -360,7 +412,9 @@ export default function TicketDetailPage() {
         content:
           msg.sender_type === "system" && (msg.metadata as { kind?: string } | null | undefined)?.kind === "payment_authorized"
             ? HELPER_PAYMENT_AUTHORIZED_MESSAGE
-            : msg.content,
+            : (msg.sender_type === "system"
+                ? guestSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind, "helper")
+                : null) ?? msg.content,
         timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
           day: "2-digit",
           month: "2-digit",
@@ -389,7 +443,7 @@ export default function TicketDetailPage() {
     if (firstUser) {
       return {
         content: firstUser.content,
-        senderName: (firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name ?? "User",
+        senderName: ticketCreatorDisplayName((firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name, isGuestTicket),
         senderId: (firstUser as { sender_id?: string }).sender_id ?? ticketCreatorId,
         senderAvatarUrl:
           (firstUser as { sender?: { avatar_url?: string | null } }).sender?.avatar_url ?? ticketCreatorAvatarUrl,
@@ -399,7 +453,7 @@ export default function TicketDetailPage() {
     if (ticket?.description || ticketDetails?.description) {
       return {
         content: ticket?.description ?? ticketDetails?.description ?? "",
-        senderName: ticketDetails?.user?.name ?? "User",
+        senderName: ticketCreatorDisplayName(ticketDetails?.user?.name, isGuestTicket),
         senderId: ticketCreatorId,
         senderAvatarUrl: ticketCreatorAvatarUrl,
         timestamp: ticket?.created_at ?? "",
@@ -407,12 +461,12 @@ export default function TicketDetailPage() {
     }
     return {
       content: "",
-      senderName: ticketDetails?.user?.name ?? "User",
+      senderName: ticketCreatorDisplayName(ticketDetails?.user?.name, isGuestTicket),
       senderId: ticketCreatorId,
       senderAvatarUrl: ticketCreatorAvatarUrl,
       timestamp: ticket?.created_at ?? "",
     }
-  }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description])
+  }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description, isGuestTicket])
 
   // Images attached via the toolbar button, paste or drag & drop end up as
   // markdown in the draft message.
@@ -443,6 +497,13 @@ export default function TicketDetailPage() {
 
   const handleSendMessage = async () => {
     if (!message.trim() || !ticketId || !currentUser?.id) return
+    if (isTicketEnded) {
+      toast.error("This ticket is closed, so new messages can't be sent.")
+      return
+    }
+    if (sendingRef.current) return
+    sendingRef.current = true
+    setIsSending(true)
 
     try {
       const isAlreadyParticipant = participants?.some((p) => p.participant_id === currentUser.id)
@@ -462,6 +523,12 @@ export default function TicketDetailPage() {
       setMessage("")
     } catch (error) {
       console.error("Failed to send message:", error)
+      toast.error("Couldn't send your message. Please try again.", {
+        description: error instanceof Error ? error.message : undefined,
+      })
+    } finally {
+      sendingRef.current = false
+      setIsSending(false)
     }
   }
 
@@ -493,6 +560,20 @@ export default function TicketDetailPage() {
       console.error("Cannot claim ticket: missing ticketId or user")
       return
     }
+    if (canClaim && isGuestTicket) {
+      toast.error(GUEST_CLAIM_BLOCKED_COPY)
+      return
+    }
+    if (!canClaim) {
+      toast.error(
+        isTicketCreator
+          ? "You can't claim your own ticket."
+          : isTicketEnded
+            ? "This ticket is already closed."
+            : "This ticket has already been claimed.",
+      )
+      return
+    }
 
     if (!skipHelperCheck && isAdminButNotHelper) {
       setPendingAction("claim")
@@ -516,70 +597,110 @@ export default function TicketDetailPage() {
       }
 
       // Log claimed event in tickets_events
-      await supabase.from("tickets_events").insert({
+      const { error: eventError } = await supabase.from("tickets_events").insert({
         ticket_id: ticketId,
         type: "claimed",
         payload: {},
       })
+      if (eventError) console.warn("Failed to log claimed event:", eventError)
 
       setJustClaimedLocal(true)
     } catch (error) {
       console.error("Failed to claim ticket:", error)
+      const hint = (error as { hint?: string } | null)?.hint
+      if (hint === "claim_own_ticket") {
+        toast.error("You can't claim a ticket you opened yourself.", {
+          description: "Another helper or a project admin needs to take it.",
+        })
+        return
+      }
+      if (hint === "ticket_already_claimed") {
+        toast.error("Another helper has already claimed this ticket.")
+        return
+      }
+      if (hint === "guest_ticket_requires_sign_in") {
+        toast.error(GUEST_CLAIM_BLOCKED_COPY)
+        return
+      }
+      toast.error("Couldn't claim the ticket. Please try again.", {
+        description: error instanceof Error ? error.message : undefined,
+      })
     }
   }
 
-  const handleRephraseWithAI = () => {
-    setIsRephraseModalOpen(true)
-  }
-
-  const handleEndTicket = (outcome: string) => {
-    setJustEndedLocal(true)
-    setEndOutcome(outcome)
-    setIsEndTicketDrawerOpen(false)
-
+  /**
+   * End the ticket. The status update is awaited first: only once the database
+   * has accepted it does the UI flip to "ended", the audit event get written
+   * and the hold captured. If the update is rejected (e.g. by the column-guard
+   * trigger because this user isn't the claimed helper) the ticket stays open
+   * and the drawer stays up (it awaits the rejected promise).
+   */
+  const handleEndTicket = async (outcome: string) => {
     if (!ticketId) return
 
     const status = outcome === "not-able-to-help" ? "cancelled" : "completed"
     const completedAt = new Date().toISOString()
 
-    void updateTicket.mutateAsync({
-      id: ticketId,
-      // Ending also resolves any outstanding customer "end session" request.
-      updates: {
-        status,
-        completed_at: completedAt,
-        end_requested_at: null,
-        end_requested_by: null,
-        time_review_requested_at: null,
-        time_review_requested_by: null,
-      },
-    })
+    try {
+      await updateTicket.mutateAsync({
+        id: ticketId,
+        // Ending also resolves any outstanding customer "end session" request.
+        updates: {
+          status,
+          ...(status === "completed" ? { completed_at: completedAt } : { cancelled_at: completedAt }),
+          end_requested_at: null,
+          end_requested_by: null,
+          time_review_requested_at: null,
+          time_review_requested_by: null,
+        },
+      })
+    } catch (error) {
+      console.error("Failed to end ticket:", error)
+      const hint = (error as { hint?: string } | null)?.hint
+      toast.error("Couldn't end the ticket. It is still open.", {
+        description:
+          hint === "ticket_has_pending_time"
+            ? "Some logged time is still waiting for the user's confirmation. Send the summary first, or remove those entries."
+            : error instanceof Error
+              ? error.message
+              : "Please try again.",
+      })
+      throw error
+    }
 
-    // Log ended event
-    void supabase.from("tickets_events").insert({
+    setJustEndedLocal(true)
+    setEndOutcome(outcome)
+    setIsEndTicketDrawerOpen(false)
+
+    // Log ended event (audit only; a failure here must not block the capture).
+    const { error: endedEventError } = await supabase.from("tickets_events").insert({
       ticket_id: ticketId,
       type: "ended",
       payload: {},
     })
+    if (endedEventError) console.warn("Failed to log ended event:", endedEventError)
 
-    // Capture the authorized hold and kick off payout distribution. Only when
-    // the helper actually helped (status=completed), the ticket isn't
-    // SLA-covered (those bill via metered usage), and a hold is in place
-    // (status=authorized). "Not able to help" leaves the hold to auto-expire.
+    // Capture and kick off payout distribution when the helper actually helped
+    // (status=completed) on a billable ticket (not SLA-covered, not free, some
+    // payment exists). The backend captures the open hold, or charges confirmed
+    // time to the saved card when a weekly renewal failed. "Not able to help"
+    // is never charged.
     const isSlaCovered = !!(ticketDetails as { sla_id?: string | null } | undefined)?.sla_id
-    if (status === "completed" && !isSlaCovered && paymentGate.status === "authorized") {
-      void supabase.from("tickets_events").insert({
-        ticket_id: ticketId,
-        type: "payment_processing",
-        payload: {},
-      })
+    const billable =
+      paymentGate.status !== "free" &&
+      paymentGate.status !== "none" &&
+      paymentGate.status !== "sla_covered"
+    if (status === "completed" && !isSlaCovered && billable) {
+      void supabase
+        .from("tickets_events")
+        .insert({ ticket_id: ticketId, type: "payment_processing", payload: {} })
+        .then(({ error: eventError }) => {
+          if (eventError) console.warn("tickets_events insert failed:", eventError.message)
+        })
       captureTicket.mutate(
         { ticketId },
         {
-          onError: (error) =>
-            toast.error(`Payment failed: ${error.message}`, {
-              description: "The user has been asked to update their card. You can also retry below.",
-            }),
+          onError: (error) => notifyCaptureError(error, "The user has been asked to update their card. You can also retry below."),
         },
       )
     }
@@ -589,15 +710,26 @@ export default function TicketDetailPage() {
     // Here you would typically show a modal or navigate to a details page
   }
 
-  const originalTicketText =
-    "I have set up my event types, but they are not being discovered and it is not working as expected. Been trying to figure it out. Here is an example of one of my event types: [PurchaseEvent] public record PurchaseItem(string ItemId, string UserId, string PaymentMethodId);"
-
   const handleLogTime = (entry: TimeEntry) => {
     if (!currentHelperId || !ticketId) return
     // entry.date from drawer is en-GB (dd/mm/yyyy) -> convert to YYYY-MM-DD
     const dateParts = entry.date.split("/")
     const dateIso = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1].padStart(2, "0")}-${dateParts[0].padStart(2, "0")}` : new Date().toISOString().slice(0, 10)
     const timeMilliseconds = (entry.hours * 3600 + entry.minutes * 60) * 1000
+    // The drawer validates, but never let a non-positive or absurd duration
+    // reach the database (there is no CHECK on time_milliseconds).
+    if (
+      !Number.isInteger(entry.hours) ||
+      !Number.isInteger(entry.minutes) ||
+      entry.hours < 0 ||
+      entry.minutes < 0 ||
+      entry.minutes >= 60 ||
+      timeMilliseconds < 60_000 ||
+      timeMilliseconds > MAX_TIME_ENTRY_MS
+    ) {
+      toast.error("Enter a duration between 1 minute and 24 hours.")
+      return
+    }
     createTimeEntry.mutate(
       {
         ticketId,
@@ -609,7 +741,9 @@ export default function TicketDetailPage() {
       },
       {
         onError: (error) =>
-          isPaymentNotAuthorizedError(error)
+          (error as { hint?: string } | null)?.hint === "guest_ticket_requires_sign_in"
+            ? toast.error("Time can be logged once the visitor has signed in.")
+            : isPaymentNotAuthorizedError(error)
             ? toast.error("Time can't be logged yet", {
                 description: "The payment for this ticket isn't authorized. Ask the user to add a payment method.",
               })
@@ -664,8 +798,31 @@ export default function TicketDetailPage() {
   const paymentSettled =
     paymentGate.status === "distributing" ||
     paymentGate.status === "completed" ||
-    captureTicket.isSuccess
-  const paymentFailed = captureTicket.isError || paymentGate.status === "failed"
+    (captureTicket.isSuccess && captureTicket.data?.status !== "processing")
+  // 403s and "Stripe captured but our row did not update" are not card failures:
+  // the hold is still (or already) captured, so never offer "update your card" for them.
+  const captureErrorCode = (captureTicket.error as { code?: string } | null)?.code
+  const captureNonCardError =
+    captureErrorCode === "capture_recorded_in_stripe_only" ||
+    captureErrorCode === "not_ticket_helper_or_admin" ||
+    captureErrorCode === "ticket_not_ended" ||
+    captureErrorCode === "charge_outcome_unknown"
+  // Settled per the payments rows (aggregated over all of them once the ticket
+  // is closed): a card error from this session's capture no longer means
+  // failed (a real decline also writes a failed row, which the rows reflect).
+  const settledByRows =
+    paymentGate.status === "distributing" ||
+    paymentGate.status === "completed" ||
+    paymentGate.status === "waived" ||
+    paymentGate.status === "refund_pending"
+  const paymentFailed =
+    !settledByRows && ((captureTicket.isError && !captureNonCardError) || paymentGate.status === "failed")
+  // Authorization / ordering errors: nothing was charged and the card is fine,
+  // so offer a neutral retry instead of leaving the panel on "Processing…".
+  const captureNeedsRetry =
+    captureErrorCode === "not_ticket_helper_or_admin" ||
+    captureErrorCode === "ticket_not_ended" ||
+    captureErrorCode === "charge_outcome_unknown"
   // Why it failed: Stripe's message from the payments row (realtime, survives
   // reloads), else from the last capture attempt in this session.
   const paymentFailureReason = paymentFailed
@@ -674,27 +831,73 @@ export default function TicketDetailPage() {
   const paymentProcessing =
     !paymentSettled &&
     !paymentFailed &&
+    !captureNeedsRetry &&
     (captureTicket.isPending ||
       paymentGate.status === "authorized" ||
-      paymentGate.status === "pending")
-  const chargedLabel = isCancelledEnd
-    ? "No charge"
-    : paymentGate.status === "free"
-      ? "Free support"
-    : paymentSettled && chargedSmallestUnit != null
-      ? `$${(chargedSmallestUnit / 100).toFixed(2)}`
-      : paymentProcessing
-        ? "Processing…"
-        : paymentFailed
-          ? "Failed"
-          : "—"
-  // Who got what out of the charge. Shown once the capture has settled.
+      paymentGate.status === "pending" ||
+      paymentGate.status === "processing")
+  const captureChargedNothing =
+    captureTicket.data?.status === "not_billable" || captureTicket.data?.status === "released"
   const formatUsd = (smallestUnit: number) => `$${(smallestUnit / 100).toFixed(2)}`
+  const chargedLabel =
+    // Cancelled after a weekly segment was captured: flagged for a refund.
+    paymentGate.status === "refund_pending"
+      ? paymentGate.capturedAmountSmallestUnit != null
+        ? `Refund pending (${formatUsd(paymentGate.capturedAmountSmallestUnit)} collected)`
+        : "Refund pending"
+      : isCancelledEnd
+        ? "No charge"
+        : paymentGate.status === "free"
+          ? "Free support"
+          : paymentSettled && chargedSmallestUnit != null
+            ? formatUsd(chargedSmallestUnit)
+            : paymentGate.status === "waived"
+              ? "No charge (amount below the card minimum)"
+              : captureChargedNothing
+                ? "No charge"
+                : paymentProcessing
+                  ? "Processing…"
+                  : paymentFailed
+                    ? "Failed"
+                    : "—"
+  // Who got what out of the charge. Shown once the capture has settled.
   const chargeSplits =
     !isCancelledEnd && paymentSettled && chargedSmallestUnit != null ? paymentGate.capturedSplits : null
   const billedHelperCount = new Set(
     timeEntries.filter((e) => e.reviewStatus !== "declined").map((e) => e.helperId),
   ).size
+
+  // A ticket hidden by RLS (or a bad id) used to render a blank page: the
+  // `.single()` read errors, and nothing else has data to show.
+  if (ticketError || (!ticketLoading && !ticket)) {
+    return (
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="relative border-b border-border z-10">
+            <Header title="Ticket" showBackButton={true} titleClassName="text-xl" />
+          </div>
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-6 py-12">
+              <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
+                <h1 className="text-2xl font-semibold text-foreground mb-2">
+                  Ticket not found or you don&apos;t have access
+                </h1>
+                <p className="text-muted-foreground mb-6">
+                  This ticket may have been removed, or it belongs to a project you are not a member of.
+                </p>
+                <NextLink href="/tickets">
+                  <Button variant="default" size="sm">
+                    Back to tickets
+                  </Button>
+                </NextLink>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
@@ -706,7 +909,10 @@ export default function TicketDetailPage() {
             showBackButton={true}
             titleClassName="text-xl"
             inlineRightContent={
-              <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
+              <span className="flex items-center gap-2">
+                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
+                {isGuestTicket && <GuestTicketBadge />}
+              </span>
             }
           />
         </div>
@@ -804,53 +1010,55 @@ export default function TicketDetailPage() {
 
                     <div>
                       <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
-                      <div className="grid grid-cols-3 gap-4">
+                      {rates == null ? (
                         <div className="bg-card border border-border rounded-lg p-3">
-                          <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                          <p className="text-sm font-medium text-foreground tabular-nums">USD {startPrice}</p>
+                          <p className="text-sm font-medium text-foreground">{RATES_NOT_CONFIGURED}</p>
+                          <p className="text-sm text-muted-foreground">
+                            This project has no payment settings yet, so no hold can be placed.
+                          </p>
                         </div>
-                        <div className="bg-card border border-border rounded-lg p-3">
-                          <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                          <p className="text-sm font-medium text-foreground tabular-nums">USD {first60Price}/min</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="bg-card border border-border rounded-lg p-3">
+                            <p className="text-sm text-muted-foreground mb-1">Start price</p>
+                            <p className="text-sm font-medium text-foreground tabular-nums">USD {rates.startPrice}</p>
+                          </div>
+                          <div className="bg-card border border-border rounded-lg p-3">
+                            <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
+                            <p className="text-sm font-medium text-foreground tabular-nums">USD {rates.first60Price}/min</p>
+                          </div>
+                          <div className="bg-card border border-border rounded-lg p-3">
+                            <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
+                            <p className="text-sm font-medium text-foreground tabular-nums">USD {rates.after60Price}/min</p>
+                          </div>
                         </div>
-                        <div className="bg-card border border-border rounded-lg p-3">
-                          <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                          <p className="text-sm font-medium text-foreground tabular-nums">USD {after60Price}/min</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Action Buttons */}
-                    {!isClaimed && (
-                      <div className="flex gap-3">
-                        <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
-                          Claim ticket
-                        </Button>
-                        <Button
-                          onClick={handleRephraseWithAI}
-                          variant="outline"
-                          className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent cursor-pointer"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          Rephrase with AI
-                        </Button>
-                      </div>
+                    {/* Action Buttons — claim only on an open, unclaimed ticket
+                        (never for its creator); End ticket only for the claimed
+                        helper or a project admin. */}
+                    {canClaim && (
+                      <ClaimTicketButton
+                        isGuest={isGuestTicket}
+                        pending={claimTicket.isPending}
+                        onClaim={() => void handleClaimTicket()}
+                      />
                     )}
 
-                    {isClaimed && !isTicketEnded && (
+                    {isClaimed && !isTicketEnded && canManageTicket && (
                       <div className="flex gap-3">
-                        <Button
-                          onClick={handleRephraseWithAI}
-                          variant="outline"
-                          className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent cursor-pointer"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          Rephrase with AI
-                        </Button>
                         <Button variant="outline" size="sm" onClick={() => setIsEndTicketDrawerOpen(true)} className="cursor-pointer">
                           End ticket
                         </Button>
                       </div>
+                    )}
+
+                    {isClaimed && !isTicketEnded && !canManageTicket && (
+                      <p className="text-[13px] text-muted-foreground">
+                        {claimer?.name ? `${claimer.name} is handling this ticket.` : "Another helper is handling this ticket."}{" "}
+                        You can read along, but only they (or a project admin) can log time or end it.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -1012,16 +1220,18 @@ export default function TicketDetailPage() {
                                   The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
-                              {paymentFailed && (
+                              {captureNeedsRetry && !paymentFailed && (
+                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                  {captureTicket.error?.message ?? "The payment hasn't been captured yet."}
+                                </p>
+                              )}
+                              {(paymentFailed || captureNeedsRetry) && (
                                 <Button
                                   onClick={() =>
                                     captureTicket.mutate(
                                       { ticketId },
                                       {
-                                        onError: (error) =>
-                                          toast.error(`Payment failed: ${error.message}`, {
-                                            description: "The user has been asked to update their card.",
-                                          }),
+                                        onError: (error) => notifyCaptureError(error, "The user has been asked to update their card."),
                                       },
                                     )
                                   }
@@ -1063,7 +1273,7 @@ export default function TicketDetailPage() {
               />
             )}
 
-            {endRequested && (
+            {endRequested && canManageTicket && (
               <EndSessionRequestedHelperBanner
                 requesterName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
                 requestedAt={endRequestedAt}
@@ -1087,17 +1297,22 @@ export default function TicketDetailPage() {
               value={message}
               onChange={setMessage}
               onSend={handleSendMessage}
-              sendDisabled={!message.trim()}
+              sendDisabled={!message.trim() || !canChat}
+              sending={isSending}
+              disabled={isTicketEnded}
               placeholder="Message #askanything"
-              onImageClick={attachmentStoragePrefix ? () => setIsImageUploadOpen(true) : undefined}
-              onImageFiles={attachmentStoragePrefix ? uploadFiles : undefined}
+              onImageClick={attachmentStoragePrefix && canChat ? () => setIsImageUploadOpen(true) : undefined}
+              onImageFiles={attachmentStoragePrefix && canChat ? uploadFiles : undefined}
               imagesUploading={imagesUploading}
               toolbarEndContent={
-                !isClaimed ? (
-                  <Button onClick={() => void handleClaimTicket()} variant="lavender" className="cursor-pointer">
-                    Claim ticket
-                  </Button>
-                ) : !isTicketEnded ? (
+                canClaim ? (
+                  <ClaimTicketButton
+                    isGuest={isGuestTicket}
+                    pending={claimTicket.isPending}
+                    onClaim={() => void handleClaimTicket()}
+                    showExplanation={false}
+                  />
+                ) : isClaimed && !isTicketEnded && canManageTicket ? (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1110,7 +1325,7 @@ export default function TicketDetailPage() {
               }
             />
 
-            {attachmentStoragePrefix && (
+            {attachmentStoragePrefix && canChat && (
               <AttachImageModal
                 open={isImageUploadOpen}
                 onOpenChange={setIsImageUploadOpen}
@@ -1143,13 +1358,13 @@ export default function TicketDetailPage() {
                   return (
                     <div key={participant.id} className="flex items-center gap-2">
                       <ProfileAvatar
-                        id={participant.user.id}
-                        name={participant.user.name}
-                        avatarUrl={participant.user.avatar_url ?? null}
+                        id={participant.user?.id ?? participant.participant_id}
+                        name={participant.user?.name ?? "Unknown"}
+                        avatarUrl={participant.user?.avatar_url ?? null}
                         size="md"
                       />
                       <span className="text-[13px] text-muted-foreground">
-                        {isCurrentUser ? "You" : participant.user.name}
+                        {isCurrentUser ? "You" : participant.user?.name ?? "Unknown"}
                       </span>
                     </div>
                   )
@@ -1252,7 +1467,12 @@ export default function TicketDetailPage() {
                 )}
               </div>
             )}
-            {!isTicketEnded && (
+            {paymentGate.error && (
+              <p className="text-xs text-destructive mb-2" role="alert">
+                Couldn&apos;t load the payment status ({paymentGate.error}). Time logging stays locked until it loads.
+              </p>
+            )}
+            {!isTicketEnded && canManageTicket && (
               <Button
                 variant="outline"
                 disabled={!paymentGate.isReady}
@@ -1321,30 +1541,27 @@ export default function TicketDetailPage() {
         )}
       </div>
 
-      {/* AI Rephrase Modal */}
-      <AIRephraseModal
-        isOpen={isRephraseModalOpen}
-        onClose={() => setIsRephraseModalOpen(false)}
-        originalText={originalTicketText}
-      />
+      {/* End Ticket / Log time drawers — only for the claimed helper or an admin */}
+      {canManageTicket && (
+        <>
+          <EndTicketDrawer
+            isOpen={isEndTicketDrawerOpen}
+            onClose={() => setIsEndTicketDrawerOpen(false)}
+            onEndTicket={handleEndTicket}
+            userRequestedEnd={endRequested}
+            timeEntries={timeEntries}
+            timeReviewRequestedAt={timeReviewRequested ? timeReviewRequestedAt : null}
+            onRequestTimeReview={handleRequestTimeEntryReview}
+            requestTimeReviewPending={requestTimeEntryReview.isPending}
+          />
 
-      {/* End Ticket Drawer */}
-      <EndTicketDrawer
-        isOpen={isEndTicketDrawerOpen}
-        onClose={() => setIsEndTicketDrawerOpen(false)}
-        onEndTicket={handleEndTicket}
-        userRequestedEnd={endRequested}
-        timeEntries={timeEntries}
-        timeReviewRequestedAt={timeReviewRequested ? timeReviewRequestedAt : null}
-        onRequestTimeReview={handleRequestTimeEntryReview}
-        requestTimeReviewPending={requestTimeEntryReview.isPending}
-      />
-
-      <LogTimeDrawer
-        isOpen={isLogTimeDrawerOpen}
-        onClose={() => setIsLogTimeDrawerOpen(false)}
-        onLogTime={handleLogTime}
-      />
+          <LogTimeDrawer
+            isOpen={isLogTimeDrawerOpen}
+            onClose={() => setIsLogTimeDrawerOpen(false)}
+            onLogTime={handleLogTime}
+          />
+        </>
+      )}
 
       <DeleteTimeEntryDialog
         open={!!deletingEntry}

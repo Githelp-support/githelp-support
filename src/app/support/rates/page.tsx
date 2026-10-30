@@ -35,8 +35,9 @@ export default function UserSupportRatesPage() {
   const projectName = project?.name ?? "Support"
 
   const { data: paymentSettings } = useProjectPaymentSettings(effectiveProjectId)
-  // Format payment values (convert cents to dollars)
-  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
+  // Format payment values (convert cents to dollars); null until the project
+  // has payment settings — the content renders "Rates not configured".
+  const rates = formatTicketRates(paymentSettings)
   const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(effectiveProjectId)
 
   return (
@@ -51,9 +52,7 @@ export default function UserSupportRatesPage() {
             <RatesAndDetailsContent
               projectName={projectName}
               isFree={isFreeSupport(paymentSettings)}
-              startPrice={startPrice}
-              first60Price={first60Price}
-              after60Price={after60Price}
+              rates={rates}
               avgResponseSeconds={avgResponseSeconds}
               avgResponseLoading={avgResponseLoading}
             />

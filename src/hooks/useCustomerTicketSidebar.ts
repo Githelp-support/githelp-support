@@ -134,10 +134,10 @@ export function toChatParticipants(
         });
     }
     return list.map((p) => ({
-        id: p.user.id,
-        name: p.user.name,
-        avatarInitial: p.user.name?.[0]?.toUpperCase() ?? "U",
-        avatarUrl: p.user.avatar_url ?? null,
+        id: p.user?.id ?? p.participant_id,
+        name: p.user?.name ?? "Unknown",
+        avatarInitial: p.user?.name?.[0]?.toUpperCase() ?? "U",
+        avatarUrl: p.user?.avatar_url ?? null,
         isCurrentUser: !!currentUserId && p.participant_id === currentUserId,
     }));
 }

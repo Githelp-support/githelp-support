@@ -1,6 +1,7 @@
 import { AuthChangeEvent, Provider, Session } from "@supabase/supabase-js";
 import { supabase } from "./client";
 import { logger } from "@/lib/logger";
+import { clearAllGuestAdoptionState } from "@/lib/guest-adoption-storage";
 
 export const initializeAuth = () => {
     supabase.auth.onAuthStateChange((event) => {
@@ -155,6 +156,8 @@ export const signInWithEmail = async (
 
 export const logoutUser = async () => {
     try {
+        // A saved guest session must not outlive the account on this browser.
+        clearAllGuestAdoptionState();
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
     } catch (error) {

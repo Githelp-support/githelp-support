@@ -4,6 +4,7 @@ import {
     buildCustomerThreadMessages,
     describeChargedLine,
     findPendingSca,
+    isPaymentFailedCtaLive,
     type CustomerThreadOptions,
     type PersistedTicketMessage,
 } from "../customer-chat-messages";
@@ -156,5 +157,57 @@ describe("findPendingSca", () => {
             msg("m3", "payment_authorized"),
         ];
         expect(findPendingSca(messages, null)).toBeNull();
+    });
+});
+
+describe("describeChargedLine aggregate outcomes", () => {
+    const base = { cancelled: false, slaCovered: false, failureReason: null };
+
+    it("shows the refund pending with the collected amount, even though the ticket was cancelled", () => {
+        expect(
+            describeChargedLine({ ...base, cancelled: true, paymentStatus: "refund_pending", capturedAmountSmallestUnit: 2500 }),
+        ).toBe("Refund pending ($25.00 collected)");
+    });
+
+    it("explains a below-minimum waiver instead of Processing", () => {
+        expect(describeChargedLine({ ...base, paymentStatus: "waived", capturedAmountSmallestUnit: null })).toBe(
+            "No charge (amount below the card minimum)",
+        );
+    });
+
+    it("keeps No charge for a cancelled ticket with nothing captured", () => {
+        expect(
+            describeChargedLine({ ...base, cancelled: true, paymentStatus: "cancelled", capturedAmountSmallestUnit: null }),
+        ).toBe("No charge");
+    });
+});
+
+describe("isPaymentFailedCtaLive", () => {
+    const msg = (id: string, kind: string) =>
+        ({ id, senderType: "system", content: "", paymentMetadata: { kind } }) as unknown as TicketChatMessage;
+
+    it("is live for an unresolved payment_failed on an open ticket", () => {
+        const messages = [msg("m1", "payment_completed"), msg("m2", "payment_failed")];
+        expect(isPaymentFailedCtaLive(messages, 1, { ticketClosed: false, paymentStatus: "failed" })).toBe(true);
+    });
+
+    it.each(["payment_completed", "payment_remainder_waived", "payment_refund_needed"])(
+        "is resolved by a later %s message",
+        (kind) => {
+            const messages = [msg("m1", "payment_failed"), msg("m2", kind)];
+            expect(isPaymentFailedCtaLive(messages, 0)).toBe(false);
+        },
+    );
+
+    it("is resolved once the ticket is closed and the payment is no longer failed", () => {
+        const messages = [msg("m1", "payment_failed")];
+        expect(isPaymentFailedCtaLive(messages, 0, { ticketClosed: true, paymentStatus: "distributing" })).toBe(false);
+        expect(isPaymentFailedCtaLive(messages, 0, { ticketClosed: true, paymentStatus: "failed" })).toBe(true);
+        // Status not loaded yet: don't hide on a guess.
+        expect(isPaymentFailedCtaLive(messages, 0, { ticketClosed: true, paymentStatus: "none" })).toBe(true);
+    });
+
+    it("is false for anything but a payment_failed system message", () => {
+        expect(isPaymentFailedCtaLive([msg("m1", "payment_required")], 0)).toBe(false);
     });
 });

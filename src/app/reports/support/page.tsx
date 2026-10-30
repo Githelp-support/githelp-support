@@ -983,7 +983,7 @@ export default function ReportsSupportPage() {
                                     size="sm"
                                     type="button"
                                     className={OUTLINE_BUTTON_CLASS}
-                                    title="Download this transaction and its customer charge as a PDF"
+                                    title="Download this transaction and its user charge as a PDF"
                                     onClick={() => exportPdf(null, payoutExport(transfer))}
                                   >
                                     <Download className="w-3.5 h-3.5" />

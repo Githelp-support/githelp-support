@@ -19,11 +19,41 @@ import { formatCapDollars, parseCapDollars } from "@/lib/cap-format"
 import { DistributionPreview } from "@/components/payment/distribution-preview"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
+import { getFunctionErrorMessage } from "@/lib/functions-error"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 // Org-level spending caps are temporarily hidden from the admin Payments page.
 // The section and its wiring are kept intact below — flip this to re-enable.
 const SHOW_SPENDING_CAPS = false
+
+// Ticket prices are stored as smallint cents (NOT NULL), so the largest
+// representable price is 327.67 and empty / negative inputs must never be sent.
+const MAX_PRICE_DOLLARS = 327.67
+
+const errorMessage = (error: unknown, fallback: string) =>
+  (error instanceof Error && error.message) ||
+  (typeof (error as { message?: unknown } | null)?.message === "string"
+    ? (error as { message: string }).message
+    : fallback)
+
+/** Dollar input → cents; null when empty, non-numeric, negative or above the column limit. */
+function parsePriceCents(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === ".") return null
+  if (!/^\d*\.?\d*$/.test(trimmed)) return null
+  const dollars = Number(trimmed)
+  if (!Number.isFinite(dollars) || dollars < 0 || dollars > MAX_PRICE_DOLLARS) return null
+  return Math.round(dollars * 100)
+}
+
+function priceError(value: string): string | null {
+  if (!value.trim()) return "Enter a price (0 for free)."
+  if (parsePriceCents(value) === null) return `Enter an amount between 0 and ${MAX_PRICE_DOLLARS.toFixed(2)}.`
+  return null
+}
+
+const isValidPercentage = (value: number) => Number.isInteger(value) && value >= 0 && value <= 100
 
 export default function PaymentSettingsPage() {
   const [activeTab, setActiveTab] = useState<"helper" | "user">("user")
@@ -74,8 +104,10 @@ export default function PaymentSettingsPage() {
         defaultUserMonthlyCapSmallestUnit: parseCapDollars(defaultUserCap),
       })
       setCapsOriginal({ org: orgMonthlyCap, user: defaultUserCap })
+      toast.success("Spending caps saved")
     } catch (err) {
       console.error("Failed to save spending caps:", err)
+      toast.error(errorMessage(err, "Couldn't save spending caps. Please try again."))
     }
   }
 
@@ -89,6 +121,7 @@ export default function PaymentSettingsPage() {
       window.location.assign(url)
     } catch (err) {
       console.error("Failed to start Connect onboarding:", err)
+      toast.error(await getFunctionErrorMessage(err, "Couldn't start payout setup. Please try again."))
     }
   }
 
@@ -195,12 +228,29 @@ export default function PaymentSettingsPage() {
     (consultantRatio[0] !== originalValues.consultant_helper_percentage ||
      contractType !== originalValues.extended_contract_type)
 
+  // Ticket pricing: validate before comparing / saving. An invalid field
+  // (empty, negative, above the smallint limit) blocks Save instead of
+  // sending NaN / out-of-range cents.
+  const parsedStartCents = parsePriceCents(startPrice)
+  const parsedFirst60Cents = parsePriceCents(costPerMinuteFirst60)
+  const parsedAfter60Cents = parsePriceCents(costPerMinuteAfter60)
+  const priceErrors = {
+    start: priceError(startPrice),
+    first60: priceError(costPerMinuteFirst60),
+    after60: priceError(costPerMinuteAfter60),
+  }
+  const pricesValid = !priceErrors.start && !priceErrors.first60 && !priceErrors.after60
+
   // Check if user payment settings (ticket pricing) have changes
   const hasUserChanges = originalValues.ticket_start_price !== null && (
-    Math.round(parseFloat(startPrice) * 100) !== originalValues.ticket_start_price ||
-    Math.round(parseFloat(costPerMinuteFirst60) * 100) !== originalValues.ticket_price_minute_first_60 ||
-    Math.round(parseFloat(costPerMinuteAfter60) * 100) !== originalValues.ticket_price_minute_after_60
+    parsedStartCents !== originalValues.ticket_start_price ||
+    parsedFirst60Cents !== originalValues.ticket_price_minute_first_60 ||
+    parsedAfter60Cents !== originalValues.ticket_price_minute_after_60
   )
+
+  const teamPercentageValid = isValidPercentage(teamMemberRatio[0])
+  const communityPercentageValid = isValidPercentage(communityHelperRatio[0]) && communityHelperRatio[0] >= 85
+  const consultantPercentageValid = isValidPercentage(consultantRatio[0])
 
   // Check if user payment options (SLA / ticket enabled) have changes
   const hasUserOptionsChanges =
@@ -260,6 +310,10 @@ export default function PaymentSettingsPage() {
 
   const handleSaveTeamSettings = async () => {
     if (!projectId) return
+    if (!teamPercentageValid) {
+      toast.error("The team sharing ratio must be a whole number between 0 and 100.")
+      return
+    }
     try {
       await updatePaymentSettings.mutateAsync({
         projectId,
@@ -272,13 +326,19 @@ export default function PaymentSettingsPage() {
         ...prev,
         core_helper_percentage: teamMemberRatio[0],
       }))
+      toast.success("Team sharing ratio saved")
     } catch (error) {
       console.error("Failed to save team settings:", error)
+      toast.error(errorMessage(error, "Couldn't save the team sharing ratio. Please try again."))
     }
   }
 
   const handleSaveCommunitySettings = async () => {
     if (!projectId) return
+    if (!communityPercentageValid) {
+      toast.error("The community helper share must be a whole number between 85 and 100.")
+      return
+    }
     try {
       await updatePaymentSettings.mutateAsync({
         projectId,
@@ -291,13 +351,19 @@ export default function PaymentSettingsPage() {
         ...prev,
         community_helper_percentage: communityHelperRatio[0],
       }))
+      toast.success("Community sharing ratio saved")
     } catch (error) {
       console.error("Failed to save community settings:", error)
+      toast.error(errorMessage(error, "Couldn't save the community sharing ratio. Please try again."))
     }
   }
 
   const handleSaveConsultantSettings = async () => {
     if (!projectId) return
+    if (!consultantPercentageValid) {
+      toast.error("The consultant sharing ratio must be a whole number between 0 and 100.")
+      return
+    }
     try {
       await updatePaymentSettings.mutateAsync({
         projectId,
@@ -312,19 +378,25 @@ export default function PaymentSettingsPage() {
         consultant_helper_percentage: consultantRatio[0],
         extended_contract_type: contractType,
       }))
+      toast.success("Consultant settings saved")
     } catch (error) {
       console.error("Failed to save consultant settings:", error)
+      toast.error(errorMessage(error, "Couldn't save the consultant settings. Please try again."))
     }
   }
 
   const handleSaveUserSettings = async () => {
     if (!projectId) return
+    // Re-validate at save time: the button is disabled while invalid, but
+    // never send NaN / negative / out-of-range cents to the smallint columns.
+    if (parsedStartCents === null || parsedFirst60Cents === null || parsedAfter60Cents === null) {
+      toast.error(`Prices must be between 0 and ${MAX_PRICE_DOLLARS.toFixed(2)} USD.`)
+      return
+    }
+    const startPriceCents = parsedStartCents
+    const first60Cents = parsedFirst60Cents
+    const after60Cents = parsedAfter60Cents
     try {
-      // Convert dollars to cents for database storage
-      const startPriceCents = Math.round(parseFloat(startPrice) * 100)
-      const first60Cents = Math.round(parseFloat(costPerMinuteFirst60) * 100)
-      const after60Cents = Math.round(parseFloat(costPerMinuteAfter60) * 100)
-
       await updatePaymentSettings.mutateAsync({
         projectId,
         updates: {
@@ -340,8 +412,14 @@ export default function PaymentSettingsPage() {
         ticket_price_minute_first_60: first60Cents,
         ticket_price_minute_after_60: after60Cents,
       }))
+      // Normalise the inputs to two decimals so the form reflects what was stored
+      setStartPrice((startPriceCents / 100).toFixed(2))
+      setCostPerMinuteFirst60((first60Cents / 100).toFixed(2))
+      setCostPerMinuteAfter60((after60Cents / 100).toFixed(2))
+      toast.success("Ticket prices saved")
     } catch (error) {
       console.error("Failed to save user settings:", error)
+      toast.error(errorMessage(error, "Couldn't save ticket prices. Please try again."))
     }
   }
 
@@ -360,8 +438,10 @@ export default function PaymentSettingsPage() {
         tickets_enabled: paymentByTicket,
         sla_enabled: paymentBySLA,
       }))
+      toast.success("Payment options saved")
     } catch (error) {
       console.error("Failed to save user payment options:", error)
+      toast.error(errorMessage(error, "Couldn't save payment options. Please try again."))
     }
   }
 
@@ -416,7 +496,7 @@ export default function PaymentSettingsPage() {
                           variant="lavender"
                           size="sm"
                           onClick={handleSaveTeamSettings}
-                          disabled={!hasTeamChanges || updatePaymentSettings.isPending || settingsLoading}
+                          disabled={!hasTeamChanges || !teamPercentageValid || updatePaymentSettings.isPending || settingsLoading}
                         >
                           {updatePaymentSettings.isPending ? "Saving..." : "Save"}
                         </Button>
@@ -480,7 +560,7 @@ export default function PaymentSettingsPage() {
                           variant="lavender"
                           size="sm"
                           onClick={handleSaveCommunitySettings}
-                          disabled={!hasCommunityChanges || updatePaymentSettings.isPending || settingsLoading}
+                          disabled={!hasCommunityChanges || !communityPercentageValid || updatePaymentSettings.isPending || settingsLoading}
                         >
                           {updatePaymentSettings.isPending ? "Saving..." : "Save"}
                         </Button>
@@ -550,7 +630,7 @@ export default function PaymentSettingsPage() {
                           variant="lavender"
                           size="sm"
                           onClick={handleSaveConsultantSettings}
-                          disabled={!hasConsultantChanges || updatePaymentSettings.isPending || settingsLoading}
+                          disabled={!hasConsultantChanges || !consultantPercentageValid || updatePaymentSettings.isPending || settingsLoading}
                         >
                           {updatePaymentSettings.isPending ? "Saving..." : "Save"}
                         </Button>
@@ -719,13 +799,13 @@ export default function PaymentSettingsPage() {
                         <>
                           <span className="block font-semibold">Stripe fee</span>
                           When a ticket opens, an authorization hold for the estimated time is placed on the
-                          customer&apos;s card and captured when the ticket ends. Time beyond the hold is charged
+                          user&apos;s card and captured when the ticket ends. Time beyond the hold is charged
                           as a separate transaction, long-running tickets are captured once a week, and a declined
                           card is retried as a new charge. Each of these is its own card transaction, and Stripe&apos;s
                           fee (typically 2.9% + $0.30 for US cards) applies to every one of them. The fee is deducted
                           from that charge before the helper and project shares above are applied, so a ticket paid in
                           two transactions gives up the fixed $0.30 twice. Stripe&apos;s fees are never added on top of
-                          what the customer is charged.
+                          what the user is charged.
                         </>
                       }
                     />
@@ -743,15 +823,22 @@ export default function PaymentSettingsPage() {
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
+                          min={0}
+                          max={MAX_PRICE_DOLLARS}
+                          step="0.01"
+                          inputMode="decimal"
                           value={startPrice}
                           onChange={(e) => setStartPrice(e.target.value)}
+                          aria-invalid={!!priceErrors.start}
                           className={cn(
-                            "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
+                            "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                            priceErrors.start && "border-destructive"
                           )}
                           placeholder="10.00"
                         />
                         <span className="text-sm text-muted-foreground whitespace-nowrap">USD/ticket</span>
                       </div>
+                      {priceErrors.start && <p className="text-xs text-destructive">{priceErrors.start}</p>}
                     </div>
 
                     <div className="flex flex-wrap gap-10">
@@ -766,15 +853,22 @@ export default function PaymentSettingsPage() {
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
+                            min={0}
+                            max={MAX_PRICE_DOLLARS}
+                            step="0.01"
+                            inputMode="decimal"
                             value={costPerMinuteFirst60}
                             onChange={(e) => setCostPerMinuteFirst60(e.target.value)}
+                            aria-invalid={!!priceErrors.first60}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
+                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                              priceErrors.first60 && "border-destructive"
                             )}
                             placeholder="1.50"
                           />
                           <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
                         </div>
+                        {priceErrors.first60 && <p className="text-xs text-destructive">{priceErrors.first60}</p>}
                       </div>
 
                       <div className="flex flex-col gap-2">
@@ -788,15 +882,22 @@ export default function PaymentSettingsPage() {
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
+                            min={0}
+                            max={MAX_PRICE_DOLLARS}
+                            step="0.01"
+                            inputMode="decimal"
                             value={costPerMinuteAfter60}
                             onChange={(e) => setCostPerMinuteAfter60(e.target.value)}
+                            aria-invalid={!!priceErrors.after60}
                             className={cn(
-                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]"
+                              "w-[230px] text-right pr-[3px] border-[rgba(0,0,0,0.1)] [&::-webkit-inner-spin-button]:ml-[6px] [&::-webkit-outer-spin-button]:ml-[6px]",
+                              priceErrors.after60 && "border-destructive"
                             )}
                             placeholder="1.00"
                           />
                           <span className="text-sm text-muted-foreground whitespace-nowrap">USD/minute</span>
                         </div>
+                        {priceErrors.after60 && <p className="text-xs text-destructive">{priceErrors.after60}</p>}
                       </div>
                     </div>
 
@@ -805,7 +906,7 @@ export default function PaymentSettingsPage() {
                         variant="lavender"
                         size="sm"
                         onClick={handleSaveUserSettings}
-                        disabled={!hasUserChanges || updatePaymentSettings.isPending || settingsLoading}
+                        disabled={!hasUserChanges || !pricesValid || updatePaymentSettings.isPending || settingsLoading}
                       >
                         {updatePaymentSettings.isPending ? "Saving..." : "Save"}
                       </Button>

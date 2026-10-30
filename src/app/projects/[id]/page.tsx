@@ -8,6 +8,7 @@ import { useProject, useProjectBySlug, useProjectBranding } from "@/hooks/usePro
 import { useCreatePendingRequest } from "@/hooks/usePendingRequests"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { supabase } from "@/lib/supabase/client"
+import { hasSignedInSession } from "@/lib/supabase/auth-state"
 import { Loader2, CheckCircle, LogIn } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
@@ -42,13 +43,13 @@ export default function ProjectLandingPage() {
     useEffect(() => {
         const checkAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession()
-            setIsAuthenticated(!!session?.user)
+            setIsAuthenticated(hasSignedInSession(session))
             setIsCheckingAuth(false)
         }
         checkAuth()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            setIsAuthenticated(!!session?.user)
+            setIsAuthenticated(hasSignedInSession(session))
         })
 
         return () => subscription.unsubscribe()

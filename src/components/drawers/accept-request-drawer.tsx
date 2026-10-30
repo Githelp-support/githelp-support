@@ -25,10 +25,14 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
 
   if (!requestData) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ category })
-    onClose()
+    try {
+      await onSubmit({ category })
+      onClose()
+    } catch {
+      // The caller reports the failure; keep the drawer open for a retry.
+    }
   }
 
   const generatedEmail = `${requestData.discordUser}@gmail.com`

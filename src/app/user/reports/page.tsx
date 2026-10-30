@@ -344,7 +344,7 @@ export default function UserReportsPage() {
         : undefined) ?? row
     const report = buildUserTicketReport({
       ticket,
-      customer: { name: user?.name || "Customer", email: user?.email ?? null },
+      customer: { name: user?.name || "User", email: user?.email ?? null },
     })
     downloadReportPdf(report).catch((error) => console.error("PDF export failed", error))
   }
@@ -353,7 +353,7 @@ export default function UserReportsPage() {
     const report = buildUserMonthlyReport({
       rows: allPayments,
       period,
-      customer: { name: user?.name || "Customer", email: user?.email ?? null },
+      customer: { name: user?.name || "User", email: user?.email ?? null },
     })
     downloadReportPdf(report).catch((error) => console.error("PDF export failed", error))
   }

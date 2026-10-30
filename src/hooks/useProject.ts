@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { toEdgeFunctionError } from "@/lib/functions-error";
 import type { Database } from "@/types/database";
 
 type Project = Database["public"]["Tables"]["projects"]["Row"];
@@ -177,27 +178,37 @@ export function useCreateProject() {
                 );
             }
 
-            // Determine selected organization for this user, if any
+            // Determine the organization to attach the project to. The
+            // projects INSERT policy requires created_by = auth.uid() and an
+            // organization_id the caller OWNS (or null): admin of it in their
+            // own right, not via being co-admin of one of its projects
+            // (sync_prior_role set). Use the selected one if it qualifies,
+            // else the first owned org; none → the project gets no org.
             let selectedOrganizationId: string | null = null;
-            const { data: configRow } = await supabase
-                .from("organizations_members_config")
-                .select("selected_organization_id")
+            const { data: adminMemberships } = await supabase
+                .from("organizations_members")
+                .select("organization_id")
                 .eq("id", user.id)
-                .maybeSingle();
+                .eq("role", "admin")
+                .is("sync_prior_role", null);
+            const adminOrgIds = (adminMemberships ?? []).map(
+                (m) => m.organization_id as string,
+            );
 
-            if (configRow?.selected_organization_id) {
-                selectedOrganizationId = configRow.selected_organization_id;
-            } else {
-                const { data: memberships } = await supabase
-                    .from("organizations_members")
-                    .select("organization_id")
+            if (adminOrgIds.length > 0) {
+                const { data: configRow } = await supabase
+                    .from("organizations_members_config")
+                    .select("selected_organization_id")
                     .eq("id", user.id)
-                    .limit(1);
-
-                if (memberships && memberships.length > 0) {
-                    selectedOrganizationId = memberships[0]
-                        .organization_id as string;
-                }
+                    .maybeSingle();
+                const selected = configRow?.selected_organization_id as
+                    | string
+                    | null
+                    | undefined;
+                selectedOrganizationId =
+                    selected && adminOrgIds.includes(selected)
+                        ? selected
+                        : adminOrgIds[0];
             }
 
             // Create project with creator as created_by and default organization_id when not provided
@@ -445,7 +456,7 @@ export function useCreateProjectInvite() {
                 },
             );
 
-            if (error) throw error;
+            if (error) throw await toEdgeFunctionError(error, "Failed to create invite");
 
             if (!data?.success) {
                 throw new Error(data?.error || "Failed to create invite");
@@ -522,7 +533,7 @@ export function useRevokeProjectInvite() {
                 },
             );
 
-            if (error) throw error;
+            if (error) throw await toEdgeFunctionError(error, "Failed to revoke invite");
 
             if (!data?.success) {
                 throw new Error(data?.error || "Failed to revoke invite");
@@ -574,7 +585,7 @@ export function useListRepoContributors(
                     },
                 }
             );
-            if (error) throw error;
+            if (error) throw await toEdgeFunctionError(error, "Failed to load repository contributors");
             return (data?.items ?? []) as RepoContributor[];
         },
         enabled: !!providerToken && !!fullName,
@@ -591,7 +602,7 @@ export function useGetProjectRepo(projectId: string | null) {
                 "get-project-repo",
                 { body: { project_id: projectId } }
             );
-            if (error) throw error;
+            if (error) throw await toEdgeFunctionError(error, "Failed to load the project's repository");
             return data?.full_name as string | null;
         },
         enabled: !!projectId,
@@ -608,7 +619,7 @@ export function useListUserGithubRepos(providerToken: string | null) {
                 "list-user-github-repos",
                 { body: { provider_token: providerToken } }
             );
-            if (error) throw error;
+            if (error) throw await toEdgeFunctionError(error, "Failed to load your GitHub repositories");
             return (data?.items ?? []) as GitHubRepoItem[];
         },
         enabled: !!providerToken,
@@ -632,7 +643,7 @@ export function useListContributedProjects(providerToken: string | null) {
                 "list-user-contributed-projects",
                 { body: { provider_token: providerToken } }
             );
-            if (error) throw error;
+            if (error) throw await toEdgeFunctionError(error, "Failed to load projects you contributed to");
             return (data?.items ?? []) as ContributedProjectItem[];
         },
         enabled: !!providerToken,
@@ -686,11 +697,17 @@ export function useCreateProjectFromGitHub() {
             github_repo_id: number;
             repo?: { id: number; name: string; full_name: string; html_url: string; owner: { login: string; type: string } };
         }) => {
+            // Send the GitHub token so private repositories resolve and the server can
+            // verify the caller actually has push/admin rights on the repository.
+            const { data: sessionData } = await supabase.auth.getSession();
+            const providerToken = sessionData.session?.provider_token ?? null;
             const { data, error } = await supabase.functions.invoke(
                 "create-project-from-github",
-                { body: payload }
+                { body: { ...payload, provider_token: providerToken } }
             );
-            if (error) throw error;
+            // 404 (repo not accessible) / 409 (already imported) carry their
+            // reason in the JSON body; surface it instead of the generic text.
+            if (error) throw await toEdgeFunctionError(error, "Failed to create project from GitHub");
             if (!data?.success) {
                 throw new Error(data?.error || "Failed to create project from GitHub");
             }
@@ -753,12 +770,7 @@ export function useCreateSandboxProject() {
             if (error) {
                 // Edge function non-2xx responses surface here; prefer the
                 // server-provided message when available.
-                const ctx = (error as { context?: Response }).context;
-                if (ctx) {
-                    const body = await ctx.json().catch(() => null);
-                    if (body?.error) throw new Error(body.error);
-                }
-                throw error;
+                throw await toEdgeFunctionError(error, "Failed to create sandbox project");
             }
             if (!data?.success) {
                 throw new Error(data?.error || "Failed to create sandbox project");
@@ -788,7 +800,11 @@ export function useAcceptProjectInvite() {
                 },
             );
 
-            if (error) throw error;
+            // Non-2xx bodies carry the reason: expired / max uses / profile
+            // incomplete (`needs_profile`), and 403 `invite_email_mismatch`
+            // / `invite_github_mismatch` for targeted invites accepted by
+            // the wrong account (mapped to friendly sentences).
+            if (error) throw await toEdgeFunctionError(error, "Failed to accept invite");
 
             if (!data?.success) {
                 throw new Error(data?.error || "Failed to accept invite");

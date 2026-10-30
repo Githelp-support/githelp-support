@@ -18,10 +18,11 @@ vi.mock("@/lib/supabase/client", () => ({
             })),
         })),
         channel: channelMock,
+        removeChannel: vi.fn(),
     },
 }));
 
-import { useTicketPaymentStatus } from "../useTicketPaymentStatus";
+import { derivePaymentStatus, useTicketPaymentStatus } from "../useTicketPaymentStatus";
 
 function makeWrapper() {
     const queryClient = new QueryClient({
@@ -223,6 +224,146 @@ describe("useTicketPaymentStatus failure reason", () => {
         });
         const { result } = renderHook(
             () => useTicketPaymentStatus("ticket-was-paid", { slaId: null, isFree: true }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("failed"));
+        expect(result.current.isReady).toBe(false);
+    });
+});
+
+type Row = Parameters<typeof derivePaymentStatus>[0][number];
+const HOLD_EXPIRES = "2026-11-05T00:00:00Z";
+const captured = (amount: number, extra: Partial<Row> = {}): Row => ({
+    status: "distributing",
+    captured_amount_smallest_unit: amount,
+    hold_expires_at: HOLD_EXPIRES,
+    failure_reason: null,
+    ...extra,
+});
+const waived: Row = {
+    status: "cancelled",
+    captured_amount_smallest_unit: null,
+    hold_expires_at: HOLD_EXPIRES,
+    failure_reason: "below_minimum_waived: hold released, amount below the minimum charge",
+};
+// A weekly renewal hold the bank refused (no card_declined: marker on a hold row).
+const renewalDeclined: Row = {
+    status: "failed",
+    captured_amount_smallest_unit: null,
+    hold_expires_at: HOLD_EXPIRES,
+    failure_reason: "Your card was declined.",
+};
+// A declined remainder charge (no hold window): money is still owed.
+const remainderDeclined: Row = {
+    status: "failed",
+    captured_amount_smallest_unit: null,
+    hold_expires_at: null,
+    failure_reason: "card_declined: Your card has insufficient funds.",
+};
+
+describe("derivePaymentStatus", () => {
+    it("keeps the newest row's status while the ticket is open", () => {
+        expect(derivePaymentStatus([renewalDeclined, captured(2500)], "in-progress")).toEqual({
+            status: "failed",
+            failureReason: "Your card was declined.",
+        });
+        expect(derivePaymentStatus([waived, captured(2500)], null).status).toBe("cancelled");
+    });
+
+    it("shows a completed ticket whose final hold was waived as paid when segments were captured", () => {
+        expect(derivePaymentStatus([waived, captured(2500), captured(4000)], "completed").status).toBe("distributing");
+        expect(
+            derivePaymentStatus([waived, captured(2500, { status: "completed" })], "completed").status,
+        ).toBe("completed");
+    });
+
+    it("reports waived when only below-minimum releases happened", () => {
+        expect(derivePaymentStatus([waived], "completed")).toEqual({ status: "waived", failureReason: null });
+    });
+
+    it("treats a declined renewal hold as paid once the ticket completed with captured segments", () => {
+        expect(derivePaymentStatus([renewalDeclined, captured(2500)], "completed").status).toBe("distributing");
+    });
+
+    it("stays failed while a declined charge leaves money owed", () => {
+        expect(derivePaymentStatus([remainderDeclined, captured(2500)], "completed")).toEqual({
+            status: "failed",
+            failureReason: "Your card has insufficient funds.",
+        });
+        // A declined capture of an authorized hold (card_declined: marker on a hold row).
+        expect(
+            derivePaymentStatus(
+                [{ ...renewalDeclined, failure_reason: "card_declined: Do not honor" }, captured(2500)],
+                "completed",
+            ).status,
+        ).toBe("failed");
+        // Rows without hold_expires_at (older shape) count as owed.
+        expect(
+            derivePaymentStatus([{ status: "failed", captured_amount_smallest_unit: null }], "completed").status,
+        ).toBe("failed");
+    });
+
+    it("ignores cancelled rows when finding the latest attempt, but a later waiver settles it", () => {
+        const superseded: Row = { ...waived, failure_reason: "superseded by a newer hold" };
+        expect(derivePaymentStatus([superseded, remainderDeclined, captured(2500)], "completed").status).toBe("failed");
+        expect(derivePaymentStatus([waived, remainderDeclined, captured(2500)], "completed").status).toBe("distributing");
+        expect(derivePaymentStatus([waived, remainderDeclined], "completed").status).toBe("waived");
+    });
+
+    it("keeps an in-flight capture or charge in flight", () => {
+        expect(derivePaymentStatus([{ ...captured(0), status: "authorized", captured_amount_smallest_unit: null }, captured(2500)], "completed").status).toBe("authorized");
+        expect(derivePaymentStatus([{ status: "processing", captured_amount_smallest_unit: null, hold_expires_at: null }, captured(2500)], "completed").status).toBe("processing");
+    });
+
+    it("marks captured money on a cancelled ticket as refund pending", () => {
+        expect(
+            derivePaymentStatus(
+                [
+                    { ...waived, failure_reason: "hold released" },
+                    captured(2500, { failure_reason: "cancelled_after_capture: refund needed" }),
+                ],
+                "cancelled",
+            ).status,
+        ).toBe("refund_pending");
+        expect(derivePaymentStatus([{ ...waived, failure_reason: "hold released" }], "cancelled").status).toBe("cancelled");
+    });
+});
+
+describe("useTicketPaymentStatus aggregation and flat fee", () => {
+    it("derives from every row once the ticket is closed and sums the captured total", async () => {
+        selectMock.mockResolvedValue({ data: [waived, captured(2500), captured(1500)], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-closed", { slaId: null, ticketStatus: "completed" }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("distributing"));
+        expect(result.current.capturedAmountSmallestUnit).toBe(4000);
+        expect(result.current.failureReason).toBeNull();
+    });
+
+    it("keeps the gate open on a flat-fee ticket once the start price was collected", async () => {
+        selectMock.mockResolvedValue({ data: [captured(5000, { hold_expires_at: null })], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-flat", { slaId: null, isFlatFee: true }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.isReady).toBe(true));
+    });
+
+    it("keeps the gate closed after a capture when the ticket is billed per minute", async () => {
+        selectMock.mockResolvedValue({ data: [captured(5000)], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-per-minute", { slaId: null, isFlatFee: false }),
+            { wrapper: makeWrapper() },
+        );
+        await waitFor(() => expect(result.current.status).toBe("distributing"));
+        expect(result.current.isReady).toBe(false);
+    });
+
+    it("keeps a flat-fee gate closed until something was collected", async () => {
+        selectMock.mockResolvedValue({ data: [renewalDeclined], error: null });
+        const { result } = renderHook(
+            () => useTicketPaymentStatus("ticket-flat-unpaid", { slaId: null, isFlatFee: true }),
             { wrapper: makeWrapper() },
         );
         await waitFor(() => expect(result.current.status).toBe("failed"));

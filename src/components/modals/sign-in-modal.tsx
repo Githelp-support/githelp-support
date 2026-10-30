@@ -25,7 +25,7 @@ export function SignInModal({ isOpen, onClose, confirmPath, description }: SignI
   const resolvedConfirmPath =
     confirmPath ??
     (typeof window !== "undefined"
-      ? `/auth/confirmed?redirect=${encodeURIComponent(window.location.href)}&skipOnboarding=true`
+      ? `/auth/confirmed?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}&skipOnboarding=true`
       : "/auth/confirmed")
 
   return (

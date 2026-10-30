@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { formatTicketRates, isFreeSupport } from "./ticket-pricing"
+import { formatTicketRates, isFlatFeePricing, isFreeSupport } from "./ticket-pricing"
 
 describe("isFreeSupport", () => {
   it("is true only when all three prices are zero", () => {
@@ -39,7 +39,26 @@ describe("formatTicketRates", () => {
     ).toEqual({ startPrice: "0.00", first60Price: "0.00", after60Price: "0.00" })
   })
 
-  it("falls back to placeholders only when settings are missing", () => {
-    expect(formatTicketRates(undefined)).toEqual({ startPrice: "10.00", first60Price: "1.50", after60Price: "1.00" })
+  it("returns null instead of placeholder prices when settings are missing", () => {
+    expect(formatTicketRates(undefined)).toBeNull()
+    expect(formatTicketRates(null)).toBeNull()
+  })
+
+  it("treats a null column as zero once settings exist", () => {
+    expect(
+      formatTicketRates({ ticket_start_price: 500, ticket_price_minute_first_60: null, ticket_price_minute_after_60: undefined }),
+    ).toEqual({ startPrice: "5.00", first60Price: "0.00", after60Price: "0.00" })
+  })
+})
+
+describe("isFlatFeePricing", () => {
+  it("is true when both per-minute prices are zero", () => {
+    expect(isFlatFeePricing({ ticket_start_price: 5000, ticket_price_minute_first_60: 0, ticket_price_minute_after_60: null })).toBe(true)
+  })
+
+  it("is false when either per-minute price is set, or the settings are missing", () => {
+    expect(isFlatFeePricing({ ticket_start_price: 5000, ticket_price_minute_first_60: 100, ticket_price_minute_after_60: 0 })).toBe(false)
+    expect(isFlatFeePricing({ ticket_start_price: 5000, ticket_price_minute_first_60: 0, ticket_price_minute_after_60: 50 })).toBe(false)
+    expect(isFlatFeePricing(null)).toBe(false)
   })
 })

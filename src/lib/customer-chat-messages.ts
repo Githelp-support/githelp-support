@@ -22,6 +22,52 @@ export function buildAutoReply(avgResponseSeconds: number | null | undefined): s
     return `Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **${responseTime}**.`;
 }
 
+/**
+ * Guest-ticket system messages (migration 20261029150000_guest_tickets):
+ * `visitor_left` is posted by the cron that closes a guest ticket nobody has
+ * seen for 15 minutes; `guest_signed_in` by adopt-guest-tickets when the
+ * visitor signs in. The stored text is generic, so each side gets its own copy.
+ */
+export const VISITOR_LEFT_CUSTOMER_COPY = "This conversation was closed because you left before signing in.";
+export const VISITOR_LEFT_HELPER_COPY = "The visitor left before signing in.";
+export const GUEST_SIGNED_IN_CUSTOMER_COPY = "You signed in — this conversation is now linked to your account.";
+export const GUEST_SIGNED_IN_HELPER_COPY = "The visitor signed in — you can claim this ticket now.";
+
+/** Side-specific copy for a guest system message, or null for any other kind. */
+export function guestSystemMessageCopy(kind: unknown, audience: "customer" | "helper"): string | null {
+    if (kind === "visitor_left") return audience === "customer" ? VISITOR_LEFT_CUSTOMER_COPY : VISITOR_LEFT_HELPER_COPY;
+    if (kind === "guest_signed_in") return audience === "customer" ? GUEST_SIGNED_IN_CUSTOMER_COPY : GUEST_SIGNED_IN_HELPER_COPY;
+    return null;
+}
+
+type KindMessage = { id?: string; sender_type: string; metadata?: Record<string, unknown> | null };
+
+/**
+ * The `visitor_left` message that explains the ticket's CURRENT closure, if
+ * any. Adoption can reopen such a ticket (posting `guest_signed_in`), so it
+ * only counts while the ticket is cancelled and no `guest_signed_in` came
+ * after it.
+ */
+function activeVisitorLeft<T extends KindMessage>(messages: T[] | undefined, ticketStatus: string | null | undefined): T | null {
+    if (ticketStatus !== "cancelled" || !messages) return null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i];
+        if (m.sender_type !== "system") continue;
+        if (m.metadata?.kind === "guest_signed_in") return null;
+        if (m.metadata?.kind === "visitor_left") return m;
+    }
+    return null;
+}
+
+/**
+ * The ticket is currently closed because the guest left (no helper "session
+ * ended" summary applies). Keys on the ticket's status, not just on the
+ * message being there.
+ */
+export function hasVisitorLeft(messages: KindMessage[] | undefined, ticketStatus: string | null | undefined): boolean {
+    return activeVisitorLeft(messages, ticketStatus) !== null;
+}
+
 /** dd/mm/yyyy, hh:mm — the timestamp format used throughout the chat UI. */
 export function formatChatTimestamp(date: Date | string): string {
     const d = typeof date === "string" ? new Date(date) : date;
@@ -66,6 +112,12 @@ export interface CustomerThreadOptions {
     currentUser: { id?: string; name?: string | null; avatarUrl?: string | null };
     /** Project's average response time in seconds (`null` until one exists). */
     avgResponseSeconds?: number | null;
+    /**
+     * The ticket's current status. A `visitor_left` notice (and its "Start a
+     * new conversation" action) only shows while the ticket is cancelled; a
+     * ticket reopened by adoption hides it.
+     */
+    ticketStatus?: string | null;
 }
 
 /**
@@ -84,6 +136,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         fallbackTimestamp,
         currentUser,
         avgResponseSeconds,
+        ticketStatus,
     } = opts;
 
     const userName = currentUser.name || "You";
@@ -130,13 +183,18 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         });
     }
 
+    // Only the visitor_left notice explaining the current closure is shown
+    // (with its "Start a new conversation" action); a reopened ticket hides it.
+    const visitorLeftNow = activeVisitorLeft(messagesData, ticketStatus);
     messagesData?.forEach((msg) => {
+        if (msg.sender_type === "system" && msg.metadata?.kind === "visitor_left" && msg !== visitorLeftNow) return;
         const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";
         list.push({
             id: msg.id,
             senderType,
-            content: msg.content,
+            content:
+                (senderType === "system" ? guestSystemMessageCopy(msg.metadata?.kind, "customer") : null) ?? msg.content,
             senderName:
                 msg.sender?.name ||
                 (senderType === "user" ? userName : senderType === "helper" ? "Helper" : `${projectName} Team`),
@@ -170,7 +228,11 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     return list;
 }
 
-/** What the customer was charged, for the end-of-session summary. */
+/**
+ * What the customer was charged, for the end-of-session summary.
+ * `slaCovered` must come from the loaded ticket row (`tickets.sla_id`), never
+ * from a URL parameter: the backend bills by that column alone.
+ */
 export function describeChargedLine(opts: {
     cancelled: boolean;
     slaCovered: boolean;
@@ -179,14 +241,19 @@ export function describeChargedLine(opts: {
     /** Stripe's reason when `paymentStatus` is "failed". */
     failureReason?: string | null;
 }): string {
+    const amount = opts.capturedAmountSmallestUnit != null ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}` : null;
+    // Cancelled after money was already captured (a weekly segment): it is
+    // flagged for a refund, which the `payment_refund_needed` message explains.
+    if (opts.paymentStatus === "refund_pending") {
+        return amount ? `Refund pending (${amount} collected)` : "Refund pending";
+    }
     if (opts.cancelled) return "No charge";
     if (opts.slaCovered) return "Covered by your SLA";
     if (opts.paymentStatus === "free") return "Free support — no charge";
     if (opts.paymentStatus === "distributing" || opts.paymentStatus === "completed") {
-        return opts.capturedAmountSmallestUnit != null
-            ? `$${(opts.capturedAmountSmallestUnit / 100).toFixed(2)}`
-            : "Charged";
+        return amount ?? "Charged";
     }
+    if (opts.paymentStatus === "waived") return amount ?? "No charge (amount below the card minimum)";
     if (opts.paymentStatus === "failed") {
         const reason = opts.failureReason?.trim();
         return reason
@@ -226,6 +293,35 @@ export function buildSessionEndedMessage(opts: {
     };
 }
 
+/** System messages that settle a ticket's payment after a `payment_failed` prompt. */
+const PAYMENT_SETTLED_KINDS = new Set(["payment_completed", "payment_remainder_waived", "payment_refund_needed"]);
+
+/**
+ * Whether the "Update payment method" CTA on the `payment_failed` message at
+ * `index` is still live. It is resolved by any later settling system message
+ * (`payment_completed`, `payment_remainder_waived`, `payment_refund_needed`),
+ * or once the ticket is closed and its payment status is known and no longer
+ * `failed` (e.g. a capture settled it without a message). Otherwise the
+ * backend would answer "This ticket has no failed payment to retry".
+ */
+export function isPaymentFailedCtaLive(
+    messages: TicketChatMessage[],
+    index: number,
+    opts: { ticketClosed?: boolean; paymentStatus?: TicketPaymentStatus } = {}
+): boolean {
+    const msg = messages[index];
+    if (!msg || msg.senderType !== "system" || msg.paymentMetadata?.kind !== "payment_failed") return false;
+    const settledLater = messages
+        .slice(index + 1)
+        .some((m) => m.senderType === "system" && PAYMENT_SETTLED_KINDS.has(String(m.paymentMetadata?.kind ?? "")));
+    if (settledLater) return false;
+    // "none" = not loaded yet (or unreadable): don't hide on a guess.
+    if (opts.ticketClosed && opts.paymentStatus && opts.paymentStatus !== "none" && opts.paymentStatus !== "failed") {
+        return false;
+    }
+    return true;
+}
+
 /**
  * The pending SCA prompt carried by the latest `payment_requires_action` system
  * message, if any. Only the latest counts: an earlier prompt belongs to a hold
@@ -239,11 +335,12 @@ export function findPendingSca(
 ): { messageId: string; clientSecret: string; ticketId?: string } | null {
     let scaIndex = -1;
     messages.forEach((m, index) => {
-        if (m.paymentMetadata?.kind === "payment_requires_action") scaIndex = index;
+        // Only server-written system messages may open the payment modal.
+        if (m.senderType === "system" && m.paymentMetadata?.kind === "payment_requires_action") scaIndex = index;
     });
     const scaMsg = scaIndex === -1 ? undefined : messages[scaIndex];
     if (!scaMsg || scaMsg.id === handledMessageId) return null;
-    if (messages.slice(scaIndex + 1).some((m) => m.paymentMetadata?.kind === "payment_authorized")) return null;
+    if (messages.slice(scaIndex + 1).some((m) => m.senderType === "system" && m.paymentMetadata?.kind === "payment_authorized")) return null;
     const clientSecret = scaMsg.paymentMetadata?.client_secret as string | undefined;
     if (!clientSecret) return null;
     return {

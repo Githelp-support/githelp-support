@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -9,7 +10,16 @@ import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
+import { GuestBanner } from "@/components/support/guest-banner"
+import { startGuestSignIn } from "@/lib/guest-adoption"
+import { ensureSupportSession, findGuestOpenTicket, isOwnGuestSession } from "@/lib/guest-session"
+import { useResumableGuestTicket } from "@/hooks/useResumableGuestTicket"
+import { useGuestAdoptionRetry } from "@/hooks/useGuestAdoptionRetry"
+import { GUEST_OPEN_TICKET_ELSEWHERE_MESSAGE, guestTicketCreateAction } from "@/lib/guest-ticket-errors"
+import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/support-sign-in-redirect"
+import { signInHref } from "@/lib/sign-in-href"
+import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft } from "@/lib/support-draft"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
@@ -21,6 +31,7 @@ import {
   describeChargedLine,
   findPendingSca,
   formatChatTimestamp,
+  hasVisitorLeft,
 } from "@/lib/customer-chat-messages"
 import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
 import { useConfirmTimeEntries, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
@@ -31,7 +42,7 @@ import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
-import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
+import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
 import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
@@ -62,9 +73,17 @@ export default function SupportPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("get-support")
   const [hasEnteredChat, setHasEnteredChat] = useState(false)
   const { user, setProjectRole } = useUser()
+  // Guests (anonymous session, see user-context) chat without an account:
+  // `user.id` stays undefined for them, `guestId` carries their auth id.
+  const sessionUserId = user?.id ?? user?.guestId
+  const isGuest = !user?.id && !!user?.guestId
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const params = useParams<{ slug?: string }>()
+  // Where sign-in should bring the visitor back to (this page incl. ?project/?slug).
+  const currentHref = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`
 
   const projectIdParam = searchParams.get("project")
   const slugParam = params?.slug || searchParams.get("slug")
@@ -89,15 +108,13 @@ export default function SupportPage() {
   // Fetch resources and branding from database
   const { data: resourcesData, isLoading: resourcesLoading } = useProjectResources(projectId || "")
   const { data: brandingData } = useProjectBranding(projectId || "")
-  const { data: paymentSettings } = useProjectPaymentSettings(projectId || "")
+  const { data: paymentSettings, isLoading: paymentSettingsLoading } = useProjectPaymentSettings(projectId || "")
   const { data: avgResponseSeconds, isPending: avgResponseLoading } = useProjectAverageResponseTime(projectId || "")
 
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
 
-  // Format payment values (convert cents to dollars)
-  const { startPrice, first60Price, after60Price } = formatTicketRates(paymentSettings)
 
   // Transform resources data
   const resources = resourcesData || []
@@ -107,6 +124,25 @@ export default function SupportPage() {
   const [ticketCreated, setTicketCreated] = useState(false)
   const [ticketId, setTicketId] = useState("")
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
+  // In-flight guard: the mutation's isPending only flips after the lazy-loaded
+  // formatter has run, so a fast double Enter would otherwise send twice.
+  const [isSending, setIsSending] = useState(false)
+  const sendingRef = useRef(false)
+
+  // A guest who reloads (or comes back) resumes their open ticket on this
+  // project instead of an empty composer that would hit guest_ticket_limit.
+  const [resumedTicketId, setResumedTicketId] = useState<string | null>(null)
+  const { data: resumableGuestTicket } = useResumableGuestTicket(
+    !ticketId ? user?.guestId : undefined,
+    isGuest,
+    projectId || undefined,
+  )
+  if (resumableGuestTicket && !ticketId && resumableGuestTicket.id !== resumedTicketId) {
+    setResumedTicketId(resumableGuestTicket.id)
+    setTicketId(resumableGuestTicket.id)
+    setTicketCreated(true)
+    setHasEnteredChat(true)
+  }
 
   const createTicket = useCreateTicket()
   const createCheckout = useCreateCheckoutForTicket()
@@ -117,8 +153,17 @@ export default function SupportPage() {
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
   const { data: liveTicket } = useTicket(ticketId)
+  // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
+  const ticketPricingSnapshot = (liveTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
+  const effectivePricing = ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings
+  // Format payment values (convert cents to dollars); null until the project
+  // has payment settings — no placeholder prices. An open ticket shows its snapshot.
+  const rates = formatTicketRates(effectivePricing)
 
+  // Signed in with a real account (guests are not).
   const isAuthenticated = !!user?.id
+  // A guest adoption that failed transiently at sign-in is retried here.
+  useGuestAdoptionRetry(isAuthenticated, router.replace)
 
   // Right sidebar data — same hook as /support/chat so "People in this chat",
   // "Logged time" and "Active tickets" behave identically on both pages.
@@ -132,8 +177,8 @@ export default function SupportPage() {
     totalLoggedFormatted,
     activeTicketsSidebar,
     activeTicketsCount,
-  } = useCustomerTicketSidebar(ticketId || undefined, user?.id)
-  const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, user?.id)
+  } = useCustomerTicketSidebar(ticketId || undefined, sessionUserId)
+  const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, sessionUserId)
 
   // Confirm the logged-time summary the helper sent (one action for every
   // pending entry; declines carry a reason the RPC posts into the chat).
@@ -161,6 +206,8 @@ export default function SupportPage() {
             ? "There is no logged time waiting for your confirmation."
             : hint === "ticket_ended"
               ? "The session has already ended."
+              : hint === "review_withdrawn"
+                ? "The helper changed the logged time. Wait for the updated summary."
               : "Couldn't save your confirmation. Please try again.",
       )
       throw error
@@ -170,9 +217,9 @@ export default function SupportPage() {
   // Customer "End session" = ask the helper to finalise (see useRequestEndSession).
   const requestEndSession = useRequestEndSession()
   const handleRequestEndSession = async (cancel: boolean) => {
-    if (!ticketId || !user?.id) return
+    if (!ticketId || !sessionUserId) return
     try {
-      await requestEndSession.mutateAsync({ ticketId, userId: user.id, cancel })
+      await requestEndSession.mutateAsync({ ticketId, userId: sessionUserId, cancel })
       toast.success(cancel ? "End request cancelled." : "The helper has been notified.")
     } catch (error) {
       console.error("Failed to update end-session request:", error)
@@ -180,7 +227,54 @@ export default function SupportPage() {
     }
   }
   const ticketEnded = liveTicket?.status === "completed" || liveTicket?.status === "cancelled"
-  const paymentStatus = useTicketPaymentStatus(ticketId || null, { isFree: isFreeSupport(paymentSettings) })
+  const liveTicketIsGuest = !!(liveTicket as { guest?: boolean } | null | undefined)?.guest
+  // Presence for a guest's open ticket runs in the support layout
+  // (SupportGuestPresence), on every /support page.
+  // The top-bar / sidebar "Sign in" keep the unsent message too.
+  const messageRef = useRef(message)
+  useEffect(() => {
+    messageRef.current = message
+  }, [message])
+  useEffect(() => {
+    registerSupportDraftSource(() => ({ projectId, text: messageRef.current }))
+    return () => registerSupportDraftSource(null)
+  }, [projectId])
+  // Sign-in returns to the chat page with this ticket (now owned by the real
+  // account after adoption), else to /support/chat for this project.
+  const guestSignInRedirect = chooseSupportSignInRedirect({
+    ticketId: ticketId || null,
+    projectId: projectId ?? null,
+    fallback: currentHref,
+  })
+  // Every other sign-in entry point on this page (sidebar, top bar) returns
+  // to the same place, so the conversation is on screen after sign-in.
+  useEffect(() => {
+    setSupportSignInRedirect(guestSignInRedirect)
+    return () => setSupportSignInRedirect(null)
+  }, [guestSignInRedirect])
+  const handleGuestSignIn = () => {
+    // Keep an unsent question across the sign-in round-trip.
+    saveSupportDraft(projectId, message)
+    void startGuestSignIn(guestSignInRedirect, (href) => router.push(href))
+  }
+  // SLA coverage comes from the ticket row only (never from the URL).
+  const slaId = liveTicket?.sla_id ?? null
+  const paymentStatus = useTicketPaymentStatus(ticketId || null, {
+    slaId,
+    isFree: isFreeSupport(effectivePricing),
+    ticketStatus: liveTicket?.status ?? null,
+  })
+
+  // Mark the latest message as read so the sidebar's unread dot clears for
+  // the customer too (mirrors the helper page). Depend on ids only: the
+  // mutation object changes identity and would loop with the invalidation.
+  const updateLastReadMessage = useUpdateLastReadMessage()
+  const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
+  useEffect(() => {
+    if (!ticketId || !sessionUserId || !lastMessageId) return
+    updateLastReadMessage.mutate({ ticketId, participantId: sessionUserId, messageId: lastMessageId })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
+  }, [ticketId, sessionUserId, lastMessageId])
 
   // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
@@ -204,10 +298,13 @@ export default function SupportPage() {
       pendingFirstMessage,
       fallbackDescription: liveTicket?.description ?? null,
       fallbackTimestamp: liveTicket?.created_at ?? null,
-      currentUser: { id: user?.id, name: user?.name, avatarUrl: user?.avatarUrl },
+      ticketStatus: liveTicket?.status ?? null,
+      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
       avgResponseSeconds,
     })
-    if (ticketEnded) {
+    // A guest ticket closed because the visitor left carries its own
+    // visitor_left message — no helper "session ended" summary.
+    if (ticketEnded && !hasVisitorLeft(messagesData, liveTicket?.status)) {
       const cancelled = liveTicket?.status === "cancelled"
       list.push(
         buildSessionEndedMessage({
@@ -215,7 +312,7 @@ export default function SupportPage() {
           totalLoggedFormatted,
           chargedLine: describeChargedLine({
             cancelled,
-            slaCovered: false,
+            slaCovered: !!slaId,
             paymentStatus: paymentStatus.status,
             capturedAmountSmallestUnit: paymentStatus.capturedAmountSmallestUnit,
             failureReason: paymentStatus.failureReason,
@@ -234,13 +331,15 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    slaId,
     avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     paymentStatus.status,
     paymentStatus.capturedAmountSmallestUnit,
     paymentStatus.failureReason,
-    user?.id,
+    sessionUserId,
+    isGuest,
     user?.name,
     user?.avatarUrl,
   ])
@@ -279,42 +378,126 @@ export default function SupportPage() {
       window.location.assign(out.checkoutUrl)
     } catch (err) {
       console.error("Failed to start Stripe Checkout:", err)
-      toast.error("Couldn't open Stripe Checkout. Please try again.")
+      // useCreateCheckoutForTicket throws toEdgeFunctionError, so the message
+      // is the backend's mapped copy (same as /support/chat).
+      toast.error(err instanceof Error ? err.message : "Couldn't open Stripe Checkout. Please try again.")
     }
   }
 
   const handleSendMessage = async () => {
     if (!message.trim()) return
+    if (ticketEnded) {
+      toast.error("This ticket is closed, so new messages can't be sent.")
+      return
+    }
+    // A new ticket must be created against prices the customer has actually seen.
+    if (!ticketCreated && (paymentSettingsLoading || !paymentSettings)) {
+      toast.error(paymentSettingsLoading ? "Loading the project's rates — try again in a moment." : "This project isn't accepting tickets yet.")
+      return
+    }
+    if (sendingRef.current) return
+    sendingRef.current = true
+    setIsSending(true)
 
-    if (!ticketCreated && projectId) {
-      try {
-        const ticket = await createTicket.mutateAsync({
-          project_id: projectId,
-          title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
-          description: message,
-          created_by: user?.id || null,
-          status: "available",
-          priority: "medium",
-        })
+    try {
+      // No session yet: start an anonymous guest session so the visitor can
+      // ask without an account (tickets need created_by = auth.uid()).
+      let senderId = sessionUserId
+      if (!senderId) {
+        const guest = await ensureSupportSession()
+        if (!guest.ok) {
+          toast.error("Couldn't start the conversation. Please try again.", { description: guest.message })
+          return
+        }
+        senderId = guest.userId
+      }
+
+      if (!ticketCreated && projectId) {
+        let ticket
+        try {
+          ticket = await createTicket.mutateAsync({
+            project_id: projectId,
+            title: stripTicketAttachments(message).substring(0, 100) || "Support Request",
+            description: message,
+            created_by: senderId,
+            status: "available",
+            priority: "medium",
+            // The prices the customer was shown; the database refuses the ticket if
+            // they no longer match, so nobody is billed at prices they never saw.
+            ...(paymentSettings
+              ? {
+                  pricing_snapshot: {
+                    ticket_start_price: paymentSettings.ticket_start_price,
+                    ticket_price_minute_first_60: paymentSettings.ticket_price_minute_first_60,
+                    ticket_price_minute_after_60: paymentSettings.ticket_price_minute_after_60,
+                  },
+                }
+              : {}),
+          } as Parameters<typeof createTicket.mutateAsync>[0])
+        } catch (error) {
+          console.error("Failed to create ticket:", error)
+          const hint = (error as { hint?: string } | null)?.hint
+          const guestAction = guestTicketCreateAction(error)
+          if (hint === "ticket_prices_changed") {
+            toast.error("The project's prices just changed.", {
+              description: "Please review the updated rates, then send your message again.",
+            })
+            void queryClient.invalidateQueries({ queryKey: ["project-payment-settings"] })
+          } else if (hint === "project_pricing_missing") {
+            toast.error("This project isn't accepting tickets yet.", {
+              description: "Its pricing hasn't been set up. Please try again later.",
+            })
+          } else if (guestAction?.kind === "resume") {
+            // guest_open_ticket_exists: reopen their conversation here (the
+            // typed message stays in the composer); if it's on another
+            // project, say so.
+            const existing = await findGuestOpenTicket(senderId, projectId)
+            if (existing) {
+              setResumedTicketId(existing.id)
+              setTicketId(existing.id)
+              setTicketCreated(true)
+              toast.info("You already have an open conversation here, so we reopened it.")
+            } else {
+              toast.error(GUEST_OPEN_TICKET_ELSEWHERE_MESSAGE, {
+                action: { label: "Sign in", onClick: handleGuestSignIn },
+              })
+            }
+          } else if (guestAction?.kind === "sign-in") {
+            toast.error(guestAction.message, { action: { label: "Sign in", onClick: handleGuestSignIn } })
+          } else {
+            toast.error("Couldn't create your ticket. Please try again.", {
+              description: error instanceof Error ? error.message : undefined,
+            })
+          }
+          return
+        }
 
         setTicketCreated(true)
+        clearSupportDraft(projectId)
         setTicketId(ticket.id)
         const firstMessageContent = await prepareOutgoingMessage(message)
         setMessage("")
         // Show the question immediately; hidden once the persisted message arrives.
         setPendingFirstMessage(firstMessageContent)
 
-        if (user?.id) {
+        try {
           await ensureParticipant.mutateAsync({
             ticketId: ticket.id,
-            participantId: user.id,
+            participantId: senderId,
             claimed: false,
           })
           await sendMessage.mutateAsync({
             ticket_id: ticket.id,
-            sender_id: user.id,
+            sender_id: senderId,
             sender_type: "user",
             content: firstMessageContent,
+          })
+        } catch (error) {
+          // The ticket exists (with the question as its description); only the
+          // chat copy of the first message failed.
+          console.error("Failed to post the first message:", error)
+          toast.error("Your ticket was created, but the message couldn't be posted to the chat.", {
+            description: error instanceof Error ? error.message : undefined,
           })
         }
 
@@ -327,33 +510,51 @@ export default function SupportPage() {
               description: ticket.description ?? firstMessageContent,
             },
           })
-          .then(() => {})
+          .then((resp: { error?: { message?: string } | null }) => {
+            if (resp?.error) console.warn("classify-ticket failed:", resp.error.message)
+          })
           .catch(() => {})
-      } catch (error) {
-        console.error("Failed to create ticket:", error)
         return
       }
-      return
-    }
 
-    if (!ticketId || !user?.id) return
-    try {
-      await sendMessage.mutateAsync({
-        ticket_id: ticketId,
-        sender_id: user.id,
-        sender_type: "user",
-        content: await prepareOutgoingMessage(message),
-      })
-      setMessage("")
-    } catch (error) {
-      console.error("Failed to send message:", error)
+      if (!ticketId) return
+      try {
+        await sendMessage.mutateAsync({
+          ticket_id: ticketId,
+          sender_id: senderId,
+          sender_type: "user",
+          content: await prepareOutgoingMessage(message),
+        })
+        setMessage("")
+      } catch (error) {
+        console.error("Failed to send message:", error)
+        toast.error("Couldn't send your message. Please try again.", {
+          description: error instanceof Error ? error.message : undefined,
+        })
+      }
+    } finally {
+      sendingRef.current = false
+      setIsSending(false)
     }
   }
 
   // Sign-in options open in a modal so the visitor keeps the page (and its
   // project context in the URL); the modal redirects back here after auth.
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
-  const handleSignIn = () => setIsSignInModalOpen(true)
+  // Decide "guest" from the session itself (not only user.guestId, which
+  // lags right after the first send), so the guest is always saved.
+  const handleSignIn = () => {
+    void isOwnGuestSession().then((ownGuest) => (ownGuest ? handleGuestSignIn() : setIsSignInModalOpen(true)))
+  }
+
+  // visitor_left: the guest ticket was closed; start over in this chat.
+  const handleStartNewConversation = () => {
+    void queryClient.removeQueries({ queryKey: ["resumable-ticket"] })
+    setTicketId("")
+    setTicketCreated(false)
+    setPendingFirstMessage(null)
+    setMessage("")
+  }
 
   // "Get support": signed-in users are routed into the user-portal chat
   // experience on /support/chat — same CustomerChatIntro/ticket-creation flow
@@ -385,7 +586,7 @@ export default function SupportPage() {
           </p>
           <div className="flex items-center gap-3">
             <Button asChild className="bg-[#554abf] hover:bg-[#4a3fa3] text-white cursor-pointer">
-              <Link href="/signin">Sign in</Link>
+              <Link href={signInHref(currentHref, { support: true })}>Sign in</Link>
             </Button>
             <Button asChild variant="outline" className="border-gray-200 text-[#444444] bg-transparent cursor-pointer">
               <Link href="/">Go to home</Link>
@@ -404,8 +605,8 @@ export default function SupportPage() {
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
       timestamp={nowFormatted}
-      rates={{ startPrice, first60Price, after60Price }}
-      isFree={isFreeSupport(paymentSettings)}
+      rates={rates}
+      isFree={isFreeSupport(effectivePricing)}
       isAuthenticated={isAuthenticated}
       ticketCreated={ticketCreated}
       userName={user?.name}
@@ -525,8 +726,19 @@ export default function SupportPage() {
             onMessageChange={setMessage}
             onSend={handleSendMessage}
             sendDisabled={!message.trim() || createTicket.isPending}
+            sending={isSending}
             isEnded={ticketEnded}
-            onRequestEndSession={ticketId && user?.id ? () => handleRequestEndSession(false) : undefined}
+            paymentStatus={paymentStatus.status}
+            // Signed-out visitors get the composer: the first send starts a
+            // guest session. While a guest, a banner above it offers sign-in.
+            composerBanner={isGuest ? <GuestBanner redirectTo={guestSignInRedirect} onSignIn={handleGuestSignIn} /> : undefined}
+            onStartNewConversation={handleStartNewConversation}
+            paymentRequiresSignIn={isGuest}
+            onSignInClick={handleGuestSignIn}
+            // Nobody but an admin can end a guest ticket: no "End session" for the guest.
+            onRequestEndSession={
+              ticketId && sessionUserId && !isGuest && !liveTicketIsGuest ? () => handleRequestEndSession(false) : undefined
+            }
             onCancelEndSessionRequest={() => handleRequestEndSession(true)}
             endSessionRequestedAt={liveTicket?.end_requested_at ?? null}
             endSessionRequestPending={requestEndSession.isPending}
@@ -537,7 +749,7 @@ export default function SupportPage() {
             timeReviewHelperName={claimer?.name ?? null}
             // Before the first message there is no ticket yet: uploads go to the
             // user's own folder (see lib/ticket-attachments).
-            attachmentStoragePrefix={user?.id && projectId ? `${projectId}/${ticketId || user.id}` : undefined}
+            attachmentStoragePrefix={sessionUserId && projectId ? `${projectId}/${ticketId || sessionUserId}` : undefined}
             onPaymentCtaClick={handlePaymentCta}
             paymentCtaLoading={createCheckout.isPending || retryPayment.isPending}
             rightSidebarFooter={
@@ -570,10 +782,8 @@ export default function SupportPage() {
               {activeTab === "rates" && (
                 <RatesAndDetailsContent
                   projectName={projectName}
-                  isFree={isFreeSupport(paymentSettings)}
-                  startPrice={startPrice}
-                  first60Price={first60Price}
-                  after60Price={after60Price}
+                  isFree={isFreeSupport(effectivePricing)}
+                  rates={rates}
                   avgResponseSeconds={avgResponseSeconds}
                   avgResponseLoading={avgResponseLoading}
                 />

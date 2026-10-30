@@ -1,4 +1,6 @@
 import type { UserRole } from "@/contexts/user-context"
+import { GUEST_ADOPTION_KEY, OWN_GUEST_ID_KEY } from "@/lib/guest-adoption-storage"
+import { clearAllSupportDrafts } from "@/lib/support-draft"
 
 /**
  * The landing page for a given active role. Used wherever the app switches
@@ -32,6 +34,35 @@ export function getLastProjectForRole(role: ProjectRole): string | null {
     return localStorage.getItem(lastProjectKey(role))
   } catch {
     return null
+  }
+}
+
+/**
+ * Forget every piece of per-account UI state kept in web storage, so the
+ * next account signing in on this browser does not inherit the previous
+ * one's role, selected project or pending redirect. Called on sign-out.
+ */
+export function clearAccountUiState(): void {
+  clearAllSupportDrafts()
+  const localKeys = [
+    "userRole",
+    "selectedProjectId",
+    lastProjectKey("admin"),
+    lastProjectKey("helper"),
+    // Guest session saved for ticket adoption (lib/guest-adoption).
+    GUEST_ADOPTION_KEY,
+    OWN_GUEST_ID_KEY,
+  ]
+  const sessionKeys = ["selectedProjectId", "pendingRedirect"]
+  try {
+    for (const key of localKeys) localStorage.removeItem(key)
+  } catch {
+    // Storage unavailable — nothing to clear.
+  }
+  try {
+    for (const key of sessionKeys) sessionStorage.removeItem(key)
+  } catch {
+    // Storage unavailable — nothing to clear.
   }
 }
 

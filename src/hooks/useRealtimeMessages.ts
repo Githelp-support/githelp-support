@@ -58,8 +58,27 @@ export function useRealtimeMessages(ticketId?: string) {
         predicate: (q) => q.queryKey[0] === 'time-entries' && q.queryKey[2] === ticketId,
       })
 
+    // Supabase does not replay events missed while the socket was down, so
+    // every (re-)join refetches the thread. The first join dedupes onto the
+    // initial fetch; a re-join after a drop cancels any stale in-flight fetch
+    // so the invalidation really hits the server.
+    let joinedBefore = false
+    const onJoined = async () => {
+      const queryKey = ['ticket-messages', ticketId]
+      if (joinedBefore) {
+        await queryClient.cancelQueries({ queryKey })
+        void refetchTicketParticipants(queryClient, ticketId)
+        void invalidateTimeEntries()
+      }
+      joinedBefore = true
+      void queryClient.invalidateQueries({ queryKey })
+    }
+
+    // Unique topic per mount: two subscribers on the same fixed topic would
+    // share one channel and its bindings (and tear each other down).
+    const topic = `ticket-messages-${ticketId}-${Math.random().toString(36).slice(2, 10)}`
     const channel = supabase
-      .channel(`ticket-messages-${ticketId}`)
+      .channel(topic)
       .on(
         'postgres_changes',
         {
@@ -91,7 +110,13 @@ export function useRealtimeMessages(ticketId?: string) {
           }
         }
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          void onJoined()
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[realtime] ${topic} ${status}`, err)
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)

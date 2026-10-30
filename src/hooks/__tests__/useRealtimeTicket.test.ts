@@ -53,7 +53,8 @@ describe("useRealtimeTicket", () => {
     it("subscribes to the ticket row plus its participants and time entries", () => {
         setup();
 
-        expect(supabase.channel).toHaveBeenCalledWith(`ticket-row-${TICKET}`);
+        // Topic carries a per-mount suffix so two subscribers never share a channel.
+        expect(supabase.channel).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^ticket-row-${TICKET}`)));
         expect(bindings.map((b) => b.filter)).toEqual([
             { event: "UPDATE", schema: "public", table: "tickets", filter: `id=eq.${TICKET}` },
             { event: "*", schema: "public", table: "tickets_participants", filter: `ticket_id=eq.${TICKET}` },

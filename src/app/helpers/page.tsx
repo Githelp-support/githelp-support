@@ -23,7 +23,13 @@ import { AcceptRequestDrawer } from "@/components/drawers/accept-request-drawer"
 import { RemoveHelperModal } from "@/components/modals/remove-helper-modal"
 import { useHelpers, useCreateHelper, useAddSelfAsHelper, useRemoveHelper } from "@/hooks/useHelpers"
 import { usePendingRequests, useUpdatePendingRequest } from "@/hooks/usePendingRequests"
-import { useCreateProjectInvite, useListProjectInvites, useRevokeProjectInvite } from "@/hooks/useProject"
+import {
+  useCreateProjectInvite,
+  useListProjectInvites,
+  useRevokeProjectInvite,
+  useProject,
+  useUpdateProject,
+} from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
@@ -109,6 +115,30 @@ export default function HelpersPage() {
   const updatePendingRequest = useUpdatePendingRequest()
   const createInvite = useCreateProjectInvite()
   const revokeInvite = useRevokeProjectInvite()
+
+  // "Open for new helpers" is persisted on projects.open_for_new_helpers.
+  const { data: project } = useProject(projectId ?? "")
+  const updateProject = useUpdateProject()
+  const openForNewHelpers = project?.open_for_new_helpers ?? true
+
+  const handleOpenForNewHelpersChange = async (checked: boolean) => {
+    if (!projectId) return
+    try {
+      await updateProject.mutateAsync({
+        projectId,
+        updates: { open_for_new_helpers: checked },
+      })
+      toast.success(checked ? "Now accepting new helper requests" : "No longer accepting new helper requests")
+    } catch (error: unknown) {
+      console.error("Failed to update open_for_new_helpers:", error)
+      const message =
+        (error instanceof Error && error.message) ||
+        (typeof (error as { message?: unknown } | null)?.message === "string"
+          ? (error as { message: string }).message
+          : null)
+      toast.error(message || "Couldn't update the setting. Please try again.")
+    }
+  }
 
   // Admin is a helper if their user_id appears in the project's helpers list
   const isCurrentUserHelper = !!(
@@ -237,26 +267,38 @@ export default function HelpersPage() {
   const handleConfirmAcceptRequest = async (requestData: { category: string }) => {
     if (!selectedRequest || !projectId) return
 
-    // Update the pending request status
-    await updatePendingRequest.mutateAsync({
-      userId: selectedRequest.user_id,
-      projectId: projectId,
-      status: "accepted",
-    })
-
-    // Use createHelper.mutateAsync which will invoke the invite-user edge function
-    // Note: For pending requests, we may not have discord_username or github_username
-    // The edge function will handle existing users (user_exists will be true)
-    await createHelper.mutateAsync({
-      discord_username: selectedRequest.name || "", // Fallback to name if discord username not available
-      github_username: selectedRequest.email?.split("@")[0] || "", // Fallback to email prefix if github username not available
-      name: selectedRequest.name,
-      email: selectedRequest.email,
-      category: requestData.category, // Using enum values: core, extended, or community
-      project_id: projectId,
-    })
-
-    setSelectedRequest(null)
+    // Create the helper first (invite-user, admin JWT); only then mark the
+    // request accepted, so a failure never leaves an accepted request with
+    // no helper row.
+    try {
+      try {
+        await createHelper.mutateAsync({
+          discord_username: "",
+          github_username: "",
+          name: selectedRequest.name,
+          email: selectedRequest.email,
+          category: requestData.category, // core, extended, or community
+          project_id: projectId,
+        })
+      } catch (inviteErr) {
+        // A retry after the request update failed: the helper already exists, so
+        // carry on and mark the request accepted.
+        const msg = inviteErr instanceof Error ? inviteErr.message : ""
+        if (!/already a helper/i.test(msg)) throw inviteErr
+      }
+      await updatePendingRequest.mutateAsync({
+        userId: selectedRequest.user_id,
+        projectId: projectId,
+        status: "accepted",
+      })
+      toast.success(`${selectedRequest.name} is now a helper`)
+      setSelectedRequest(null)
+    } catch (err) {
+      toast.error("Couldn't add the helper", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      })
+      throw err
+    }
   }
 
   const handleSort = (field: SortField) => {
@@ -537,7 +579,13 @@ export default function HelpersPage() {
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
               <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
-              <Switch defaultChecked className="h-[22px] w-[38px] p-[3px] border-0" />
+              <Switch
+                checked={openForNewHelpers}
+                onCheckedChange={(checked) => void handleOpenForNewHelpersChange(checked)}
+                disabled={!project || updateProject.isPending}
+                aria-label="Open for new helpers"
+                className="h-[22px] w-[38px] p-[3px] border-0"
+              />
             </div>
           </div>
 

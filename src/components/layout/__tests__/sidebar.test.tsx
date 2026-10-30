@@ -139,6 +139,22 @@ describe("Sidebar — user-role menu order", () => {
   })
 })
 
+describe("Sidebar — guest (anonymous support visitor)", () => {
+  it("shows only the public support items: no Overview, Tickets, Reports or Settings", () => {
+    usePathname.mockReturnValue("/support/chat")
+    useUser.mockReturnValue({ user: { ...anonymousUser, guestId: "g1" }, setProjectRole: vi.fn() })
+
+    const { container } = render(<Sidebar />)
+
+    const nav = container.querySelector("nav")
+    const topLevelLabels = Array.from(nav!.firstElementChild!.children).map((el) => el.textContent?.trim())
+    expect(topLevelLabels.map((l) => l?.split(/(?=[A-Z])/)[0])).toEqual(["Support"])
+    expect(screen.queryByText("Tickets")).not.toBeInTheDocument()
+    expect(screen.queryByText("Overview")).not.toBeInTheDocument()
+    expect(screen.queryByText("Reports")).not.toBeInTheDocument()
+  })
+})
+
 describe("PublicSupportSidebar — 'Open my user portal' link", () => {
   const renderPublicSidebar = () =>
     render(

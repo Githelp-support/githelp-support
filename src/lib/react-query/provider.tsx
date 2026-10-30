@@ -12,7 +12,10 @@ export function ReactQueryProvider({ children }: { children: React.ReactNode }) 
       new QueryClient({
         defaultOptions: {
           queries: {
-              refetchOnReconnect: false,
+              // Refetch stale queries when the browser comes back online so a
+              // thread/ticket that changed while the socket was down catches up
+              // (Supabase realtime does not replay missed events).
+              refetchOnReconnect: true,
               refetchOnWindowFocus: true,
               retry: 1,
               staleTime: THREE_HOURS

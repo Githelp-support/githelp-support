@@ -55,6 +55,9 @@ const inTabLock = async <R>(
     }
 };
 
+// PKCE: a session can only come from a sign-in this browser started (the code exchange needs the
+// verifier stored here). With the implicit flow, any link carrying #access_token=… silently
+// replaced the visitor's session (login CSRF), which guest tickets made easy to exploit.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { lock: inTabLock },
+    auth: { lock: inTabLock, flowType: "pkce" },
 });

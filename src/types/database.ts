@@ -209,6 +209,8 @@ export type Database = {
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
                     success: boolean;
+                    /** Opened by an anonymous (not signed-in) visitor; cleared when they sign in. Read-only for clients. */
+                    guest: boolean;
                 };
                 Insert: Partial<{
                     id: string;
@@ -422,19 +424,20 @@ export type Database = {
             users: {
                 Row: {
                     id: string;
-                    email: string;
+                    /** Null for anonymous guests. */
+                    email: string | null;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 };
                 Insert: Partial<{
                     id: string;
-                    email: string;
+                    email: string | null;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;
                 Update: Partial<{
                     id: string;
-                    email: string;
+                    email: string | null;
                     onboarding_completed: boolean;
                     onboarding_completed_at: string | null;
                 }>;
@@ -577,6 +580,13 @@ export type Database = {
                     claimed: boolean;
                     last_read_message_id: string | null;
                 }>;
+            };
+        };
+        Functions: {
+            /** Guest presence heartbeat: the caller's own open guest ticket, or all of them when called without an id. */
+            touch_guest_ticket: {
+                Args: { p_ticket_id?: string | null };
+                Returns: undefined;
             };
         };
     };

@@ -41,7 +41,9 @@ export function projectAvailableRolesQueryOptions(projectId?: string) {
       roles.push("user")
       return roles
     },
-    staleTime: 1800000,
+    // Roles are granted/revoked by other users (promotion, removal), so keep
+    // the cache short; the hooks below also refetch on window focus.
+    staleTime: 60_000,
   }
 }
 
@@ -97,8 +99,8 @@ export function useProjectAvailableRoles(projectId?: string) {
   return useQuery({
     ...projectAvailableRolesQueryOptions(projectId),
     enabled: !!projectId,
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -137,6 +139,7 @@ export function useUserRoles() {
           .from("projects_helpers")
           .select("helper_id")
           .eq("user_id", user.id)
+          .is("deleted_at", null)
           .limit(1),
         supabase
           .from("projects_members")
@@ -164,9 +167,9 @@ export function useUserRoles() {
 
       return roles.length > 0 ? roles : ["user"]
     },
-    staleTime: 1800000,
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
+    staleTime: 60_000,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -222,9 +225,9 @@ export function useProjectRole(projectId?: string) {
       return "user"
     },
     enabled: !!projectId,
-    staleTime: 1800000,
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
+    staleTime: 60_000,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   })
 }
 

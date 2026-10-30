@@ -176,7 +176,7 @@ export default function BrandingSettingsPage() {
           title={`Upload Logo for ${project?.name || "Project"}`}
           description="Upload a logo image for your project. The image will be stored in your project's public storage."
           maxFileSizeMB={6}
-          acceptedFileTypes={["image/*"]}
+          acceptedFileTypes={["image/png", "image/jpeg", "image/gif", "image/webp"]}
           currentImageUrl={brandingData?.logo_url || null}
         />
       )}

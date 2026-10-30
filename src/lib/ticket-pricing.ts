@@ -27,17 +27,35 @@ export function isFreeSupport(settings: TicketPriceSettings | null | undefined):
   )
 }
 
-const centsToDollars = (cents: number | null | undefined, fallback: string) =>
-  cents == null ? fallback : (cents / 100).toFixed(2)
+/**
+ * A flat-fee ticket: both per-minute rates are zero, so once the start price
+ * is collected more time costs nothing. Mirrors the flat-fee branch of the DB
+ * gate `enforce_time_entry_payment_gate` (which reads the ticket's pricing
+ * snapshot): logging stays open after the start price was captured, and the
+ * weekly rehold places no further hold. Returns false while the settings
+ * haven't loaded.
+ */
+export function isFlatFeePricing(settings: TicketPriceSettings | null | undefined): boolean {
+  if (!settings) return false
+  return (settings.ticket_price_minute_first_60 ?? 0) <= 0 && (settings.ticket_price_minute_after_60 ?? 0) <= 0
+}
+
+const centsToDollars =(cents: number | null | undefined) => ((cents ?? 0) / 100).toFixed(2)
 
 /**
- * Ticket prices formatted as dollar strings. The fallbacks only apply while
- * the settings are missing — a stored price of 0 is a real price ("0.00").
+ * Ticket prices formatted as dollar strings. Returns `null` while the settings
+ * are missing or still loading — callers render "Rates not configured" (or
+ * nothing) instead of placeholder prices. A stored price of 0 is a real price
+ * ("0.00"); a null column counts as 0, like `isFreeSupport`.
  */
-export function formatTicketRates(settings: TicketPriceSettings | null | undefined): TicketRates {
+export function formatTicketRates(settings: TicketPriceSettings | null | undefined): TicketRates | null {
+  if (!settings) return null
   return {
-    startPrice: centsToDollars(settings?.ticket_start_price, "10.00"),
-    first60Price: centsToDollars(settings?.ticket_price_minute_first_60, "1.50"),
-    after60Price: centsToDollars(settings?.ticket_price_minute_after_60, "1.00"),
+    startPrice: centsToDollars(settings.ticket_start_price),
+    first60Price: centsToDollars(settings.ticket_price_minute_first_60),
+    after60Price: centsToDollars(settings.ticket_price_minute_after_60),
   }
 }
+
+/** Copy shown wherever rates would be listed but the project has no payment settings row. */
+export const RATES_NOT_CONFIGURED = "Rates not configured"

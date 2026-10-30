@@ -10,8 +10,9 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Clock, MessageCircle, User, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
+import { GuestTicketBadge, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
-import { formatTicketRates } from "@/lib/ticket-pricing"
+import { formatTicketRates, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { truncateText } from "@/lib/format"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } from "@/hooks/useTicketParticipants"
@@ -30,19 +31,23 @@ interface Ticket {
     name: string
     avatar: string
   }
-  type: "Bug" | "Best practice" | "Dependency" | "Code review" | "Mentoring"
+  /** Name of the ticket's first help category, or GENERAL_TYPE when it has none. */
+  type: string
   topics: string[]
   status: "available" | "claimed" | "in-progress" | "completed"
   priority: "low" | "medium" | "high"
   createdAt: string
-  estimatedTime?: string
-  rate?: string
   messages?: number
+  /** Opened by a visitor who hasn't signed in yet. */
+  guest?: boolean
   helper?: {
     name: string
     avatar: string
   }
 }
+
+/** Type label for tickets without a help category. */
+const GENERAL_TYPE = "General"
 
 // Helper function to format date
 const formatDate = (dateString: string) => {
@@ -102,32 +107,42 @@ export default function TicketsPage() {
   // Set up real-time subscriptions
   useRealtimeTickets(projectId)
 
-  // Format rate (convert cents to dollars)
-  const { startPrice, first60Price: ratePerMinute, after60Price } = formatTicketRates(paymentSettings)
+  // Format rates (convert cents to dollars); null until the project has
+  // payment settings — the expanded rows then say "Rates not configured".
+  const rates = formatTicketRates(paymentSettings)
 
   // Transform tickets to UI format
   const tickets = useMemo(() => {
     if (!ticketsData) return []
-    return ticketsData.map((ticket) => ({
-      id: ticket.id,
-      title: ticket.title,
-      description: ticket.description,
-      user: {
-        id: ticket.created_by ?? null,
-        name: ticket.user?.name || "Unknown",
-        avatar: (ticket.user?.name || "U")[0].toUpperCase(),
-      },
-      type: "Bug" as const, // TODO: Map from help categories
-      topics: ticket.keywords?.map((k) => k.value) || [],
-      status: ticket.status as "available" | "claimed" | "in-progress" | "completed",
-      priority: ticket.priority as "low" | "medium" | "high",
-      createdAt: formatDate(ticket.created_at),
-      estimatedTime: "30-45 min", // TODO: Calculate from time entries
-      rate: `USD ${ratePerMinute}/min`,
-      messages: ticket.message_count || 0,
-      helper: undefined as { name: string; avatar: string } | undefined, // TODO: Fetch helper data if ticket is claimed/in-progress
-    })) as Ticket[]
-  }, [ticketsData, ratePerMinute])
+    return ticketsData.map((ticket) => {
+      const firstCategory = ticket.help_categories?.find((c) => !!c.value)
+      return {
+        id: ticket.id,
+        title: ticket.title,
+        description: ticket.description,
+        user: {
+          id: ticket.created_by ?? null,
+          name: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "Unknown"),
+          avatar: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "U")[0].toUpperCase(),
+        },
+        guest: !!ticket.guest,
+        // Type = the ticket's first help category (projects_help_categories.value).
+        type: firstCategory?.value || GENERAL_TYPE,
+        topics: ticket.keywords?.map((k) => k.value) || [],
+        status: ticket.status as "available" | "claimed" | "in-progress" | "completed",
+        priority: ticket.priority as "low" | "medium" | "high",
+        createdAt: formatDate(ticket.created_at),
+        messages: ticket.message_count || 0,
+        helper: undefined as { name: string; avatar: string } | undefined, // TODO: Fetch helper data if ticket is claimed/in-progress
+      }
+    }) as Ticket[]
+  }, [ticketsData])
+
+  // Type filter options = the types that actually occur in this project's tickets.
+  const typeOptions = useMemo(
+    () => [...new Set(tickets.map((t) => t.type))].sort((a, b) => a.localeCompare(b)),
+    [tickets],
+  )
 
   // For helpers, scope claimed/in-progress/completed tickets to the ones they
   // participate in. Available tickets remain unfiltered so helpers can still
@@ -411,11 +426,15 @@ export default function TicketsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Types</SelectItem>
-                <SelectItem value="Bug" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Bug</SelectItem>
-                <SelectItem value="Best practice" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Best practice</SelectItem>
-                <SelectItem value="Dependency" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Dependency</SelectItem>
-                <SelectItem value="Code review" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Code review</SelectItem>
-                <SelectItem value="Mentoring" className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Mentoring</SelectItem>
+                {typeOptions.map((type) => (
+                  <SelectItem
+                    key={type}
+                    value={type}
+                    className="text-[#737373] focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium"
+                  >
+                    {type}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -530,20 +549,24 @@ export default function TicketsPage() {
                                 {/* Rates */}
                                 <div>
                                   <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                                  {rates == null ? (
+                                    <p className="text-sm text-muted-foreground">{RATES_NOT_CONFIGURED}</p>
+                                  ) : (
                                   <div className="grid grid-cols-3 gap-4">
                                     <div className="bg-card border border-border rounded-lg p-3">
                                       <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                                      <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                                      <p className="text-sm font-medium text-foreground">USD {rates.startPrice}</p>
                                     </div>
                                     <div className="bg-card border border-border rounded-lg p-3">
                                       <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                                      <p className="text-sm font-medium text-foreground">USD {ratePerMinute}/min</p>
+                                      <p className="text-sm font-medium text-foreground">USD {rates.first60Price}/min</p>
                                     </div>
                                     <div className="bg-card border border-border rounded-lg p-3">
                                       <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                                      <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                                      <p className="text-sm font-medium text-foreground">USD {rates.after60Price}/min</p>
                                     </div>
                                   </div>
+                                  )}
                                 </div>
 
                                 {/* Action Buttons */}
@@ -675,6 +698,7 @@ export default function TicketsPage() {
                               <h4 className="text-sm font-medium text-foreground truncate">
                                 {ticket.user.name}
                               </h4>
+                              {ticket.guest && <GuestTicketBadge className="mt-1" />}
                               <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                               <div className="flex items-center gap-1 mt-1">
                                 <MessageCircle className="w-3 h-3 text-muted-foreground" />
@@ -721,20 +745,24 @@ export default function TicketsPage() {
                           {/* Rates associated with the ticket */}
                           <div>
                             <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                            {rates == null ? (
+                              <p className="text-sm text-muted-foreground">{RATES_NOT_CONFIGURED}</p>
+                            ) : (
                             <div className="grid grid-cols-3 gap-4">
                               <div className="bg-card border border-border rounded-lg p-3">
                                 <p className="text-sm text-muted-foreground mb-1">Start price</p>
-                                <p className="text-sm font-medium text-foreground">USD {startPrice}</p>
+                                <p className="text-sm font-medium text-foreground">USD {rates.startPrice}</p>
                               </div>
                               <div className="bg-card border border-border rounded-lg p-3">
                                 <p className="text-sm text-muted-foreground mb-1">First 60 min</p>
-                                <p className="text-sm font-medium text-foreground">USD {ratePerMinute}/min</p>
+                                <p className="text-sm font-medium text-foreground">USD {rates.first60Price}/min</p>
                               </div>
                               <div className="bg-card border border-border rounded-lg p-3">
                                 <p className="text-sm text-muted-foreground mb-1">After 60 min</p>
-                                <p className="text-sm font-medium text-foreground">USD {after60Price}/min</p>
+                                <p className="text-sm font-medium text-foreground">USD {rates.after60Price}/min</p>
                               </div>
                             </div>
+                            )}
                           </div>
 
                           {/* Access the full ticket in addition to the inline expansion */}
@@ -769,6 +797,7 @@ export default function TicketsPage() {
                             {ticket.user.name}
                           </h4>
                         </Link>
+                        {ticket.guest && <GuestTicketBadge className="mt-1" />}
                         <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <MessageCircle className="w-3 h-3 text-muted-foreground" />

@@ -23,6 +23,7 @@ import { useCompleteOnboarding, useOnboardingStatus } from "@/hooks/useOnboardin
 import { useEnterProject } from "@/hooks/useEnterProject"
 import { useUser } from "@/contexts/user-context"
 import { homeRouteForRole } from "@/lib/roles"
+import { consumePendingRedirect } from "@/lib/safe-redirect"
 import {
     Loader2,
     Plus,
@@ -37,6 +38,10 @@ import {
 import { RoleOptionCards } from "@/components/auth/role-option-cards"
 import type { UserRole } from "@/contexts/user-context"
 import { supabase } from "@/lib/supabase/client"
+import { isAnonymousUser } from "@/lib/supabase/auth-state"
+import { signInHref } from "@/lib/sign-in-href"
+import { findGuestOpenTicket } from "@/lib/guest-session"
+import { isOwnGuestId } from "@/lib/guest-adoption-storage"
 import { signInWithGitHub } from "@/lib/supabase/auth"
 import { toast } from "sonner"
 
@@ -133,13 +138,28 @@ export default function OnboardingPage() {
     useEffect(() => {
         const checkGithubSession = async () => {
             const { data: { session } } = await supabase.auth.getSession()
+            // A guest (anonymous support visitor) is signed out here: creating
+            // a project would fail (guest_not_allowed). Send them to sign in,
+            // returning to their support conversation as a customer.
+            if (isAnonymousUser(session?.user) && session?.user) {
+                // Back to their open guest conversation if they have one,
+                // otherwise to sign-in (returning to support as a customer).
+                // Only this browser's own guest; a foreign one has nothing here.
+                const open = isOwnGuestId(session.user.id) ? await findGuestOpenTicket(session.user.id, null) : null
+                router.replace(
+                    open
+                        ? `/support/chat?ticket=${encodeURIComponent(open.id)}&project=${encodeURIComponent(open.project_id)}`
+                        : signInHref("/support/chat", { support: true }),
+                )
+                return
+            }
             const providers = session?.user?.app_metadata?.providers as string[] | undefined
             const hasGithub = providers?.includes("github")
             const token = hasGithub && session?.provider_token ? session.provider_token : null
             setGithubToken(token)
         }
         checkGithubSession()
-    }, [])
+    }, [router])
 
     // Entry params: `import=github` jumps to the GitHub importer, and
     // `role=admin|helper` (from the "I am acting as" chooser) skips the role
@@ -196,6 +216,16 @@ export default function OnboardingPage() {
     const roleOptions: UserRole[] = isAddingRole ? ["admin", "helper"] : ["admin", "helper", "user"]
 
     /**
+     * Where to go once the wizard completes: the page the user was heading
+     * to before being sent through onboarding (stored by /auth/confirmed as
+     * `pendingRedirect`, consumed once), else the role's home route.
+     */
+    const completionRoute = (fallback: string) => {
+        if (isAddingRole) return fallback
+        return consumePendingRedirect() ?? fallback
+    }
+
+    /**
      * Leave the wizard without a project: first-time users are marked as
      * onboarded and land in their private user context; existing members
      * simply go back to the app.
@@ -212,7 +242,7 @@ export default function OnboardingPage() {
             }
             await queryClient.refetchQueries({ queryKey: ["onboarding-status"] })
             switchRole("user")
-            router.push(homeRouteForRole("user"))
+            router.push(completionRoute(homeRouteForRole("user")))
         } catch (error: unknown) {
             console.error("Failed to finish onboarding:", error)
             toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.")
@@ -292,7 +322,7 @@ export default function OnboardingPage() {
             // even if their last active role (e.g. helper) was something else.
             const role = await enterProject(project.project_id, "admin")
             toast.success("Project created successfully!")
-            router.push(homeRouteForRole(role))
+            router.push(completionRoute(homeRouteForRole(role)))
         } catch (error: unknown) {
             console.error("Failed to create project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create project. Please try again.")
@@ -329,7 +359,11 @@ export default function OnboardingPage() {
 
             await enterProject(result.project.project_id, "admin")
             toast.success("Project imported from GitHub successfully!")
-            router.push(`/projects/${result.project.project_id}/invite-contributors?repo=${encodeURIComponent(repo.full_name)}`)
+            router.push(
+                completionRoute(
+                    `/projects/${result.project.project_id}/invite-contributors?repo=${encodeURIComponent(repo.full_name)}`,
+                ),
+            )
         } catch (error: unknown) {
             console.error("Failed to import project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to import project. Please try again.")
@@ -350,7 +384,7 @@ export default function OnboardingPage() {
 
             const role = await enterProject(result.project.project_id, "admin")
             toast.success("Sandbox ready! Explore your demo project.")
-            router.push(homeRouteForRole(role))
+            router.push(completionRoute(homeRouteForRole(role)))
         } catch (error: unknown) {
             console.error("Failed to create sandbox:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create sandbox. Please try again.")

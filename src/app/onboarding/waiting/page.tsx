@@ -1,14 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCreateProject } from "@/hooks/useProject"
 import { useEnterProject } from "@/hooks/useEnterProject"
+import { latestOnboardingStatus, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { homeRouteForRole } from "@/lib/roles"
-import { Loader2, Plus, Users, Mail, ArrowRight } from "lucide-react"
+import { Loader2, Plus, Users, Mail, ArrowRight, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
@@ -18,11 +19,51 @@ export default function WaitingPage() {
     const router = useRouter()
     const [projectName, setProjectName] = useState("")
     const [isCreating, setIsCreating] = useState(false)
+    const [isChecking, setIsChecking] = useState(false)
     const [showCreateForm, setShowCreateForm] = useState(false)
-    
+
     const queryClient = useQueryClient()
     const createProject = useCreateProject()
     const enterProject = useEnterProject()
+    // Public route, so AuthGuard does not watch status here. Read it
+    // ourselves (short staleTime + focus refetch) so a helper whose request
+    // was approved in another browser is routed on instead of parked.
+    const { data: onboardingStatus } = useOnboardingStatus()
+
+    useEffect(() => {
+        if (!onboardingStatus || isCreating) return
+        // Still waiting (or still needs the wizard, which AuthGuard handles
+        // on the next protected route) — stay here.
+        if (onboardingStatus.needsWaiting || onboardingStatus.needsOnboarding) return
+        // Approved / joined / nothing left to wait for: into the app.
+        router.replace("/")
+    }, [onboardingStatus, isCreating, router])
+
+    const handleCheckAgain = async () => {
+        setIsChecking(true)
+        try {
+            await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] })
+            await queryClient.invalidateQueries({ queryKey: ["user-projects"] })
+            await Promise.all([
+                queryClient.refetchQueries({ queryKey: ["onboarding-status"] }),
+                queryClient.refetchQueries({ queryKey: ["user-projects"] }),
+                queryClient.refetchQueries({ queryKey: ["user-roles"] }),
+                queryClient.refetchQueries({ queryKey: ["account-roles"] }),
+            ])
+            // The status is cached per account (["onboarding-status", account]).
+            const fresh = latestOnboardingStatus(queryClient)
+            if (fresh && !fresh.needsWaiting && !fresh.needsOnboarding) {
+                router.push("/")
+                return
+            }
+            toast.info("Your request is still waiting for an admin to approve it.")
+        } catch (error: unknown) {
+            console.error("Failed to refresh status:", error)
+            toast.error("Couldn't check your status. Please try again.")
+        } finally {
+            setIsChecking(false)
+        }
+    }
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
@@ -58,7 +99,8 @@ export default function WaitingPage() {
         } catch (error: unknown) {
             console.error("Failed to create project:", error)
             toast.error(error instanceof Error ? error.message : "Failed to create project. Please try again.")
-        } finally {
+            // Only reset on failure — on success we navigate away, and
+            // clearing it would race the status redirect above.
             setIsCreating(false)
             setShowCreateForm(false)
             setProjectName("")
@@ -137,10 +179,27 @@ export default function WaitingPage() {
                         <div className="flex items-start gap-4">
                             <Mail className="w-6 h-6 text-[#554abf] mt-1 flex-shrink-0" />
                             <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-foreground mb-2">Wait for an invite</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    A project admin can invite you to join their project. You&apos;ll receive an email notification when you&apos;re invited.
+                                <h3 className="font-semibold text-lg text-foreground mb-2">
+                                    {onboardingStatus?.hasPendingRequest ? "Waiting for approval" : "Wait for an invite"}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    {onboardingStatus?.hasPendingRequest
+                                        ? "A project admin needs to approve your request to become a helper. You'll be notified once that happens — or check again now."
+                                        : "A project admin can invite you to join their project. You'll receive an email notification when you're invited."}
                                 </p>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleCheckAgain}
+                                    disabled={isChecking}
+                                    className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white"
+                                >
+                                    {isChecking ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="w-4 h-4" />
+                                    )}
+                                    Check again
+                                </Button>
                             </div>
                         </div>
                     </div>

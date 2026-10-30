@@ -92,3 +92,39 @@ export function timeMillisecondsToHoursMinutes(ms: number): { hours: number; min
     const totalMinutes = Math.floor(ms / 60000);
     return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
 }
+
+/** Longest single entry the drawer accepts (24 hours), in milliseconds. */
+export const MAX_TIME_ENTRY_MS = 24 * 60 * 60 * 1000;
+
+export type LoggedDurationValidation =
+    | { ok: true; hours: number; minutes: number; timeMilliseconds: number }
+    | { ok: false; error: string };
+
+/**
+ * Validate the hours/minutes typed into the Log time drawer. Only whole,
+ * non-negative numbers are accepted, minutes must be below 60, and the total
+ * must be between 1 minute and 24 hours — there is no CHECK on
+ * `time_milliseconds`, and a zero/negative entry would reduce what another
+ * helper is paid at capture.
+ */
+export function validateLoggedDuration(hoursInput: string, minutesInput: string): LoggedDurationValidation {
+    const hoursText = hoursInput.trim();
+    const minutesText = minutesInput.trim();
+    const wholeNumber = /^\d+$/;
+    if ((hoursText && !wholeNumber.test(hoursText)) || (minutesText && !wholeNumber.test(minutesText))) {
+        return { ok: false, error: "Enter whole, non-negative numbers for hours and minutes." };
+    }
+    const hours = hoursText ? Number.parseInt(hoursText, 10) : 0;
+    const minutes = minutesText ? Number.parseInt(minutesText, 10) : 0;
+    if (minutes >= 60) {
+        return { ok: false, error: "Minutes must be less than 60." };
+    }
+    const timeMilliseconds = (hours * 60 + minutes) * 60 * 1000;
+    if (timeMilliseconds < 60 * 1000) {
+        return { ok: false, error: "Log at least 1 minute." };
+    }
+    if (timeMilliseconds > MAX_TIME_ENTRY_MS) {
+        return { ok: false, error: "A single entry can be at most 24 hours." };
+    }
+    return { ok: true, hours, minutes, timeMilliseconds };
+}

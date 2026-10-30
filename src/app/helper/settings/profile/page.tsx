@@ -4,11 +4,10 @@ import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
-import { useHelper, useUpdateHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
+import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
 import { getAvatarColorHexForId } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import {
@@ -36,10 +35,15 @@ const GithubIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
+const CATEGORY_LABELS: Record<string, string> = {
+  core: "Core team",
+  extended: "Extended team",
+  community: "Community",
+}
+
 export default function HelperProfilePage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [category, setCategory] = useState<"core" | "extended" | "community">("community")
   const [gitHubConnected, setGitHubConnected] = useState(false)
   const [gitHubUsername, setGitHubUsername] = useState<string | null>(null)
 
@@ -56,7 +60,6 @@ export default function HelperProfilePage() {
 
   const [selectedKeywords, setSelectedKeywords] = useState<number[]>([])
 
-  const updateHelper = useUpdateHelper()
   const updateUserProfile = useUpdateUserProfile()
 
   // Sync local form state when helper data loads
@@ -65,8 +68,12 @@ export default function HelperProfilePage() {
     setSyncedHelperData(helperData)
     setName(helperData.user?.name ?? "")
     setEmail(helperData.user?.email ?? "")
-    setCategory((helperData.category as "core" | "extended" | "community") ?? "community")
   }
+
+  // The payout category decides the helper's share of each ticket, so it is
+  // set by project admins (Helpers page) and only displayed here.
+  const category = (helperData?.category as string | null | undefined) ?? "community"
+  const categoryLabel = CATEGORY_LABELS[category.toLowerCase()] ?? category
 
   // GitHub connection status, display username, and auto-sync to users_public when empty
   useEffect(() => {
@@ -128,13 +135,11 @@ export default function HelperProfilePage() {
     !!syncedHelperData &&
     (name !== (syncedHelperData.user?.name ?? "") ||
       email !== (syncedHelperData.user?.email ?? ""))
-  const categoryDirty =
-    !!syncedHelperData && category !== (syncedHelperData.category ?? "community")
   const keywordsDirty =
     syncedKeywordIds !== undefined &&
     [...selectedKeywords].sort((a, b) => a - b).join(",") !==
       [...syncedKeywordIds].sort((a, b) => a - b).join(",")
-  const isDirty = contactDirty || categoryDirty || keywordsDirty
+  const isDirty = contactDirty || keywordsDirty
   useUnsavedChangesGuard(isDirty)
 
   const handleSaveProfile = async () => {
@@ -142,14 +147,6 @@ export default function HelperProfilePage() {
     await updateUserProfile.mutateAsync({
       userId: user.id,
       updates: { name: name || undefined, email: email || undefined },
-    })
-  }
-
-  const handleSaveCategory = async () => {
-    if (!helperId) return
-    await updateHelper.mutateAsync({
-      helperId,
-      updates: { category },
     })
   }
 
@@ -233,7 +230,7 @@ export default function HelperProfilePage() {
             <div className="flex items-center gap-4">
               <h1 className="text-base font-semibold text-foreground">{displayName}</h1>
               <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                {category.toLowerCase() === "core" ? "Core team" : category}
+                {categoryLabel}
               </Badge>
             </div>
           </div>
@@ -301,30 +298,20 @@ export default function HelperProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Editable category */}
+          {/* Category — read-only: it sets the payout share, so only project admins change it */}
           <Card className="border-0 shadow-none rounded-lg py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-foreground">Helper category</h2>
             </div>
-            <div className="flex items-center gap-4 flex-wrap">
-              <Select value={category} onValueChange={(v) => setCategory(v as "core" | "extended" | "community")}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="core">Core team</SelectItem>
-                  <SelectItem value="extended">Extended team</SelectItem>
-                  <SelectItem value="community">Community</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleSaveCategory}
-                disabled={updateHelper.isPending}
-                variant="lavender"
-              >
-                {updateHelper.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save category"}
-              </Button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-sm font-medium">
+                {categoryLabel}
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                Your category decides your share of each ticket and is set by the project&apos;s admins. Ask them if it
+                should change.
+              </p>
             </div>
             </CardContent>
           </Card>

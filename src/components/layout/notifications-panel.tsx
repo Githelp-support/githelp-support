@@ -1,5 +1,6 @@
 "use client"
 import { X } from "lucide-react"
+import { safeInternalPath } from "@/lib/safe-redirect"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useSyncExternalStore } from "react"
@@ -97,7 +98,7 @@ export function NotificationsPanel({
       if (notificationType(notification) === "HELPER_REQUEST") {
         router.push("/helpers?view=requests")
       } else {
-        router.push(notification.route)
+        router.push(safeInternalPath(notification.route, "/notifications"))
       }
     }
     onClose()

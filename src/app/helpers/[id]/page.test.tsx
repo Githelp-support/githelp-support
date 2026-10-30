@@ -105,6 +105,7 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     priority: "medium",
     sla_id: null,
     success: true,
+    guest: false,
     ...overrides,
   }
 }

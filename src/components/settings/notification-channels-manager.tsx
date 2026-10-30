@@ -85,8 +85,9 @@ export function NotificationChannelsManager({
       setName("")
       setWebhookUrl("")
       toast.success("Channel connected — use Test to verify it")
-    } catch {
-      toast.error("Could not add the channel — please try again")
+    } catch (err) {
+      // The server explains rejected URLs (e.g. wrong host for the type).
+      toast.error(err instanceof Error && err.message ? err.message : "Could not add the channel — please try again")
     }
   }
 
