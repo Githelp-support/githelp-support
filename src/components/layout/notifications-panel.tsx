@@ -109,17 +109,29 @@ export function NotificationsPanel({
     router.push("/notifications")
   }
 
-  if (!isOpen || !mounted) return null
+  // Keep the panel mounted for the exit animation (menu-out, 100ms).
+  const [present, setPresent] = useState(isOpen)
+  if (isOpen && !present) setPresent(true)
+  useEffect(() => {
+    if (isOpen) return
+    const t = setTimeout(() => setPresent(false), 120)
+    return () => clearTimeout(t)
+  }, [isOpen])
+
+  if (!present || !mounted) return null
 
   const panel = (
     <>
       <div
-        className="fixed w-96 bg-card shadow-2xl z-[2147483647] flex flex-col rounded-lg border border-border max-h-[80vh]"
+        role="dialog"
+        aria-label="Notifications"
+        data-state={isOpen ? "open" : "closed"}
+        className="fixed w-96 max-w-[calc(100vw-2rem)] origin-top-right bg-card shadow-popover z-[2147483647] flex flex-col rounded-lg border border-border-subtle max-h-[80vh] data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out"
         style={{ top: `${position.top}px`, right: `${position.right}px` }}
       >
-        <div className="flex items-center justify-between px-[18px] py-[18px] border-b border-border">
-          <h2 className="text-[15px] font-semibold text-foreground">Notifications</h2>
-          <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors cursor-pointer">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+          <h2 className="text-base font-semibold text-foreground">Notifications</h2>
+          <button onClick={onClose} aria-label="Close notifications" className="p-1 hover:bg-surface-hover rounded-md transition-colors duration-fast ease-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
@@ -134,8 +146,16 @@ export function NotificationsPanel({
                 return (
                   <div
                     key={notification.id}
-                    className="p-4 border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                    role="button"
+                    tabIndex={0}
+                    className="p-4 border border-border-subtle rounded-lg hover:bg-surface-hover cursor-pointer transition-colors duration-fast ease-out animate-enter focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                     onClick={() => handleNotificationClick(notification)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        handleNotificationClick(notification)
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className={`text-xs font-medium uppercase tracking-wide ${notificationTypeColor(type)}`}>
@@ -144,7 +164,7 @@ export function NotificationsPanel({
                       <div className="flex items-center gap-2">
                         <span
                           className={`text-xs ${
-                            !notification.is_read ? "text-[#2E2D31]" : "text-[#868686]"
+                            !notification.is_read ? "text-foreground" : "text-text-tertiary"
                           }`}
                         >
                           {formatRelativeTime(notification.created_at)}
@@ -153,8 +173,8 @@ export function NotificationsPanel({
                       </div>
                     </div>
                     <p
-                      className={`text-[13px] leading-relaxed ${
-                        !notification.is_read ? "text-[#2E2D31]" : "text-[#868686]"
+                      className={`text-ui leading-relaxed ${
+                        !notification.is_read ? "text-foreground" : "text-text-tertiary"
                       }`}
                     >
                       {stripQuotes(notification.content)}

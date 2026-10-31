@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { FormField } from "@/components/ui/form-field"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { useState } from "react"
 import { validateLoggedDuration, type TimeEntryReviewStatus } from "@/lib/time-entries"
@@ -39,6 +40,19 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
   const [note, setNote] = useState("") // Added note state
   const [durationError, setDurationError] = useState<string | null>(null)
 
+  // The drawer stays mounted while closed (exit animation); reset the form on close.
+  const resetForm = () => {
+    setTimeType("together")
+    setHours("")
+    setMinutes("")
+    setNote("")
+    setDurationError(null)
+  }
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const handleSubmit = () => {
     // Whole numbers only, minutes < 60, total between 1 minute and 24 hours;
     // a zero or negative entry must never reach the database.
@@ -59,13 +73,7 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     }
 
     onLogTime(entry)
-
-    // Reset form
-    setTimeType("together")
-    setHours("")
-    setMinutes("")
-    setNote("") // Reset note field
-    onClose()
+    handleClose()
   }
 
   const handleHoursChange = (value: string) => {
@@ -77,16 +85,14 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     if (durationError) setDurationError(null)
   }
 
-  if (!isOpen) return null
-
   return (
     <DrawerPanel
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Log time"
       footer={
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="outline" onClick={handleClose} className="flex-1">
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!hours && !minutes} variant="default" className="flex-1">
@@ -118,42 +124,40 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
           <h3 className="font-medium text-foreground mb-4">Duration</h3>
           <div className="flex items-center gap-3">
             <div className="flex-1">
-              <Label htmlFor="hours" className="text-sm text-muted-foreground mb-2 block">
-                Hours
-              </Label>
-              <Input
-                id="hours"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="24"
-                step="1"
-                value={hours}
-                onChange={(e) => handleHoursChange(e.target.value)}
-                placeholder="0"
-                aria-invalid={!!durationError}
-                aria-describedby={durationError ? "duration-error" : undefined}
-                className="border-input"
-              />
+              <FormField label="Hours" id="hours">
+                <Input
+                  id="hours"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="24"
+                  step="1"
+                  value={hours}
+                  onChange={(e) => handleHoursChange(e.target.value)}
+                  placeholder="0"
+                  aria-invalid={!!durationError}
+                  aria-describedby={durationError ? "duration-error" : undefined}
+                  className="border-input"
+                />
+              </FormField>
             </div>
             <div className="flex-1">
-              <Label htmlFor="minutes" className="text-sm text-muted-foreground mb-2 block">
-                Minutes
-              </Label>
-              <Input
-                id="minutes"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="59"
-                step="1"
-                value={minutes}
-                onChange={(e) => handleMinutesChange(e.target.value)}
-                placeholder="0"
-                aria-invalid={!!durationError}
-                aria-describedby={durationError ? "duration-error" : undefined}
-                className="border-input"
-              />
+              <FormField label="Minutes" id="minutes">
+                <Input
+                  id="minutes"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="59"
+                  step="1"
+                  value={minutes}
+                  onChange={(e) => handleMinutesChange(e.target.value)}
+                  placeholder="0"
+                  aria-invalid={!!durationError}
+                  aria-describedby={durationError ? "duration-error" : undefined}
+                  className="border-input"
+                />
+              </FormField>
             </div>
           </div>
           {durationError && (
@@ -164,16 +168,15 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
         </div>
 
         <div>
-          <Label htmlFor="note" className="text-sm text-muted-foreground mb-2 block">
-            Note (optional)
-          </Label>
-          <Textarea
-            id="note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Add a note about what you worked on..."
-            className="border-input min-h-[80px] resize-none"
-          />
+          <FormField label="Note (optional)" id="note">
+            <Textarea
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add a note about what you worked on..."
+              className="border-input min-h-[80px] resize-none"
+            />
+          </FormField>
         </div>
 
         <div className="bg-muted/50 rounded-lg p-4 border border-border">

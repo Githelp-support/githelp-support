@@ -5,10 +5,9 @@ import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import {
   useProjectKeywords,
@@ -23,6 +22,7 @@ import { FormField } from "@/components/ui/form-field"
 import { Checkbox } from "@/components/ui/checkbox"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
 import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -168,42 +168,37 @@ export default function HelperProfilePage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto p-8">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile for the selected project" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to view and edit your helper profile.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (!currentHelperLoading && projectId && helperId === null) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile for the selected project" />
-          <main className="flex-1 overflow-auto p-6">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile for the selected project" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-sm text-left pl-2 text-muted-foreground">You are not registered as a helper in this project.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (isLoading || !helperData) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="My profile" subtitle="Helper profile" />
-          <main className="flex-1 overflow-auto p-8 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </main>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="My profile" subtitle="Helper profile" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <ListSkeleton rows={4} avatar={false} badge={false} className="max-w-3xl divide-y-0" />
+        </main>
       </div>
     )
   }
@@ -212,17 +207,15 @@ export default function HelperProfilePage() {
   const displayAvatar = (displayName || "U")[0].toUpperCase()
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="My profile" subtitle="View and edit your helper details" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="My profile" subtitle="View and edit your helper details" />
-
-        <main className="flex-1 overflow-auto p-8">
+      <main className="flex-1 overflow-auto px-8 py-6">
+        <div className="max-w-3xl divide-y divide-border-subtle">
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
-              className="w-12 h-12 rounded-[16.5px] flex items-center justify-center text-[21px] font-medium text-foreground shrink-0"
+              className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
               style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
             >
               {displayAvatar}
@@ -237,7 +230,7 @@ export default function HelperProfilePage() {
 
           <div className="space-y-8">
           {/* Editable contact information */}
-          <Card className="border-0 shadow-none rounded-lg py-0">
+          <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-foreground">Contact information</h2>
@@ -299,7 +292,7 @@ export default function HelperProfilePage() {
           </Card>
 
           {/* Category — read-only: it sets the payout share, so only project admins change it */}
-          <Card className="border-0 shadow-none rounded-lg py-0">
+          <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-foreground">Helper category</h2>
@@ -317,7 +310,7 @@ export default function HelperProfilePage() {
           </Card>
 
           {/* Project keywords / topics */}
-          <Card className="border-0 shadow-none rounded-lg py-0">
+          <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-base font-semibold text-foreground">Topics & keywords</h2>
@@ -332,7 +325,7 @@ export default function HelperProfilePage() {
                 {projectKeywords.map((kw) => (
                   <label
                     key={kw.id}
-                    className="flex items-center gap-2 cursor-pointer rounded-md border border-[rgba(0,0,0,0.1)] px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
+                    className="flex items-center gap-2 cursor-pointer rounded-md border border-border-control px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
                   >
                     <Checkbox
                       checked={selectedKeywords.includes(kw.id)}
@@ -347,7 +340,7 @@ export default function HelperProfilePage() {
               onClick={handleSaveKeywords}
               disabled={setHelperKeywords.isPending || projectKeywords.length === 0}
               variant="lavender"
-              className="mt-[22px]"
+              className="mt-6"
             >
               {setHelperKeywords.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -358,8 +351,8 @@ export default function HelperProfilePage() {
             </CardContent>
           </Card>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

@@ -44,6 +44,7 @@ import { findGuestOpenTicket } from "@/lib/guest-session"
 import { isOwnGuestId } from "@/lib/guest-adoption-storage"
 import { signInWithGitHub } from "@/lib/supabase/auth"
 import { toast } from "sonner"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 /**
  * Onboarding wizard.
@@ -83,9 +84,9 @@ function ProjectLogo({
 }) {
     const hasLogo = typeof logoUrl === "string" && logoUrl.length > 0
     return (
-        <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} rounded-[11px] shrink-0`}>
+        <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${SQUIRCLE_RADIUS[32]} shrink-0`}>
             {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
-            <AvatarFallback className="bg-brand-primary text-white text-xs rounded-[11px]">
+            <AvatarFallback className={`bg-brand-primary text-brand-foreground text-xs ${SQUIRCLE_RADIUS[32]}`}>
                 {projectName?.[0]?.toUpperCase() || "?"}
             </AvatarFallback>
         </Avatar>
@@ -416,7 +417,7 @@ export default function OnboardingPage() {
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-2xl">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-2xl font-bold">
+                        <CardTitle className="text-2xl font-semibold">
                             {isAddingRole ? "Add a new role" : "Welcome to Githelp! How will you use it?"}
                         </CardTitle>
                         <CardDescription className="text-sm mt-2">
@@ -432,7 +433,7 @@ export default function OnboardingPage() {
                             disabled={isCreating}
                             busyRole={isCreating ? "user" : null}
                             showIcons={!isAddingRole}
-                            className={isAddingRole ? "px-[28px]" : undefined}
+                            className={isAddingRole ? "px-7" : undefined}
                         />
                         {isAddingRole && (
                             <Button variant="ghost" className="w-full" onClick={() => router.push("/")}>
@@ -462,7 +463,7 @@ export default function OnboardingPage() {
                             <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-bold">What is the name of the project?</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">What is the name of the project?</CardTitle>
                         <CardDescription>
                             {onboardingRole === "admin"
                                 ? "We'll check whether the project is already on Githelp before you create it."
@@ -571,7 +572,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={handleProjectNameNext}
                                 disabled={!trimmedName || (showShortAlternatives && isSearchingProjects)}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {selectedMatch
                                     ? onboardingRole === "admin"
@@ -608,7 +609,7 @@ export default function OnboardingPage() {
                                 projectName={selectedMatch.name}
                                 size="w-10 h-10"
                             />
-                            <CardTitle className="text-2xl font-bold">{selectedMatch.name} is already on Githelp</CardTitle>
+                            <CardTitle className="text-2xl font-semibold">{selectedMatch.name} is already on Githelp</CardTitle>
                         </div>
                         <CardDescription>
                             Projects have a single team of admins. To manage this project you need an invite from one of its
@@ -659,7 +660,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={finishWithoutProject}
                                 disabled={isCreating}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                                 {isAddingRole ? "Back to Githelp" : "Continue to Githelp"}
@@ -685,7 +686,7 @@ export default function OnboardingPage() {
                             <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-bold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
                         <CardDescription>
                             Do you want to create it? You&apos;ll become the project&apos;s first admin and can invite helpers
                             and other admins afterwards.
@@ -702,7 +703,7 @@ export default function OnboardingPage() {
                             </Button>
                             <Button
                                 onClick={() => setStep("create")}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 <Plus className="w-4 h-4" />
                                 Yes, create the project
@@ -728,7 +729,7 @@ export default function OnboardingPage() {
                             <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-bold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
                         <CardDescription>
                             Only the project&apos;s owners can add it to Githelp. Once it&apos;s here, you can request to become
                             one of its helpers.
@@ -766,7 +767,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={finishWithoutProject}
                                 disabled={isCreating}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                                 {isAddingRole ? "Back to Githelp" : "Continue to Githelp"}
@@ -792,7 +793,7 @@ export default function OnboardingPage() {
                             <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-bold">
+                        <CardTitle className="text-2xl font-semibold">
                             {trimmedName ? `Create ${trimmedName}` : "Create a new project"}
                         </CardTitle>
                         <CardDescription>
@@ -802,7 +803,7 @@ export default function OnboardingPage() {
                     <CardContent className="space-y-4">
                         <Button
                             onClick={() => setStep("create-manual")}
-                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
+                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
@@ -818,7 +819,7 @@ export default function OnboardingPage() {
 
                         <Button
                             onClick={() => setStep("create-github")}
-                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary"
+                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
@@ -836,7 +837,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={handleCreateSandbox}
                                 disabled={isCreating}
-                                className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-white hover:bg-gray-50 text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
+                                className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
                                 variant="outline"
                             >
                                 <div className="flex items-start gap-3 w-full">
@@ -873,7 +874,7 @@ export default function OnboardingPage() {
                             <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-bold">Import from GitHub</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">Import from GitHub</CardTitle>
                         <CardDescription>
                             Select a repository to create a project. If the repo belongs to an organization, we&apos;ll create or match that organization.
                         </CardDescription>
@@ -988,7 +989,7 @@ export default function OnboardingPage() {
                             <ArrowLeft className="w-4 h-4" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-bold">Create a new project</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">Create a new project</CardTitle>
                         <CardDescription>
                             Give your project a name to get started
                         </CardDescription>
@@ -1023,7 +1024,7 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={handleCreateProject}
                                 disabled={!projectName.trim() || isCreating}
-                                className="flex-1 bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="flex-1"
                             >
                                 {isCreating ? (
                                     <>

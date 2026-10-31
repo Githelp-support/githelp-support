@@ -1,46 +1,44 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex w-fit items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-[13px] font-medium transition-[background-color,border-color] duration-150 ease-out cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 [&_svg]:block outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex w-fit items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-ui font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-fast ease-out cursor-pointer active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 [&_svg]:block outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_1px_0_rgba(0,0,0,0.04)] hover:bg-primary/90",
+          "bg-primary text-primary-foreground shadow-control hover:bg-primary/90",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
-          "border border-[rgba(0,0,0,0.1)] bg-background shadow-[0_1px_0_rgba(0,0,0,0.04)] hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border border-border-control bg-background shadow-control hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
         ghost:
-          "hover:bg-[rgba(0,0,0,0.04)] hover:text-accent-foreground dark:hover:bg-accent/50",
+          "hover:bg-surface-hover hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        /** Solid brand purple: the primary call to action on buyer-facing pages. */
+        brand:
+          "bg-brand-primary text-brand-foreground shadow-control hover:bg-brand-primary-hover",
+        /** Outlined brand purple on a lavender tint; fills on hover. */
         lavender:
-          "bg-purple-50 border border-[#3C2EC5] text-[#3C2EC5] hover:bg-[#3c2ec5]/90 hover:text-white dark:bg-purple-950/30 dark:border-[#3C2EC5] dark:text-[#3C2EC5] dark:hover:bg-[#3c2ec5]/90 dark:hover:text-white",
+          "bg-brand-primary/10 border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground",
         neutral:
-          "bg-[rgba(0,0,0,0.05)] border border-[rgba(0,0,0,0.1)] text-foreground hover:bg-[rgba(0,0,0,0.08)] dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10",
+          "bg-surface-hover border border-border-control text-foreground hover:bg-surface-active",
       },
       size: {
-        default: "h-8 px-[14px] py-2 has-[>svg]:px-[14px]",
-        sm: "h-8 px-[14px] has-[>svg]:px-[14px]",
-        lg: "h-10 px-[14px] has-[>svg]:px-[14px]",
+        default: "h-8 px-3.5 has-[>svg]:px-3",
+        sm: "h-7 px-2.5 has-[>svg]:px-2.5",
+        lg: "h-10 px-4 has-[>svg]:px-3.5",
         icon: "size-8",
-        "icon-sm": "size-8",
+        "icon-sm": "size-7",
         "icon-lg": "size-10",
       },
     },
-    compoundVariants: [
-      {
-        variant: "outline",
-        size: "default",
-        className: "py-2 px-3 has-[>svg]:px-3",
-      },
-    ],
     defaultVariants: {
       variant: "default",
       size: "default",
@@ -53,18 +51,45 @@ function Button({
   variant,
   size,
   asChild = false,
+  loading = false,
+  disabled,
   children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    /**
+     * Shows a centred spinner over the (still rendered, invisible) label so the
+     * button keeps its width, and disables the button. Use for submit/confirm
+     * buttons that wait on a request instead of swapping the label text.
+     * Ignored with `asChild` (the child element renders as-is).
+     */
+    loading?: boolean
   }) {
   const Comp = asChild ? Slot : "button"
+
+  if (loading && !asChild) {
+    return (
+      <Comp
+        data-slot="button"
+        aria-busy="true"
+        disabled
+        className={cn(buttonVariants({ variant, size, className }), "relative")}
+        {...props}
+      >
+        <span className="invisible contents">{children}</span>
+        <span data-slot="button-spinner" className="absolute inset-0 flex items-center justify-center" aria-hidden>
+          <Loader2 className="size-4 animate-spin" />
+        </span>
+      </Comp>
+    )
+  }
 
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled}
       {...props}
     >
       {children}

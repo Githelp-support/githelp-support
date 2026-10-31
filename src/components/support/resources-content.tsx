@@ -4,7 +4,9 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Search } from "lucide-react"
+import { Search, FolderOpen } from "lucide-react"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export interface SupportResource {
   id: string | number
@@ -57,12 +59,12 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
 
   return (
     <div className="space-y-8">
-      <h2 className="text-[22px] font-normal text-[#444444] mb-8">{projectName}&apos;s resources</h2>
+      <h2 className="text-title font-normal text-text-secondary mb-8">{projectName}&apos;s resources</h2>
 
       {resourcesLoading ? (
-        <p className="text-[14px] text-[#868c98]">Loading resources...</p>
+        <ListSkeleton rows={3} avatar={false} badge={false} className="max-w-xl divide-y-0 [&>div]:px-0" />
       ) : resources.length === 0 ? (
-        <p className="text-[#868c98]">No resources available yet.</p>
+        <EmptyState icon={FolderOpen} title="No resources available yet." className="items-start px-0 text-left" />
       ) : (
         <div className="flex flex-wrap gap-3">
           {resources.map((resource) => (
@@ -71,7 +73,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center h-8 px-6 text-sm bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-[#2d2a49] rounded-md font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-all cursor-pointer shadow-sm hover:shadow-md"
+              className="inline-flex items-center h-8 px-6 text-sm bg-gradient-to-r from-[#c5b0ef] to-[#b8a0e8] text-support-header rounded-md font-medium hover:from-[#b8a0e8] hover:to-[#ab90e0] transition-colors duration-fast ease-out cursor-pointer shadow-sm hover:shadow-md"
             >
               {resource.name}
             </a>
@@ -79,20 +81,20 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
         </div>
       )}
 
-      <Card className="max-w-3xl border-[#E1E1E1] shadow-none rounded-lg">
+      <Card className="max-w-3xl">
         <CardContent className="p-0">
           <div className="px-6 py-6">
-            <h3 className="text-sm font-semibold text-[#444444] mb-6">Do you have any questions on how support works?</h3>
+            <h3 className="text-sm font-semibold text-text-secondary mb-6">Do you have any questions on how support works?</h3>
 
             {/* Search input */}
             <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#868c98]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
               <Input
                 type="text"
                 placeholder="Search FAQs"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-gray-200"
+                className="pl-10 border-border-subtle"
               />
             </div>
           </div>
@@ -112,7 +114,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
           </Accordion>
 
           {filteredFaqs.length === 0 && (
-            <p className="text-center text-sm text-[#868c98] py-8">No FAQs found matching your search.</p>
+            <p className="text-center text-sm text-text-tertiary py-8">No FAQs found matching your search.</p>
           )}
         </CardContent>
       </Card>

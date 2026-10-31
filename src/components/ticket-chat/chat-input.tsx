@@ -229,14 +229,14 @@ export function TicketChatInput({
   return (
     <div
       className={cn(
-        "bg-white border border-border rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] mx-4 mb-4 overflow-hidden",
+        "bg-card border border-border rounded-lg shadow-soft mx-4 mb-4 overflow-hidden",
         dragActive && "border-brand-primary ring-2 ring-brand-primary/30"
       )}
       onDragOver={handleDragOver}
       onDragLeave={() => setDragActive(false)}
       onDrop={handleDrop}
     >
-      <div className="bg-muted flex items-center gap-2 px-4 py-2.5 border-b border-border">
+      <div className="bg-muted flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border max-md:gap-1 max-md:px-3">
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
           <Bold className="w-3.5 h-3.5" />
         </Button>
@@ -280,7 +280,7 @@ export function TicketChatInput({
           placeholder={disabled ? "This ticket is closed. New messages can't be sent." : placeholder}
           disabled={!!disabled}
           aria-disabled={!!disabled}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[17px] text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
+          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           spellCheck={!isInsideOpenFence(value, value.length)}

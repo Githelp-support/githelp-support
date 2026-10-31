@@ -38,13 +38,13 @@ export function GuestBanner({ redirectTo, onSignIn }: GuestBannerProps) {
 
   return (
     <div
-      className="mx-4 mb-2 rounded-[10px] border border-border bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+      className="animate-enter mx-4 mb-2 rounded-lg border border-border bg-card px-4 py-3 flex flex-wrap items-center justify-between gap-3"
       data-slot="guest-banner"
     >
       <p className="text-sm text-foreground">
         You&rsquo;re chatting as a guest. Sign in to get notified when a helper replies and to get help.
       </p>
-      <Button variant="lavender" size="sm" className="cursor-pointer" onClick={() => void handleSignIn()} disabled={pending}>
+      <Button variant="lavender" className="cursor-pointer" onClick={() => void handleSignIn()} disabled={pending}>
         {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
         Sign in
       </Button>

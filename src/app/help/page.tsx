@@ -4,7 +4,6 @@ import Link from "next/link"
 import { MessageCircle, BookOpen, Mail, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import {
   Accordion,
@@ -152,87 +151,83 @@ export default function HelpPage() {
   const faqItems = FAQ_ITEMS_BY_ROLE[role]
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Help" subtitle="Get help with common issues" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Help" subtitle="Get help with common issues" />
+      <main className="flex-1 overflow-auto px-8 py-6">
+        <div className="max-w-3xl space-y-8">
+          {/* Intro */}
+          <div>
+            <h2 className="text-base font-semibold text-foreground mb-1">Having an issue?</h2>
+            <p className="text-sm text-muted-foreground">
+              Use the topics below to find answers. If you still need help, reach out through support or create a ticket for your project.
+            </p>
+          </div>
 
-        <main className="flex-1 overflow-auto px-8 py-6">
-          <div className="max-w-3xl space-y-8">
-            {/* Intro */}
-            <div>
-              <h2 className="text-base font-semibold text-foreground mb-1">Having an issue?</h2>
-              <p className="text-sm text-muted-foreground">
-                Use the topics below to find answers. If you still need help, reach out through support or create a ticket for your project.
+          {/* FAQ */}
+          <Card>
+            <CardContent className="p-0">
+              <Accordion type="single" collapsible className="w-full">
+                {faqItems.map((item, index) => (
+                  <AccordionItem key={index} value={`item-${index}`} className="px-6">
+                    <AccordionTrigger className="text-foreground hover:no-underline hover:text-brand-primary">
+                      {item.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
+
+          {/* Get support CTA */}
+          <Card className="bg-muted/30">
+            <CardContent className="p-6">
+              <h3 className="font-semibold text-foreground mb-2">Still need help?</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get in touch with your project&apos;s support team or open a ticket.
               </p>
-            </div>
-
-            {/* FAQ */}
-            <Card className="border-[#E1E1E1] shadow-none rounded-lg">
-              <CardContent className="p-0">
-                <Accordion type="single" collapsible className="w-full">
-                  {faqItems.map((item, index) => (
-                    <AccordionItem key={index} value={`item-${index}`} className="px-6">
-                      <AccordionTrigger className="text-foreground hover:no-underline hover:text-brand-primary">
-                        {item.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground">
-                        {item.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </CardContent>
-            </Card>
-
-            {/* Get support CTA */}
-            <Card className="border-[#E1E1E1] shadow-none rounded-lg bg-muted/30">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-foreground mb-2">Still need help?</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Get in touch with your project&apos;s support team or open a ticket.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {isAuthenticated && (
-                    <>
-                      <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
-                        <Link href={GITHELP_SUPPORT_URL} className="inline-flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4" />
-                          Open support chat
-                          <ArrowRight className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                      <Button variant="outline" asChild>
-                        <Link href="/support/tickets" className="inline-flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          My tickets
-                        </Link>
-                      </Button>
-                    </>
-                  )}
-                  {!isAuthenticated && (
-                    <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-white">
-                      <Link href="/auth/signin" className="inline-flex items-center gap-2">
-                        Sign in to get support
+              <div className="flex flex-wrap gap-3">
+                {isAuthenticated && (
+                  <>
+                    <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
+                      <Link href={GITHELP_SUPPORT_URL} className="inline-flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4" />
+                        Open support chat
                         <ArrowRight className="w-4 h-4" />
                       </Link>
                     </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <Button variant="outline" asChild>
+                      <Link href="/support/tickets" className="inline-flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        My tickets
+                      </Link>
+                    </Button>
+                  </>
+                )}
+                {!isAuthenticated && (
+                  <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
+                    <Link href="/auth/signin" className="inline-flex items-center gap-2">
+                      Sign in to get support
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Documentation link placeholder */}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <BookOpen className="w-5 h-5 shrink-0" />
-              <span>
-                For detailed guides and API docs, see Documentation in the sidebar when available.
-              </span>
-            </div>
+          {/* Documentation link placeholder */}
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <BookOpen className="w-5 h-5 shrink-0" />
+            <span>
+              For detailed guides and API docs, see Documentation in the sidebar when available.
+            </span>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

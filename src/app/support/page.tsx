@@ -21,6 +21,7 @@ import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/sup
 import { signInHref } from "@/lib/sign-in-href"
 import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft } from "@/lib/support-draft"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
+import { MobileSidebarSheet, useMobileNav } from "@/components/layout/mobile-nav"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
@@ -80,6 +81,8 @@ export default function SupportPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const pathname = usePathname()
+  const { setOpen: setMobileNavOpen } = useMobileNav()
+  const closeMobileNav = () => setMobileNavOpen(false)
   const searchParams = useSearchParams()
   const params = useParams<{ slug?: string }>()
   // Where sign-in should bring the visitor back to (this page incl. ?project/?slug).
@@ -579,16 +582,16 @@ export default function SupportPage() {
   if (!projectIdParam && !slugParam) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-          <h1 className="text-2xl font-semibold text-[#444444] mb-2">Missing project identifier</h1>
-          <p className="text-[#868c98] mb-6">
+        <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
+          <h1 className="text-2xl font-semibold text-text-secondary mb-2">Missing project identifier</h1>
+          <p className="text-text-tertiary mb-6">
             This support page is project-specific. Please open it using a link that includes either a project <span className="font-semibold">slug</span> or <span className="font-semibold">id</span>.
           </p>
           <div className="flex items-center gap-3">
-            <Button asChild className="bg-[#554abf] hover:bg-[#4a3fa3] text-white cursor-pointer">
+            <Button asChild variant="brand">
               <Link href={signInHref(currentHref, { support: true })}>Sign in</Link>
             </Button>
-            <Button asChild variant="outline" className="border-gray-200 text-[#444444] bg-transparent cursor-pointer">
+            <Button asChild variant="outline" className="border-border-subtle text-text-secondary bg-transparent cursor-pointer">
               <Link href="/">Go to home</Link>
             </Button>
           </div>
@@ -634,51 +637,63 @@ export default function SupportPage() {
     //   • the right sidebar with its own internal scroll when needed,
     // while eliminating the blank space at the bottom.
     <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
-      <PublicSupportSidebar
-        activeTab={TAB_KEY_TO_LABEL[activeTab]}
-        onTabChange={(label) => {
-          const next = TAB_LABEL_TO_KEY[label]
-          if (next) setActiveTab(next)
-        }}
-      />
+      <div className="hidden lg:contents">
+        <PublicSupportSidebar
+          activeTab={TAB_KEY_TO_LABEL[activeTab]}
+          onTabChange={(label) => {
+            const next = TAB_LABEL_TO_KEY[label]
+            if (next) setActiveTab(next)
+          }}
+        />
+      </div>
+      <MobileSidebarSheet label="Support menu">
+        <PublicSupportSidebar
+          forceExpanded
+          activeTab={TAB_KEY_TO_LABEL[activeTab]}
+          onTabChange={(label) => {
+            const next = TAB_LABEL_TO_KEY[label]
+            if (next) setActiveTab(next)
+            closeMobileNav()
+          }}
+        />
+      </MobileSidebarSheet>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {activeTab === "get-support" ? (
           !hasEnteredChat ? (
-            <div className="flex-1 flex flex-col px-[72px] pt-[160px]">
+            <div className="flex-1 flex flex-col px-6 pt-16 md:px-18 md:pt-40">
               <div className="flex flex-col items-start space-y-6">
                 {projectLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={projectLogo}
                     alt={`${projectName} logo`}
-                    className="w-20 h-20 rounded-[12px] object-cover border border-[#E1E4EA]"
+                    className="w-20 h-20 rounded-[12px] object-cover border border-border-avatar"
                   />
                 ) : (
                   <div
-                    className="w-20 h-20 rounded-[12px] flex items-center justify-center text-2xl font-medium text-foreground border border-[#E1E4EA]"
+                    className="w-20 h-20 rounded-[12px] flex items-center justify-center text-2xl font-medium text-foreground border border-border-avatar"
                     style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                   >
                     {projectName?.[0]?.toUpperCase() || "A"}
                   </div>
                 )}
-                <h1 className="text-3xl font-normal text-[#444444] text-left">
+                <h1 className="text-display font-normal text-text-secondary text-left">
                   Welcome to the support page for <span className="font-semibold">{projectName}</span>
                 </h1>
-                <p className="text-base font-medium text-[#444444] text-left">
+                <p className="text-base font-medium text-text-secondary text-left">
                   Get help with an issue by an expert validated by {projectName}
                 </p>
                 <div className="flex items-center gap-3">
                   <Button
                     onClick={handleGetSupport}
-                    className="bg-[#554abf] hover:bg-[#4a3fa3] text-white cursor-pointer"
+                    variant="brand"
                   >
                     Get support
                   </Button>
                   <Button
                     title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                    variant="outline"
-                    className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white cursor-pointer bg-transparent"
+                    variant="lavender"
                   >
                     I have an SLA ID
                   </Button>
@@ -703,14 +718,14 @@ export default function SupportPage() {
                   // 1px grey stroke around the project (dp) icon next to the
                   // header — only on this icon, not on any other avatar icon in
                   // the chat.
-                  className="w-11 h-11 rounded-[12px] object-cover border border-[#E1E4EA]"
+                  className="w-11 h-11 rounded-[12px] object-cover border border-border-avatar"
                 />
               ) : (
                 <div
                   // 1px grey stroke around the project (dp) icon next to the
                   // header — only on this icon, not on any other avatar icon in
                   // the chat.
-                  className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground border border-[#E1E4EA]"
+                  className="w-11 h-11 rounded-[12px] flex items-center justify-center text-base font-medium text-foreground border border-border-avatar"
                   style={{ backgroundColor: brandingData?.primary_color || getAvatarColorHexForId(projectId) }}
                 >
                   {projectName?.[0]?.toUpperCase() || "A"}
@@ -778,7 +793,7 @@ export default function SupportPage() {
           )
         ) : (
           <div className="flex-1 overflow-y-auto">
-            <div className={`max-w-7xl mx-auto py-12 ${activeTab === "rates" ? "px-[72px]" : "px-6"}`}>
+            <div className={`max-w-7xl mx-auto py-8 px-6 md:py-12 ${activeTab === "rates" ? "md:px-18" : ""}`}>
               {activeTab === "rates" && (
                 <RatesAndDetailsContent
                   projectName={projectName}

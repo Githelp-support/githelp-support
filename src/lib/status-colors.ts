@@ -3,6 +3,12 @@
  * Use these instead of hardcoded hex in tickets, reports, and helpers.
  */
 
+/**
+ * Badge shape shared by every status/priority badge: rounded-md, h-5, px-2,
+ * text-xs/500 (the Badge primitive sets the same, so this is safe to spread).
+ */
+export const BADGE_SHAPE_CLASS = "h-5 rounded-md border-transparent px-2 text-xs font-medium"
+
 /** Report/generic status → Tailwind badge classes */
 export function getStatusBadgeClass(status: string): string {
   switch (status.toLowerCase()) {

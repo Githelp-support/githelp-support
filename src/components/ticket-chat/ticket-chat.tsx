@@ -4,8 +4,9 @@ import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Check, Plus } from "lucide-react"
+import { Check, Plus, PanelRight } from "lucide-react"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
@@ -26,6 +27,7 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { isPaymentFailedCtaLive } from "@/lib/customer-chat-messages"
 import { VisitorLeftAction } from "@/components/ticket-chat/guest-ticket"
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -180,6 +182,11 @@ export interface TicketChatProps {
 
   // Right-side extras
   rightSidebarFooter?: React.ReactNode
+  /**
+   * Identity of the thread being shown (the ticket id). When it changes, the
+   * next thread's history renders without the new-message animation.
+   */
+  threadKey?: string
 
   /**
    * Called when the user clicks a payment CTA on a system message: "Add
@@ -233,6 +240,7 @@ export function TicketChat(props: TicketChatProps) {
     timeReviewHelperName,
     attachmentStoragePrefix,
     rightSidebarFooter,
+    threadKey,
     onPaymentCtaClick,
     paymentCtaLoading,
     paymentStatus,
@@ -243,6 +251,8 @@ export function TicketChat(props: TicketChatProps) {
   // Collapsed state is shared across views via localStorage (see
   // right-sidebar-collapse.tsx).
   const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
+  // Below lg the right panel is an off-canvas sheet.
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
   const endSessionRequested = !!endSessionRequestedAt && !isEnded
 
   // Logged-time summary the customer confirms before the session ends. The
@@ -286,6 +296,15 @@ export function TicketChat(props: TicketChatProps) {
   }, [messages.length, isEnded])
 
   const thread = useMemo(() => messages ?? [], [messages])
+  // Messages present when a thread first loads don't animate; later ones do.
+  // (State set during render when the first non-empty thread for this
+  // `threadKey` arrives; switching tickets takes a fresh snapshot.)
+  const [initialMessages, setInitialMessages] = useState<{ key: string | undefined; ids: Set<string> } | null>(null)
+  if ((initialMessages === null || initialMessages.key !== threadKey) && thread.length > 0) {
+    setInitialMessages({ key: threadKey, ids: new Set(thread.map((m) => m.id)) })
+  }
+  const isNewMessage = (id: string) =>
+    initialMessages !== null && initialMessages.key === threadKey && !initialMessages.ids.has(id)
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
@@ -307,13 +326,14 @@ export function TicketChat(props: TicketChatProps) {
     if (paymentRequiresSignIn) onSignInClick?.()
     else onPaymentCtaClick?.(msg)
   }
-  const ctaLabel = (label: string) => (paymentRequiresSignIn ? "Sign in to continue" : paymentCtaLoading ? "Opening Stripe…" : label)
+  const ctaLabel = (label: string) => (paymentRequiresSignIn ? "Sign in to continue" : label)
+  const ctaLoading = !paymentRequiresSignIn && !!paymentCtaLoading
 
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Left column: Header + main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="relative border-b border-border z-10">
+        <div className="relative z-10">
           <Header
             title={headerTitle}
             titleClassName={headerTitleClassName}
@@ -323,8 +343,21 @@ export function TicketChat(props: TicketChatProps) {
             backgroundColor={headerBackgroundColor}
             inlineRightContent={
               headerSubtitle ? (
-                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
+                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
               ) : undefined
+            }
+            actions={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-text-muted"
+                aria-label="Ticket details"
+                aria-expanded={mobilePanelOpen}
+                onClick={() => setMobilePanelOpen((v) => !v)}
+              >
+                <PanelRight className="size-4" aria-hidden />
+              </Button>
             }
           />
         </div>
@@ -337,7 +370,7 @@ export function TicketChat(props: TicketChatProps) {
             <div className="flex-1 p-4 flex flex-col min-h-0">
               {/* Chat Messages Container */}
               <div
-                className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                className="bg-card rounded-lg shadow-soft flex-1 overflow-auto"
                 onLoadCapture={(e) => {
                   // Images load after the initial scroll and push the thread
                   // down; keep it pinned to the bottom if it was there.
@@ -354,7 +387,7 @@ export function TicketChat(props: TicketChatProps) {
                     {/* Chat Messages */}
                     <div className="flex flex-col" style={{ rowGap: '16px' }}>
                       {thread.map((msg) => (
-                        <div key={msg.id} className="flex gap-3 items-start">
+                        <div key={msg.id} className={cn("flex gap-3 items-start", isNewMessage(msg.id) && "animate-enter")}>
                           {msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended") ? (
                             <div className="flex items-start gap-3 w-full">
                               <ProfileAvatar
@@ -366,13 +399,13 @@ export function TicketChat(props: TicketChatProps) {
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
+                                  <span className="text-sm text-foreground font-medium">
                                     {msg.senderName || "System"}
                                   </span>
                                   <span
                                     className="text-xs"
                                     style={{
-                                      color: 'rgba(0,0,0,0.5)',
+                                      color: "var(--muted-foreground)",
                                       fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                       fontVariantNumeric: 'tabular-nums',
                                     }}
@@ -380,7 +413,7 @@ export function TicketChat(props: TicketChatProps) {
                                     {msg.timestamp}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
+                                <div className="flex items-center gap-2 text-sm text-foreground">
                                   <Check className="w-4 h-4 text-brand-primary shrink-0" />
                                   <MarkdownContent content={msg.content} className="text-sm" />
                                 </div>
@@ -401,13 +434,13 @@ export function TicketChat(props: TicketChatProps) {
                               <div className="flex-1">
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>
+                                    <span className="text-sm text-foreground font-medium">
                                       {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
                                     </span>
                                     <span
                                       className="text-xs"
                                       style={{
-                                        color: 'rgba(0,0,0,0.5)',
+                                        color: "var(--muted-foreground)",
                                         fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                         fontVariantNumeric: 'tabular-nums',
                                       }}
@@ -436,9 +469,8 @@ export function TicketChat(props: TicketChatProps) {
                                                   msg.paymentMetadata.declined.length > 0)
                                               ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                               : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                      : "text-sm"
+                                      : "text-sm text-foreground"
                                   }
-                                  style={msg.senderType !== "system" ? { color: '#2E2D31' } : undefined}
                                 >
                                   <MarkdownContent
                                     content={
@@ -454,14 +486,14 @@ export function TicketChat(props: TicketChatProps) {
                                   )}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !isPromptResolved(msg) && (
                                     <div className="mt-2">
-                                      <button
+                                      <Button
                                         type="button"
+                                        variant="brand"
                                         onClick={() => handlePaymentCta(msg)}
-                                        disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                        loading={ctaLoading}
                                       >
                                         {ctaLabel("Add payment method")}
-                                      </button>
+                                      </Button>
                                       {typeof msg.paymentMetadata?.hold_amount_smallest_unit === "number" &&
                                         msg.paymentMetadata.hold_amount_smallest_unit > 0 && (
                                           <p className="mt-1.5 text-xs text-muted-foreground">
@@ -476,26 +508,26 @@ export function TicketChat(props: TicketChatProps) {
                                     msg.paymentMetadata?.kind === "payment_failed" &&
                                     isFailedCtaLive(msg) && (
                                     <div className="mt-2">
-                                      <button
+                                      <Button
                                         type="button"
+                                        variant="brand"
                                         onClick={() => handlePaymentCta(msg)}
-                                        disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90 disabled:opacity-60"
+                                        loading={ctaLoading}
                                       >
                                         {ctaLabel("Update payment method")}
-                                      </button>
+                                      </Button>
                                     </div>
                                   )}
                                   {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_cap_exceeded" && !isPromptResolved(msg) && (
                                     <div className="mt-2">
-                                      <button
+                                      <Button
                                         type="button"
                                         onClick={() => handlePaymentCta(msg)}
-                                        disabled={paymentCtaLoading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-amber-900 hover:bg-amber-800 text-amber-50 px-4 py-2 text-sm font-medium disabled:opacity-60"
+                                        loading={ctaLoading}
+                                        className="bg-amber-900 text-amber-50 hover:bg-amber-800"
                                       >
                                         {ctaLabel("Pay yourself instead")}
-                                      </button>
+                                      </Button>
                                     </div>
                                   )}
                                 </div>
@@ -553,7 +585,7 @@ export function TicketChat(props: TicketChatProps) {
                   size="sm"
                   onClick={() => setEndSessionDialogOpen(true)}
                   disabled={endSessionRequestPending}
-                  className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
+                  className="cursor-pointer text-foreground font-semibold text-sm hover:bg-transparent"
                 >
                   End session
                 </Button>
@@ -607,20 +639,30 @@ export function TicketChat(props: TicketChatProps) {
       </div>
 
       {/* Right Sidebar */}
+      {mobilePanelOpen && (
+        <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" aria-hidden onClick={() => setMobilePanelOpen(false)} />
+      )}
       <div
         suppressHydrationWarning
-        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+        className={cn(
+          "bg-background border-l border-border flex flex-col overflow-hidden transition-[width] duration-slow ease-in-out",
+          // Below lg the panel is an off-canvas sheet toggled from the header.
+          "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:w-80 max-lg:max-w-[85vw] max-lg:shadow-modal",
+          !mobilePanelOpen && "max-lg:hidden",
+          "lg:relative lg:z-20",
+          isCollapsed ? "lg:w-16" : "lg:w-80",
+        )}
       >
           <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
           {!isCollapsed && (
-          <div className="flex-1 overflow-y-auto px-3 pb-6">
+          <div className="flex-1 overflow-y-auto px-3 pb-6 max-lg:pt-4">
             {/* People in Chat */}
             <div>
               <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
 
               {participantsLoading ? (
-                <SidebarEmpty className="text-[14px]">Loading...</SidebarEmpty>
+                <ListSkeleton rows={2} badge={false} className="divide-y-0 [&>div]:px-0" />
               ) : participants && participants.length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {participants.map((p) => (
@@ -631,7 +673,7 @@ export function TicketChat(props: TicketChatProps) {
                         avatarUrl={p.avatarUrl ?? null}
                         size="md"
                       />
-                      <span className="text-[13px] text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
+                      <span className="text-ui text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
                     </div>
                   ))}
                 </div>

@@ -19,11 +19,15 @@ import { useState, useEffect } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { isSupportRoute } from "@/lib/sign-in-href"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Fragment, type ReactElement } from "react"
 
 interface SidebarProps {
   className?: string
   /** When provided, renders a discrete "Open project page" external link above the bottom items. */
   projectPageHref?: string
+  /** Inside the mobile sheet the sidebar is always expanded and has no collapse toggle. */
+  forceExpanded?: boolean
 }
 
 interface NavigationItem {
@@ -52,7 +56,7 @@ const SUPPORT_SUB_PATHS = [
   "/support/about",
 ]
 
-export function Sidebar({ className, projectPageHref }: SidebarProps) {
+export function Sidebar({ className, projectPageHref, forceExpanded = false }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   // Preserve the active chat context (project/ticket) when navigating between
@@ -66,10 +70,9 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
     const qs = preserved.toString()
     return qs ? `?${qs}` : ""
   })()
-  // The Sidebar is mounted per-page (not in a shared layout), so its state
-  // is wiped on every navigation. Derive the initially-expanded parent from
-  // the current path so the active sub-item's parent stays expanded across
-  // sub-item clicks and on hard refresh.
+  // Seed the expanded parent from the current path so the active sub-item's
+  // parent is open on first render and on hard refresh. (AppShell mounts the
+  // Sidebar once, so this state now survives client-side navigation.)
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
     if (pathname?.startsWith("/reports/")) return ["Reports"]
     if (pathname?.startsWith("/settings/")) return ["Settings"]
@@ -78,15 +81,12 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
     if (pathname && SUPPORT_SUB_PATHS.includes(pathname)) return ["Support"]
     return []
   })
-  // Persist collapsed state across navigations (the Sidebar is mounted
-  // per-page, so component state alone is wiped on every nav). Read
-  // localStorage synchronously in the initializer so client-side navigations
-  // render with the correct collapsed state immediately — without this, every
-  // nav would flash the expanded sidebar for one frame before an effect
-  // collapsed it again. On the server `window` is undefined so we fall back
-  // to `false`; the root element uses `suppressHydrationWarning` so the
-  // server/client class difference on first paint doesn't warn.
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+  // Persist collapsed state across reloads. Read localStorage synchronously
+  // in the initializer so the first client render already has the right
+  // width. On the server `window` is undefined so we fall back to `false`;
+  // the root element uses `suppressHydrationWarning` so the server/client
+  // class difference on first paint doesn't warn.
+  const [storedCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     try {
       return window.localStorage.getItem("sidebar:collapsed") === "true"
@@ -94,8 +94,22 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
       return false
     }
   })
+  const isCollapsed = forceExpanded ? false : storedCollapsed
   const { user } = useUser()
   const isAuthenticated = !!user?.id
+
+  // Collapsed rows have no visible label: show it in a tooltip to the right.
+  const withTooltip = (label: string, node: ReactElement) =>
+    isCollapsed ? (
+      <Tooltip>
+        <TooltipTrigger asChild>{node}</TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    ) : (
+      node
+    )
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
@@ -207,9 +221,12 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   // during render (not in an effect) so the new role's nav never paints with
   // the old role's expansion. It also runs on the first render, since the
   // useState seed above only knows a few path prefixes.
-  const [expansionRole, setExpansionRole] = useState<{ role: typeof user.role } | null>(null)
-  if (!expansionRole || expansionRole.role !== user.role) {
-    setExpansionRole({ role: user.role })
+  // The Sidebar is mounted once (AppShell), so the same recompute also runs
+  // when the pathname changes: a link elsewhere, a redirect or back/forward
+  // into a sub-page must expand its parent like a click on the sub-item does.
+  const [expansionKey, setExpansionKey] = useState<{ role: typeof user.role; pathname: string | null } | null>(null)
+  if (!expansionKey || expansionKey.role !== user.role || expansionKey.pathname !== pathname) {
+    setExpansionKey({ role: user.role, pathname })
     let next: string[] = []
     for (const item of navigationItems) {
       if (!item.subItems) continue
@@ -251,24 +268,18 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
   return (
     <div
       suppressHydrationWarning
-      // `self-stretch` (not `h-full`) sizes the sidebar: support (user) pages get
-      // their height through a `flex-1 min-h-0` chain from the root layout's
-      // `min-h-full` container, and percentage heights don't resolve through that
-      // chain (`h-full` computes to `auto`, collapsing the sidebar to its content
-      // height — which left the profile block floating up instead of pinned to the
-      // bottom). Stretching as a flex item uses the row's actual laid-out height
-      // instead, so the sidebar always fills the area below the TopBar and the
-      // profile block stays pinned to the bottom of the screen. On Admin/Helper
-      // pages the parent row is `h-screen` (a definite height), where
-      // `self-stretch` and `h-full` are equivalent — so this is a no-op there.
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
+      // `self-stretch` (not `h-full`) sizes the sidebar from the AppShell row's
+      // laid-out height (a `flex-1 min-h-0` chain, where percentage heights don't
+      // resolve), so it always fills the area below the TopBar and the profile
+      // block stays pinned to the bottom.
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
+      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             onClick={() => {
               setIsCollapsed(true)
               if (typeof window !== "undefined") {
@@ -286,7 +297,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             onClick={() => {
               setIsCollapsed(false)
               if (typeof window !== "undefined") {
@@ -322,13 +333,13 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
         </div>
       )}
 
-      <nav className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
+      <nav aria-label="Main" className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
         <div className="space-y-0.5">
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
-            const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
-            const inactiveClasses = "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            const activeClasses = "bg-surface-active text-foreground [&_i]:text-brand-primary"
+            const inactiveClasses = "text-text-muted hover:bg-surface-hover hover:text-foreground"
             // Whether any sub-item under this parent matches the current path —
             // used in collapsed mode to highlight the parent icon since the
             // sub-items themselves are hidden behind a dropdown.
@@ -341,20 +352,26 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                     // Collapsed: open sub-items as a hovering dropdown menu to
                     // the right of the sidebar (matches the role dropdown UX).
                     <DropdownMenu>
+                      <Tooltip>
+                      <TooltipTrigger asChild>
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          title={item.name}
                           aria-label={item.name}
-                          className={`w-full flex items-center justify-center px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                          className={`w-full flex items-center justify-center h-8 px-2.5 rounded-md text-ui font-medium transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                             hasActiveSubItem ? activeClasses : inactiveClasses
                           }`}
                         >
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                         </button>
                       </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={8}>
+                        {item.name}
+                      </TooltipContent>
+                      </Tooltip>
                       <DropdownMenuContent
                         side="right"
                         align="start"
@@ -382,7 +399,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                   ) : (
                     <div>
                       <div
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                        className={`w-full flex items-center gap-3 h-8 px-2.5 rounded-md text-ui font-medium transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                           isActive ? activeClasses : inactiveClasses
                         }`}
                       >
@@ -400,7 +417,7 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                           }}
                           className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
                         >
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                           <span>{item.name}</span>
@@ -412,34 +429,43 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                             toggleExpanded(item.name)
                           }}
                           aria-label={`${isExpanded ? "Collapse" : "Expand"} ${item.name}`}
-                          className="shrink-0 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+                          className="shrink-0 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                         >
                           <ChevronRight
-                            className={`h-4 w-4 opacity-70 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                            className={`h-4 w-4 opacity-70 transition-transform duration-base ease-out ${isExpanded ? "rotate-90" : ""}`}
                           />
                         </button>
                       </div>
-                      {isExpanded && (
+                      {/* Sub-items stay mounted; the height animates with grid-template-rows and
+                          the collapsed branch is inert so it is skipped by Tab and screen readers. */}
+                      <div
+                        data-state={isExpanded ? "open" : "closed"}
+                        inert={!isExpanded}
+                        className={`grid transition-[grid-template-rows] duration-base ease-out ${
+                          isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                        }`}
+                      >
+                        <div className="min-h-0 overflow-hidden">
                         <div className="relative mt-0.5 space-y-0.5">
                           {/* Vertical guide line, centered under the parent icon column.
                               Clamped to start/end at the center of the first/last dot. */}
                           <span
                             aria-hidden="true"
-                            className="pointer-events-none absolute left-[22px] top-[20px] bottom-[20px] w-px -translate-x-1/2 bg-border-subtle"
+                            className="pointer-events-none absolute left-[18px] top-4 bottom-4 w-px -translate-x-1/2 bg-border-subtle"
                           />
                           {item.subItems.map((subItem) => {
                             const isSubActive = isSubItemActive(subItem.href)
                             return (
-                              <Link key={subItem.name} href={subItem.href} className="block">
+                              <Link key={subItem.name} href={subItem.href} className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
                                 <div
-                                  className={`relative flex items-center pl-11 pr-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
-                                    isSubActive ? activeClasses : "text-[#818185] hover:bg-bg-subtle hover:text-sidebar-foreground"
+                                  className={`relative flex items-center h-8 pl-9 pr-2.5 rounded-md text-ui font-medium transition-colors duration-fast ease-out ${
+                                    isSubActive ? activeClasses : "text-text-muted hover:bg-surface-hover hover:text-foreground"
                                   }`}
                                 >
                                   {/* Sub-category marker, centered on the vertical line */}
                                   <span
                                     aria-hidden="true"
-                                    className={`absolute left-[22px] top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
+                                    className={`absolute left-[18px] top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${
                                       isSubActive ? "bg-brand-primary" : "bg-border-subtle"
                                     }`}
                                   />
@@ -449,23 +475,26 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
                             )
                           })}
                         </div>
-                      )}
+                        </div>
+                      </div>
                     </div>
                   )
                 ) : (
+                  withTooltip(
+                    item.name,
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
-                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors ${
+                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 rounded-md text-ui font-medium transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
-                      title={isCollapsed ? item.name : undefined}
                     >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
                         <FlaticonIcon iconClass={item.icon} />
                       </span>
                       {!isCollapsed && item.name}
                     </div>
-                  </Link>
+                  </Link>,
+                  )
                 )}
               </div>
             )
@@ -474,37 +503,41 @@ export function Sidebar({ className, projectPageHref }: SidebarProps) {
       </nav>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border space-y-0.5 shrink-0">
-        {projectPageHref && (
+        {projectPageHref &&
+          withTooltip(
+            "Open project page",
           <a
             href={projectPageHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
-            title={isCollapsed ? "Open project page" : undefined}
+            className="flex items-center gap-3 h-8 px-2.5 text-ui font-medium rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 text-text-muted hover:bg-surface-hover hover:text-foreground"
           >
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
               <FlaticonIcon iconClass="fi-rr-browser" />
             </span>
             {!isCollapsed && "Open project page"}
-          </a>
-        )}
+          </a>,
+          )}
         {bottomItems.map((item) => {
           const isActive = pathname === item.href
-          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} px-3 py-2.5 min-h-[40px] text-sm font-medium rounded-md cursor-pointer transition-colors ${
-            isActive ? "bg-bg-subtle text-sidebar-foreground" : "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 text-ui font-medium rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+            isActive ? "bg-surface-active text-foreground [&_i]:text-brand-primary" : "text-text-muted hover:bg-surface-hover hover:text-foreground"
           }`
           return (
+            <Fragment key={item.name}>
+            {withTooltip(
+            item.name,
             <Link
-              key={item.name}
               href={item.href}
               className={className}
-              title={isCollapsed ? item.name : undefined}
             >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
                 <FlaticonIcon iconClass={item.icon} />
               </span>
               {!isCollapsed && item.name}
-            </Link>
+            </Link>,
+          )}
+            </Fragment>
           )
         })}
       </div>

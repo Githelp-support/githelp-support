@@ -7,7 +7,6 @@ import { useProjectRole } from "@/hooks/useProjectRole"
 import { useUser } from "@/contexts/user-context"
 import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TabSelector } from "@/components/ui/tab-selector"
@@ -16,6 +15,8 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { parseTimeDisplayToMinutes } from "@/lib/format"
 import { homeRouteForRole } from "@/lib/roles"
 import { monthLabel } from "@/lib/user-payment-reports"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
+import { PageSkeleton } from "@/components/ui/skeleton"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -154,9 +155,9 @@ export default function Dashboard() {
 
   const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
     if (currentSort?.column !== column) {
-      return <ChevronsUpDown className="w-4 h-4 text-[#55555D]" />
+      return <ChevronsUpDown className="w-4 h-4 text-text-muted" />
     }
-    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-[#55555D]" /> : <ChevronDown className="w-4 h-4 text-[#55555D]" />
+    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-text-muted" /> : <ChevronDown className="w-4 h-4 text-text-muted" />
   }
 
   const sortedHelpers = sortHelpers(filteredHelpers)
@@ -175,206 +176,194 @@ export default function Dashboard() {
 
   if (isResolvingRole || isRedirectingNonAdmin) {
     return (
-      <div className="h-screen flex overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Overview" subtitle="Stats and insight" />
-          <main className="flex-1 flex items-center justify-center">
-            <div className="text-sm text-muted-foreground">Loading…</div>
-          </main>
-        </div>
-      </div>
+      <PageSkeleton />
     )
   }
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Overview" subtitle="Stats and insight" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Overview" subtitle="Stats and insight" />
+      <main className="flex-1 px-8 py-6 space-y-16 overflow-y-auto">
+        {/* Filters */}
+        <div className="flex gap-2">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+              <SelectValue placeholder="Choose period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="current">Current month</SelectItem>
+              {months.map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <main className="flex-1 px-8 py-6 space-y-[62px] overflow-y-auto">
-          {/* Filters */}
-          <div className="flex gap-2">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                <SelectValue placeholder="Choose period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="current">Current month</SelectItem>
-                {months.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {month}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Key Stats */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-base font-semibold text-foreground">Key stats</h2>
+            <HelpCircle className="w-4 h-4 text-muted-foreground" />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
+            <Card className="h-28 py-0 justify-center animate-enter">
+              <CardContent className="px-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Number of tickets solved</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
+              </CardContent>
+            </Card>
+            <Card className="h-28 py-0 justify-center animate-enter">
+              <CardContent className="px-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Total time spent</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
+              </CardContent>
+            </Card>
+            <Card className="h-28 py-0 justify-center animate-enter">
+              <CardContent className="px-7">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs text-muted-foreground">Percentage solved</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-          {/* Key Stats */}
+        {/* Tables */}
+        <div className="grid grid-cols-2 gap-8">
+          {/* Helpers Table */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-base font-semibold text-foreground">Key stats</h2>
-              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-base font-semibold text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
+            <div className="mb-4">
+              <TabSelector
+                options={[
+                  { value: "all", label: "View all" },
+                  { value: "core", label: "Core team" },
+                  { value: "extended", label: "Extended team" },
+                  { value: "community", label: "Community" },
+                ]}
+                value={helperFilter}
+                onChange={(value) => setHelperFilter(value as typeof helperFilter)}
+              />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+            <Card className="py-0 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="bg-muted/60 px-6 py-3 border-b border-border-subtle">
+                  <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                    <div
+                      className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                      onClick={() => handleHelperSort("name")}
+                    >
+                      Name
+                      {getSortIcon("name", helperSort)}
+                    </div>
+                    <div
+                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                      onClick={() => handleHelperSort("tickets")}
+                    >
+                      No of tickets
+                      {getSortIcon("tickets", helperSort)}
+                    </div>
+                    <div
+                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                      onClick={() => handleHelperSort("time")}
+                    >
+                      Total time
+                      {getSortIcon("time", helperSort)}
+                    </div>
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Total time spent</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                {sortedHelpers.map((helper, index) => (
+                  <div key={index} className="px-6 py-2.5 border-b border-border-subtle last:border-b-0">
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      <div className="col-span-6 flex items-center gap-3">
+                        <div
+                          className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                          style={{ backgroundColor: helper.color }}
+                        >
+                          {helper.initial}
+                        </div>
+                        <span className="text-sm text-foreground">{helper.name}</span>
+                      </div>
+                      <div className="col-span-3 text-sm text-foreground tabular-nums">{helper.tickets}</div>
+                      <div className="col-span-2 text-sm text-foreground tabular-nums">{helper.time}</div>
+                      <div className="col-span-1 flex justify-end">
+                        <Link href={`/helpers/${helper.id}`}>
+                          <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-[#E1E1E1] shadow-none h-28 py-0 justify-center rounded-lg">
-                <CardContent className="px-[30px]">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-muted-foreground">Percentage solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-[22px] font-[550] text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
-                </CardContent>
-              </Card>
-            </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Tables */}
-          <div className="grid grid-cols-2 gap-8">
-            {/* Helpers Table */}
-            <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
-              <div className="mb-4">
-                <TabSelector
-                  options={[
-                    { value: "all", label: "View all" },
-                    { value: "core", label: "Core team" },
-                    { value: "extended", label: "Extended team" },
-                    { value: "community", label: "Community" },
-                  ]}
-                  value={helperFilter}
-                  onChange={(value) => setHelperFilter(value as typeof helperFilter)}
-                />
-              </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#2E2D31]">
-                      <div
-                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleHelperSort("name")}
-                      >
-                        Name
-                        {getSortIcon("name", helperSort)}
-                      </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleHelperSort("tickets")}
-                      >
-                        No of tickets
-                        {getSortIcon("tickets", helperSort)}
-                      </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleHelperSort("time")}
-                      >
-                        Total time
-                        {getSortIcon("time", helperSort)}
-                      </div>
+          {/* Issue Types Table */}
+          <div>
+            <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
+            <div className="mb-4">
+              <TabSelector
+                options={[
+                  { value: "all", label: "View all" },
+                  { value: "applied", label: "Applied this period" },
+                ]}
+                value={issueFilter}
+                onChange={(value) => setIssueFilter(value as typeof issueFilter)}
+              />
+            </div>
+            <Card className="py-0 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="bg-muted/60 px-6 py-3 border-b border-border-subtle">
+                  <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                    <div
+                      className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                      onClick={() => handleIssueSort("name")}
+                    >
+                      Type
+                      {getSortIcon("name", issueSort)}
+                    </div>
+                    <div
+                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                      onClick={() => handleIssueSort("tickets")}
+                    >
+                      No of tickets
+                      {getSortIcon("tickets", issueSort)}
+                    </div>
+                    <div
+                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                      onClick={() => handleIssueSort("time")}
+                    >
+                      Total time
+                      {getSortIcon("time", issueSort)}
                     </div>
                   </div>
-                  {sortedHelpers.map((helper, index) => (
-                    <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 flex items-center gap-3">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: helper.color }}
-                          >
-                            {helper.initial}
-                          </div>
-                          <span className="text-sm text-foreground">{helper.name}</span>
-                        </div>
-                        <div className="col-span-3 text-sm text-foreground tabular-nums">{helper.tickets}</div>
-                        <div className="col-span-2 text-sm text-foreground tabular-nums">{helper.time}</div>
-                        <div className="col-span-1 flex justify-end">
-                          <Link href={`/helpers/${helper.id}`}>
-                            <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Issue Types Table */}
-            <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
-              <div className="mb-4">
-                <TabSelector
-                  options={[
-                    { value: "all", label: "View all" },
-                    { value: "applied", label: "Applied this period" },
-                  ]}
-                  value={issueFilter}
-                  onChange={(value) => setIssueFilter(value as typeof issueFilter)}
-                />
-              </div>
-              <Card className="border-[#E1E1E1] rounded-lg py-0 shadow-none overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="bg-muted/60 px-6 py-3 border-b border-[#E1E1E1]">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-[#2E2D31]">
-                      <div
-                        className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("name")}
-                      >
-                        Type
-                        {getSortIcon("name", issueSort)}
-                      </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("tickets")}
-                      >
-                        No of tickets
-                        {getSortIcon("tickets", issueSort)}
-                      </div>
-                      <div
-                        className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        onClick={() => handleIssueSort("time")}
-                      >
-                        Total time
-                        {getSortIcon("time", issueSort)}
-                      </div>
+                </div>
+                {sortedIssueTypes.map((issue, index) => (
+                  <div key={index} className="px-6 py-2.5 border-b border-border-subtle last:border-b-0">
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
+                      <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.tickets}</div>
+                      <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.time}</div>
                     </div>
                   </div>
-                  {sortedIssueTypes.map((issue, index) => (
-                    <div key={index} className="px-6 py-2.5 border-b border-[#E1E1E1] last:border-b-0">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
-                        <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.tickets}</div>
-                        <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.time}</div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

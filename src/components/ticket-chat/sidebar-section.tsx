@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 const HEADING_STYLE = {
   fontSize: "11px",
   letterSpacing: "0.05em",
-  color: "rgba(0,0,0,0.5)",
+  color: "var(--muted-foreground)",
   fontWeight: 500,
 } as const
 
@@ -58,5 +58,5 @@ export function SidebarEmpty({
   children?: ReactNode
   className?: string
 }) {
-  return <div className={cn("text-center text-muted-foreground text-[13px] py-4", className)}>{children}</div>
+  return <div className={cn("text-center text-muted-foreground text-ui py-4", className)}>{children}</div>
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import { CalendarClock } from "lucide-react"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 
 /**
@@ -11,15 +10,13 @@ import { Header } from "@/components/layout/header"
  */
 export default function HelperSettingsPage() {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Settings" subtitle="Helper settings" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Settings" subtitle="Helper settings" />
-
-        <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto px-8 py-6">
+        <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-2xl">
-            <div className="bg-white rounded-lg p-6">
+            <div className="bg-background rounded-lg p-6">
               <div className="flex items-start gap-3">
                 <CalendarClock className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
@@ -32,8 +29,8 @@ export default function HelperSettingsPage() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

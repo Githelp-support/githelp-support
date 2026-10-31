@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Scan only src/ for classes (the repo root holds tool folders Tailwind should not read). */
+@import "tailwindcss" source("../");
 @import "tw-animate-css/prefix";
 @import "@flaticon/flaticon-uicons/css/all/all.css";
 
@@ -6,6 +7,13 @@
 
 @theme inline {
   --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-text-secondary: var(--text-secondary);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+  --color-border-control: var(--border-control);
+  --color-border-avatar: var(--border-avatar);
   --color-status-success-bg: var(--status-success-bg);
   --color-status-success-text: var(--status-success-text);
   --color-status-warning-bg: var(--status-warning-bg);
@@ -30,7 +38,7 @@
   --color-support-header: var(--support-header);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-open-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -61,22 +69,231 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Radius: sm 4 (badges), md 6 (controls), lg 8 (cards), xl 12 (modals, drawers) */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: 12px;
+  /* Type scale additions (Tailwind defaults stay as they are) */
+  --text-2xs: 0.6875rem;              /* 11px — count badges only */
+  --text-2xs--line-height: 0.875rem;  /* 14px */
+  --text-ui: 0.8125rem;               /* 13px — sidebar, table cells, buttons, secondary text, header subtitles */
+  --text-ui--line-height: 1.125rem;   /* 18px */
+  --text-stat: 1.375rem;              /* 22px — KPI numbers */
+  --text-stat--line-height: 1.75rem;  /* 28px */
+  --text-title: 1.5rem;               /* 24px — page titles */
+  --text-title--line-height: 2rem;    /* 32px */
+  --text-title--letter-spacing: -0.01em;
+  --text-display: 1.875rem;           /* 30px — public support welcome page only */
+  --text-display--line-height: 2.25rem; /* 36px */
+  --text-display--letter-spacing: -0.02em;
+  /* Shadows (GitHelp's soft grey-blue shadow is rgba(134,140,152,…)) */
+  --shadow-control: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 0 rgba(0, 0, 0, 0.04);
+  --shadow-soft: 0 4px 15px rgba(134, 140, 152, 0.2);
+  --shadow-popover: 0 4px 12px rgba(134, 140, 152, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 12px 40px rgba(134, 140, 152, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-tab: 0 0 7px rgba(134, 140, 152, 0.3);
+  /* Motion: quick, purposeful, never bouncy */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Durations are not a Tailwind theme namespace; expose them as utilities.
+   They also set --tw-duration so tw-animate-css animations (animate-in, accordion) pick them up. */
+@utility duration-fast {
+  --tw-duration: var(--duration-fast);
+  transition-duration: var(--duration-fast);
+  animation-duration: var(--duration-fast);
+}
+@utility duration-base {
+  --tw-duration: var(--duration-base);
+  transition-duration: var(--duration-base);
+  animation-duration: var(--duration-base);
+}
+@utility duration-slow {
+  --tw-duration: var(--duration-slow);
+  transition-duration: var(--duration-slow);
+  animation-duration: var(--duration-slow);
+}
+
+/* Motion: containers appearing (fade + 4px rise). Only for stats cards on first mount —
+   never on settings sections, list rows or chat history (see CLAUDE.md → Motion). */
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in-plain {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fade-out-plain {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@utility animate-enter {
+  animation: enter-rise var(--duration-base) var(--ease-out) both;
+}
+@utility animate-leave {
+  animation: fade-out-plain var(--duration-fast) var(--ease-out) both;
+}
+/* Skeleton → content: a 150ms fade on arrival. */
+@utility animate-fade-in {
+  animation: fade-in-plain 150ms var(--ease-out) both;
+}
+/* 35ms stagger for up to 6 children (stats cards). */
+@utility stagger {
+  & > :nth-child(2) {
+    animation-delay: 35ms;
+  }
+  & > :nth-child(3) {
+    animation-delay: 70ms;
+  }
+  & > :nth-child(4) {
+    animation-delay: 105ms;
+  }
+  & > :nth-child(5) {
+    animation-delay: 140ms;
+  }
+  & > :nth-child(6) {
+    animation-delay: 175ms;
+  }
+}
+
+/* Overlays (Radix dialogs, menus, side sheets) — transform/opacity only. */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes dialog-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes menu-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes sheet-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes sheet-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@utility animate-overlay-in {
+  animation: overlay-in 150ms var(--ease-out) both;
+}
+@utility animate-overlay-out {
+  animation: overlay-out 120ms var(--ease-out) both;
+}
+@utility animate-dialog-in {
+  animation: dialog-in var(--duration-base) var(--ease-out) both;
+}
+@utility animate-dialog-out {
+  animation: dialog-out 120ms var(--ease-out) both;
+}
+@utility animate-menu-in {
+  animation: menu-in var(--duration-fast) var(--ease-out) both;
+}
+@utility animate-menu-out {
+  animation: menu-out 100ms var(--ease-out) both;
+}
+@utility animate-sheet-in {
+  animation: sheet-in-right var(--duration-slow) var(--ease-out) both;
+}
+@utility animate-sheet-out {
+  animation: sheet-out-right var(--duration-base) var(--ease-in-out) both;
 }
 
 :root {
   --radius: 0.625rem;
-  /* Brand colors – use for primary actions and accents; prefer semantic tokens (primary, border, etc.) where they fit */
-  --brand-primary: #3c2ec5;
+  /* Brand colors – use for primary actions and accents; prefer semantic tokens (primary, border, etc.) where they fit.
+     #554ABF passes WCAG AA on white (6.7:1) and is the default project colour in settings/branding. */
+  --brand-primary: #554abf;
+  --brand-primary-hover: #4a3fa3;
+  --brand-foreground: #ffffff;
   --border-subtle: #e1e1e1;
+  --border-control: rgba(0, 0, 0, 0.1);
+  --border-avatar: #e1e4ea;
   --text-heading: #0f0f11;
+  --text-secondary: #444444;
   --text-muted: #55555d;
+  /* Blue-grey tertiary; passes AA (4.5:1+) on white, page-muted, bg-subtle and the lavender tint */
+  --text-tertiary: #666b77;
   --bg-subtle: #f6f6f6;
-  --text-tertiary: #818185;
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --surface-active: rgba(0, 0, 0, 0.08);
   --support-header: #2d2a49;
+  /* Motion tokens */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
   --background: oklch(1 0 0);
   --foreground: #2E2D31;
   --card: oklch(1 0 0);
@@ -163,11 +380,18 @@
   --sidebar-ring: oklch(0.556 0 0);
   /* Brand colors – dark overrides */
   --brand-primary: #6c5ce7;
+  --brand-primary-hover: #7d6ff0;
+  --brand-foreground: #ffffff;
   --border-subtle: oklch(1 0 0 / 12%);
+  --border-control: rgba(255, 255, 255, 0.12);
+  --border-avatar: oklch(1 0 0 / 16%);
   --text-heading: #f0f0f2;
+  --text-secondary: #c9c9cf;
   --text-muted: #a1a1a8;
+  --text-tertiary: #9a9fab;
   --bg-subtle: #1e1e22;
-  --text-tertiary: #7a7a80;
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-active: rgba(255, 255, 255, 0.1);
   --support-header: #1e1b34;
   /* Status badge colors – dark overrides */
   --status-success-bg: #1a3d33;
@@ -254,7 +478,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Open Sans stylistic set: single-story 'a' (cv11) */
+    /* Inter character variant: single-storey 'a' (cv11) */
     font-feature-settings: "cv11";
   }
   code,
@@ -270,6 +494,25 @@
    */
   :where(h1, h2, h3, h4) {
     letter-spacing: -0.01em;
+  }
+}
+
+/* Buyer-facing pages: comfortable touch targets on phones. */
+@media (max-width: 47.99rem) {
+  .touch-targets :where(button, [role="button"], [role="tab"], a.inline-flex, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: 2.5rem;
+  }
+}
+
+/* Reduced motion: keep state changes, drop the choreography. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

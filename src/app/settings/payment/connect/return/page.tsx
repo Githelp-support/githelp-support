@@ -68,7 +68,7 @@ function ConnectReturnContent() {
         )}
         <Link
           href={backHref}
-          className="inline-block rounded-md bg-[#554abf] px-4 py-2 text-sm font-medium text-white"
+          className="inline-block rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-brand-foreground"
         >
           Back to payment settings
         </Link>

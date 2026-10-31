@@ -9,6 +9,7 @@ import { useProjectSelection } from "@/contexts/project-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface HeaderProps {
   title: string
@@ -26,9 +27,16 @@ interface HeaderProps {
   titleClassName?: string
   /** Rendered above the title, e.g. a back link to the list the page was opened from. */
   aboveTitle?: ReactNode
+  /** Page-level actions (e.g. the primary button), rendered right-aligned. */
+  actions?: ReactNode
 }
 
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle }: HeaderProps) {
+/**
+ * The standard page header: title, optional subtitle and right-aligned actions,
+ * sticky under the TopBar with a hairline below. Pages render it themselves
+ * because it carries page-specific props; the Sidebar comes from AppShell.
+ */
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle, actions }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -66,38 +74,45 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     <header
       ref={headerRef}
       className={cn(
-        "sticky top-0 z-30 px-8 pt-5 pb-5",
+        "sticky top-0 z-30 shrink-0 border-b border-border-subtle px-8 py-5",
         !backgroundColor && "bg-background",
         className,
       )}
       style={backgroundColor ? { backgroundColor } : undefined}
     >
       <div className="flex items-center justify-between gap-8">
-        <div className="flex items-start gap-4">
+        <div className="flex min-w-0 items-start gap-4">
           {showBackButton && (
             <button
               onClick={handleBackClick}
-              className="mt-1 p-1 hover:bg-muted rounded-md transition-colors cursor-pointer flex items-center gap-2"
+              className="mt-1 flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             >
-              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
               {backButtonText && (
-                <span className="text-sm text-muted-foreground hover:text-foreground font-medium">{backButtonText}</span>
+                <span className="text-sm font-medium text-muted-foreground hover:text-foreground">{backButtonText}</span>
               )}
             </button>
           )}
           {leadingIcon && <div className="shrink-0 self-center">{leadingIcon}</div>}
-          <div>
+          <div className="min-w-0">
             {aboveTitle && <div className="mb-2">{aboveTitle}</div>}
-            <div ref={titleRowRef} className="flex items-center gap-[13px]">
-              <h1 className={cn("text-2xl font-semibold tracking-[0.005em] text-foreground", titleClassName)}>{title}</h1>
+            <div ref={titleRowRef} className="flex items-center gap-3">
+              <h1 className={cn("truncate text-title font-semibold text-foreground", titleClassName)}>{title}</h1>
               {info && (
-                <div className="relative group">
-                  <Info className="w-5 h-5 text-muted-foreground cursor-help" />
-                  <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-50 w-64 p-2 bg-foreground text-background text-xs rounded-md shadow-lg pointer-events-none">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="More information"
+                      className="inline-flex cursor-help items-center justify-center rounded-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                    >
+                      <Info className="h-5 w-5" aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="start" className="max-w-64">
                     {info}
-                    <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-foreground" />
-                  </div>
-                </div>
+                  </TooltipContent>
+                </Tooltip>
               )}
               {inlineRightContent && (
                 <div ref={inlineRef} className="flex items-center">
@@ -107,11 +122,12 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
             </div>
             {subtitle && (
               <div className="mt-0.5 flex items-center gap-2">
-                <p className="text-[13px] font-normal text-muted-foreground/80">{subtitle}</p>
+                <p className="text-ui font-normal text-muted-foreground">{subtitle}</p>
               </div>
             )}
           </div>
         </div>
+        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
     </header>
   )

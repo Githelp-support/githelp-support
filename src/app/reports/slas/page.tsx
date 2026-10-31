@@ -6,12 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Header } from "@/components/layout/header"
-import { Sidebar } from "@/components/layout/sidebar"
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 interface ReportData {
   id: string
@@ -102,7 +104,7 @@ export default function ReportsSLAsPage() {
 
   // Fetch SLAs and payment transfers
   const { data: slasData } = useSLAs(projectId)
-  const { data: transfersData, isLoading } = usePaymentTransfers({ projectId })
+  const { data: transfersData, isLoading, isError, refetch } = usePaymentTransfers({ projectId })
 
   // Generate months for dropdown
   const months = useMemo(() => {
@@ -316,301 +318,301 @@ export default function ReportsSLAsPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header
+        title="Reports and Payouts"
+        subtitle="Keep track of reports and transactions for your SLAs."
+      />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          title="Reports and Payouts"
-          subtitle="Keep track of reports and transactions for your SLAs."
-        />
+      <main className="flex-1 px-8 py-6 overflow-y-auto">
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="flex gap-1">
+            <button type="button"
+              onClick={() => setActiveTab("monthly")}
+              className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                activeTab === "monthly"
+                  ? "text-brand-primary border-brand-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              Monthly reports
+            </button>
+            <button type="button"
+              onClick={() => setActiveTab("tickets")}
+              className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                activeTab === "tickets"
+                  ? "text-brand-primary border-brand-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              Tickets
+            </button>
+          </div>
+          {/* Full-width line below tabs */}
+          <div className="h-px bg-border -mx-6"></div>
+        </div>
 
-        <main className="flex-1 p-6 overflow-y-auto">
-          {/* Tab Navigation */}
-          <div className="mb-6">
-            <div className="flex gap-1">
-              <button type="button"
-                onClick={() => setActiveTab("monthly")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                  activeTab === "monthly"
-                    ? "text-brand-primary border-brand-primary"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                }`}
-              >
-                Monthly reports
-              </button>
-              <button type="button"
-                onClick={() => setActiveTab("tickets")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                  activeTab === "tickets"
-                    ? "text-brand-primary border-brand-primary"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                }`}
-              >
-                Tickets
-              </button>
-            </div>
-            {/* Full-width line below tabs */}
-            <div className="h-px bg-border -mx-6"></div>
+        <div className="max-w-7xl space-y-6">
+          {/* Filters */}
+          <div className="flex gap-2 mb-6">
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+                <SelectValue placeholder="Choose period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
+                {monthOptions.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="max-w-7xl space-y-6">
-            {/* Filters */}
-            <div className="flex gap-2 mb-6">
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                  <SelectValue placeholder="Choose period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="current">Current month</SelectItem>
-                  {monthOptions.map((month) => (
-                    <SelectItem key={month} value={month}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Monthly Reports Table */}
+          {activeTab === "monthly" && (
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
+              {/* Table Header */}
+              <ListHeader>
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  <div className="col-span-1">
+                    <input
+                      type="checkbox"
+                      className="rounded border-border accent-brand-primary"
+                      checked={selectedRows.length === sortedReports.length && sortedReports.length > 0}
+                      onChange={handleSelectAll}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => handleMonthlySort("period")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Period</span>
+                      <ReportsSortIcon field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-3">
+                    <button
+                      type="button"
+                      onClick={() => handleMonthlySort("entity")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Entity</span>
+                      <ReportsSortIcon field="entity" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => handleMonthlySort("amount")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Amount</span>
+                      <ReportsSortIcon field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => handleMonthlySort("status")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Status</span>
+                      <ReportsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2"></div>
+                </div>
+              </ListHeader>
+
+              {/* Table Body */}
+              <div className="divide-y divide-border-subtle">
+                {isLoading ? (
+                  <ListSkeleton rows={5} />
+                ) : isError ? (
+                  <ErrorState size="sm" onRetry={() => refetch()} />
+                ) : sortedReports.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("reports")}</div>
+                ) : (
+                  sortedReports.map((report) => (
+                  <div key={report.id} className={listRowClass()}>
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      <div className="col-span-1">
+                        <Checkbox
+                          checked={selectedRows.includes(report.id)}
+                          onCheckedChange={() => handleRowSelect(report.id)}
+                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-sm text-foreground">{report.period}</span>
+                      </div>
+                      <div className="col-span-3 flex items-center space-x-3">
+                        <div
+                          className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                          style={{ backgroundColor: report.entityColor }}
+                        >
+                          {report.entityInitial}
+                        </div>
+                        <span className="text-sm text-foreground">{report.entity}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-sm text-foreground">{report.amount}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <Badge variant="secondary" className="bg-status-success-bg text-status-success-text hover:opacity-90">
+                          Paid out
+                        </Badge>
+                      </div>
+                      <div className="col-span-2 flex items-center justify-end space-x-2">
+                        <Button
+                          title={ILLUSTRATIVE_BUTTON_TOOLTIP}
+                          variant="outline"
+                          size="sm"
+                          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        >
+                          Open
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )))}
+              </div>
             </div>
+          )}
 
-            {/* Monthly Reports Table */}
-            {activeTab === "monthly" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
-                {/* Table Header */}
-                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-1">
-                      <input
-                        type="checkbox"
-                        className="rounded border-border accent-brand-primary"
-                        checked={selectedRows.length === sortedReports.length && sortedReports.length > 0}
-                        onChange={handleSelectAll}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("period")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Period</span>
-                        <ReportsSortIcon field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-3">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("entity")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Entity</span>
-                        <ReportsSortIcon field="entity" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("amount")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Amount</span>
-                        <ReportsSortIcon field="amount" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleMonthlySort("status")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Status</span>
-                        <ReportsSortIcon field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2"></div>
+          {activeTab === "tickets" && (
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
+              {/* Table Header */}
+              <ListHeader>
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  <div className="col-span-1">
+                    <input
+                      type="checkbox"
+                      className="rounded border-border accent-brand-primary"
+                      checked={selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0}
+                      onChange={handleTicketSelectAll}
+                    />
                   </div>
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => handleTicketsSort("date")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Date</span>
+                      <ReportsSortIcon field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-3">
+                    <button
+                      type="button"
+                      onClick={() => handleTicketsSort("entity")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Entity</span>
+                      <ReportsSortIcon field="entity" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => handleTicketsSort("amount")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Amount</span>
+                      <ReportsSortIcon field="amount" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => handleTicketsSort("status")}
+                      className="flex items-center space-x-2"
+                    >
+                      <span>Status</span>
+                      <ReportsSortIcon field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
+                    </button>
+                  </div>
+                  <div className="col-span-2"></div>
                 </div>
+              </ListHeader>
 
-                {/* Table Body */}
-                <div className="divide-y divide-border">
-                  {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
-                  ) : sortedReports.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("reports")}</div>
-                  ) : (
-                    sortedReports.map((report) => (
-                    <div key={report.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-1">
-                          <Checkbox
-                            checked={selectedRows.includes(report.id)}
-                            onCheckedChange={() => handleRowSelect(report.id)}
-                            className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
-                          />
+              {/* Table Body */}
+              <div className="divide-y divide-border-subtle">
+                {isLoading ? (
+                  <ListSkeleton rows={5} />
+                ) : isError ? (
+                  <ErrorState size="sm" onRetry={() => refetch()} />
+                ) : sortedTickets.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("tickets")}</div>
+                ) : (
+                  sortedTickets.map((ticket) => (
+                  <div key={ticket.id} className={listRowClass()}>
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      <div className="col-span-1">
+                        <Checkbox
+                          checked={selectedTicketRows.includes(ticket.id)}
+                          onCheckedChange={() => handleTicketRowSelect(ticket.id)}
+                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-sm text-foreground">{ticket.date}</span>
+                      </div>
+                      <div className="col-span-3 flex items-center space-x-3">
+                        <div
+                          className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                          style={{ backgroundColor: ticket.entityColor }}
+                        >
+                          {ticket.entityInitial}
                         </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{report.period}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center space-x-3">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: report.entityColor }}
-                          >
-                            {report.entityInitial}
-                          </div>
-                          <span className="text-sm text-foreground">{report.entity}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{report.amount}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <Badge variant="secondary" className="bg-status-success-bg text-status-success-text hover:opacity-90">
-                            Paid out
-                          </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
-                          <Button
-                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                          >
-                            Open
-                          </Button>
-                        </div>
+                        <span className="text-sm text-foreground">{ticket.entity}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-sm text-foreground">{ticket.amount}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <Badge
+                          variant="secondary"
+                          className="bg-status-success-bg text-status-success-text flex items-center gap-1"
+                        >
+                          <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                            <path
+                              d="M10 3L4.5 8.5L2 6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          Completed
+                        </Badge>
+                      </div>
+                      <div className="col-span-2 flex items-center justify-end space-x-2">
+                        <Button
+                          title={ILLUSTRATIVE_BUTTON_TOOLTIP}
+                          variant="outline"
+                          size="sm"
+                          className="text-muted-foreground border-border hover:bg-muted bg-transparent"
+                        >
+                          Open
+                        </Button>
                       </div>
                     </div>
-                  )))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "tickets" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
-                {/* Table Header */}
-                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-1">
-                      <input
-                        type="checkbox"
-                        className="rounded border-border accent-brand-primary"
-                        checked={selectedTicketRows.length === sortedTickets.length && sortedTickets.length > 0}
-                        onChange={handleTicketSelectAll}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("date")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Date</span>
-                        <ReportsSortIcon field="date" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-3">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("entity")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Entity</span>
-                        <ReportsSortIcon field="entity" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("amount")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Amount</span>
-                        <ReportsSortIcon field="amount" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2">
-                      <button
-                        type="button"
-                        onClick={() => handleTicketsSort("status")}
-                        className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-                      >
-                        <span className="text-sm font-medium text-foreground">Status</span>
-                        <ReportsSortIcon field="status" sortField={ticketsSortField} sortDirection={ticketsSortDirection} />
-                      </button>
-                    </div>
-                    <div className="col-span-2"></div>
                   </div>
-                </div>
-
-                {/* Table Body */}
-                <div className="divide-y divide-border">
-                  {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading tickets...</div>
-                  ) : sortedTickets.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("tickets")}</div>
-                  ) : (
-                    sortedTickets.map((ticket) => (
-                    <div key={ticket.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-1">
-                          <Checkbox
-                            checked={selectedTicketRows.includes(ticket.id)}
-                            onCheckedChange={() => handleTicketRowSelect(ticket.id)}
-                            className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{ticket.date}</span>
-                        </div>
-                        <div className="col-span-3 flex items-center space-x-3">
-                          <div
-                            className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                            style={{ backgroundColor: ticket.entityColor }}
-                          >
-                            {ticket.entityInitial}
-                          </div>
-                          <span className="text-sm text-foreground">{ticket.entity}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-sm text-foreground">{ticket.amount}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <Badge
-                            variant="secondary"
-                            className="bg-status-success-bg text-status-success-text flex items-center gap-1"
-                          >
-                            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                              <path
-                                d="M10 3L4.5 8.5L2 6"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                            Completed
-                          </Badge>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-end space-x-2">
-                          <Button
-                            title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                          >
-                            Open
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                  )}
-                </div>
+                ))
+                )}
               </div>
-            )}
-          </div>
-        </main>
-      </div>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }

@@ -53,8 +53,8 @@ export function DeleteTimeEntryDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
             Keep it
           </Button>
-          <Button variant="destructive" onClick={() => void onConfirm()} disabled={pending}>
-            {pending ? "Deleting…" : "Delete"}
+          <Button variant="destructive" onClick={() => void onConfirm()} loading={pending}>
+            Delete
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -101,7 +101,7 @@ export function TimeEntryReviewStatusBadge({
     <span
       data-status={status}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
         status === "accepted" && "bg-emerald-50 text-emerald-700",
         status === "declined" && "bg-red-50 text-red-700",
         status === "pending" && "bg-muted text-muted-foreground",
@@ -286,7 +286,7 @@ function TimeEntrySummaryForm({
                   data-declined={declined || undefined}
                   className={cn(
                     "rounded-lg border border-border p-3",
-                    declined ? "border-red-200 bg-red-50/60" : "bg-white",
+                    declined ? "border-red-200 bg-red-50/60" : "bg-background",
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -329,7 +329,7 @@ function TimeEntrySummaryForm({
                           setDeclines((prev) => ({ ...prev, [entry.id]: e.target.value.slice(0, DECLINE_REASON_MAX_LENGTH) }))
                         }
                         placeholder="e.g. We only worked together for about 20 minutes, not an hour."
-                        className="border-input min-h-[72px] resize-none bg-white"
+                        className="border-input min-h-[72px] resize-none bg-background"
                         maxLength={DECLINE_REASON_MAX_LENGTH}
                         autoFocus
                         disabled={pending}
@@ -409,7 +409,7 @@ export function TimeEntrySummaryBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >
@@ -422,7 +422,7 @@ export function TimeEntrySummaryBanner({
           {autoAcceptHint ? ` It is confirmed automatically ${autoAcceptHint} if you don't respond.` : ""}
         </p>
       </div>
-      <Button size="sm" onClick={onReview} className="shrink-0 cursor-pointer">
+      <Button onClick={onReview} className="shrink-0 cursor-pointer">
         Review &amp; confirm
       </Button>
     </div>
@@ -451,7 +451,7 @@ export function TimeEntryAwaitingApprovalBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >

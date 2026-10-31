@@ -1,7 +1,6 @@
 "use client"
 
 import { Header } from "@/components/layout/header"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -43,6 +42,7 @@ import {
   Mic,
   Video,
   Trash2,
+  PanelRight,
 } from "lucide-react"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
@@ -81,6 +81,7 @@ import { prepareOutgoingMessage } from "@/lib/code-format"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 interface Message {
   id: string
@@ -134,6 +135,8 @@ export default function TicketDetailPage() {
   // Collapsed state is shared across views via localStorage (see
   // right-sidebar-collapse.tsx).
   const { isCollapsed, setCollapsed } = useRightSidebarCollapsed()
+  // Below lg the right panel is an off-canvas sheet.
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false)
 
   // Fetch ticket and messages
   const { data: ticket, isLoading: ticketLoading, isError: ticketError } = useTicket(ticketId)
@@ -432,6 +435,13 @@ export default function TicketDetailPage() {
       }))
     )
   }, [messagesData, isClaimed, claimer])
+  // Messages present when the thread first loaded don't animate; later ones do.
+  // (State set during render, once, when the first non-empty thread arrives.)
+  const [initialMessageIds, setInitialMessageIds] = useState<Set<string> | null>(null)
+  if (initialMessageIds === null && messagesData && messagesData.length > 0) {
+    setInitialMessageIds(new Set(messages.map((m) => m.id)))
+  }
+  const isNewMessage = (id: string) => initialMessageIds !== null && !initialMessageIds.has(id)
 
   /** First user message in the chat, or ticket description as fallback (for "Info about issue"). */
   const firstIssueMessage = useMemo(() => {
@@ -871,60 +881,71 @@ export default function TicketDetailPage() {
   // `.single()` read errors, and nothing else has data to show.
   if (ticketError || (!ticketLoading && !ticket)) {
     return (
-      <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="relative border-b border-border z-10">
-            <Header title="Ticket" showBackButton={true} titleClassName="text-xl" />
-          </div>
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto px-6 py-12">
-              <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-                <h1 className="text-2xl font-semibold text-foreground mb-2">
-                  Ticket not found or you don&apos;t have access
-                </h1>
-                <p className="text-muted-foreground mb-6">
-                  This ticket may have been removed, or it belongs to a project you are not a member of.
-                </p>
-                <NextLink href="/tickets">
-                  <Button variant="default" size="sm">
-                    Back to tickets
-                  </Button>
-                </NextLink>
-              </div>
-            </div>
-          </main>
+      <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
+        <div className="relative z-10">
+          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" />
         </div>
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-6 py-12">
+            <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
+              <h1 className="text-2xl font-semibold text-foreground mb-2">
+                Ticket not found or you don&apos;t have access
+              </h1>
+              <p className="text-muted-foreground mb-6">
+                This ticket may have been removed, or it belongs to a project you are not a member of.
+              </p>
+              <NextLink href="/tickets">
+                <Button variant="default" size="sm">
+                  Back to tickets
+                </Button>
+              </NextLink>
+            </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-bg-subtle">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="relative border-b border-border z-10">
+    // The AppShell content column is a vertical flex column: this row puts
+    // the right panel beside the chat column (TicketChat does the same).
+    <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
+        <div className="relative z-10">
           <Header
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             titleClassName="text-xl"
             inlineRightContent={
               <span className="flex items-center gap-2">
-                <span className="text-[13px] font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
+                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>
                 {isGuestTicket && <GuestTicketBadge />}
               </span>
+            }
+            actions={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-text-muted"
+                aria-label="Ticket details"
+                aria-expanded={mobilePanelOpen}
+                onClick={() => setMobilePanelOpen((v) => !v)}
+              >
+                <PanelRight className="size-4" aria-hidden />
+              </Button>
             }
           />
         </div>
         <main className="flex-1 flex overflow-hidden">
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col">
+          {/* Main Content (min-w-0: the column must shrink to the viewport on phones) */}
+          <div className="flex-1 flex flex-col min-w-0">
             {/* Messages Area */}
             <div className="flex-1 flex flex-col min-h-0">
               <div className="flex-1 p-4 flex flex-col min-h-0">
                 {/* Chat Messages Container */}
                 <div
-                  className="bg-white rounded-[10px] shadow-[0px_4px_15px_0px_rgba(134,140,152,0.2)] flex-1 overflow-auto"
+                  className="bg-card rounded-lg shadow-soft flex-1 overflow-auto"
                   onLoadCapture={(e) => {
                     // Images load after the initial scroll and push the thread
                     // down; keep it pinned to the bottom if it was there.
@@ -948,11 +969,11 @@ export default function TicketDetailPage() {
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{firstIssueMessage.senderName}</span>
+                        <span className="text-sm text-foreground font-medium">{firstIssueMessage.senderName}</span>
                         <span
                           className="text-xs"
                           style={{
-                            color: 'rgba(0,0,0,0.5)',
+                            color: "var(--muted-foreground)",
                             fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                             fontVariantNumeric: 'tabular-nums',
                           }}
@@ -969,8 +990,8 @@ export default function TicketDetailPage() {
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium mb-2" style={{ color: '#2E2D31' }}>Info about issue</h3>
-                        <div className="space-y-3" style={{ color: '#2E2D31' }}>
+                        <h3 className="text-sm font-medium mb-2 text-foreground">Info about issue</h3>
+                        <div className="space-y-3 text-foreground">
                           {firstIssueMessage.content ? (
                             <MarkdownContent content={firstIssueMessage.content} className="text-sm" />
                           ) : (
@@ -1009,7 +1030,7 @@ export default function TicketDetailPage() {
                     )}
 
                     <div>
-                      <h4 className="text-[13px] font-semibold text-foreground mb-3">Rates</h4>
+                      <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
                       {rates == null ? (
                         <div className="bg-card border border-border rounded-lg p-3">
                           <p className="text-sm font-medium text-foreground">{RATES_NOT_CONFIGURED}</p>
@@ -1055,7 +1076,7 @@ export default function TicketDetailPage() {
                     )}
 
                     {isClaimed && !isTicketEnded && !canManageTicket && (
-                      <p className="text-[13px] text-muted-foreground">
+                      <p className="text-ui text-muted-foreground">
                         {claimer?.name ? `${claimer.name} is handling this ticket.` : "Another helper is handling this ticket."}{" "}
                         You can read along, but only they (or a project admin) can log time or end it.
                       </p>
@@ -1066,7 +1087,7 @@ export default function TicketDetailPage() {
                 {/* Chat Messages */}
                 <div className="flex flex-col" style={{ rowGap: '16px' }}>
                   {messages.map((msg) => (
-                    <div key={msg.id} className="flex gap-3 items-start">
+                    <div key={msg.id} className={cn("flex gap-3 items-start", isNewMessage(msg.id) && "animate-enter")}>
                       {msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended") ? (
                         <div className="flex items-start gap-3 w-full">
                           <ProfileAvatar
@@ -1078,11 +1099,11 @@ export default function TicketDetailPage() {
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                              <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
                               <span
                                 className="text-xs"
                                 style={{
-                                  color: 'rgba(0,0,0,0.5)',
+                                  color: "var(--muted-foreground)",
                                   fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                   fontVariantNumeric: 'tabular-nums',
                                 }}
@@ -1090,7 +1111,7 @@ export default function TicketDetailPage() {
                                 {msg.timestamp}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm" style={{ color: '#2E2D31' }}>
+                            <div className="flex items-center gap-2 text-sm text-foreground">
                               <Check className="w-4 h-4 text-brand-primary shrink-0" />
                               <MarkdownContent content={msg.content} className="text-sm" />
                             </div>
@@ -1110,11 +1131,11 @@ export default function TicketDetailPage() {
                           <div className="flex-1">
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm" style={{ color: '#2E2D31', fontWeight: 500 }}>{msg.senderName}</span>
+                                <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
                                 <span
                                   className="text-xs"
                                   style={{
-                                    color: 'rgba(0,0,0,0.5)',
+                                    color: "var(--muted-foreground)",
                                     fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
                                     fontVariantNumeric: 'tabular-nums',
                                   }}
@@ -1130,9 +1151,8 @@ export default function TicketDetailPage() {
                                     (msg.metadataKind === "time_entries_confirmed" && msg.hasDeclines)
                                     ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                     : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                  : "text-sm"
+                                  : "text-sm text-foreground"
                               }
-                              style={msg.sender !== "system" ? { color: '#2E2D31' } : undefined}
                             >
                               <MarkdownContent content={msg.content} />
                             </div>
@@ -1167,7 +1187,7 @@ export default function TicketDetailPage() {
                             </Button>
                           ) : (
                             <div className="rounded-lg border border-border bg-muted/40 p-4 max-w-xs">
-                              <div className="space-y-1.5 text-[13px]">
+                              <div className="space-y-1.5 text-ui">
                                 <div className="flex items-center justify-between gap-6">
                                   <span className="text-muted-foreground">Outcome</span>
                                   <span className="font-medium text-foreground">
@@ -1211,17 +1231,17 @@ export default function TicketDetailPage() {
                               </div>
 
                               {paymentFailed && paymentFailureReason && (
-                                <p className="mt-2 text-[12px] leading-snug text-destructive">
+                                <p className="mt-2 text-xs leading-snug text-destructive">
                                   {paymentFailureReason}
                                 </p>
                               )}
                               {paymentFailed && (
-                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                <p className="mt-1 text-xs leading-snug text-muted-foreground">
                                   The user has been notified and can update their card from the ticket chat; the charge retries automatically once they do.
                                 </p>
                               )}
                               {captureNeedsRetry && !paymentFailed && (
-                                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                                <p className="mt-1 text-xs leading-snug text-muted-foreground">
                                   {captureTicket.error?.message ?? "The payment hasn't been captured yet."}
                                 </p>
                               )}
@@ -1317,7 +1337,7 @@ export default function TicketDetailPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsEndTicketDrawerOpen(true)}
-                    className="cursor-pointer text-foreground font-semibold text-[14px] hover:bg-transparent"
+                    className="cursor-pointer text-foreground font-semibold text-sm hover:bg-transparent"
                   >
                     End session
                   </Button>
@@ -1338,19 +1358,29 @@ export default function TicketDetailPage() {
       </div>
 
       {/* Right Sidebar — sibling of the header column so it spans the full height, like the left sidebar */}
+      {mobilePanelOpen && (
+        <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" aria-hidden onClick={() => setMobilePanelOpen(false)} />
+      )}
       <div
         suppressHydrationWarning
-        className={`${isCollapsed ? "w-16" : "w-80"} bg-white border-l border-border relative z-20 flex flex-col transition-all duration-300 overflow-hidden`}
+        className={cn(
+          "bg-background border-l border-border flex flex-col overflow-hidden transition-[width] duration-slow ease-in-out",
+          // Below lg the panel is an off-canvas sheet toggled from the header.
+          "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:w-80 max-lg:max-w-[85vw] max-lg:shadow-modal",
+          !mobilePanelOpen && "max-lg:hidden",
+          "lg:relative lg:z-20",
+          isCollapsed ? "lg:w-16" : "lg:w-80",
+        )}
       >
         <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
         {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto px-3 pb-6">
+        <div className="flex-1 overflow-y-auto px-3 pb-6 max-lg:pt-4">
           {/* People in Chat */}
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
             {participantsLoading ? (
-              <div className="text-center text-muted-foreground text-[14px] py-4">Loading...</div>
+              <ListSkeleton rows={2} badge={false} className="divide-y-0 [&>div]:px-0" />
             ) : allParticipants.length > 0 ? (
               <div className="space-y-2 mb-3">
                 {allParticipants.map((participant) => {
@@ -1363,7 +1393,7 @@ export default function TicketDetailPage() {
                         avatarUrl={participant.user?.avatar_url ?? null}
                         size="md"
                       />
-                      <span className="text-[13px] text-muted-foreground">
+                      <span className="text-ui text-muted-foreground">
                         {isCurrentUser ? "You" : participant.user?.name ?? "Unknown"}
                       </span>
                     </div>
@@ -1371,7 +1401,7 @@ export default function TicketDetailPage() {
                 })}
               </div>
             ) : (
-              <div className="text-center text-muted-foreground text-[13px] py-4">-</div>
+              <div className="text-center text-muted-foreground text-ui py-4">-</div>
             )}
             {!isTicketEnded && (
               <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
@@ -1396,7 +1426,7 @@ export default function TicketDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-[13px] text-muted-foreground">—</p>
+              <p className="text-ui text-muted-foreground">—</p>
             )}
           </div>
 
@@ -1421,12 +1451,12 @@ export default function TicketDetailPage() {
                           radius="8.25px"
                           className="w-6 h-6"
                         />
-                        <span className="text-[13px] text-muted-foreground capitalize">{entry.type}</span>
+                        <span className="text-ui text-muted-foreground capitalize">{entry.type}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span
                           className={cn(
-                            "text-[13px] text-muted-foreground tabular-nums",
+                            "text-ui text-muted-foreground tabular-nums",
                             entry.reviewStatus === "declined" && "line-through",
                           )}
                         >
@@ -1454,8 +1484,8 @@ export default function TicketDetailPage() {
                   </div>
                 ))}
                 <div className="flex items-center justify-between py-2 font-medium">
-                  <span className="text-[13px] text-foreground">Total</span>
-                  <span className="text-[13px] text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
+                  <span className="text-ui text-foreground">Total</span>
+                  <span className="text-ui text-foreground tabular-nums">{getTotalLoggedTime().formatted}</span>
                 </div>
                 <TimeEntriesReviewStatus entries={timeEntries} />
                 {pendingReviewCount > 0 && (
@@ -1500,7 +1530,7 @@ export default function TicketDetailPage() {
             <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
             <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
               {activeTicketsSidebar.length === 0 ? (
-                <p className="text-[13px] text-muted-foreground px-3">No active tickets</p>
+                <p className="text-ui text-muted-foreground px-3">No active tickets</p>
               ) : (
                 activeTicketsSidebar.map((item) => (
                   <NextLink
@@ -1509,7 +1539,7 @@ export default function TicketDetailPage() {
                     className={`block w-full border cursor-pointer transition-colors ${
                       item.current
                         ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                        : "bg-white border-border hover:bg-muted"
+                        : "bg-background border-border hover:bg-muted"
                     }`}
                   >
                     <div className="p-3">
@@ -1522,7 +1552,7 @@ export default function TicketDetailPage() {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1 mb-1">
-                            <h4 className="font-medium text-foreground text-[13px] truncate">{item.title}</h4>
+                            <h4 className="font-medium text-foreground text-ui truncate">{item.title}</h4>
                             {item.hasNotification && (
                               <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
                             )}
@@ -1599,7 +1629,7 @@ export default function TicketDetailPage() {
               Cancel
             </Button>
             <Button
-              className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+              className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
               onClick={handleAddSelfAsHelper}
               disabled={addSelfAsHelper.isPending}
             >

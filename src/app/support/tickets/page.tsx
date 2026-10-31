@@ -4,7 +4,6 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { useUser } from "@/contexts/user-context"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -13,14 +12,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { NewTicketModal } from "@/components/modals/new-ticket-modal"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
-import {
-  MessageCircle,
-  Plus,
-  User,
-  ChevronUp,
-  ChevronDown,
-  ChevronsUpDown,
-} from "lucide-react"
+import { MessageCircle, Plus, User, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ErrorState } from "@/components/ui/error-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 type TicketFilter = "in-progress" | "completed"
 type SortField = "title" | "createdAt" | "status" | "type"
@@ -80,7 +77,7 @@ function TicketsSortIcon({
 export default function SupportTicketsPage() {
   const { user } = useUser()
   const isAuthenticated = !!user?.id
-  const { data: ticketsData = [], isLoading } = useUserTickets(user?.id)
+  const { data: ticketsData = [], isLoading, isError, refetch } = useUserTickets(user?.id)
   const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<TicketFilter>("in-progress")
   const [sortField, setSortField] = useState<SortField | null>(null)
@@ -199,16 +196,14 @@ export default function SupportTicketsPage() {
   }, [tickets, statusFilter, sortField, sortDirection])
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
-      <Sidebar />
-
+    <>
       <div className="flex flex-1 flex-col overflow-hidden bg-background">
         <Header
           title="My tickets"
           subtitle="View and manage your support requests"
         />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-background">
+        <main className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-background">
           <p className="text-sm text-muted-foreground">
             {isAuthenticated
               ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`
@@ -216,7 +211,7 @@ export default function SupportTicketsPage() {
           </p>
 
           {!isAuthenticated && (
-            <Card className="border-border">
+            <Card>
               <CardContent className="p-6">
                 <p className="text-muted-foreground">
                   Sign in to see all support tickets you have created and continue existing conversations.
@@ -243,12 +238,12 @@ export default function SupportTicketsPage() {
                     aria-pressed={statusFilter === "in-progress"}
                     className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                   >
-                    <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                    <Card className="relative overflow-hidden py-0 transition-colors hover:bg-muted/40">
                       {statusFilter === "in-progress" && (
-                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                       )}
                       <CardContent className="px-5 py-4">
-                        <div className="text-xl font-bold text-foreground mb-1">{stats.inProgress}</div>
+                        <div className="text-xl font-semibold text-foreground mb-1">{stats.inProgress}</div>
                         <div className="flex items-center gap-2">
                           <MessageCircle className="w-3 h-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">Active tickets</span>
@@ -263,12 +258,12 @@ export default function SupportTicketsPage() {
                     aria-pressed={statusFilter === "completed"}
                     className="text-left cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
                   >
-                    <Card className="relative overflow-hidden rounded-lg border-[#E1E1E1] py-0 shadow-none transition-colors hover:bg-muted/40">
+                    <Card className="relative overflow-hidden py-0 transition-colors hover:bg-muted/40">
                       {statusFilter === "completed" && (
-                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#3C2EC5]" />
+                        <div className="absolute top-0 left-0 right-0 h-[3px] bg-brand-primary" />
                       )}
                       <CardContent className="px-5 py-4">
-                        <div className="text-xl font-bold text-foreground mb-1">{stats.completed}</div>
+                        <div className="text-xl font-semibold text-foreground mb-1">{stats.completed}</div>
                         <div className="flex items-center gap-2">
                           <User className="w-3 h-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">Completed tickets</span>
@@ -279,7 +274,7 @@ export default function SupportTicketsPage() {
                 </div>
                 <Button
                   onClick={() => setIsNewTicketModalOpen(true)}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
+                  className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-ui"
                 >
                   <Plus className="h-4 w-4" />
                   New ticket
@@ -288,33 +283,34 @@ export default function SupportTicketsPage() {
 
               {/* Loading / Empty / Table */}
               {isLoading ? (
-                <div className="py-8 text-center text-[14px] text-muted-foreground">Loading your tickets...</div>
+                <ListSkeleton rows={5} />
+              ) : isError ? (
+                <ErrorState onRetry={() => refetch()} />
               ) : tickets.length === 0 ? (
-                <Card className="border-border">
-                  <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground mb-4 text-[14px]">
-                      You have not created any support tickets yet.
-                    </p>
-                    <Button
-                      onClick={() => setIsNewTicketModalOpen(true)}
-                      className="bg-brand-primary hover:bg-brand-primary/90 text-white text-[13px]"
-                    >
-                      <Plus className="h-4 w-4" />
-                      New ticket
-                    </Button>
-                  </CardContent>
+                <Card>
+                  <EmptyState
+                    icon={MessageCircle}
+                    title="No tickets yet"
+                    description="You have not created any support tickets yet."
+                    action={
+                      <Button variant="brand" onClick={() => setIsNewTicketModalOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                        New ticket
+                      </Button>
+                    }
+                  />
                 </Card>
               ) : (
-                <div className="bg-white rounded-lg border border-[#E1E1E1] overflow-hidden shadow-none">
-                  <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
+                <div className="bg-card rounded-lg border border-border-subtle overflow-x-auto shadow-none">
+                  <ListHeader>
+                    <div className="grid grid-cols-12 gap-4">
                       <div className="col-span-5 flex items-center space-x-2">
                         <button
                           type="button"
                           onClick={() => handleSort("title")}
-                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                          className="flex items-center space-x-2"
                         >
-                          <span className="text-sm font-medium text-foreground">Ticket</span>
+                          <span>Ticket</span>
                           <TicketsSortIcon
                             field="title"
                             sortField={sortField}
@@ -326,9 +322,9 @@ export default function SupportTicketsPage() {
                         <button
                           type="button"
                           onClick={() => handleSort("type")}
-                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                          className="flex items-center space-x-2"
                         >
-                          <span className="text-sm font-medium text-foreground">Type</span>
+                          <span>Type</span>
                           <TicketsSortIcon
                             field="type"
                             sortField={sortField}
@@ -340,9 +336,9 @@ export default function SupportTicketsPage() {
                         <button
                           type="button"
                           onClick={() => handleSort("status")}
-                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                          className="flex items-center space-x-2"
                         >
-                          <span className="text-sm font-medium text-foreground">Status</span>
+                          <span>Status</span>
                           <TicketsSortIcon
                             field="status"
                             sortField={sortField}
@@ -354,9 +350,9 @@ export default function SupportTicketsPage() {
                         <button
                           type="button"
                           onClick={() => handleSort("createdAt")}
-                          className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
+                          className="flex items-center space-x-2"
                         >
-                          <span className="text-sm font-medium text-foreground">Created</span>
+                          <span>Created</span>
                           <TicketsSortIcon
                             field="createdAt"
                             sortField={sortField}
@@ -365,7 +361,7 @@ export default function SupportTicketsPage() {
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </ListHeader>
                   {filteredTickets.length > 0 ? (
                     filteredTickets.map((ticket) => {
                       const chatHref = `/support/chat?ticket=${ticket.id}&project=${ticket.projectId}`
@@ -373,14 +369,14 @@ export default function SupportTicketsPage() {
                         <Link
                           key={ticket.id}
                           href={chatHref}
-                          className="block px-6 py-4 border-b border-border last:border-b-0 hover:bg-[#f9f9f9]"
+                          className={listRowClass({ interactive: true, bordered: true, className: "block" })}
                         >
                           <div className="grid grid-cols-12 gap-4 items-center">
                             <div className="col-span-5">
-                              <div className="flex items-start gap-[18px]">
+                              <div className="flex items-start gap-4">
                                 <Avatar
                                   key={`${ticket.project.logoUrl ?? ""}|${ticket.project.name}`}
-                                  className="w-8 h-8 rounded-[11px] shrink-0"
+                                  className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} shrink-0`}
                                 >
                                   {ticket.project.logoUrl ? (
                                     <AvatarImage
@@ -388,7 +384,7 @@ export default function SupportTicketsPage() {
                                       alt={ticket.project.name}
                                     />
                                   ) : null}
-                                  <AvatarFallback className="bg-brand-primary text-white text-sm font-medium rounded-[11px]">
+                                  <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                                     {(ticket.project.name?.[0] || "?").toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
@@ -432,9 +428,7 @@ export default function SupportTicketsPage() {
                       )
                     })
                   ) : (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
-                      No tickets found
-                    </div>
+                    <EmptyState title="No tickets found" />
                   )}
                 </div>
               )}
@@ -447,6 +441,6 @@ export default function SupportTicketsPage() {
         isOpen={isNewTicketModalOpen}
         onClose={() => setIsNewTicketModalOpen(false)}
       />
-    </div>
+    </>
   )
 }

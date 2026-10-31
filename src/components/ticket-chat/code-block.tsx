@@ -75,8 +75,10 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
           aria-label={copied ? "Copied" : "Copy code"}
           title={copied ? "Copied" : "Copy code"}
         >
-          {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
-          <span>{copied ? "Copied" : "Copy"}</span>
+          <span key={String(copied)} className="inline-flex items-center gap-1 animate-fade-in">
+            {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+            <span>{copied ? "Copied" : "Copy"}</span>
+          </span>
         </button>
       </div>
       <div className="markdown-code-block__body">

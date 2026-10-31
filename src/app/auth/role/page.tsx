@@ -50,7 +50,7 @@ export default function RolePage() {
   }, [isLoading, roles, redirect, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+    <div className="min-h-screen flex items-center justify-center bg-page-muted">
       <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
     </div>
   )

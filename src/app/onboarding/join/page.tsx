@@ -92,14 +92,14 @@ export default function JoinProjectPage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-lg py-7 gap-6">
                 <CardHeader className="px-7">
-                    <CardTitle className="text-2xl font-bold">Join an existing project</CardTitle>
+                    <CardTitle className="text-2xl font-semibold">Join an existing project</CardTitle>
                     <CardDescription>
                         Enter a project ID, or connect with GitHub to find projects you&apos;ve contributed to that are registered in the system.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="px-7 space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="project-id" className="text-[13px] font-semibold">Project ID or Slug</Label>
+                        <Label htmlFor="project-id" className="text-ui font-semibold">Project ID or Slug</Label>
                         <div className="flex gap-2">
                             <Input
                                 id="project-id"
@@ -130,7 +130,7 @@ export default function JoinProjectPage() {
                     <div className="space-y-4">
                         <div>
                             <h3 className="font-semibold text-foreground mb-1">Find projects you&apos;ve contributed to</h3>
-                            <p className="text-sm text-muted-foreground mb-[18px]">
+                            <p className="text-sm text-muted-foreground mb-4">
                                 See which of your GitHub contributions are registered as projects. Request to become a helper and the project admin can approve.
                             </p>
                             {!githubToken ? (

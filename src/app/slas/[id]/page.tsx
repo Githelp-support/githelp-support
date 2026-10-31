@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { ListSkeleton } from "@/components/ui/skeleton"
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -202,28 +202,22 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
   // ---- Loading / error states ---------------------------------------------
   if (slaLoading || ticketsLoading) {
     return (
-      <div className="flex h-screen overflow-hidden bg-muted">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="SLA Details" subtitle="View and manage SLA configuration" />
-          <main className="flex-1 overflow-auto p-6 flex items-center justify-center">
-            <span className="text-muted-foreground text-[14px]">Loading…</span>
-          </main>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden bg-muted">
+        <Header title="SLA Details" subtitle="View and manage SLA configuration" />
+        <main className="flex-1 overflow-auto px-8 py-6">
+          <ListSkeleton rows={4} className="rounded-lg border border-border-subtle bg-card" />
+        </main>
       </div>
     )
   }
 
   if (slaError || !sla) {
     return (
-      <div className="flex h-screen overflow-hidden bg-muted">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="SLA Details" subtitle="View and manage SLA configuration" />
-          <main className="flex-1 overflow-auto p-6 flex items-center justify-center">
-            <span className="text-muted-foreground">SLA not found.</span>
-          </main>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden bg-muted">
+        <Header title="SLA Details" subtitle="View and manage SLA configuration" />
+        <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
+          <span className="text-muted-foreground">SLA not found.</span>
+        </main>
       </div>
     )
   }
@@ -238,428 +232,296 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden bg-muted">
+      <Header title="SLA Details" subtitle="View and manage SLA configuration" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="SLA Details" subtitle="View and manage SLA configuration" />
+      <main className="flex-1 overflow-auto px-8 py-6">
+        {/* Back navigation */}
+        <div className="mb-6">
+          <Link
+            href="/slas"
+            className="inline-flex items-center text-brand-primary hover:text-brand-primary/80 text-sm font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to list of SLAs
+          </Link>
+        </div>
 
-        <main className="flex-1 overflow-auto p-6">
-          {/* Back navigation */}
-          <div className="mb-6">
-            <Link
-              href="/slas"
-              className="inline-flex items-center text-brand-primary hover:text-brand-primary/80 text-sm font-medium"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to list of SLAs
-            </Link>
+        {/* SLA header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold"
+            style={{ backgroundColor: avatarColor(slaName) }}
+          >
+            {getInitial(slaName)}
           </div>
-
-          {/* SLA header */}
-          <div className="flex items-center gap-4 mb-8">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold"
-              style={{ backgroundColor: avatarColor(slaName) }}
-            >
-              {getInitial(slaName)}
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground mb-2">{slaName}</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Space ID:</span>
-                <span className="font-mono tabular-nums">{spaceId}</span>
-                <Button variant="ghost" size="sm" onClick={copySpaceId} className="h-auto p-1 hover:bg-brand-primary/10">
-                  <Copy className="w-3 h-3" />
-                </Button>
-              </div>
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground mb-2">{slaName}</h1>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Space ID:</span>
+              <span className="font-mono tabular-nums">{spaceId}</span>
+              <Button variant="ghost" size="sm" onClick={copySpaceId} className="h-auto p-1 hover:bg-brand-primary/10">
+                <Copy className="w-3 h-3" />
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* Agreement details */}
-          <div className="mb-8">
+        {/* Agreement details */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground">Agreement details</h2>
+              <Info className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+              <Edit className="w-4 h-4" />
+              Edit agreement
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Rates beyond support included */}
+            <Card className="py-0">
+              <CardContent className="p-0">
+                <h3 className="font-medium text-foreground mb-4">Rates beyond support included</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Ticket start price</span>
+                    <span className="text-sm font-medium">
+                      {centsToDisplay(sla.ticket_start_price, currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Price/minute - first 60 minutes</span>
+                    <span className="text-sm font-medium">
+                      {centsToDisplay(sla.ticket_price_minute_first_60, currency)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Price/minute - after 60 minutes</span>
+                    <span className="text-sm font-medium">
+                      {centsToDisplay(sla.ticket_price_minute_after_60, currency)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Included support */}
+            <Card className="py-0">
+              <CardContent className="p-0">
+                <h3 className="font-medium text-foreground mb-4">Included support</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Total time in SLA/month</span>
+                    <span className="text-sm font-medium">
+                      {formatMinutes(sla.minutes_included)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Rollover time</span>
+                    <span className="text-sm font-medium">{sla.minutes_rollover ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Rollover time from last month</span>
+                    <span className="text-sm font-medium">—</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Response times */}
+            <Card className="py-0">
+              <CardContent className="p-0">
+                <h3 className="font-medium text-foreground mb-4">Response times</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Maximum response time</span>
+                    <span className="text-sm font-medium">
+                      {formatMinutes(sla.max_response_time_minutes)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Maximum down time</span>
+                    <span className="text-sm font-medium">{formatMinutes(sla.max_downtime)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Time period filters */}
+        <div className="flex gap-2 mb-6">
+          <Button
+            variant={timePeriod === "current-month" ? "default" : "outline"}
+            onClick={() => setTimePeriod("current-month")}
+            className={
+              timePeriod === "current-month"
+                ? "bg-brand-primary hover:bg-brand-primary/90"
+                : "border-border text-muted-foreground hover:bg-muted"
+            }
+          >
+            Current month
+          </Button>
+          <Select value={timePeriod} onValueChange={setTimePeriod}>
+            <SelectTrigger className="w-[140px] border-border">
+              <SelectValue placeholder="Choose month" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="april-2025">April 2025</SelectItem>
+              <SelectItem value="march-2025">March 2025</SelectItem>
+              <SelectItem value="february-2025">February 2025</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant={timePeriod === "all-time" ? "default" : "outline"}
+            onClick={() => setTimePeriod("all-time")}
+            className={
+              timePeriod === "all-time"
+                ? "bg-brand-primary hover:bg-brand-primary/90"
+                : "border-border text-muted-foreground hover:bg-muted"
+            }
+          >
+            All time
+          </Button>
+        </div>
+
+        {/* Key stats */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Key stats</h2>
+            <Info className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground">Number of tickets solved</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-2xl font-semibold text-foreground">{stats.solved}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground">Total time spent</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-2xl font-semibold text-foreground tabular-nums">{formatMs(stats.totalMs)}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground">Support time remaining</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-2xl font-semibold text-foreground tabular-nums">{formatMs(stats.remainingMs)}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground">Percentage solved</span>
+                  <Info className="w-3 h-3 text-muted-foreground" />
+                </div>
+                <div className="text-2xl font-semibold text-foreground">{stats.pct}%</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Helpers and Issue types */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Helpers */}
+          <div>
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-foreground">Agreement details</h2>
-                <Info className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                <Edit className="w-4 h-4" />
-                Edit agreement
+              <h2 className="text-lg font-semibold text-foreground">Helpers ({helpersSummary.length})</h2>
+            </div>
+
+            {/* Helper filter tabs */}
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant={helpersView === "view-all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setHelpersView("view-all")}
+                className={
+                  helpersView === "view-all"
+                    ? "bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted"
+                }
+              >
+                View all
+              </Button>
+              <Button
+                title={ILLUSTRATIVE_BUTTON_TOOLTIP}
+                variant="outline"
+                size="sm"
+                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+              >
+                Core team
+              </Button>
+              <Button
+                title={ILLUSTRATIVE_BUTTON_TOOLTIP}
+                variant="outline"
+                size="sm"
+                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+              >
+                Extended team
+              </Button>
+              <Button
+                title={ILLUSTRATIVE_BUTTON_TOOLTIP}
+                variant="outline"
+                size="sm"
+                className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+              >
+                Community
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Rates beyond support included */}
-              <Card className="border-border py-0">
-                <CardContent className="p-0">
-                  <h3 className="font-medium text-foreground mb-4">Rates beyond support included</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Ticket start price</span>
-                      <span className="text-sm font-medium">
-                        {centsToDisplay(sla.ticket_start_price, currency)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Price/minute - first 60 minutes</span>
-                      <span className="text-sm font-medium">
-                        {centsToDisplay(sla.ticket_price_minute_first_60, currency)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Price/minute - after 60 minutes</span>
-                      <span className="text-sm font-medium">
-                        {centsToDisplay(sla.ticket_price_minute_after_60, currency)}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Included support */}
-              <Card className="border-border py-0">
-                <CardContent className="p-0">
-                  <h3 className="font-medium text-foreground mb-4">Included support</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Total time in SLA/month</span>
-                      <span className="text-sm font-medium">
-                        {formatMinutes(sla.minutes_included)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Rollover time</span>
-                      <span className="text-sm font-medium">{sla.minutes_rollover ? "Yes" : "No"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Rollover time from last month</span>
-                      <span className="text-sm font-medium">—</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Response times */}
-              <Card className="border-border py-0">
-                <CardContent className="p-0">
-                  <h3 className="font-medium text-foreground mb-4">Response times</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Maximum response time</span>
-                      <span className="text-sm font-medium">
-                        {formatMinutes(sla.max_response_time_minutes)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Maximum down time</span>
-                      <span className="text-sm font-medium">{formatMinutes(sla.max_downtime)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Time period filters */}
-          <div className="flex gap-2 mb-6">
-            <Button
-              variant={timePeriod === "current-month" ? "default" : "outline"}
-              onClick={() => setTimePeriod("current-month")}
-              className={
-                timePeriod === "current-month"
-                  ? "bg-brand-primary hover:bg-brand-primary/90"
-                  : "border-border text-muted-foreground hover:bg-muted"
-              }
-            >
-              Current month
-            </Button>
-            <Select value={timePeriod} onValueChange={setTimePeriod}>
-              <SelectTrigger className="w-[140px] border-border">
-                <SelectValue placeholder="Choose month" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="april-2025">April 2025</SelectItem>
-                <SelectItem value="march-2025">March 2025</SelectItem>
-                <SelectItem value="february-2025">February 2025</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant={timePeriod === "all-time" ? "default" : "outline"}
-              onClick={() => setTimePeriod("all-time")}
-              className={
-                timePeriod === "all-time"
-                  ? "bg-brand-primary hover:bg-brand-primary/90"
-                  : "border-border text-muted-foreground hover:bg-muted"
-              }
-            >
-              All time
-            </Button>
-          </div>
-
-          {/* Key stats */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Key stats</h2>
-              <Info className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Number of tickets solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.solved}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Total time spent</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-semibold text-foreground">{formatMs(stats.totalMs)}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Support time remaining</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-semibold text-foreground">{formatMs(stats.remainingMs)}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-muted-foreground">Percentage solved</span>
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.pct}%</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Helpers and Issue types */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Helpers */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Helpers ({helpersSummary.length})</h2>
-              </div>
-
-              {/* Helper filter tabs */}
-              <div className="flex gap-2 mb-4">
-                <Button
-                  variant={helpersView === "view-all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setHelpersView("view-all")}
-                  className={
-                    helpersView === "view-all"
-                      ? "bg-brand-primary hover:bg-brand-primary/90 text-white"
-                      : "border-border text-muted-foreground hover:bg-muted"
-                  }
-                >
-                  View all
-                </Button>
-                <Button
-                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                  variant="outline"
-                  size="sm"
-                  className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                >
-                  Core team
-                </Button>
-                <Button
-                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                  variant="outline"
-                  size="sm"
-                  className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                >
-                  Extended team
-                </Button>
-                <Button
-                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                  variant="outline"
-                  size="sm"
-                  className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                >
-                  Community
-                </Button>
-              </div>
-
-              <Card className="border-border py-0">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border bg-brand-primary/10">
-                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Name</th>
-                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">No of tickets</th>
-                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Total time</th>
-                          <th className="text-left p-4 text-sm font-medium text-muted-foreground"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {helpersSummary.length === 0 ? (
-                          <tr>
-                            <td colSpan={4} className="p-4 text-center text-muted-foreground text-[14px]">No helpers yet</td>
-                          </tr>
-                        ) : (
-                          helpersSummary.map((helper) => (
-                            <tr key={helper.id} className="border-b border-border hover:bg-muted">
-                              <td className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                                    style={{ backgroundColor: avatarColor(helperAvatarKeyMap.get(helper.id) ?? helper.id) }}
-                                  >
-                                    {getInitial(helper.name)}
-                                  </div>
-                                  <span className="text-sm text-foreground font-medium">{helper.name}</span>
-                                </div>
-                              </td>
-                              <td className="p-4 text-sm text-muted-foreground">{helper.tickets}</td>
-                              <td className="p-4 text-sm text-muted-foreground">{formatMs(helper.totalMs)}</td>
-                              <td className="p-4">
-                                <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                                  <ExternalLink className="w-4 h-4" />
-                                </Button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Issue types — not yet available in DB schema; show placeholder */}
-            <div>
-              <h2 className="text-lg font-semibold text-foreground mb-4">Issue types</h2>
-              <Card className="border-border py-0">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border bg-brand-primary/10">
-                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Name</th>
-                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">No of tickets</th>
-                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Total time</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td colSpan={3} className="p-4 text-center text-muted-foreground text-[14px]">No issue types recorded</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* All tickets */}
-          <div>
-            <h2 className="text-lg font-semibold text-foreground mb-4">All tickets ({filteredTickets.length})</h2>
-            <Card className="border-border py-0">
+            <Card className="py-0">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border bg-brand-primary/10">
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                          <input type="checkbox" className="mr-3" />
-                          Ticket ID
-                        </th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Helper</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground"></th>
+                      <tr className="border-b border-border-subtle bg-brand-primary/10">
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Name</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">No of tickets</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Total time</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredTickets.length === 0 ? (
+                      {helpersSummary.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="p-4 text-center text-muted-foreground text-[14px]">No tickets yet</td>
+                          <td colSpan={4} className="p-4 text-center text-muted-foreground text-sm">No helpers yet</td>
                         </tr>
                       ) : (
-                        filteredTickets.map((ticket) => {
-                          // Primary helper = participant who claimed the ticket
-                          const claimedParticipant = ticket.tickets_participants.find((p) => p.claimed)
-                          const primaryHelperId = claimedParticipant?.participant_id
-                          const primaryHelperName = primaryHelperId ? (helperMap.get(primaryHelperId) ?? "Unknown") : "—"
-                          const primaryHelperAvatarKey = primaryHelperId
-                            ? (helperAvatarKeyMap.get(primaryHelperId) ?? primaryHelperId)
-                            : null
-
-                          const ticketMs = ticket.tickets_time_entries.reduce(
-                            (sum, e) => sum + (e.time_milliseconds ?? 0), 0
-                          )
-                          const isCompleted = ticket.status === "completed"
-                          const isCancelled = ticket.status === "cancelled"
-
-                          return (
-                            <tr key={ticket.id} className="border-b border-border hover:bg-muted">
-                              <td className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <input type="checkbox" />
-                                  <span className="text-sm text-foreground font-medium font-mono tabular-nums">{ticket.id.slice(0, 8)}</span>
+                        helpersSummary.map((helper) => (
+                          <tr key={helper.id} className="border-b border-border-subtle text-ui transition-colors duration-fast ease-out hover:bg-surface-hover">
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                                  style={{ backgroundColor: avatarColor(helperAvatarKeyMap.get(helper.id) ?? helper.id) }}
+                                >
+                                  {getInitial(helper.name)}
                                 </div>
-                              </td>
-                              <td className="p-4 text-sm text-muted-foreground">
-                                {new Date(ticket.created_at).toLocaleDateString("en-GB")}
-                              </td>
-                              <td className="p-4">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
-                                    style={{ backgroundColor: avatarColor(primaryHelperAvatarKey) }}
-                                  >
-                                    {getInitial(primaryHelperName)}
-                                  </div>
-                                  <span className="text-sm text-muted-foreground">{primaryHelperName}</span>
-                                </div>
-                              </td>
-                              <td className="p-4 text-sm text-muted-foreground">
-                                {ticketMs > 0 ? formatMs(ticketMs) : `${currency} 0.00`}
-                              </td>
-                              <td className="p-4">
-                                {(isCompleted || isCancelled) ? (
-                                  <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
-                                    ✓ {isCompleted ? "Completed" : "Cancelled"}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="secondary" className="border-0 capitalize">
-                                    {ticket.status}
-                                  </Badge>
-                                )}
-                              </td>
-                              <td className="p-4">
-                                <div className="flex gap-2">
-                                  <Button
-                                    title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-border text-muted-foreground hover:bg-muted bg-transparent"
-                                  >
-                                    Open
-                                  </Button>
-                                  {/* SLA tickets are billed on the SLA's Stripe
-                                      subscription invoice, so there is no
-                                      per-ticket receipt to link to here. */}
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })
+                                <span className="text-sm text-foreground font-medium">{helper.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-3 text-ui text-muted-foreground">{helper.tickets}</td>
+                            <td className="p-4 text-sm text-muted-foreground tabular-nums">{formatMs(helper.totalMs)}</td>
+                            <td className="px-6 py-3">
+                              <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
                       )}
                     </tbody>
                   </table>
@@ -667,8 +529,136 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
+
+          {/* Issue types — not yet available in DB schema; show placeholder */}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Issue types</h2>
+            <Card className="py-0">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border-subtle bg-brand-primary/10">
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Name</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">No of tickets</th>
+                        <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Total time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td colSpan={3} className="p-4 text-center text-muted-foreground text-sm">No issue types recorded</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* All tickets */}
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-4">All tickets ({filteredTickets.length})</h2>
+          <Card className="py-0">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border-subtle bg-brand-primary/10">
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">
+                        <input type="checkbox" className="mr-3" />
+                        Ticket ID
+                      </th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Date</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Helper</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Amount</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Status</th>
+                      <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTickets.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-4 text-center text-muted-foreground text-sm">No tickets yet</td>
+                      </tr>
+                    ) : (
+                      filteredTickets.map((ticket) => {
+                        // Primary helper = participant who claimed the ticket
+                        const claimedParticipant = ticket.tickets_participants.find((p) => p.claimed)
+                        const primaryHelperId = claimedParticipant?.participant_id
+                        const primaryHelperName = primaryHelperId ? (helperMap.get(primaryHelperId) ?? "Unknown") : "—"
+                        const primaryHelperAvatarKey = primaryHelperId
+                          ? (helperAvatarKeyMap.get(primaryHelperId) ?? primaryHelperId)
+                          : null
+
+                        const ticketMs = ticket.tickets_time_entries.reduce(
+                          (sum, e) => sum + (e.time_milliseconds ?? 0), 0
+                        )
+                        const isCompleted = ticket.status === "completed"
+                        const isCancelled = ticket.status === "cancelled"
+
+                        return (
+                          <tr key={ticket.id} className="border-b border-border-subtle text-ui transition-colors duration-fast ease-out hover:bg-surface-hover">
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-3">
+                                <input type="checkbox" />
+                                <span className="text-sm text-foreground font-medium font-mono tabular-nums">{ticket.id.slice(0, 8)}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-3 text-ui text-muted-foreground">
+                              {new Date(ticket.created_at).toLocaleDateString("en-GB")}
+                            </td>
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
+                                  style={{ backgroundColor: avatarColor(primaryHelperAvatarKey) }}
+                                >
+                                  {getInitial(primaryHelperName)}
+                                </div>
+                                <span className="text-sm text-muted-foreground">{primaryHelperName}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-3 text-ui text-muted-foreground">
+                              {ticketMs > 0 ? formatMs(ticketMs) : `${currency} 0.00`}
+                            </td>
+                            <td className="px-6 py-3">
+                              {(isCompleted || isCancelled) ? (
+                                <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
+                                  ✓ {isCompleted ? "Completed" : "Cancelled"}
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="border-0 capitalize">
+                                  {ticket.status}
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="px-6 py-3">
+                              <div className="flex gap-2">
+                                <Button
+                                  title={ILLUSTRATIVE_BUTTON_TOOLTIP}
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-border text-muted-foreground hover:bg-muted bg-transparent"
+                                >
+                                  Open
+                                </Button>
+                                {/* SLA tickets are billed on the SLA's Stripe
+                                    subscription invoice, so there is no
+                                    per-ticket receipt to link to here. */}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     </div>
   )
 }

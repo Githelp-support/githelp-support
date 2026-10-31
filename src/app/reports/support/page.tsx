@@ -4,7 +4,6 @@ import { useState, useMemo, type SyntheticEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/layout/header"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -17,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet, List, MoreVertical } from "lucide-react"
 import { getStatusBadgeClass } from "@/lib/status-colors"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { usePaymentTransfers, usePayments, formatAmount, getHelperDisplayName, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
@@ -39,6 +38,9 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { buildProjectPayoutReport, reportToCsv, type ReportDocument } from "@/lib/report-export"
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListHeader, listRowClass } from "@/components/ui/list"
 
 type Tab = "monthly" | "tickets" | "helpers"
 type SortDirection = "asc" | "desc"
@@ -79,7 +81,7 @@ const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted
 
 // Same Badge classes as User reports: design-token colours from getStatusBadgeClass.
 const statusBadgeClass = (label: string) =>
-  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`
+  `${getStatusBadgeClass(label)} flex items-center gap-1 w-fit text-ui px-3 py-1`
 
 // "Received" and "Awaiting payment" are not known to getStatusBadgeClass,
 // so they use the key Monthly reports uses for the same meaning.
@@ -487,524 +489,518 @@ export default function ReportsSupportPage() {
   const emptyMessage = (what: string) => (targetMonth ? `No ${what} found for ${targetMonth}` : `No ${what} found`)
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Reports and Payouts" subtitle="Your project's income per ticket, and what has been paid out to helpers." />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Reports and Payouts" subtitle="Your project's income per ticket, and what has been paid out to helpers." />
-
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="space-y-6">
-            <div className="mb-6">
-              <div className="flex gap-1">
-                {tabButton("monthly", "Monthly reports")}
-                {tabButton("tickets", "Tickets")}
-                {tabButton("helpers", "Helpers")}
-              </div>
-              <div className="h-px bg-border -mx-6" />
+      <main className="flex-1 px-8 py-6 overflow-y-auto">
+        <div className="space-y-6">
+          <div className="mb-6">
+            <div className="flex gap-1">
+              {tabButton("monthly", "Monthly reports")}
+              {tabButton("tickets", "Tickets")}
+              {tabButton("helpers", "Helpers")}
             </div>
-
-            <div className="flex gap-2 mb-6">
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                  <SelectValue placeholder="Choose period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="current">Current month</SelectItem>
-                  {monthOptions.map((month) => (
-                    <SelectItem key={month} value={month}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="ml-auto flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  className={`h-9 ${OUTLINE_BUTTON_CLASS}`}
-                  disabled={!hasExportData}
-                  title={`Export the ${exportPeriod ?? "all-time"} project report as CSV for accounting`}
-                  onClick={() => exportCsv(exportPeriod)}
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  Export CSV
-                </Button>
-                <Button
-                  variant="lavender"
-                  size="sm"
-                  type="button"
-                  className="h-9"
-                  disabled={!hasExportData}
-                  title={`Download the ${exportPeriod ?? "all-time"} project report as PDF for accounting`}
-                  onClick={() => exportPdf(exportPeriod)}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Download PDF
-                </Button>
-              </div>
-            </div>
-
-            {!projectId && (
-              <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">Select a project to see its reports.</div>
-            )}
-
-            {/* Monthly: the project's income per month */}
-            {activeTab === "monthly" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
-                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                    <div>
-                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all months" />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Period" field="period" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Tickets" field="tickets" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0 whitespace-nowrap">
-                      <SortHeader label="Project income (USD)" field="income" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Status" field="status" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
-                    </div>
-                    <div />
-                  </div>
-                </div>
-                <div className="divide-y divide-border">
-                  {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
-                  ) : monthlyRows.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">
-                      {targetMonth ? `No income found for ${targetMonth}` : "No income found"}
-                    </div>
-                  ) : (
-                    monthlyRows.map((row) => (
-                      <div
-                        key={row.id}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`View tickets for ${row.period}`}
-                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
-                        onClick={() => openMonthTickets(row.period)}
-                        onKeyDown={(e) => {
-                          if (e.target !== e.currentTarget) return
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            openMonthTickets(row.period)
-                          }
-                        }}
-                      >
-                        <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                          <div onClick={stopRowNavigation}>
-                            <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.period}`} />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-sm font-medium text-foreground">{row.period}</span>
-                          </div>
-                          <div className="min-w-0 text-sm text-foreground">{row.ticketCount}</div>
-                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
-                            {formatPaymentAmount(row.projectIncomeSmallestUnit, row.currency)}
-                          </div>
-                          <div className="min-w-0">
-                            <Badge className={`${getStatusBadgeClass(row.allReceived ? "paid out" : "pending")} hover:opacity-90 text-[13px] px-3 py-1`}>
-                              {row.allReceived ? "Received" : "Pending"}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center justify-end">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={KEBAB_BUTTON_CLASS}
-                                  aria-label={`More actions for ${row.period}`}
-                                  onClick={stopRowNavigation}
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              {/* Portalled, but React events still bubble to the row. */}
-                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
-                                <DropdownMenuItem
-                                  title={`Download the ${row.period} project report as PDF`}
-                                  onSelect={() => exportPdf(row.period)}
-                                >
-                                  <Download />
-                                  PDF
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  title={`Export the ${row.period} project report as CSV`}
-                                  onSelect={() => exportCsv(row.period)}
-                                >
-                                  <FileSpreadsheet />
-                                  CSV
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Tickets: the project's income per ticket */}
-            {activeTab === "tickets" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
-                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid gap-4 items-center" style={TICKETS_GRID}>
-                    <div>
-                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Ticket ID" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0 whitespace-nowrap">
-                      <SortHeader label="Project income (USD)" field="income" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
-                    </div>
-                    <div />
-                  </div>
-                </div>
-                <div className="divide-y divide-border">
-                  {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
-                  ) : ticketRows.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("ticket payments")}</div>
-                  ) : (
-                    ticketRows.map((row) => {
-                      const count = row.transactions.length
-                      const expanded = count > 1 && isExpanded(row.id)
-                      const panelId = transactionsPanelId(row.id)
-                      const ticketHref = row.ticketId ? `/helper/tickets/${row.ticketId}` : null
-                      return (
-                      <div
-                        key={row.id}
-                        className={cn(
-                          "px-6 py-4 hover:bg-[#f7f9ff]",
-                          ticketHref &&
-                            "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
-                        )}
-                        {...(ticketHref
-                          ? {
-                              role: "link",
-                              tabIndex: 0,
-                              "aria-label": `Open ticket ${getShortTicketId(row.ticketId)}`,
-                              onClick: () => router.push(ticketHref),
-                              // Only when the row itself has focus, not a control inside it.
-                              onKeyDown: (event) => {
-                                if (event.key === "Enter" && event.target === event.currentTarget) {
-                                  router.push(ticketHref)
-                                }
-                              },
-                            }
-                          : {})}
-                      >
-                        <div className="grid gap-4 items-center" style={TICKETS_GRID}>
-                          <div className="flex items-center">
-                            <Checkbox
-                              checked={selectedRows.includes(row.id)}
-                              onCheckedChange={() => handleRowSelect(row.id)}
-                              onClick={stopRowNavigation}
-                              aria-label={`Select ticket ${row.ticketShortId}`}
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            {ticketHref ? (
-                              <Link
-                                href={ticketHref}
-                                onClick={stopRowNavigation}
-                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
-                              >
-                                {getShortTicketId(row.ticketId)}
-                              </Link>
-                            ) : (
-                              <span className="text-sm font-medium text-foreground">—</span>
-                            )}
-                            <div className="text-xs text-muted-foreground" title={row.ticketTitle}>
-                              {ticketPreview(row.ticketTitle)}
-                            </div>
-                          </div>
-                          <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
-                          <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
-                            {formatPaymentAmount(row.projectIncomeSmallestUnit, row.currency)}
-                          </div>
-                          <div className="min-w-0">
-                            <Badge className={INCOME_BADGE_CLASS[row.status]}>{PROJECT_INCOME_STATUS_LABELS[row.status]}</Badge>
-                          </div>
-                          <div className="flex items-center justify-end">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={KEBAB_BUTTON_CLASS}
-                                  aria-label={`More actions for ticket ${row.ticketShortId}`}
-                                  onClick={stopRowNavigation}
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              {/* Portalled, but React events still bubble to the row. */}
-                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
-                                {count > 1 ? (
-                                  <DropdownMenuItem title="Each charge has its own Stripe receipt" onSelect={() => toggle(row.id)}>
-                                    <ExternalLink />
-                                    Receipts
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <ReceiptMenuItem url={row.receiptUrl} />
-                                )}
-                                <DropdownMenuItem
-                                  title="Download this ticket's charges, payouts and project income as a PDF"
-                                  onSelect={() =>
-                                    exportPdf(null, {
-                                      ticketId: row.ticketId,
-                                      paymentIds: row.ticketId ? undefined : row.transactions.map((t) => t.id),
-                                      title: `Ticket ${row.ticketShortId}`,
-                                    })
-                                  }
-                                >
-                                  <Download />
-                                  PDF
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                        {count > 1 && (
-                          <div className="w-fit" onClick={stopRowNavigation}>
-                            <TransactionsToggle
-                              className="ml-12 mt-2"
-                              count={count}
-                              expanded={expanded}
-                              onToggle={() => toggle(row.id)}
-                              panelId={panelId}
-                            />
-                          </div>
-                        )}
-                        {expanded && (
-                          <div className="cursor-default" onClick={stopRowNavigation}>
-                          {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
-                          <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
-                            {row.transactions.map((charge, index) => (
-                              <div
-                                key={charge.id}
-                                role="listitem"
-                                className="grid items-center gap-4 px-[11px] py-2 text-sm"
-                                style={TICKETS_GRID}
-                              >
-                                <span />
-                                <span className="min-w-0 text-xs text-muted-foreground tabular-nums">
-                                  {index + 1} of {count}
-                                </span>
-                                <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(charge.date)}</span>
-                                <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
-                                  {formatPaymentAmount(charge.projectIncomeSmallestUnit, charge.currency)}
-                                </span>
-                                <span className="min-w-0">
-                                  <Badge className={INCOME_BADGE_CLASS[charge.status]}>{PROJECT_INCOME_STATUS_LABELS[charge.status]}</Badge>
-                                </span>
-                                {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
-                                <span className="flex items-center justify-end [&>*]:shrink-0">
-                                  <ReceiptButton url={charge.receiptUrl} />
-                                </span>
-                              </div>
-                            ))}
-                          </TransactionsPanel>
-                          </div>
-                        )}
-                      </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Helpers: each helper's income per month, with that month's tickets underneath */}
-            {activeTab === "helpers" && (
-              <div className="bg-white rounded-lg border border-border overflow-hidden">
-                <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                  <div className="grid gap-4 items-center" style={HELPERS_GRID}>
-                    <div>
-                      <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all helpers" />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Helper" field="helper" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Date" field="date" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0">
-                      <SortHeader label="Tickets" field="tickets" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
-                    </div>
-                    <div className="min-w-0 whitespace-nowrap">
-                      <SortHeader label="Helper income (USD)" field="amount" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
-                    </div>
-                    <div />
-                  </div>
-                </div>
-                <div className="divide-y divide-border">
-                  {isLoading ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading...</div>
-                  ) : helperRows.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("helper payouts")}</div>
-                  ) : (
-                    helperRows.map((row) => {
-                      const expanded = isExpanded(row.id)
-                      const panelId = transactionsPanelId(row.id)
-                      return (
-                      <div
-                        key={row.id}
-                        role="button"
-                        tabIndex={0}
-                        aria-expanded={expanded}
-                        aria-controls={expanded ? panelId : undefined}
-                        aria-label={`Tickets for ${row.helper}, ${row.period}`}
-                        className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
-                        onClick={() => toggle(row.id)}
-                        onKeyDown={(e) => {
-                          // Only when the row itself has focus, not a control inside it.
-                          if (e.target !== e.currentTarget) return
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            toggle(row.id)
-                          }
-                        }}
-                      >
-                        <div className="grid gap-4 items-center" style={HELPERS_GRID}>
-                          <div onClick={stopRowNavigation}>
-                            <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.helper}, ${row.period}`} />
-                          </div>
-                          <div className="min-w-0 flex items-center gap-[18px]">
-                            <div
-                              className="w-8 h-8 rounded-[11px] flex items-center justify-center text-sm font-medium text-foreground shrink-0"
-                              style={{ backgroundColor: row.helperColor }}
-                            >
-                              {row.helperInitial}
-                            </div>
-                            <span className="min-w-0 truncate text-sm font-medium text-foreground" title={row.helper}>
-                              {row.helper}
-                            </span>
-                          </div>
-                          <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
-                          <div className="min-w-0 text-sm text-foreground">{row.ticketCount}</div>
-                          <div className="min-w-0 text-sm text-foreground">
-                            <div className="whitespace-nowrap">{formatPaymentAmount(row.amountRaw, row.currency)}</div>
-                            {row.failedSmallestUnit > 0 && (
-                              <div className="text-xs text-red-700">{formatPaymentAmount(row.failedSmallestUnit, row.currency)} failed</div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-end">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={KEBAB_BUTTON_CLASS}
-                                  aria-label={`More actions for ${row.helper}, ${row.period}`}
-                                  onClick={stopRowNavigation}
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              {/* Portalled, but React events still bubble to the row. */}
-                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
-                                <DropdownMenuItem
-                                  title={`Download all of ${row.helper}'s transactions in ${row.period} as one PDF`}
-                                  onSelect={() => exportPdf(null, helperMonthExport(row))}
-                                >
-                                  <Download />
-                                  PDF
-                                </DropdownMenuItem>
-                                {/* Opens the same list as clicking the row; an already open list stays open. */}
-                                <DropdownMenuItem
-                                  title={`Show all of ${row.helper}'s transactions in ${row.period}`}
-                                  onSelect={() => {
-                                    if (!expanded) toggle(row.id)
-                                  }}
-                                >
-                                  <List />
-                                  See transactions
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                        {expanded && (
-                          <div className="cursor-default" onClick={stopRowNavigation}>
-                          {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
-                          <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
-                            {row.transfers.map((transfer) => (
-                              <div
-                                key={transfer.id}
-                                role="listitem"
-                                className="grid items-center gap-4 px-[11px] py-2 text-sm"
-                                style={HELPERS_GRID}
-                              >
-                                <span />
-                                {/* Starts where the helper's name starts: past the avatar (32px) and its gap (18px). */}
-                                <span className="min-w-0 pl-[50px]">
-                                  {transfer.ticket_id ? (
-                                    <Link
-                                      href={`/helper/tickets/${transfer.ticket_id}`}
-                                      className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
-                                    >
-                                      {getShortTicketId(transfer.ticket_id)}
-                                    </Link>
-                                  ) : (
-                                    <span className="text-sm font-medium text-foreground">—</span>
-                                  )}
-                                </span>
-                                <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
-                                {/* Tickets column: the count belongs to the row above. */}
-                                <span />
-                                <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
-                                  {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency)}
-                                  {/* Not paid, and not part of the row's income. */}
-                                  {transfer.status === "failed" && <span className="ml-2 text-xs text-red-700">failed</span>}
-                                </span>
-                                {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
-                                <span className="flex items-center justify-end [&>*]:shrink-0">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    type="button"
-                                    className={OUTLINE_BUTTON_CLASS}
-                                    title="Download this transaction and its user charge as a PDF"
-                                    onClick={() => exportPdf(null, payoutExport(transfer))}
-                                  >
-                                    <Download className="w-3.5 h-3.5" />
-                                    Receipt
-                                  </Button>
-                                </span>
-                              </div>
-                            ))}
-                          </TransactionsPanel>
-                          </div>
-                        )}
-                      </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-            )}
+            <div className="h-px bg-border -mx-6" />
           </div>
-        </main>
-      </div>
+
+          <div className="flex gap-2 mb-6">
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+                <SelectValue placeholder="Choose period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
+                {monthOptions.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                className={`h-9 ${OUTLINE_BUTTON_CLASS}`}
+                disabled={!hasExportData}
+                title={`Export the ${exportPeriod ?? "all-time"} project report as CSV for accounting`}
+                onClick={() => exportCsv(exportPeriod)}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                Export CSV
+              </Button>
+              <Button
+                variant="lavender"
+                size="sm"
+                type="button"
+                className="h-9"
+                disabled={!hasExportData}
+                title={`Download the ${exportPeriod ?? "all-time"} project report as PDF for accounting`}
+                onClick={() => exportPdf(exportPeriod)}
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download PDF
+              </Button>
+            </div>
+          </div>
+
+          {!projectId && (
+            <div className="rounded-lg bg-bg-subtle px-4 py-3 text-sm text-text-muted">Select a project to see its reports.</div>
+          )}
+
+          {/* Monthly: the project's income per month */}
+          {activeTab === "monthly" && (
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
+              <ListHeader>
+                <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                  <div>
+                    <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all months" />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Period" field="period" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Tickets" field="tickets" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0 whitespace-nowrap">
+                    <SortHeader label="Project income (USD)" field="income" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Status" field="status" sortField={monthlySort.field} sortDirection={monthlySort.direction} onSort={(f) => cycleSort(f, monthlySort.field, monthlySort.direction, (field, direction) => setMonthlySort({ field, direction }))} />
+                  </div>
+                  <div />
+                </div>
+              </ListHeader>
+              <div className="divide-y divide-border-subtle">
+                {isLoading ? (
+                  <ListSkeleton rows={5} />
+                ) : monthlyRows.length === 0 ? (
+                  <EmptyState size="sm" title={targetMonth ? `No income found for ${targetMonth}` : "No income found"} />
+                ) : (
+                  monthlyRows.map((row) => (
+                    <div
+                      key={row.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View tickets for ${row.period}`}
+                      className={listRowClass({ interactive: true })}
+                      onClick={() => openMonthTickets(row.period)}
+                      onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          openMonthTickets(row.period)
+                        }
+                      }}
+                    >
+                      <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                        <div onClick={stopRowNavigation}>
+                          <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.period}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-sm font-medium text-foreground">{row.period}</span>
+                        </div>
+                        <div className="min-w-0 text-sm text-foreground">{row.ticketCount}</div>
+                        <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
+                          {formatPaymentAmount(row.projectIncomeSmallestUnit, row.currency)}
+                        </div>
+                        <div className="min-w-0">
+                          <Badge className={`${getStatusBadgeClass(row.allReceived ? "paid out" : "pending")} hover:opacity-90 text-ui px-3 py-1`}>
+                            {row.allReceived ? "Received" : "Pending"}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={KEBAB_BUTTON_CLASS}
+                                aria-label={`More actions for ${row.period}`}
+                                onClick={stopRowNavigation}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            {/* Portalled, but React events still bubble to the row. */}
+                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                              <DropdownMenuItem
+                                title={`Download the ${row.period} project report as PDF`}
+                                onSelect={() => exportPdf(row.period)}
+                              >
+                                <Download />
+                                PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                title={`Export the ${row.period} project report as CSV`}
+                                onSelect={() => exportCsv(row.period)}
+                              >
+                                <FileSpreadsheet />
+                                CSV
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tickets: the project's income per ticket */}
+          {activeTab === "tickets" && (
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
+              <ListHeader>
+                <div className="grid gap-4 items-center" style={TICKETS_GRID}>
+                  <div>
+                    <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all tickets" />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Ticket ID" field="ticket" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Date" field="date" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0 whitespace-nowrap">
+                    <SortHeader label="Project income (USD)" field="income" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Status" field="status" sortField={ticketsSort.field} sortDirection={ticketsSort.direction} onSort={(f) => cycleSort(f, ticketsSort.field, ticketsSort.direction, (field, direction) => setTicketsSort({ field, direction }))} />
+                  </div>
+                  <div />
+                </div>
+              </ListHeader>
+              <div className="divide-y divide-border-subtle">
+                {isLoading ? (
+                  <ListSkeleton rows={5} />
+                ) : ticketRows.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("ticket payments")}</div>
+                ) : (
+                  ticketRows.map((row) => {
+                    const count = row.transactions.length
+                    const expanded = count > 1 && isExpanded(row.id)
+                    const panelId = transactionsPanelId(row.id)
+                    const ticketHref = row.ticketId ? `/helper/tickets/${row.ticketId}` : null
+                    return (
+                    <div
+                      key={row.id}
+                      className={cn(
+                        "px-6 py-4 hover:bg-page-muted",
+                        ticketHref &&
+                          "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
+                      )}
+                      {...(ticketHref
+                        ? {
+                            role: "link",
+                            tabIndex: 0,
+                            "aria-label": `Open ticket ${getShortTicketId(row.ticketId)}`,
+                            onClick: () => router.push(ticketHref),
+                            // Only when the row itself has focus, not a control inside it.
+                            onKeyDown: (event) => {
+                              if (event.key === "Enter" && event.target === event.currentTarget) {
+                                router.push(ticketHref)
+                              }
+                            },
+                          }
+                        : {})}
+                    >
+                      <div className="grid gap-4 items-center" style={TICKETS_GRID}>
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={selectedRows.includes(row.id)}
+                            onCheckedChange={() => handleRowSelect(row.id)}
+                            onClick={stopRowNavigation}
+                            aria-label={`Select ticket ${row.ticketShortId}`}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          {ticketHref ? (
+                            <Link
+                              href={ticketHref}
+                              onClick={stopRowNavigation}
+                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                            >
+                              {getShortTicketId(row.ticketId)}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-medium text-foreground">—</span>
+                          )}
+                          <div className="text-xs text-muted-foreground" title={row.ticketTitle}>
+                            {ticketPreview(row.ticketTitle)}
+                          </div>
+                        </div>
+                        <div className="min-w-0 text-sm text-muted-foreground">{formatDate(row.date)}</div>
+                        <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
+                          {formatPaymentAmount(row.projectIncomeSmallestUnit, row.currency)}
+                        </div>
+                        <div className="min-w-0">
+                          <Badge className={INCOME_BADGE_CLASS[row.status]}>{PROJECT_INCOME_STATUS_LABELS[row.status]}</Badge>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={KEBAB_BUTTON_CLASS}
+                                aria-label={`More actions for ticket ${row.ticketShortId}`}
+                                onClick={stopRowNavigation}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            {/* Portalled, but React events still bubble to the row. */}
+                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                              {count > 1 ? (
+                                <DropdownMenuItem title="Each charge has its own Stripe receipt" onSelect={() => toggle(row.id)}>
+                                  <ExternalLink />
+                                  Receipts
+                                </DropdownMenuItem>
+                              ) : (
+                                <ReceiptMenuItem url={row.receiptUrl} />
+                              )}
+                              <DropdownMenuItem
+                                title="Download this ticket's charges, payouts and project income as a PDF"
+                                onSelect={() =>
+                                  exportPdf(null, {
+                                    ticketId: row.ticketId,
+                                    paymentIds: row.ticketId ? undefined : row.transactions.map((t) => t.id),
+                                    title: `Ticket ${row.ticketShortId}`,
+                                  })
+                                }
+                              >
+                                <Download />
+                                PDF
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      {count > 1 && (
+                        <div className="w-fit" onClick={stopRowNavigation}>
+                          <TransactionsToggle
+                            className="ml-12 mt-2"
+                            count={count}
+                            expanded={expanded}
+                            onToggle={() => toggle(row.id)}
+                            panelId={panelId}
+                          />
+                        </div>
+                      )}
+                      {expanded && (
+                        <div className="cursor-default" onClick={stopRowNavigation}>
+                        {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                        <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                          {row.transactions.map((charge, index) => (
+                            <div
+                              key={charge.id}
+                              role="listitem"
+                              className="grid items-center gap-4 px-3 py-2 text-sm"
+                              style={TICKETS_GRID}
+                            >
+                              <span />
+                              <span className="min-w-0 text-xs text-muted-foreground tabular-nums">
+                                {index + 1} of {count}
+                              </span>
+                              <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(charge.date)}</span>
+                              <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                {formatPaymentAmount(charge.projectIncomeSmallestUnit, charge.currency)}
+                              </span>
+                              <span className="min-w-0">
+                                <Badge className={INCOME_BADGE_CLASS[charge.status]}>{PROJECT_INCOME_STATUS_LABELS[charge.status]}</Badge>
+                              </span>
+                              {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                              <span className="flex items-center justify-end [&>*]:shrink-0">
+                                <ReceiptButton url={charge.receiptUrl} />
+                              </span>
+                            </div>
+                          ))}
+                        </TransactionsPanel>
+                        </div>
+                      )}
+                    </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Helpers: each helper's income per month, with that month's tickets underneath */}
+          {activeTab === "helpers" && (
+            <div className="bg-card rounded-lg border border-border overflow-x-auto">
+              <ListHeader>
+                <div className="grid gap-4 items-center" style={HELPERS_GRID}>
+                  <div>
+                    <input type="checkbox" className="rounded border-border" checked={allSelected} onChange={handleSelectAll} aria-label="Select all helpers" />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Helper" field="helper" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Date" field="date" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0">
+                    <SortHeader label="Tickets" field="tickets" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                  </div>
+                  <div className="min-w-0 whitespace-nowrap">
+                    <SortHeader label="Helper income (USD)" field="amount" sortField={helpersSort.field} sortDirection={helpersSort.direction} onSort={(f) => cycleSort(f, helpersSort.field, helpersSort.direction, (field, direction) => setHelpersSort({ field, direction }))} />
+                  </div>
+                  <div />
+                </div>
+              </ListHeader>
+              <div className="divide-y divide-border-subtle">
+                {isLoading ? (
+                  <ListSkeleton rows={5} />
+                ) : helperRows.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("helper payouts")}</div>
+                ) : (
+                  helperRows.map((row) => {
+                    const expanded = isExpanded(row.id)
+                    const panelId = transactionsPanelId(row.id)
+                    return (
+                    <div
+                      key={row.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={expanded}
+                      aria-controls={expanded ? panelId : undefined}
+                      aria-label={`Tickets for ${row.helper}, ${row.period}`}
+                      className={listRowClass({ interactive: true })}
+                      onClick={() => toggle(row.id)}
+                      onKeyDown={(e) => {
+                        // Only when the row itself has focus, not a control inside it.
+                        if (e.target !== e.currentTarget) return
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          toggle(row.id)
+                        }
+                      }}
+                    >
+                      <div className="grid gap-4 items-center" style={HELPERS_GRID}>
+                        <div onClick={stopRowNavigation}>
+                          <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={() => handleRowSelect(row.id)} aria-label={`Select ${row.helper}, ${row.period}`} />
+                        </div>
+                        <div className="min-w-0 flex items-center gap-4">
+                          <div
+                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                            style={{ backgroundColor: row.helperColor }}
+                          >
+                            {row.helperInitial}
+                          </div>
+                          <span className="min-w-0 truncate text-sm font-medium text-foreground" title={row.helper}>
+                            {row.helper}
+                          </span>
+                        </div>
+                        <div className="min-w-0 text-sm text-muted-foreground">{row.date}</div>
+                        <div className="min-w-0 text-sm text-foreground">{row.ticketCount}</div>
+                        <div className="min-w-0 text-sm text-foreground">
+                          <div className="whitespace-nowrap">{formatPaymentAmount(row.amountRaw, row.currency)}</div>
+                          {row.failedSmallestUnit > 0 && (
+                            <div className="text-xs text-red-700">{formatPaymentAmount(row.failedSmallestUnit, row.currency)} failed</div>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={KEBAB_BUTTON_CLASS}
+                                aria-label={`More actions for ${row.helper}, ${row.period}`}
+                                onClick={stopRowNavigation}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            {/* Portalled, but React events still bubble to the row. */}
+                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                              <DropdownMenuItem
+                                title={`Download all of ${row.helper}'s transactions in ${row.period} as one PDF`}
+                                onSelect={() => exportPdf(null, helperMonthExport(row))}
+                              >
+                                <Download />
+                                PDF
+                              </DropdownMenuItem>
+                              {/* Opens the same list as clicking the row; an already open list stays open. */}
+                              <DropdownMenuItem
+                                title={`Show all of ${row.helper}'s transactions in ${row.period}`}
+                                onSelect={() => {
+                                  if (!expanded) toggle(row.id)
+                                }}
+                              >
+                                <List />
+                                See transactions
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      {expanded && (
+                        <div className="cursor-default" onClick={stopRowNavigation}>
+                        {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                        <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                          {row.transfers.map((transfer) => (
+                            <div
+                              key={transfer.id}
+                              role="listitem"
+                              className="grid items-center gap-4 px-3 py-2 text-sm"
+                              style={HELPERS_GRID}
+                            >
+                              <span />
+                              {/* Starts where the helper's name starts: past the avatar (32px) and its gap (18px). */}
+                              <span className="min-w-0 pl-12">
+                                {transfer.ticket_id ? (
+                                  <Link
+                                    href={`/helper/tickets/${transfer.ticket_id}`}
+                                    className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                                  >
+                                    {getShortTicketId(transfer.ticket_id)}
+                                  </Link>
+                                ) : (
+                                  <span className="text-sm font-medium text-foreground">—</span>
+                                )}
+                              </span>
+                              <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>
+                              {/* Tickets column: the count belongs to the row above. */}
+                              <span />
+                              <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                {formatPaymentAmount(transfer.amount_smallest_unit, transfer.currency)}
+                                {/* Not paid, and not part of the row's income. */}
+                                {transfer.status === "failed" && <span className="ml-2 text-xs text-red-700">failed</span>}
+                              </span>
+                              {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                              <span className="flex items-center justify-end [&>*]:shrink-0">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  type="button"
+                                  className={OUTLINE_BUTTON_CLASS}
+                                  title="Download this transaction and its user charge as a PDF"
+                                  onClick={() => exportPdf(null, payoutExport(transfer))}
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  Receipt
+                                </Button>
+                              </span>
+                            </div>
+                          ))}
+                        </TransactionsPanel>
+                        </div>
+                      )}
+                    </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }
