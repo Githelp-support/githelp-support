@@ -907,7 +907,9 @@ export default function TicketDetailPage() {
   }
 
   return (
-    <>
+    // The AppShell content column is a vertical flex column: this row puts
+    // the right panel beside the chat column (TicketChat does the same).
+    <div className="flex-1 flex overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
         <div className="relative z-10">
           <Header
@@ -916,7 +918,7 @@ export default function TicketDetailPage() {
             titleClassName="text-xl"
             inlineRightContent={
               <span className="flex items-center gap-2">
-                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80">ID: {ticketId}</span>
+                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>
                 {isGuestTicket && <GuestTicketBadge />}
               </span>
             }
@@ -936,8 +938,8 @@ export default function TicketDetailPage() {
           />
         </div>
         <main className="flex-1 flex overflow-hidden">
-          {/* Main Content */}
-          <div className="flex-1 flex flex-col">
+          {/* Main Content (min-w-0: the column must shrink to the viewport on phones) */}
+          <div className="flex-1 flex flex-col min-w-0">
             {/* Messages Area */}
             <div className="flex-1 flex flex-col min-h-0">
               <div className="flex-1 p-4 flex flex-col min-h-0">
@@ -1373,7 +1375,7 @@ export default function TicketDetailPage() {
         <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
         {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto px-3 pb-6">
+        <div className="flex-1 overflow-y-auto px-3 pb-6 max-lg:pt-4">
           {/* People in Chat */}
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
@@ -1637,7 +1639,7 @@ export default function TicketDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }
 

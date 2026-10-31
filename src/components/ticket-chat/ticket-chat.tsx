@@ -656,7 +656,7 @@ export function TicketChat(props: TicketChatProps) {
           <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
           {!isCollapsed && (
-          <div className="flex-1 overflow-y-auto px-3 pb-6">
+          <div className="flex-1 overflow-y-auto px-3 pb-6 max-lg:pt-4">
             {/* People in Chat */}
             <div>
               <SidebarSectionHeading>People in this chat</SidebarSectionHeading>

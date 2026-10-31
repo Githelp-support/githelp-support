@@ -236,7 +236,7 @@ export function TicketChatInput({
       onDragLeave={() => setDragActive(false)}
       onDrop={handleDrop}
     >
-      <div className="bg-muted flex items-center gap-2 px-4 py-2.5 border-b border-border">
+      <div className="bg-muted flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border max-md:gap-1 max-md:px-3">
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
           <Bold className="w-3.5 h-3.5" />
         </Button>
