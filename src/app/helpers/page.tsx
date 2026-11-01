@@ -32,6 +32,7 @@ import {
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { formatDate } from "@/lib/format"
 import Link from "next/link"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -683,7 +684,7 @@ export default function HelpersPage() {
                           </div>
                           <div className="col-span-2 flex items-center space-x-2">
                             <span className="text-sm text-muted-foreground tabular-nums">
-                              {new Date(invite.created_at).toLocaleDateString()}
+                              {formatDate(invite.created_at)}
                             </span>
                           </div>
                           <div className="col-span-2">
