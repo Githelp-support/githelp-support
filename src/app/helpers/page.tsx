@@ -561,20 +561,20 @@ export default function HelpersPage() {
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
               <Select value={currentView} onValueChange={(value) => handleViewChange(value as "added" | "requests" | "invited")}>
-                <SelectTrigger className="w-full h-10 data-[size=default]:h-10 border-border-subtle shadow-none rounded-lg text-sm font-normal">
+                <SelectTrigger variant="outline" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="added" className="text-sm font-normal">Added</SelectItem>
-                  <SelectItem value="requests" className="text-sm font-normal">Requests</SelectItem>
-                  <SelectItem value="invited" className="text-sm font-normal">Invites</SelectItem>
+                  <SelectItem value="added">Added</SelectItem>
+                  <SelectItem value="requests">Requests</SelectItem>
+                  <SelectItem value="invited">Invites</SelectItem>
                 </SelectContent>
               </Select>
               <div className="relative">
-                <Search className="w-[18px] h-[18px] absolute left-3.5 top-1/2 transform -translate-y-1/2 text-text-tertiary" />
+                <Search className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
                 <Input
                   placeholder="Search name or GitHub account"
-                  className="pl-10 h-10 border-border-subtle shadow-none rounded-lg text-ui placeholder:text-text-tertiary focus:border-brand-primary transition-colors"
+                  className="pl-8 placeholder:text-text-tertiary"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />

@@ -501,7 +501,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         {/* Filters */}
         <div className="flex gap-2">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+            <SelectTrigger variant={selectedPeriod !== "all" ? "neutral" : "outline"} className="w-44">
               <SelectValue placeholder="Choose period" />
             </SelectTrigger>
             <SelectContent>

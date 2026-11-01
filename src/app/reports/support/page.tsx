@@ -505,7 +505,7 @@ export default function ReportsSupportPage() {
 
           <div className="flex gap-2 mb-6">
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
+              <SelectTrigger variant={selectedPeriod !== "all" ? "neutral" : "outline"} className="w-44">
                 <SelectValue placeholder="Choose period" />
               </SelectTrigger>
               <SelectContent>

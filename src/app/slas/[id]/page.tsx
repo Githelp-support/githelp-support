@@ -366,7 +366,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             Current month
           </Button>
           <Select value={timePeriod} onValueChange={setTimePeriod}>
-            <SelectTrigger className="w-[140px] border-border">
+            <SelectTrigger variant="outline" className="w-36">
               <SelectValue placeholder="Choose month" />
             </SelectTrigger>
             <SelectContent>

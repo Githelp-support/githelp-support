@@ -402,35 +402,32 @@ export default function TicketsPage() {
         <div className="flex items-center gap-4 flex-wrap">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger
-              size="sm"
               variant={statusFilter !== "all" ? "neutral" : "outline"}
-              className="w-[140px] rounded-lg text-sm font-medium"
+              className="w-36"
             >
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Statuses</SelectItem>
-              <SelectItem value="available" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Unclaimed</SelectItem>
-              <SelectItem value="in-progress" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">In Progress</SelectItem>
-              <SelectItem value="completed" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Completed</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="available">Unclaimed</SelectItem>
+              <SelectItem value="in-progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger
-              size="sm"
               variant={typeFilter !== "all" ? "neutral" : "outline"}
-              className="w-[140px] rounded-lg text-sm font-medium"
+              className="w-36"
             >
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               {typeOptions.map((type) => (
                 <SelectItem
                   key={type}
                   value={type}
-                  className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium"
                 >
                   {type}
                 </SelectItem>
@@ -440,17 +437,16 @@ export default function TicketsPage() {
 
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
             <SelectTrigger
-              size="sm"
               variant={priorityFilter !== "all" ? "neutral" : "outline"}
-              className="w-[140px] rounded-lg text-sm font-medium"
+              className="w-36"
             >
               <SelectValue placeholder="All Priority" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">All Priority</SelectItem>
-              <SelectItem value="high" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">High</SelectItem>
-              <SelectItem value="medium" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Medium</SelectItem>
-              <SelectItem value="low" className="text-muted-foreground focus:text-accent-foreground focus:font-medium data-[state=checked]:text-accent-foreground data-[state=checked]:font-medium">Low</SelectItem>
+              <SelectItem value="all">All Priority</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
 
