@@ -49,6 +49,8 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ListHeader, SortHeader, listRowClass } from "@/components/ui/list"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ErrorState } from "@/components/ui/error-state"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -195,12 +197,18 @@ export default function HelperReportsPage() {
 
   useRealtimePaymentTransfers(projectId)
   // Fetch payment transfers only once we know the current user's helper row (avoids unscoped queries).
-  const { data: transfersData, isLoading: transfersLoading, isFetched: transfersFetched } = usePaymentTransfers({
+  const {
+    data: transfersData,
+    isLoading: transfersLoading,
+    isFetched: transfersFetched,
+    isError: transfersError,
+    refetch: refetchTransfers,
+  } = usePaymentTransfers({
     helperId: helperId ?? undefined,
     projectId,
     enabled: transfersQueryEnabled,
   })
-  const { data: timeEntries, isLoading: timeLoading } = useHelperTimeEntries(helperId, projectId)
+  const { data: timeEntries, isLoading: timeLoading, isError: timeError, refetch: refetchTime } = useHelperTimeEntries(helperId, projectId)
 
   // Last 12 months for the month filter dropdown
   const months = useMemo(() => {
@@ -525,6 +533,14 @@ export default function HelperReportsPage() {
             <div className="divide-y divide-border-subtle">
               {isBusy ? (
                 <ListSkeleton rows={5} />
+              ) : transfersError || timeError ? (
+                <ErrorState
+                  size="sm"
+                  onRetry={() => {
+                    void refetchTransfers()
+                    void refetchTime()
+                  }}
+                />
               ) : showPreview ? (
                 PAYOUT_PREVIEW_ROWS.map((payout) => (
                   <div key={payout.id} role="presentation" className={listRowClass({ className: "opacity-80" })}>
@@ -568,7 +584,7 @@ export default function HelperReportsPage() {
                   </div>
                 ))
               ) : payouts.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("payouts")}</div>
+                <EmptyState size="sm" title={emptyMessage("payouts")} />
               ) : (
                 payouts.map((payout) => {
                   const href = payout.ticketId ? `/helper/tickets/${payout.ticketId}` : null
@@ -777,6 +793,14 @@ export default function HelperReportsPage() {
             <div className="divide-y divide-border-subtle">
               {isBusy ? (
                 <ListSkeleton rows={5} />
+              ) : transfersError || timeError ? (
+                <ErrorState
+                  size="sm"
+                  onRetry={() => {
+                    void refetchTransfers()
+                    void refetchTime()
+                  }}
+                />
               ) : showPreview ? (
                 HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
                   <div key={row.id} role="presentation" className={listRowClass({ className: "opacity-80" })}>
@@ -819,7 +843,7 @@ export default function HelperReportsPage() {
                   </div>
                 ))
               ) : monthlyReports.length === 0 ? (
-                <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("monthly reports")}</div>
+                <EmptyState size="sm" title={emptyMessage("monthly reports")} />
               ) : (
                 monthlyReports.map((row) => (
                   <div

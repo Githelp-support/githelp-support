@@ -47,6 +47,8 @@ import { getStatusBadgeClass } from "@/lib/status-colors"
 import { cn } from "@/lib/utils"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ListHeader, SortHeader, listRowClass } from "@/components/ui/list"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ErrorState } from "@/components/ui/error-state"
 
 // dd/mm/yyyy, matching the helper reports page
 const formatDate = (dateString: string) => {
@@ -180,7 +182,8 @@ export default function UserReportsPage() {
     data: paymentRecords,
     isLoading: paymentsLoading,
     isFetched: paymentsFetched,
-    error: paymentsError,
+    isError: paymentsError,
+    refetch: refetchPayments,
   } = useUserPayments(userId)
 
   const allPayments: UserPaymentRow[] = useMemo(
@@ -407,12 +410,6 @@ export default function UserReportsPage() {
               </Select>
             </div>
 
-            {paymentsError && (
-              <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-                Could not load your payments. Please try again later.
-              </div>
-            )}
-
             {showPreview && (
               <div className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 px-4 py-3 text-sm text-foreground">
                 {USER_REPORTS_PREVIEW_DISCLAIMER}
@@ -454,6 +451,8 @@ export default function UserReportsPage() {
 
                 {isBusy ? (
                   <ListSkeleton rows={5} />
+                ) : paymentsError ? (
+                  <ErrorState size="sm" title="Could not load your payments" onRetry={() => void refetchPayments()} />
                 ) : showPreview ? (
                   USER_PAYMENT_PREVIEW_ROWS.map((row) => (
                     <div key={row.id} role="presentation" className={listRowClass({ bordered: true, className: "opacity-80" })}>
@@ -494,7 +493,7 @@ export default function UserReportsPage() {
                     </div>
                   ))
                 ) : payments.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("payments")}</div>
+                  <EmptyState size="sm" title={emptyMessage("payments")} />
                 ) : (
                   payments.map((row) => {
                     const href = ticketHref(row)
@@ -695,6 +694,8 @@ export default function UserReportsPage() {
                 </ListHeader>
                 {isBusy ? (
                   <ListSkeleton rows={5} />
+                ) : paymentsError ? (
+                  <ErrorState size="sm" title="Could not load your payments" onRetry={() => void refetchPayments()} />
                 ) : showPreview ? (
                   USER_MONTHLY_PREVIEW_ROWS.map((row) => (
                     <div key={row.id} role="presentation" className={listRowClass({ bordered: true, className: "opacity-80" })}>
@@ -725,11 +726,11 @@ export default function UserReportsPage() {
                     </div>
                   ))
                 ) : monthlyReports.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">
-                    {hasRealData && !targetMonth
-                      ? "No completed payments yet. Monthly reports appear once a ticket has been paid."
-                      : emptyMessage("monthly reports")}
-                  </div>
+                  <EmptyState
+                    size="sm"
+                    title={hasRealData && !targetMonth ? "No completed payments yet" : emptyMessage("monthly reports")}
+                    description={hasRealData && !targetMonth ? "Monthly reports appear once a ticket has been paid." : undefined}
+                  />
                 ) : (
                   monthlyReports.map((row) => (
                     <div key={row.id} className={listRowClass({ bordered: true })}>

@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { formatAmount, usePaymentTransfer, type PaymentTransfer } from "@/hooks/usePayments"
 import { buildPayoutStatement } from "@/lib/helper-payout-reports"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ErrorState } from "@/components/ui/error-state"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const STATUS_BADGE_CLASS: Record<PaymentTransfer["status"], string> = {
   completed: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -40,7 +43,7 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
 export default function HelperPayoutStatementPage() {
   const params = useParams<{ id: string }>()
   const transferId = typeof params?.id === "string" ? params.id : undefined
-  const { data: transfer, isLoading, isError } = usePaymentTransfer(transferId)
+  const { data: transfer, isLoading, isError, refetch } = usePaymentTransfer(transferId)
   const statement = useMemo(() => (transfer ? buildPayoutStatement(transfer) : null), [transfer])
 
   const ticketHref = statement?.ticketId ? `/helper/tickets/${statement.ticketId}` : null
@@ -84,12 +87,38 @@ export default function HelperPayoutStatementPage() {
             </div>
 
             {isLoading ? (
-              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-sm">
-                Loading payout...
+              <div
+                role="status"
+                aria-label="Loading"
+                aria-live="polite"
+                className="animate-fade-in bg-card rounded-lg border border-border-subtle"
+              >
+                <div className="px-8 py-6 border-b border-border-subtle flex items-start justify-between gap-6">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="size-8 rounded-md" />
+                    <div className="flex flex-col gap-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+                <div className="px-8 py-6 flex flex-col gap-3">
+                  <Skeleton className="h-3.5 w-1/3" />
+                  <Skeleton className="h-3.5 w-1/2" />
+                  <Skeleton className="h-3.5 w-1/4" />
+                </div>
               </div>
-            ) : isError || !statement ? (
-              <div className="bg-card rounded-lg border border-border-subtle px-6 py-8 text-center text-muted-foreground text-sm">
-                This payout could not be found, or you do not have access to it.
+            ) : isError ? (
+              <div className="bg-card rounded-lg border border-border-subtle">
+                <ErrorState title="Could not load this payout" onRetry={() => void refetch()} />
+              </div>
+            ) : !statement ? (
+              <div className="bg-card rounded-lg border border-border-subtle">
+                <EmptyState title="This payout could not be found, or you do not have access to it." />
               </div>
             ) : (
               <article className="bg-card rounded-lg border border-border-subtle print:border-0 print:rounded-none">

@@ -13,6 +13,7 @@ import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } 
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
 import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
+import { EmptyState } from "@/components/ui/empty-state"
 
 interface ReportData {
   id: string
@@ -421,7 +422,7 @@ export default function ReportsSLAsPage() {
                 ) : isError ? (
                   <ErrorState size="sm" onRetry={() => refetch()} />
                 ) : sortedReports.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("reports")}</div>
+                  <EmptyState size="sm" title={emptyMessage("reports")} />
                 ) : (
                   sortedReports.map((report) => (
                   <div key={report.id} className={listRowClass()}>
@@ -534,7 +535,7 @@ export default function ReportsSLAsPage() {
                 ) : isError ? (
                   <ErrorState size="sm" onRetry={() => refetch()} />
                 ) : sortedTickets.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-sm">{emptyMessage("tickets")}</div>
+                  <EmptyState size="sm" title={emptyMessage("tickets")} />
                 ) : (
                   sortedTickets.map((ticket) => (
                   <div key={ticket.id} className={listRowClass()}>
