@@ -338,7 +338,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
-            const activeClasses = "bg-surface-active text-foreground [&_i]:text-brand-primary"
+            const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
             const inactiveClasses = "text-text-muted hover:bg-surface-hover hover:text-foreground"
             // Whether any sub-item under this parent matches the current path —
             // used in collapsed mode to highlight the parent icon since the
@@ -521,7 +521,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         {bottomItems.map((item) => {
           const isActive = pathname === item.href
           const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 text-ui font-medium rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
-            isActive ? "bg-surface-active text-foreground [&_i]:text-brand-primary" : "text-text-muted hover:bg-surface-hover hover:text-foreground"
+            isActive ? "bg-brand-primary/[0.08] text-brand-primary" : "text-text-muted hover:bg-surface-hover hover:text-foreground"
           }`
           return (
             <Fragment key={item.name}>
