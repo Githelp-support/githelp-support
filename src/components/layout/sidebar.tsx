@@ -362,7 +362,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                             hasActiveSubItem ? activeClasses : inactiveClasses
                           }`}
                         >
-                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                         </button>
@@ -417,7 +417,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                           }}
                           className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
                         >
-                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                           <span>{item.name}</span>
@@ -488,7 +488,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                         isActive ? activeClasses : inactiveClasses
                       }`}
                     >
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
                         <FlaticonIcon iconClass={item.icon} />
                       </span>
                       {!isCollapsed && item.name}
@@ -512,7 +512,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             rel="noopener noreferrer"
             className="flex items-center gap-3 h-8 px-2.5 text-ui font-medium rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 text-text-muted hover:bg-surface-hover hover:text-foreground"
           >
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
               <FlaticonIcon iconClass="fi-rr-browser" />
             </span>
             {!isCollapsed && "Open project page"}
@@ -531,7 +531,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               href={item.href}
               className={className}
             >
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base text-text-muted">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
                 <FlaticonIcon iconClass={item.icon} />
               </span>
               {!isCollapsed && item.name}
