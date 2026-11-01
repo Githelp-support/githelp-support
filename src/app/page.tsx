@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useUser } from "@/contexts/user-context"
-import { ExternalLink, HelpCircle, Info, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { ExternalLink, HelpCircle, Info } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -17,6 +17,7 @@ import { homeRouteForRole } from "@/lib/roles"
 import { monthLabel } from "@/lib/user-payment-reports"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { PageSkeleton } from "@/components/ui/skeleton"
+import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -153,12 +154,9 @@ export default function Dashboard() {
     })
   }
 
-  const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => {
-    if (currentSort?.column !== column) {
-      return <ChevronsUpDown className="w-4 h-4 text-text-muted" />
-    }
-    return currentSort.direction === "asc" ? <ChevronUp className="w-4 h-4 text-text-muted" /> : <ChevronDown className="w-4 h-4 text-text-muted" />
-  }
+  const getSortIcon = (column: string, currentSort: { column: string; direction: "asc" | "desc" } | null) => (
+    <SortIcon active={currentSort?.column === column} direction={currentSort?.direction ?? null} />
+  )
 
   const sortedHelpers = sortHelpers(filteredHelpers)
   const sortedIssueTypes = sortIssueTypes(filteredIssueTypes)
@@ -259,33 +257,36 @@ export default function Dashboard() {
             </div>
             <Card className="py-0 overflow-hidden">
               <CardContent className="p-0">
-                <div className="bg-muted/60 px-6 py-3 border-b border-border-subtle">
-                  <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                    <div
-                      className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                <ListHeader>
+                  <div className="grid grid-cols-12 gap-4">
+                    <button
+                      type="button"
+                      className="col-span-6 flex items-center gap-2 text-left"
                       onClick={() => handleHelperSort("name")}
                     >
-                      Name
+                      <span>Name</span>
                       {getSortIcon("name", helperSort)}
-                    </div>
-                    <div
-                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                    </button>
+                    <button
+                      type="button"
+                      className="col-span-3 flex items-center gap-2 text-left"
                       onClick={() => handleHelperSort("tickets")}
                     >
-                      No of tickets
+                      <span>No of tickets</span>
                       {getSortIcon("tickets", helperSort)}
-                    </div>
-                    <div
-                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                    </button>
+                    <button
+                      type="button"
+                      className="col-span-3 flex items-center gap-2 text-left"
                       onClick={() => handleHelperSort("time")}
                     >
-                      Total time
+                      <span>Total time</span>
                       {getSortIcon("time", helperSort)}
-                    </div>
+                    </button>
                   </div>
-                </div>
+                </ListHeader>
                 {sortedHelpers.map((helper, index) => (
-                  <div key={index} className="px-6 py-2.5 border-b border-border-subtle last:border-b-0">
+                  <div key={index} className={listRowClass({ bordered: true })}>
                     <div className="grid grid-cols-12 gap-4 items-center">
                       <div className="col-span-6 flex items-center gap-3">
                         <div
@@ -325,33 +326,36 @@ export default function Dashboard() {
             </div>
             <Card className="py-0 overflow-hidden">
               <CardContent className="p-0">
-                <div className="bg-muted/60 px-6 py-3 border-b border-border-subtle">
-                  <div className="grid grid-cols-12 gap-4 text-sm font-medium text-foreground">
-                    <div
-                      className="col-span-6 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                <ListHeader>
+                  <div className="grid grid-cols-12 gap-4">
+                    <button
+                      type="button"
+                      className="col-span-6 flex items-center gap-2 text-left"
                       onClick={() => handleIssueSort("name")}
                     >
-                      Type
+                      <span>Type</span>
                       {getSortIcon("name", issueSort)}
-                    </div>
-                    <div
-                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                    </button>
+                    <button
+                      type="button"
+                      className="col-span-3 flex items-center gap-2 text-left"
                       onClick={() => handleIssueSort("tickets")}
                     >
-                      No of tickets
+                      <span>No of tickets</span>
                       {getSortIcon("tickets", issueSort)}
-                    </div>
-                    <div
-                      className="col-span-3 flex items-center gap-1 cursor-pointer hover:text-foreground"
+                    </button>
+                    <button
+                      type="button"
+                      className="col-span-3 flex items-center gap-2 text-left"
                       onClick={() => handleIssueSort("time")}
                     >
-                      Total time
+                      <span>Total time</span>
                       {getSortIcon("time", issueSort)}
-                    </div>
+                    </button>
                   </div>
-                </div>
+                </ListHeader>
                 {sortedIssueTypes.map((issue, index) => (
-                  <div key={index} className="px-6 py-2.5 border-b border-border-subtle last:border-b-0">
+                  <div key={index} className={listRowClass({ bordered: true })}>
                     <div className="grid grid-cols-12 gap-4 items-center">
                       <div className="col-span-6 text-sm text-foreground">{issue.name}</div>
                       <div className="col-span-3 text-sm text-foreground tabular-nums">{issue.tickets}</div>

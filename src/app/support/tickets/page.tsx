@@ -12,12 +12,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { NewTicketModal } from "@/components/modals/new-ticket-modal"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
-import { MessageCircle, Plus, User, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
+import { MessageCircle, Plus, User } from "lucide-react"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
 type TicketFilter = "in-progress" | "completed"
 type SortField = "title" | "createdAt" | "status" | "type"
@@ -55,23 +55,8 @@ function formatDate(dateString: string) {
   return `${day}.${month}.${year}, ${hours}:${minutes}`
 }
 
-function TicketsSortIcon({
-  field,
-  sortField,
-  sortDirection,
-}: {
-  field: SortField
-  sortField: SortField | null
-  sortDirection: SortDirection
-}) {
-  if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "asc" ? (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  )
+function TicketsSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
+  return <SortIcon active={sortField === field} direction={sortDirection} />
 }
 
 export default function SupportTicketsPage() {

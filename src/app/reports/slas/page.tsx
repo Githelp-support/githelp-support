@@ -6,14 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Header } from "@/components/layout/header"
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react"
 import { usePaymentTransfers, formatAmount } from "@/hooks/usePayments"
 import { useSLAs } from "@/hooks/useSLAs"
 import { useProjectSelection } from "@/contexts/project-context"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
 interface ReportData {
   id: string
@@ -43,23 +42,8 @@ type MonthlySortField = "period" | "entity" | "amount" | "status"
 type TicketsSortField = "date" | "entity" | "amount" | "status"
 type SortDirection = "asc" | "desc"
 
-function ReportsSortIcon<T extends string>({
-  field,
-  sortField,
-  sortDirection,
-}: {
-  field: T
-  sortField: T | null
-  sortDirection: SortDirection
-}) {
-  if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "asc" ? (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  )
+function ReportsSortIcon<T extends string>({ field, sortField, sortDirection }: { field: T; sortField: T | null; sortDirection: SortDirection }) {
+  return <SortIcon active={sortField === field} direction={sortDirection} />
 }
 
 // Helper function to format date

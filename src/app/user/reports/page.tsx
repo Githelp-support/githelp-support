@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, ExternalLink, MoreVertical } from "lucide-react"
+import { Download, ExternalLink, MoreVertical } from "lucide-react"
 import { useUserPayments, formatAmount } from "@/hooks/usePayments"
 import { useUser } from "@/contexts/user-context"
 import { Header } from "@/components/layout/header"
@@ -46,7 +46,7 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { cn } from "@/lib/utils"
 import { ListSkeleton } from "@/components/ui/skeleton"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortHeader, listRowClass } from "@/components/ui/list"
 
 // dd/mm/yyyy, matching the helper reports page
 const formatDate = (dateString: string) => {
@@ -93,42 +93,6 @@ const receiptUnavailableTitle = (row: UserPaymentRow) =>
   row.displayStatus === "paid"
     ? "The receipt is still being prepared by Stripe. Check back shortly."
     : "A receipt becomes available once the payment has been captured."
-
-function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
-  if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "asc" ? (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  )
-}
-
-function SortHeader({
-  label,
-  field,
-  sortField,
-  sortDirection,
-  onSort,
-}: {
-  label: string
-  field: string
-  sortField: string | null
-  sortDirection: SortDirection
-  onSort: (field: string) => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(field)}
-      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-    >
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <SortIcon field={field} sortField={sortField} sortDirection={sortDirection} />
-    </button>
-  )
-}
 
 function compare(a: string | number, b: string | number, direction: SortDirection) {
   if (a < b) return direction === "asc" ? -1 : 1

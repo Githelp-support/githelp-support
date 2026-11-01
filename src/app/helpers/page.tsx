@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X, Users } from "lucide-react"
+import { MoreVertical, Plus, Search, Copy, X, Users } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +35,7 @@ import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/const
 import Link from "next/link"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
 function isPendingInvite(invite: {
   is_active: boolean
@@ -71,14 +71,7 @@ type SortField = "name" | "discordUser" | "category" | "githubAccount"
 type SortDirection = "asc" | "desc" | null
 
 function HelpersSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
-  if (sortField !== field || sortDirection === null) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "desc" ? (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  )
+  return <SortIcon active={sortField === field} direction={sortDirection} />
 }
 
 const mapCategoryToLabel = {

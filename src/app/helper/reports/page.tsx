@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
+import { Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
 import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
@@ -48,7 +48,7 @@ import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { ListSkeleton } from "@/components/ui/skeleton"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortHeader, listRowClass } from "@/components/ui/list"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -131,42 +131,6 @@ function TicketText({ text }: { text: string }) {
     <div className="text-xs text-muted-foreground truncate" title={text}>
       {ticketTextPreview(text)}
     </div>
-  )
-}
-
-function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
-  if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "asc" ? (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  )
-}
-
-function SortHeader({
-  label,
-  field,
-  sortField,
-  sortDirection,
-  onSort,
-}: {
-  label: string
-  field: string
-  sortField: string | null
-  sortDirection: SortDirection
-  onSort: (field: string) => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(field)}
-      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-    >
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <SortIcon field={field} sortField={sortField} sortDirection={sortDirection} />
-    </button>
   )
 }
 

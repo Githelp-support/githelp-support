@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Header } from "@/components/layout/header"
-import { Clock, MessageCircle, User, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles } from "lucide-react"
+import { Clock, MessageCircle, User, ChevronUp, ChevronDown, Sparkles } from "lucide-react"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { GuestTicketBadge, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
@@ -23,7 +23,7 @@ import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
 interface Ticket {
   id: string
@@ -67,14 +67,7 @@ type SortField = "title" | "createdAt" | "priority" | "status" | "type"
 type SortDirection = "asc" | "desc"
 
 function TicketsSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
-  if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "asc" ? (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  )
+  return <SortIcon active={sortField === field} direction={sortDirection} />
 }
 
 export default function TicketsPage() {

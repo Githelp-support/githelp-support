@@ -1,4 +1,5 @@
 import * as React from "react"
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -9,6 +10,8 @@ import { cn } from "@/lib/utils"
  * - `ListHeader`: GitHelp's lavender header band (brand-primary/10), h-10,
  *   px-6, text-xs/500 in text-muted (muted-foreground is only 4.1:1 on the
  *   tint), hairline below. Sort buttons inside keep their brand hover.
+ * - `SortHeader` / `SortIcon`: a sortable column label for the band. It
+ *   inherits the band's type; the band supplies the hover and focus styles.
  * - `ListRow` / `listRowClass`: min-h-12, px-6, text-ui, hover surface and,
  *   when interactive, a visible focus ring. Use `bordered` when the rows are
  *   not inside a `divide-y` container.
@@ -26,6 +29,42 @@ function ListHeader({ className, ...props }: React.ComponentProps<"div">) {
       )}
       {...props}
     />
+  )
+}
+
+export type SortDirection = "asc" | "desc"
+
+/** Neutral chevrons while the column is unsorted, a brand chevron once it sorts. */
+function SortIcon({ active, direction }: { active: boolean; direction: SortDirection | null }) {
+  if (!active || !direction) return <ChevronsUpDown className="size-4 text-muted-foreground" aria-hidden />
+  return direction === "asc" ? (
+    <ChevronUp className="size-4 text-brand-primary" aria-hidden />
+  ) : (
+    <ChevronDown className="size-4 text-brand-primary" aria-hidden />
+  )
+}
+
+/** A sortable column label inside `ListHeader`. */
+function SortHeader<T extends string>({
+  label,
+  field,
+  sortField,
+  sortDirection,
+  onSort,
+  className,
+}: {
+  label: string
+  field: T
+  sortField: T | null
+  sortDirection: SortDirection | null
+  onSort: (field: T) => void
+  className?: string
+}) {
+  return (
+    <button type="button" onClick={() => onSort(field)} className={cn("flex items-center gap-2", className)}>
+      <span>{label}</span>
+      <SortIcon active={sortField === field} direction={sortDirection} />
+    </button>
   )
 }
 
@@ -57,4 +96,4 @@ function ListRow({ interactive, tone, bordered, className, ...props }: ListRowPr
   return <div data-slot="list-row" className={listRowClass({ interactive, tone, bordered, className })} {...props} />
 }
 
-export { ListHeader, ListRow, listRowClass }
+export { ListHeader, ListRow, SortHeader, SortIcon, listRowClass }

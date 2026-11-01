@@ -1,19 +1,7 @@
 "use client"
 
 import { useState, useMemo, use, type KeyboardEvent, type SyntheticEvent } from "react"
-import {
-  MessageCircle,
-  Mail,
-  Info,
-  ChevronUp,
-  ChevronDown,
-  ChevronsUpDown,
-  ArrowLeft,
-  HelpCircle,
-  ExternalLink,
-  List,
-  MoreVertical,
-} from "lucide-react"
+import { MessageCircle, Mail, Info, ArrowLeft, HelpCircle, ExternalLink, List, MoreVertical } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -44,7 +32,7 @@ import {
 } from "@/components/reports/ticket-transactions"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortHeader, listRowClass } from "@/components/ui/list"
 
 type SortDirection = "asc" | "desc"
 type TicketsSortField = "ticket" | "date" | "amount" | "status"
@@ -102,40 +90,6 @@ const ticketPreview = (text: string) =>
 
 const RECEIPT_AVAILABLE_TITLE = "Open the Stripe receipt for this charge"
 const RECEIPT_UNAVAILABLE_TITLE = "A receipt becomes available once the payment has been captured"
-
-function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
-  if (!active) return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  return direction === "asc" ? (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  )
-}
-
-function SortHeader<T extends string>({
-  label,
-  field,
-  sortField,
-  sortDirection,
-  onSort,
-}: {
-  label: string
-  field: T
-  sortField: T | null
-  sortDirection: SortDirection
-  onSort: (field: T) => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(field)}
-      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-    >
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <SortIcon active={sortField === field} direction={sortDirection} />
-    </button>
-  )
-}
 
 function compare(a: string | number, b: string | number, direction: SortDirection) {
   if (a < b) return direction === "asc" ? -1 : 1

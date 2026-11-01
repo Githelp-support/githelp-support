@@ -4,7 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MoreHorizontal, Plus, Search, ChevronDown, Info, ChevronsUpDown, ChevronUp } from "lucide-react"
+import { MoreHorizontal, Plus, Search } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { CreateSLADrawer } from "@/components/drawers/create-sla-drawer"
 import { useSLAs } from "@/hooks/useSLAs"
@@ -13,20 +13,14 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ui/error-state"
-import { ListHeader, listRowClass } from "@/components/ui/list"
+import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
 const slaColors = ["#cbbcf6", "#d0f6bc", "#f6e6bc", "#bcedf6"]
 
 type SortConfig = { key: string | null; direction: "asc" | "desc" | null }
 
 function SLASortIcon({ column, sortConfig }: { column: string; sortConfig: SortConfig }) {
-  if (sortConfig.key !== column) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  if (sortConfig.direction === "asc") {
-    return <ChevronUp className="w-4 h-4 text-brand-primary" />
-  }
-  return <ChevronDown className="w-4 h-4 text-brand-primary" />
+  return <SortIcon active={sortConfig.key === column} direction={sortConfig.direction} />
 }
 
 // Helper function to format date
