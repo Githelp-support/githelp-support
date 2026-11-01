@@ -160,7 +160,7 @@ export default function ProfileSettingsPage() {
       <Header title="My profile" subtitle="View and edit your profile details" />
 
       <main className="flex-1 overflow-auto px-8 py-6">
-        <div className="max-w-3xl divide-y divide-border-subtle">
+        <div className="max-w-3xl">
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
@@ -174,6 +174,7 @@ export default function ProfileSettingsPage() {
             </div>
           </div>
 
+          <div className="divide-y divide-border-subtle">
           {/* Editable contact information */}
           <section className="py-6 first:pt-0">
             <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
@@ -231,6 +232,7 @@ export default function ProfileSettingsPage() {
               </Button>
             </div>
           </section>
+          </div>
         </div>
       </main>
     </div>

@@ -414,7 +414,7 @@ export function TopBar() {
               >
                 <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
                   <PrivateContextIcon size="w-5 h-5" />
-                  <span className="font-sans truncate text-sm font-medium">Private</span>
+                  <span className="font-sans truncate text-sm font-book">Private</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                   <Tooltip open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
@@ -569,8 +569,8 @@ function ProjectLogoWithBranding({
       <span
         className={`font-sans truncate text-sm ${
           isSelected
-            ? "font-medium"
-            : "font-medium text-text-muted group-focus:text-sidebar-foreground"
+            ? "font-book"
+            : "font-book text-text-muted group-focus:text-sidebar-foreground"
         }`}
       >
         {project.name}

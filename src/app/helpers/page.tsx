@@ -596,21 +596,19 @@ export default function HelpersPage() {
                   <div>
                     <input type="checkbox" className="rounded border-border" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-3">
                     <span>Helper</span>
                   </div>
-                  <div className="col-span-1"></div>
-                  <div className="col-span-2">
+                  <div className="col-span-3">
                     <span>Category</span>
                   </div>
                   <div className="col-span-2">
                     <span>Created</span>
                   </div>
-                  <div className="col-span-1"></div>
-                  <div className="col-span-1">
+                  <div className="col-span-2">
                     <span>Status</span>
                   </div>
-                  <div className="col-span-2"></div>
+                  <div className="col-span-1"></div>
                 </div>
               ) : (
                 <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
@@ -671,13 +669,12 @@ export default function HelpersPage() {
                           <div>
                             <input type="checkbox" className="rounded border-border" />
                           </div>
-                          <div className="col-span-2 flex items-center space-x-2">
+                          <div className="col-span-3 flex items-center space-x-2">
                             <span className="text-sm font-medium text-foreground">
                               {invite.invitee_identifier || invite.email || invite.github_username || "No identifier"}
                             </span>
                           </div>
-                          <div className="col-span-1"></div>
-                          <div className="col-span-2 flex items-center space-x-2">
+                          <div className="col-span-3 flex items-center space-x-2">
                             <span className="text-sm text-muted-foreground">
                               {invite.category
                                 ? mapCategoryToLabel[invite.category as keyof typeof mapCategoryToLabel]
@@ -689,8 +686,7 @@ export default function HelpersPage() {
                               {new Date(invite.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <div className="col-span-1"></div>
-                          <div className="col-span-1">
+                          <div className="col-span-2">
                             <Badge 
                               variant="secondary" 
                               className={invite.is_active ? "bg-green-100 text-green-700" : "bg-bg-subtle text-text-secondary"}
@@ -698,30 +694,26 @@ export default function HelpersPage() {
                               {invite.is_active ? "Active" : "Revoked"}
                             </Badge>
                           </div>
-                          <div className="col-span-2 flex items-center justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                              onClick={() => handleCopyInviteLink(invite.invite_url)}
-                            >
-                              <Copy className="w-4 h-4 mr-1" />
-                              Copy link
-                            </Button>
-                            {invite.is_active && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
-                                onClick={() => handleRevokeInvite(invite.id)}
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Revoke
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
+                          <div className="col-span-1 flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" aria-label="Invite actions">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem onSelect={() => void handleCopyInviteLink(invite.invite_url)}>
+                                  <Copy className="w-4 h-4" />
+                                  Copy link
+                                </DropdownMenuItem>
+                                {invite.is_active && (
+                                  <DropdownMenuItem variant="destructive" onSelect={() => void handleRevokeInvite(invite.id)}>
+                                    <X className="w-4 h-4" />
+                                    Revoke
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                       </div>

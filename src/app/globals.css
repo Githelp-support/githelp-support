@@ -87,6 +87,8 @@
   --text-display: 1.875rem;           /* 30px — public support welcome page only */
   --text-display--line-height: 2.25rem; /* 36px */
   --text-display--letter-spacing: -0.02em;
+  /* Font weights (Inter is variable, so 450 renders as a true weight) */
+  --font-weight-book: 450;            /* sidebar + project menu items at rest */
   /* Shadows (GitHelp's soft grey-blue shadow is rgba(134,140,152,…)) */
   --shadow-control: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 0 rgba(0, 0, 0, 0.04);
   --shadow-soft: 0 4px 15px rgba(134, 140, 152, 0.2);
@@ -191,23 +193,26 @@
   }
 }
 @keyframes dialog-in {
+  /* DialogContent centres itself with Tailwind's `translate` property, which
+     composes with `transform`; keyframes must not translate or the offsets
+     stack and the dialog rests off-centre. */
   from {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 8px)) scale(0.98);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: none;
   }
 }
 @keyframes dialog-out {
   from {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: none;
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.98);
+    transform: scale(0.98);
   }
 }
 @keyframes menu-in {

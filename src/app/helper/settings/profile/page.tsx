@@ -211,7 +211,7 @@ export default function HelperProfilePage() {
       <Header title="My profile" subtitle="View and edit your helper details" />
 
       <main className="flex-1 overflow-auto px-8 py-6">
-        <div className="max-w-3xl divide-y divide-border-subtle">
+        <div className="max-w-3xl">
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
             <div
