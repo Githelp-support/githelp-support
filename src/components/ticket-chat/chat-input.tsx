@@ -7,23 +7,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { detectLanguage, isInsideOpenFence, looksLikeCode, wrapInFence } from "@/lib/code-blocks"
 import { cn } from "@/lib/utils"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
-import {
-  AtSign,
-  Bold,
-  Code,
-  ImageIcon,
-  Italic,
-  Link,
-  List,
-  Loader2,
-  Mic,
-  Plus,
-  Send,
-  Smile,
-  SquareCode,
-  Strikethrough,
-  Video,
-} from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 export interface TicketChatInputProps {
   value: string
@@ -238,26 +223,26 @@ export function TicketChatInput({
     >
       <div className="bg-muted flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border max-md:gap-1 max-md:px-3">
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
-          <Bold className="w-3.5 h-3.5" />
+          <Icon name="fi-rr-bold" size={3.5} />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("*")} title="Italic">
-          <Italic className="w-3.5 h-3.5" />
+          <Icon name="fi-rr-italic" size={3.5} />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("~~")} title="Strikethrough">
-          <Strikethrough className="w-4 h-4" />
+          <Icon name="fi-rr-strikethrough" />
         </Button>
         <div className="w-px h-5 bg-foreground mx-1" />
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("[", "](url)")} title="Link">
-          <Link className="w-4 h-4" />
+          <Icon name="fi-rr-link" />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertLinePrefix("- ")} title="Bullet list">
-          <List className="w-4 h-4" />
+          <Icon name="fi-rr-list" />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={insertCode} title="Inline code">
-          <Code className="w-[18px] h-[18px]" />
+          <Icon name="fi-rr-code-simple" className="[--icon-size:18px]" />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertCodeBlock()} title="Code block">
-          <SquareCode className="w-[18px] h-[18px]" />
+          <Icon name="fi-rr-square-code" className="[--icon-size:18px]" />
         </Button>
         <Button
           type="button"
@@ -268,7 +253,7 @@ export function TicketChatInput({
           onClick={onImageClick}
           disabled={!onImageClick}
         >
-          <ImageIcon className="w-[18px] h-[18px]" />
+          <Icon name="fi-rr-picture" className="[--icon-size:18px]" />
         </Button>
         {toolbarEndContent != null && <div className="ml-auto">{toolbarEndContent}</div>}
       </div>
@@ -287,19 +272,19 @@ export function TicketChatInput({
         />
         <div className="flex items-center gap-2 mt-2">
           <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Plus className="w-3.5 h-3.5" />
+            <Icon name="fi-rr-plus" size={3.5} />
           </Button>
           <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Smile className="w-[18px] h-[18px]" />
+            <Icon name="fi-rr-smile" className="[--icon-size:18px]" />
           </Button>
           <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <AtSign className="w-[17px] h-[17px]" />
+            <Icon name="fi-rr-at" className="[--icon-size:17px]" />
           </Button>
           <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Video className="w-[22px] h-[22px]" />
+            <Icon name="fi-rr-video-camera" className="[--icon-size:22px]" />
           </Button>
           <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Mic className="w-[22px] h-[22px]" />
+            <Icon name="fi-rr-microphone" className="[--icon-size:22px]" />
           </Button>
           {imagesUploading && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status">
@@ -318,7 +303,7 @@ export function TicketChatInput({
               {sending ? (
                 <Loader2 className="w-[26px] h-[26px] text-foreground animate-spin" />
               ) : (
-                <Send className="w-[26px] h-[26px] text-foreground" />
+                <Icon name="fi-rr-paper-plane" className="[--icon-size:26px] text-foreground" />
               )}
             </Button>
           </div>

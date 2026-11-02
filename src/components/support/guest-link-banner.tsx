@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { useUser } from "@/contexts/user-context"
 import {
@@ -100,7 +100,7 @@ export function GuestLinkBanner() {
           className="p-1 rounded-md hover:bg-muted text-muted-foreground cursor-pointer"
           onClick={() => setDismissedFor(raw)}
         >
-          <X className="w-4 h-4" />
+          <Icon name="fi-rr-cross" />
         </button>
       </div>
     </div>

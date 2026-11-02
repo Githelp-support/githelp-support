@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Download, ExternalLink } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Logo } from "@/components/brand/logo"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
@@ -59,7 +59,7 @@ export default function HelperPayoutStatementPage() {
             <div className="flex items-center justify-between gap-2 flex-wrap print:hidden">
               <Button asChild variant="outline" size="sm" className="text-muted-foreground border-border bg-transparent">
                 <Link href="/helper/reports">
-                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <Icon name="fi-rr-arrow-left" size={3.5} />
                   Back to reports
                 </Link>
               </Button>
@@ -67,7 +67,7 @@ export default function HelperPayoutStatementPage() {
                 {ticketHref && (
                   <Button asChild variant="outline" size="sm" className="text-muted-foreground border-border bg-transparent">
                     <Link href={ticketHref}>
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <Icon name="fi-rr-arrow-up-right-from-square" size={3.5} />
                       Open ticket
                     </Link>
                   </Button>
@@ -80,7 +80,7 @@ export default function HelperPayoutStatementPage() {
                   onClick={() => window.print()}
                   title="Opens your browser's print dialog, where you can save the statement as a PDF"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Icon name="fi-rr-download" size={3.5} />
                   Download PDF
                 </Button>
               </div>

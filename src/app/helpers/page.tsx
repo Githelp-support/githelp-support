@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, Copy, X, Users } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -463,7 +463,7 @@ export default function HelpersPage() {
           subtitle="Manage your support team"
           actions={
             <Button variant="brand" onClick={() => setIsDrawerOpen(true)}>
-              <Plus className="w-4 h-4" />
+              <Icon name="fi-rr-plus" />
               Add new helper
             </Button>
           }
@@ -531,7 +531,7 @@ export default function HelpersPage() {
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
-                  <i className="fi fi-rr-user inline-flex items-center justify-center leading-none w-4 h-4" />
+                  <Icon name="fi-rr-user" />
                   Add myself as helper
                 </Button>
               )}
@@ -543,7 +543,7 @@ export default function HelpersPage() {
                   disabled={!projectId}
                   title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
                 >
-                  <Copy className="w-4 h-4" />
+                  <Icon name="fi-rr-copy" />
                   Copy invitation link
                 </Button>
               )}
@@ -565,7 +565,7 @@ export default function HelpersPage() {
                 </SelectContent>
               </Select>
               <div className="relative">
-                <Search className="size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                <Icon name="fi-rr-search" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
                 <Input
                   placeholder="Search name or GitHub account"
                   className="pl-8 placeholder:text-text-tertiary"
@@ -699,17 +699,17 @@ export default function HelpersPage() {
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" aria-label="Invite actions">
-                                  <MoreVertical className="w-4 h-4" />
+                                  <Icon name="fi-rr-menu-dots-vertical" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-44">
                                 <DropdownMenuItem onSelect={() => void handleCopyInviteLink(invite.invite_url)}>
-                                  <Copy className="w-4 h-4" />
+                                  <Icon name="fi-rr-copy" />
                                   Copy link
                                 </DropdownMenuItem>
                                 {invite.is_active && (
                                   <DropdownMenuItem variant="destructive" onSelect={() => void handleRevokeInvite(invite.id)}>
-                                    <X className="w-4 h-4" />
+                                    <Icon name="fi-rr-cross" />
                                     Revoke
                                   </DropdownMenuItem>
                                 )}
@@ -782,7 +782,7 @@ export default function HelpersPage() {
                                 className="text-muted-foreground hover:bg-muted"
                                 aria-label={`More actions for ${helper.name}`}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
@@ -791,7 +791,7 @@ export default function HelpersPage() {
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >
-                                <i className="fi fi-rr-user inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" />
+                                <Icon name="fi-rr-user" />
                                 Remove as helper
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -805,12 +805,12 @@ export default function HelpersPage() {
                   if (noRealHelpers && projectId) {
                     return (
                       <EmptyState
-                        icon={Users}
+                        icon="fi-rr-users"
                         title="No helpers yet."
                         description="Add helpers by inviting them via email or sharing an invite link."
                         action={
                           <Button variant="brand" onClick={() => setIsDrawerOpen(true)}>
-                            <Plus className="w-4 h-4" />
+                            <Icon name="fi-rr-plus" />
                             Add new helper
                           </Button>
                         }
@@ -819,7 +819,7 @@ export default function HelpersPage() {
                   }
                   return (
                     <EmptyState
-                      icon={Users}
+                      icon="fi-rr-users"
                       title="No helpers match your filters."
                       description="Try clearing search or switching category to see your team."
                     />
@@ -861,7 +861,7 @@ export default function HelpersPage() {
                             Accept
                           </Button>
                           <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                            <MoreVertical className="w-4 h-4" />
+                            <Icon name="fi-rr-menu-dots-vertical" />
                           </Button>
                         </div>
                       </div>

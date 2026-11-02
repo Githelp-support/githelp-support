@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Check } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { RATES_NOT_CONFIGURED, type TicketRates } from "@/lib/ticket-pricing"
@@ -126,7 +126,7 @@ export function CustomerChatIntro({
 
         {isAuthenticated && !ticketCreated && (
           <div className="flex items-center gap-2 text-sm text-brand-primary">
-            <Check className="w-4 h-4" />
+            <Icon name="fi-rr-check" />
             <span>You are signed in as {userName}</span>
           </div>
         )}

@@ -3,7 +3,7 @@
 import { useState, use, useMemo } from "react"
 import { formatDate } from "@/lib/format"
 import Link from "next/link"
-import { ArrowLeft, Info, Copy, Edit, ExternalLink } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -243,7 +243,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             href="/slas"
             className="inline-flex items-center text-brand-primary hover:text-brand-primary/80 text-sm font-medium"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <Icon name="fi-rr-arrow-left" className="mr-2" />
             Back to list of SLAs
           </Link>
         </div>
@@ -262,7 +262,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               <span>Space ID:</span>
               <span className="font-mono tabular-nums">{spaceId}</span>
               <Button variant="ghost" size="sm" onClick={copySpaceId} className="h-auto p-1 hover:bg-brand-primary/10">
-                <Copy className="w-3 h-3" />
+                <Icon name="fi-rr-copy" size={3} />
               </Button>
             </div>
           </div>
@@ -273,10 +273,10 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-foreground">Agreement details</h2>
-              <Info className="w-4 h-4 text-muted-foreground" />
+              <Icon name="fi-rr-info" className="text-muted-foreground" />
             </div>
             <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-              <Edit className="w-4 h-4" />
+              <Icon name="fi-rr-edit" />
               Edit agreement
             </Button>
           </div>
@@ -393,14 +393,14 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-lg font-semibold text-foreground">Key stats</h2>
-            <Info className="w-4 h-4 text-muted-foreground" />
+            <Icon name="fi-rr-info" className="text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Number of tickets solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-2xl font-semibold text-foreground">{stats.solved}</div>
               </CardContent>
@@ -409,7 +409,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Total time spent</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-2xl font-semibold text-foreground tabular-nums">{formatMs(stats.totalMs)}</div>
               </CardContent>
@@ -418,7 +418,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Support time remaining</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-2xl font-semibold text-foreground tabular-nums">{formatMs(stats.remainingMs)}</div>
               </CardContent>
@@ -427,7 +427,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Percentage solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-2xl font-semibold text-foreground">{stats.pct}%</div>
               </CardContent>
@@ -518,7 +518,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                             <td className="p-4 text-sm text-muted-foreground tabular-nums">{formatMs(helper.totalMs)}</td>
                             <td className="px-6 py-3">
                               <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                                <ExternalLink className="w-4 h-4" />
+                                <Icon name="fi-rr-arrow-up-right-from-square" />
                               </Button>
                             </td>
                           </tr>

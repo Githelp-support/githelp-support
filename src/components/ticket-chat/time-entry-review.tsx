@@ -13,7 +13,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { Check, Clock, X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { TIME_ENTRY_AUTO_ACCEPT_HOURS, type TimeEntryReviewStatus } from "@/lib/time-entries"
 
 /** Wording shown to the customer next to the reason field when they decline an entry. */
@@ -109,11 +109,11 @@ export function TimeEntryReviewStatusBadge({
       )}
     >
       {status === "accepted" ? (
-        <Check className="h-3 w-3" />
+        <Icon name="fi-rr-check" size={3} />
       ) : status === "declined" ? (
-        <X className="h-3 w-3" />
+        <Icon name="fi-rr-cross" size={3} />
       ) : (
-        <Clock className="h-3 w-3" />
+        <Icon name="fi-rr-clock" size={3} />
       )}
       {label}
     </span>
@@ -413,7 +413,7 @@ export function TimeEntrySummaryBanner({
         className,
       )}
     >
-      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+      <Icon name="fi-rr-clock" className="mt-0.5 shrink-0 text-amber-700" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">{who} is ready to end the session and needs you to confirm the logged time.</p>
         <p className="text-muted-foreground">
@@ -455,7 +455,7 @@ export function TimeEntryAwaitingApprovalBanner({
         className,
       )}
     >
-      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+      <Icon name="fi-rr-clock" className="mt-0.5 shrink-0 text-amber-700" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">Waiting for {who} to confirm the logged time</p>
         <p className="text-muted-foreground">

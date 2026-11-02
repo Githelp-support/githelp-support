@@ -5,7 +5,7 @@ import { formatDate } from "@/lib/format"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { MoreHorizontal, Plus, Search } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Header } from "@/components/layout/header"
 import { CreateSLADrawer } from "@/components/drawers/create-sla-drawer"
 import { useSLAs } from "@/hooks/useSLAs"
@@ -121,7 +121,7 @@ export default function SLAsPage() {
           subtitle="Manage your Support Level Agreements"
           actions={
             <Button variant="lavender" onClick={() => setIsCreateSLADrawerOpen(true)}>
-              <Plus className="w-4 h-4" />
+              <Icon name="fi-rr-plus" />
               Create new SLA
             </Button>
           }
@@ -173,7 +173,7 @@ export default function SLAsPage() {
           {/* Search and Create button */}
           <div className="mb-6 flex items-center justify-between">
             <div className="relative max-w-md">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Icon name="fi-rr-search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search"
                 value={searchTerm}
@@ -266,7 +266,7 @@ export default function SLAsPage() {
                         </Button>
                       </Link>
                       <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                        <MoreHorizontal className="w-4 h-4" />
+                        <Icon name="fi-rr-menu-dots" />
                       </Button>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 import {
   Popover,
@@ -87,7 +87,7 @@ function StripeFeeInfo() {
             }
           }}
         >
-          <Info className="size-3.5" aria-hidden="true" />
+          <Icon name="fi-rr-info" size={3.5} />
         </button>
       </PopoverTrigger>
       <PopoverContent

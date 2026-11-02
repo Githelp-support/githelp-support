@@ -2,7 +2,7 @@
 
 import { useState, useMemo, use, type KeyboardEvent, type SyntheticEvent } from "react"
 import { formatDate } from "@/lib/format"
-import { MessageCircle, Mail, Info, ArrowLeft, HelpCircle, ExternalLink, List, MoreVertical } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -122,7 +122,7 @@ function ReceiptButton({ url }: { url: string | null }) {
     return (
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
-          <ExternalLink className="w-3.5 h-3.5" />
+          <Icon name="fi-rr-arrow-up-right-from-square" size={3.5} />
           Receipt
         </a>
       </Button>
@@ -131,7 +131,7 @@ function ReceiptButton({ url }: { url: string | null }) {
   return (
     <span title={RECEIPT_UNAVAILABLE_TITLE} className="inline-flex">
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
-        <ExternalLink className="w-3.5 h-3.5" />
+        <Icon name="fi-rr-arrow-up-right-from-square" size={3.5} />
         Receipt
       </Button>
     </span>
@@ -144,7 +144,7 @@ function ReceiptMenuItem({ url, label = "Receipt" }: { url: string | null; label
     return (
       <DropdownMenuItem asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
-          <ExternalLink />
+          <Icon name="fi-rr-arrow-up-right-from-square" />
           {label}
         </a>
       </DropdownMenuItem>
@@ -154,7 +154,7 @@ function ReceiptMenuItem({ url, label = "Receipt" }: { url: string | null; label
   return (
     <span title={RECEIPT_UNAVAILABLE_TITLE} className="block">
       <DropdownMenuItem disabled>
-        <ExternalLink />
+        <Icon name="fi-rr-arrow-up-right-from-square" />
         {label}
       </DropdownMenuItem>
     </span>
@@ -360,7 +360,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
       href="/helpers"
       className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none"
     >
-      <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+      <Icon name="fi-rr-arrow-left" size={3.5} className="mr-1.5" />
       Helpers
     </Link>
   )
@@ -430,11 +430,11 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
             </div>
             <div className="space-y-3 pl-6">
               <div className="flex items-center gap-2.5">
-                <MessageCircle className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                <Icon name="fi-rr-comment" className="text-muted-foreground/70 shrink-0" />
                 <span className="text-sm text-foreground/80 truncate">{helper.discord}</span>
               </div>
               <div className="flex items-center gap-2.5">
-                <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+                <Icon name="fi-rr-envelope" className="text-muted-foreground/70 shrink-0" />
                 <span className="text-sm text-foreground/80 truncate">{helper.email}</span>
               </div>
               <div className="flex items-center gap-2.5">
@@ -467,14 +467,14 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         <div>
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-base font-semibold text-foreground">Key stats</h2>
-            <HelpCircle className="w-4 h-4 text-muted-foreground" />
+            <Icon name="fi-rr-interrogation" className="text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
             <Card className="h-28 py-0 justify-center animate-enter">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.ticketsSolved}</div>
               </CardContent>
@@ -483,7 +483,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Total time spent</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.totalTime}</div>
               </CardContent>
@@ -492,7 +492,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Percentage solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{helper.stats.percentageSolved}%</div>
               </CardContent>
@@ -599,7 +599,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                 aria-label={`More actions for ticket ${ticket.shortId}`}
                                 onClick={stopRowNavigation}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
@@ -607,13 +607,13 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                               {ticketHref ? (
                                 <DropdownMenuItem asChild>
                                   <Link href={ticketHref}>
-                                    <ExternalLink />
+                                    <Icon name="fi-rr-arrow-up-right-from-square" />
                                     Open
                                   </Link>
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem disabled>
-                                  <ExternalLink />
+                                  <Icon name="fi-rr-arrow-up-right-from-square" />
                                   Open
                                 </DropdownMenuItem>
                               )}
@@ -624,12 +624,12 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                                   if (!expanded) toggle(ticket.key)
                                 }}
                               >
-                                <List />
+                                <Icon name="fi-rr-list" />
                                 See transactions
                               </DropdownMenuItem>
                               {receiptsPerPayout ? (
                                 <DropdownMenuItem title="Each payout links to the receipt of the charge it came from" onSelect={() => toggle(ticket.key)}>
-                                  <ExternalLink />
+                                  <Icon name="fi-rr-arrow-up-right-from-square" />
                                   Receipts
                                 </DropdownMenuItem>
                               ) : ticket.receipts.length > 1 ? (

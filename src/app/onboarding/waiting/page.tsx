@@ -9,7 +9,8 @@ import { useCreateProject } from "@/hooks/useProject"
 import { useEnterProject } from "@/hooks/useEnterProject"
 import { latestOnboardingStatus, useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { homeRouteForRole } from "@/lib/roles"
-import { Loader2, Plus, Users, Mail, ArrowRight, RefreshCw } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
@@ -177,7 +178,7 @@ export default function WaitingPage() {
                 <CardContent className="space-y-4">
                     <div className="bg-muted/50 rounded-lg p-6 border border-border">
                         <div className="flex items-start gap-4">
-                            <Mail className="w-6 h-6 text-brand-primary mt-1 flex-shrink-0" />
+                            <Icon name="fi-rr-envelope" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
                             <div className="flex-1">
                                 <h3 className="font-semibold text-lg text-foreground mb-2">
                                     {onboardingStatus?.hasPendingRequest ? "Waiting for approval" : "Wait for an invite"}
@@ -196,7 +197,7 @@ export default function WaitingPage() {
                                     {isChecking ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
-                                        <RefreshCw className="w-4 h-4" />
+                                        <Icon name="fi-rr-refresh" />
                                     )}
                                     Check again
                                 </Button>
@@ -206,7 +207,7 @@ export default function WaitingPage() {
 
                     <div className="bg-muted/50 rounded-lg p-6 border border-border">
                         <div className="flex items-start gap-4">
-                            <Users className="w-6 h-6 text-brand-primary mt-1 flex-shrink-0" />
+                            <Icon name="fi-rr-users" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
                             <div className="flex-1">
                                 <h3 className="font-semibold text-lg text-foreground mb-2">Request to become a member</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
@@ -215,7 +216,7 @@ export default function WaitingPage() {
                                 <Link href="/onboarding/join">
                                     <Button variant="outline" className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground">
                                         Find a project
-                                        <ArrowRight className="w-4 h-4" />
+                                        <Icon name="fi-rr-arrow-right" />
                                     </Button>
                                 </Link>
                             </div>
@@ -224,7 +225,7 @@ export default function WaitingPage() {
 
                     <div className="bg-muted/50 rounded-lg p-6 border border-border">
                         <div className="flex items-start gap-4">
-                            <Plus className="w-6 h-6 text-brand-primary mt-1 flex-shrink-0" />
+                            <Icon name="fi-rr-plus" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
                             <div className="flex-1">
                                 <h3 className="font-semibold text-lg text-foreground mb-2">Create a new project</h3>
                                 <p className="text-sm text-muted-foreground mb-4">

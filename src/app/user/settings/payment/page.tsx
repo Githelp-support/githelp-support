@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
-import { Info, CreditCard } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import { useUser } from "@/contexts/user-context"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -200,7 +200,7 @@ export default function UserPaymentSettingsPage() {
           <div className="bg-card rounded-lg p-6">
             <div className="flex items-center gap-2 mb-2">
               <h2 className="text-base font-semibold text-foreground">Card and payment</h2>
-              <Info className="w-4 h-4 text-muted-foreground" />
+              <Icon name="fi-rr-info" className="text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
               Add a card to pay for support tickets. When you open a ticket, we
@@ -223,7 +223,7 @@ export default function UserPaymentSettingsPage() {
                 </span>
               ) : hasCardOnFile ? (
                 <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5">
-                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  <Icon name="fi-rr-credit-card" className="text-muted-foreground" />
                   <span className="text-sm font-medium text-foreground">
                     {cardBrandLabel}
                     {cardLast4 ? (

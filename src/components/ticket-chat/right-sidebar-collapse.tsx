@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ChevronsRight, ChevronLeft } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 const STORAGE_KEY = "sidebar:right:collapsed"
 
@@ -42,7 +42,7 @@ export function useRightSidebarCollapsed() {
  * Toggle header row at the top of the collapsible right sidebar. Mirrors the
  * left sidebar's collapse affordance: the double arrow collapses and the
  * single arrow expands, with directions flipped for the right edge
- * (ChevronsRight collapses, ChevronLeft expands).
+ * (double angle collapses, single angle expands).
  */
 export function RightSidebarCollapseToggle({
   isCollapsed,
@@ -62,7 +62,7 @@ export function RightSidebarCollapseToggle({
         className={`${isCollapsed ? "" : "-ml-1.5 "}h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30`}
         onClick={() => onToggle(!isCollapsed)}
       >
-        {isCollapsed ? <ChevronLeft className="w-5 h-5" /> : <ChevronsRight className="w-5 h-5" />}
+        {isCollapsed ? <Icon name="fi-rr-angle-small-left" size={5} /> : <Icon name="fi-rr-angle-double-small-right" size={5} />}
       </Button>
     </div>
   )

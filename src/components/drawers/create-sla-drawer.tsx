@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { SLAConfirmationModal } from "@/components/modals/sla-confirmation-modal"
 
@@ -157,14 +157,14 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   <RadioGroupItem value="unlimited" id="unlimited" className="border-border-control" />
                   <Label htmlFor="unlimited" className="text-sm text-text-secondary flex items-center gap-2">
                     Unlimited hours
-                    <Info className="w-4 h-4 text-text-tertiary" />
+                    <Icon name="fi-rr-info" className="text-text-tertiary" />
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3">
                   <RadioGroupItem value="limited" id="limited" className="border-border-control" />
                   <Label htmlFor="limited" className="text-sm text-text-secondary flex items-center gap-2">
                     Limited hours
-                    <Info className="w-4 h-4 text-text-tertiary" />
+                    <Icon name="fi-rr-info" className="text-text-tertiary" />
                   </Label>
                 </div>
               </RadioGroup>
@@ -194,7 +194,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   />
                   <Label htmlFor="rollover" className="text-sm text-text-secondary flex items-center gap-2">
                     Unused hours rollover
-                    <Info className="w-4 h-4 text-text-tertiary" />
+                    <Icon name="fi-rr-info" className="text-text-tertiary" />
                   </Label>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                 Subscription cost
-                <Info className="w-4 h-4 text-text-tertiary" />
+                <Icon name="fi-rr-info" className="text-text-tertiary" />
               </h3>
 
               <FormField label="Cost">
@@ -219,7 +219,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               <div className="space-y-2">
                 <label className="text-sm text-text-secondary flex items-center gap-2">
                   Paid
-                  <Info className="w-4 h-4 text-text-tertiary" />
+                  <Icon name="fi-rr-info" className="text-text-tertiary" />
                 </label>
                 <Select
                   value={formData.paymentFrequency}
@@ -245,7 +245,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                 <div className="space-y-2">
                   <label className="text-sm text-text-secondary flex items-center gap-2">
                     Start price
-                    <Info className="w-4 h-4 text-text-tertiary" />
+                    <Icon name="fi-rr-info" className="text-text-tertiary" />
                   </label>
                   <Input
                     placeholder="USD 0.00"
@@ -282,7 +282,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               <div className="space-y-2">
                 <label className="text-sm text-text-secondary flex items-center gap-2">
                   Max response time
-                  <Info className="w-4 h-4 text-text-tertiary" />
+                  <Icon name="fi-rr-info" className="text-text-tertiary" />
                 </label>
                 <Input
                   placeholder="0.0 hours"
@@ -295,7 +295,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               <div className="space-y-2">
                 <label className="text-sm text-text-secondary flex items-center gap-2">
                   Max down time
-                  <Info className="w-4 h-4 text-text-tertiary" />
+                  <Icon name="fi-rr-info" className="text-text-tertiary" />
                 </label>
                 <Input
                   placeholder="0.0 hours"

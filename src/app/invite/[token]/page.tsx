@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/lib/supabase/client"
 import { hasSignedInSession } from "@/lib/supabase/auth-state"
-import { Loader2, CheckCircle, LogIn, XCircle } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
@@ -282,7 +283,7 @@ export default function InviteAcceptancePage() {
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
-                            <XCircle className="w-6 h-6 text-red-500" />
+                            <Icon name="fi-rr-cross-circle" size={6} className="text-red-500" />
                             <CardTitle>Invalid invite link</CardTitle>
                         </div>
                         <CardDescription>
@@ -317,7 +318,7 @@ export default function InviteAcceptancePage() {
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex flex-col items-start gap-4 mb-2 text-left">
-                            <CheckCircle className="w-6 h-6 text-green-600" />
+                            <Icon name="fi-rr-check-circle" size={6} className="text-green-600" />
                             <CardTitle>{title}</CardTitle>
                         </div>
                         <CardDescription className="text-left">{description}</CardDescription>
@@ -365,7 +366,7 @@ export default function InviteAcceptancePage() {
                             </p>
                             <Link href={`/auth/signin?redirect=${encodeURIComponent(`/invite/${token}`)}`}>
                                 <Button variant="brand" className="w-full">
-                                    <LogIn className="w-4 h-4" />
+                                    <Icon name="fi-rr-sign-in-alt" />
                                     Sign in to continue
                                 </Button>
                             </Link>

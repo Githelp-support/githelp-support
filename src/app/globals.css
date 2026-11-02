@@ -102,6 +102,22 @@
 
 /* Durations are not a Tailwind theme namespace; expose them as utilities.
    They also set --tw-duration so tw-animate-css animations (animate-in, accordion) pick them up. */
+/* Flaticon UIcons glyph box (see components/ui/icon.tsx). The glyph is a font
+   character, so the box and the font size both follow --icon-size. */
+@layer components {
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: var(--icon-size, 1rem);
+    height: var(--icon-size, 1rem);
+    font-size: calc(var(--icon-size, 1rem) * 0.875);
+    line-height: 1;
+    pointer-events: none;
+  }
+}
+
 @utility duration-fast {
   --tw-duration: var(--duration-fast);
   transition-duration: var(--duration-fast);

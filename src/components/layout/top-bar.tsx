@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, ChevronDown, Check, Plus, Lock } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
@@ -95,7 +95,7 @@ const PrivateContextIcon = ({ size }: { size: string }) => (
   <span
     className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
   >
-    <Lock className="w-3 h-3" strokeWidth={2.2} />
+    <Icon name="fi-rr-lock" size={3} />
   </span>
 )
 
@@ -352,7 +352,7 @@ export function TopBar() {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
               <span className="font-sans text-sm text-muted-foreground">{getRoleDisplayName(user.role)}</span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <Icon name="fi-rr-angle-small-down" className="text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
               {visibleRoles.length > 0 ? (
@@ -366,7 +366,7 @@ export function TopBar() {
                         className="cursor-pointer flex items-center justify-between"
                       >
                         <span>{getRoleDisplayName(role)}</span>
-                        {isCurrent && <Check className="w-4 h-4 text-muted-foreground" />}
+                        {isCurrent && <Icon name="fi-rr-check" className="text-muted-foreground" />}
                       </DropdownMenuItem>
                     )
                   })}
@@ -379,7 +379,7 @@ export function TopBar() {
                     className="cursor-pointer font-sans text-sm text-brand-primary"
                     onClick={goToAddRole}
                   >
-                    <Plus className="w-4 h-4" />
+                    <Icon name="fi-rr-plus" />
                     New role
                   </DropdownMenuItem>
                 </>
@@ -404,7 +404,7 @@ export function TopBar() {
                     <PrivateContextIcon size="w-[22px] h-[22px]" />
                     <span className="font-sans text-sm font-medium text-sidebar-foreground truncate max-w-[32vw] md:max-w-[16rem]">Private</span>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Icon name="fi-rr-angle-small-down" className="text-muted-foreground flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -428,7 +428,7 @@ export function TopBar() {
                           setEmployerTipOpen(true)
                         }}
                       >
-                        <Plus className="w-4 h-4" />
+                        <Icon name="fi-rr-plus" />
                         Add employer
                       </DropdownMenuItem>
                     </TooltipTrigger>
@@ -464,7 +464,7 @@ export function TopBar() {
                       {selectedProject?.name || "Select Project"}
                     </span>
                   </div>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Icon name="fi-rr-angle-small-down" className="text-muted-foreground flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -492,7 +492,7 @@ export function TopBar() {
                   className="font-sans text-sm text-brand-primary"
                   onClick={goToAddRole}
                 >
-                  <Plus className="w-4 h-4" />
+                  <Icon name="fi-rr-plus" />
                   Add new
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -514,7 +514,7 @@ export function TopBar() {
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
             className="relative p-1 mt-0.5 hover:bg-muted rounded-md transition-colors cursor-pointer"
           >
-            <Bell className="w-[18px] h-[18px] text-text-muted" strokeWidth={1.95} />
+            <Icon name="fi-rr-bell" className="[--icon-size:18px] text-text-muted" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-1 bg-destructive text-white text-[11.25px] rounded-full w-[18px] h-[18px] flex items-center justify-center">
                 {unreadCount > 9 ? "9+" : unreadCount}

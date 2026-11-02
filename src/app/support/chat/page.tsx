@@ -7,7 +7,7 @@ import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useSetProjectPageHref } from "@/components/layout/app-shell"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
-import { Search } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useState, useEffect, useMemo, useRef } from "react"
@@ -596,7 +596,7 @@ export default function UserSupportChatPage() {
 
             <div className="flex gap-2 mb-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Icon name="fi-rr-search" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search projects"

@@ -10,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { FormField } from "@/components/ui/form-field"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
-import { Copy, Check, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Image from "next/image"
 import { supabase } from "@/lib/supabase/client"
@@ -420,9 +421,9 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                     className="rounded-xl border-border/60 hover:bg-muted/60"
                   >
                     {copied ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <Icon name="fi-rr-check" className="text-green-600" />
                     ) : (
-                      <Copy className="w-4 h-4" />
+                      <Icon name="fi-rr-copy" />
                     )}
                   </Button>
                 </div>
@@ -454,7 +455,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                           setTimeout(() => setCopied(false), 2000)
                         }}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Icon name="fi-rr-copy" />
                       </Button>
                     </div>
                   ))}

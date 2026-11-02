@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ExternalLink, Github, Loader2, Users, CheckCircle, ArrowLeft } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { supabase } from "@/lib/supabase/client"
 import { signInWithGitHub } from "@/lib/supabase/auth"
 import { useListContributedProjects } from "@/hooks/useProject"
@@ -119,7 +120,7 @@ export default function JoinProjectPage() {
                                 disabled={!projectId.trim()}
                                 variant="lavender"
                             >
-                                <ExternalLink className="w-4 h-4" />
+                                <Icon name="fi-rr-arrow-up-right-from-square" />
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -139,7 +140,7 @@ export default function JoinProjectPage() {
                                     variant="outline"
                                     className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white border-[#24292e]"
                                 >
-                                    <Github className="w-4 h-4" />
+                                    <Icon name="fi-brands-github" />
                                     Connect with GitHub
                                 </Button>
                             ) : loadingContributed ? (
@@ -167,7 +168,7 @@ export default function JoinProjectPage() {
                                                 </div>
                                                 {hasRequested ? (
                                                     <div className="flex items-center gap-2 text-sm text-green-600 flex-shrink-0">
-                                                        <CheckCircle className="w-4 h-4" />
+                                                        <Icon name="fi-rr-check-circle" />
                                                         Requested
                                                     </div>
                                                 ) : (
@@ -181,7 +182,7 @@ export default function JoinProjectPage() {
                                                             <Loader2 className="w-4 h-4 animate-spin" />
                                                         ) : (
                                                             <>
-                                                                <Users className="w-4 h-4" />
+                                                                <Icon name="fi-rr-users" />
                                                                 Request
                                                             </>
                                                         )}
@@ -201,7 +202,7 @@ export default function JoinProjectPage() {
                             variant="outline"
                             className="w-full"
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                     </div>

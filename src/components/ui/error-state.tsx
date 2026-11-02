@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { AlertCircle, RefreshCw } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -47,7 +47,7 @@ function ErrorState({
           size === "sm" ? `size-8 ${SQUIRCLE_RADIUS[32]}` : `size-[42px] ${SQUIRCLE_RADIUS[42]}`,
         )}
       >
-        <AlertCircle className={size === "sm" ? "size-4" : "size-5"} aria-hidden />
+        <Icon name="fi-rr-exclamation" size={size === "sm" ? 4 : 5} />
       </div>
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-foreground">{title}</p>
@@ -55,7 +55,7 @@ function ErrorState({
       </div>
       {onRetry && (
         <Button type="button" variant="outline" size="sm" className="mt-1" onClick={onRetry}>
-          <RefreshCw className="size-3.5" aria-hidden />
+          <Icon name="fi-rr-refresh" size={3.5} />
           Try again
         </Button>
       )}

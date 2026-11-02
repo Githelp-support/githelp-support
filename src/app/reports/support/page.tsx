@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Download, ExternalLink, FileSpreadsheet, List, MoreVertical } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
@@ -161,7 +161,7 @@ function ReceiptButton({ url }: { url: string | null }) {
     return (
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title="Open the Stripe receipt for this charge">
-          <ExternalLink className="w-3.5 h-3.5" />
+          <Icon name="fi-rr-arrow-up-right-from-square" size={3.5} />
           Receipt
         </a>
       </Button>
@@ -170,7 +170,7 @@ function ReceiptButton({ url }: { url: string | null }) {
   return (
     <span title="A receipt becomes available once the payment has been captured" className="inline-flex">
       <Button variant="outline" size="sm" className={OUTLINE_BUTTON_CLASS} disabled>
-        <ExternalLink className="w-3.5 h-3.5" />
+        <Icon name="fi-rr-arrow-up-right-from-square" size={3.5} />
         Receipt
       </Button>
     </span>
@@ -183,7 +183,7 @@ function ReceiptMenuItem({ url }: { url: string | null }) {
     return (
       <DropdownMenuItem asChild>
         <a href={url} target="_blank" rel="noopener noreferrer" title={RECEIPT_AVAILABLE_TITLE}>
-          <ExternalLink />
+          <Icon name="fi-rr-arrow-up-right-from-square" />
           Receipt
         </a>
       </DropdownMenuItem>
@@ -193,7 +193,7 @@ function ReceiptMenuItem({ url }: { url: string | null }) {
   return (
     <span title={RECEIPT_UNAVAILABLE_TITLE} className="block">
       <DropdownMenuItem disabled>
-        <ExternalLink />
+        <Icon name="fi-rr-arrow-up-right-from-square" />
         Receipt
       </DropdownMenuItem>
     </span>
@@ -487,7 +487,7 @@ export default function ReportsSupportPage() {
                 title={`Export the ${exportPeriod ?? "all-time"} project report as CSV for accounting`}
                 onClick={() => exportCsv(exportPeriod)}
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <Icon name="fi-rr-file-spreadsheet" size={3.5} />
                 Export CSV
               </Button>
               <Button
@@ -499,7 +499,7 @@ export default function ReportsSupportPage() {
                 title={`Download the ${exportPeriod ?? "all-time"} project report as PDF for accounting`}
                 onClick={() => exportPdf(exportPeriod)}
               >
-                <Download className="w-3.5 h-3.5" />
+                <Icon name="fi-rr-download" size={3.5} />
                 Download PDF
               </Button>
             </div>
@@ -580,7 +580,7 @@ export default function ReportsSupportPage() {
                                 aria-label={`More actions for ${row.period}`}
                                 onClick={stopRowNavigation}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
@@ -589,14 +589,14 @@ export default function ReportsSupportPage() {
                                 title={`Download the ${row.period} project report as PDF`}
                                 onSelect={() => exportPdf(row.period)}
                               >
-                                <Download />
+                                <Icon name="fi-rr-download" />
                                 PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 title={`Export the ${row.period} project report as CSV`}
                                 onSelect={() => exportCsv(row.period)}
                               >
-                                <FileSpreadsheet />
+                                <Icon name="fi-rr-file-spreadsheet" />
                                 CSV
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -709,14 +709,14 @@ export default function ReportsSupportPage() {
                                 aria-label={`More actions for ticket ${row.ticketShortId}`}
                                 onClick={stopRowNavigation}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
                             <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
                               {count > 1 ? (
                                 <DropdownMenuItem title="Each charge has its own Stripe receipt" onSelect={() => toggle(row.id)}>
-                                  <ExternalLink />
+                                  <Icon name="fi-rr-arrow-up-right-from-square" />
                                   Receipts
                                 </DropdownMenuItem>
                               ) : (
@@ -732,7 +732,7 @@ export default function ReportsSupportPage() {
                                   })
                                 }
                               >
-                                <Download />
+                                <Icon name="fi-rr-download" />
                                 PDF
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -873,7 +873,7 @@ export default function ReportsSupportPage() {
                                 aria-label={`More actions for ${row.helper}, ${row.period}`}
                                 onClick={stopRowNavigation}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
@@ -882,7 +882,7 @@ export default function ReportsSupportPage() {
                                 title={`Download all of ${row.helper}'s transactions in ${row.period} as one PDF`}
                                 onSelect={() => exportPdf(null, helperMonthExport(row))}
                               >
-                                <Download />
+                                <Icon name="fi-rr-download" />
                                 PDF
                               </DropdownMenuItem>
                               {/* Opens the same list as clicking the row; an already open list stays open. */}
@@ -892,7 +892,7 @@ export default function ReportsSupportPage() {
                                   if (!expanded) toggle(row.id)
                                 }}
                               >
-                                <List />
+                                <Icon name="fi-rr-list" />
                                 See transactions
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -942,7 +942,7 @@ export default function ReportsSupportPage() {
                                   title="Download this transaction and its user charge as a PDF"
                                   onClick={() => exportPdf(null, payoutExport(transfer))}
                                 >
-                                  <Download className="w-3.5 h-3.5" />
+                                  <Icon name="fi-rr-download" size={3.5} />
                                   Receipt
                                 </Button>
                               </span>

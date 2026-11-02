@@ -9,7 +9,8 @@ import { useCreatePendingRequest } from "@/hooks/usePendingRequests"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { supabase } from "@/lib/supabase/client"
 import { hasSignedInSession } from "@/lib/supabase/auth-state"
-import { Loader2, CheckCircle, LogIn } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
@@ -175,7 +176,7 @@ export default function ProjectLandingPage() {
                         {hasRequested ? (
                             <div className="bg-muted/50 rounded-lg p-6 border border-border">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <CheckCircle className="w-[19px] h-[19px] text-green-600" />
+                                    <Icon name="fi-rr-check-circle" className="[--icon-size:19px] text-green-600" />
                                     <h3 className="font-semibold text-lg text-foreground">Request submitted</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
@@ -201,7 +202,7 @@ export default function ProjectLandingPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <i className="fi fi-rr-user-add inline-flex items-center justify-center leading-none w-4 h-4" />
+                                                <Icon name="fi-rr-user-add" />
                                                 Request to become a helper
                                             </>
                                         )}
@@ -213,7 +214,7 @@ export default function ProjectLandingPage() {
                                         </p>
                                         <Link href={`/auth/signin?redirect=${encodeURIComponent(`/projects/${projectId}`)}`}>
                                             <Button variant="brand">
-                                                <LogIn className="w-4 h-4" />
+                                                <Icon name="fi-rr-sign-in-alt" />
                                                 Sign in to continue
                                             </Button>
                                         </Link>

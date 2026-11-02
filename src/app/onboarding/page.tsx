@@ -24,17 +24,8 @@ import { useEnterProject } from "@/hooks/useEnterProject"
 import { useUser } from "@/contexts/user-context"
 import { homeRouteForRole } from "@/lib/roles"
 import { consumePendingRedirect } from "@/lib/safe-redirect"
-import {
-    Loader2,
-    Plus,
-    Users,
-    Github,
-    ArrowLeft,
-    Check,
-    Search,
-    FlaskConical,
-    Mail,
-} from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { RoleOptionCards } from "@/components/auth/role-option-cards"
 import type { UserRole } from "@/contexts/user-context"
 import { supabase } from "@/lib/supabase/client"
@@ -437,7 +428,7 @@ export default function OnboardingPage() {
                         />
                         {isAddingRole && (
                             <Button variant="ghost" className="w-full" onClick={() => router.push("/")}>
-                                <ArrowLeft className="w-4 h-4" />
+                                <Icon name="fi-rr-arrow-left" />
                                 Back to Githelp
                             </Button>
                         )}
@@ -460,7 +451,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("role")}
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-semibold">What is the name of the project?</CardTitle>
@@ -474,7 +465,7 @@ export default function OnboardingPage() {
                         <div className="space-y-2">
                             <Label htmlFor="onboarding-project-name">Project name</Label>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Icon name="fi-rr-search" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     id="onboarding-project-name"
                                     type="text"
@@ -543,7 +534,7 @@ export default function OnboardingPage() {
                                                             /projects/{match.slug}
                                                         </div>
                                                     </div>
-                                                    {isSelected && <Check className="w-5 h-5 text-brand-primary shrink-0" />}
+                                                    {isSelected && <Icon name="fi-rr-check" size={5} className="text-brand-primary shrink-0" />}
                                                 </button>
                                             )
                                         })}
@@ -600,7 +591,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("project-name")}
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                         <div className="flex items-center gap-3 mb-2">
@@ -619,7 +610,7 @@ export default function OnboardingPage() {
                     <CardContent className="space-y-4">
                         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
                             <div className="flex items-start gap-3">
-                                <Mail className="w-5 h-5 text-brand-primary shrink-0 mt-0.5" />
+                                <Icon name="fi-rr-envelope" size={5} className="text-brand-primary shrink-0 mt-0.5" />
                                 <div className="text-sm text-foreground space-y-2">
                                     <p className="font-medium">How to get invited</p>
                                     <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
@@ -683,7 +674,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("project-name")}
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-semibold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
@@ -705,7 +696,7 @@ export default function OnboardingPage() {
                                 onClick={() => setStep("create")}
                                 variant="brand" className="flex-1"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Icon name="fi-rr-plus" />
                                 Yes, create the project
                             </Button>
                         </div>
@@ -726,7 +717,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("project-name")}
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-semibold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
@@ -738,7 +729,7 @@ export default function OnboardingPage() {
                     <CardContent className="space-y-4">
                         <div className="rounded-lg border border-border bg-card p-4">
                             <div className="flex items-start gap-3">
-                                <Users className="w-5 h-5 text-brand-primary shrink-0 mt-0.5" />
+                                <Icon name="fi-rr-users" size={5} className="text-brand-primary shrink-0 mt-0.5" />
                                 <div className="text-sm text-muted-foreground space-y-2">
                                     <p className="font-medium text-foreground">Help bring {trimmedName} to Githelp</p>
                                     <p>
@@ -790,7 +781,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep(trimmedName ? "admin-create-confirm" : "project-name")}
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-semibold">
@@ -807,7 +798,7 @@ export default function OnboardingPage() {
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
-                                <Plus className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
+                                <Icon name="fi-rr-plus" size={6} className="shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Create from scratch</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -823,7 +814,7 @@ export default function OnboardingPage() {
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
-                                <Github className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />
+                                <Icon name="fi-brands-github" size={6} className="shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
                                     <div className="font-semibold text-lg text-foreground">Import from GitHub</div>
                                     <div className="text-sm text-muted-foreground mt-1">
@@ -841,7 +832,7 @@ export default function OnboardingPage() {
                                 variant="outline"
                             >
                                 <div className="flex items-start gap-3 w-full">
-                                    <FlaskConical className="w-6 h-6 mt-0.5 text-brand-primary flex-shrink-0" />
+                                    <Icon name="fi-rr-flask" size={6} className="mt-0.5 text-brand-primary" />
                                     <div className="flex-1">
                                         <div className="font-semibold text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
@@ -871,7 +862,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("create")}
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-semibold">Import from GitHub</CardTitle>
@@ -889,7 +880,7 @@ export default function OnboardingPage() {
                                     onClick={handleConnectGitHub}
                                     className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white"
                                 >
-                                    <Github className="w-5 h-5" />
+                                    <Icon name="fi-brands-github" size={5} />
                                     Connect with GitHub
                                 </Button>
                             </div>
@@ -907,14 +898,14 @@ export default function OnboardingPage() {
                                     onClick={handleReauthorizeGitHub}
                                     className="w-full"
                                 >
-                                    <Github className="w-4 h-4" />
+                                    <Icon name="fi-brands-github" />
                                     Re-authorize with GitHub to grant more permissions
                                 </Button>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Icon name="fi-rr-search" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                                     <Input
                                         placeholder="Search repositories..."
                                         value={repoSearch}
@@ -947,7 +938,7 @@ export default function OnboardingPage() {
                                                 {isCreating ? (
                                                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground flex-shrink-0" />
                                                 ) : (
-                                                    <Check className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                                                    <Icon name="fi-rr-check" size={5} className="text-muted-foreground flex-shrink-0" />
                                                 )}
                                             </button>
                                         ))}
@@ -986,7 +977,7 @@ export default function OnboardingPage() {
                             className="w-fit -ml-2 mb-2"
                             onClick={() => setStep("create")}
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                         <CardTitle className="text-2xl font-semibold">Create a new project</CardTitle>

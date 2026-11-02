@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Header } from "@/components/layout/header"
-import { Clock, MessageCircle, User, ChevronUp, ChevronDown, Sparkles } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { GuestTicketBadge, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
@@ -309,7 +309,7 @@ export default function TicketsPage() {
               <CardContent className="px-5 py-4">
                 <div className="text-xl font-semibold text-foreground mb-1">{stats.total}</div>
                 <div className="flex items-center gap-2">
-                  <User className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-user" size={3} className="text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Total Tickets</span>
                 </div>
               </CardContent>
@@ -329,7 +329,7 @@ export default function TicketsPage() {
               <CardContent className="px-5 py-4">
                 <div className="text-xl font-semibold text-foreground mb-1">{stats.available}</div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-clock" size={3} className="text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Unclaimed</span>
                 </div>
               </CardContent>
@@ -349,7 +349,7 @@ export default function TicketsPage() {
               <CardContent className="px-5 py-4">
                 <div className="text-xl font-semibold text-foreground mb-1">{stats.inProgress}</div>
                 <div className="flex items-center gap-2">
-                  <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">In Progress</span>
                 </div>
               </CardContent>
@@ -369,7 +369,7 @@ export default function TicketsPage() {
               <CardContent className="px-5 py-4">
                 <div className="text-xl font-semibold text-foreground mb-1">{stats.completed}</div>
                 <div className="flex items-center gap-2">
-                  <User className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-user" size={3} className="text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Completed</span>
                 </div>
               </CardContent>
@@ -562,7 +562,7 @@ export default function TicketsPage() {
                                     disabled
                                     className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
                                   >
-                                    <Sparkles className="w-4 h-4" />
+                                    <Icon name="fi-rr-sparkles" />
                                     Rephrase with AI
                                   </Button>
                                 </span>
@@ -580,9 +580,9 @@ export default function TicketsPage() {
                     </div>
                     <div className="col-span-1 flex justify-end">
                       {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                        <Icon name="fi-rr-angle-small-up" size={5} className="text-muted-foreground" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        <Icon name="fi-rr-angle-small-down" size={5} className="text-muted-foreground" />
                       )}
                     </div>
                   </div>
@@ -683,7 +683,7 @@ export default function TicketsPage() {
                             {ticket.guest && <GuestTicketBadge className="mt-1" />}
                             <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                             <div className="flex items-center gap-1 mt-1">
-                              <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                              <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
                             </div>
                           </div>
@@ -710,9 +710,9 @@ export default function TicketsPage() {
                           <div className="text-xs text-muted-foreground">{ticket.createdAt.split(", ")[1]}</div>
                         </div>
                         {isExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
+                          <Icon name="fi-rr-angle-small-up" size={5} className="text-muted-foreground shrink-0" />
                         ) : (
-                          <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
+                          <Icon name="fi-rr-angle-small-down" size={5} className="text-muted-foreground shrink-0" />
                         )}
                       </div>
                     </div>
@@ -782,7 +782,7 @@ export default function TicketsPage() {
                       {ticket.guest && <GuestTicketBadge className="mt-1" />}
                       <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                         <div className="flex items-center gap-1 mt-1">
-                          <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                          <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">{ticket.messages} messages</span>
                         </div>
                     </div>

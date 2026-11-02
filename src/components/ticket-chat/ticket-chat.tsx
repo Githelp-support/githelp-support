@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Check, Plus, PanelRight } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
@@ -356,7 +356,7 @@ export function TicketChat(props: TicketChatProps) {
                 aria-expanded={mobilePanelOpen}
                 onClick={() => setMobilePanelOpen((v) => !v)}
               >
-                <PanelRight className="size-4" aria-hidden />
+                <Icon name="fi-rr-sidebar-flip" />
               </Button>
             }
           />
@@ -414,7 +414,7 @@ export function TicketChat(props: TicketChatProps) {
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-foreground">
-                                  <Check className="w-4 h-4 text-brand-primary shrink-0" />
+                                  <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
                                   <MarkdownContent content={msg.content} className="text-sm" />
                                 </div>
                               </div>
@@ -683,7 +683,7 @@ export function TicketChat(props: TicketChatProps) {
 
               {!isEnded && (
                 <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                  <Plus className="w-4 h-4" />
+                  <Icon name="fi-rr-plus" />
                   Invite other helper
                 </Button>
               )}

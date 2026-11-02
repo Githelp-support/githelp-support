@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarClock } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Header } from "@/components/layout/header"
 
 /**
@@ -18,7 +18,7 @@ export default function HelperSettingsPage() {
           <div className="max-w-2xl">
             <div className="bg-background rounded-lg p-6">
               <div className="flex items-start gap-3">
-                <CalendarClock className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+                <Icon name="fi-rr-calendar-clock" size={5} className="text-muted-foreground shrink-0 mt-0.5" />
                 <div>
                   <h2 className="text-base font-semibold text-foreground mb-1">Availability settings are coming soon</h2>
                   <p className="text-sm text-muted-foreground">

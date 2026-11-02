@@ -33,18 +33,7 @@ import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
-import {
-  Plus,
-  Info,
-  Paperclip,
-  Smile,
-  Check,
-  AtSign,
-  Mic,
-  Video,
-  Trash2,
-  PanelRight,
-} from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
 import { useParams } from "next/navigation"
@@ -77,7 +66,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { UserPlus } from "lucide-react"
 import { prepareOutgoingMessage } from "@/lib/code-format"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
@@ -921,7 +909,7 @@ export default function TicketDetailPage() {
                 aria-expanded={mobilePanelOpen}
                 onClick={() => setMobilePanelOpen((v) => !v)}
               >
-                <PanelRight className="size-4" aria-hidden />
+                <Icon name="fi-rr-sidebar-flip" />
               </Button>
             }
           />
@@ -1095,7 +1083,7 @@ export default function TicketDetailPage() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-foreground">
-                              <Check className="w-4 h-4 text-brand-primary shrink-0" />
+                              <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
                               <MarkdownContent content={msg.content} className="text-sm" />
                             </div>
                           </div>
@@ -1155,7 +1143,7 @@ export default function TicketDetailPage() {
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Check className="w-4 h-4 text-brand-primary shrink-0" />
+                          <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
                           <span>Ticket ended</span>
                         </div>
                         <div className="mt-2">
@@ -1388,7 +1376,7 @@ export default function TicketDetailPage() {
             )}
             {!isTicketEnded && (
               <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                <Plus className="w-4 h-4" />
+                <Icon name="fi-rr-plus" />
                 Invite other helper
               </Button>
             )}
@@ -1453,7 +1441,7 @@ export default function TicketDetailPage() {
                             title="Delete logged time"
                             className="p-1 rounded text-muted-foreground hover:text-red-600 hover:bg-muted"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Icon name="fi-rr-trash" size={3.5} />
                           </button>
                         )}
                       </div>
@@ -1616,7 +1604,7 @@ export default function TicketDetailPage() {
               onClick={handleAddSelfAsHelper}
               disabled={addSelfAsHelper.isPending}
             >
-              <UserPlus className="w-4 h-4" />
+              <Icon name="fi-rr-user-add" />
               Add myself as helper
             </Button>
           </DialogFooter>

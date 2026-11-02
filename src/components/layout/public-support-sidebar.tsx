@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronsLeft, ChevronRight } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -95,7 +95,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
               }
             }}
           >
-            <ChevronsLeft className="w-5 h-5" />
+            <Icon name="fi-rr-angle-double-small-left" size={5} />
           </Button>
         ) : (
           <Button
@@ -113,7 +113,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
               }
             }}
           >
-            <ChevronRight className="w-5 h-5" />
+            <Icon name="fi-rr-angle-small-right" size={5} />
           </Button>
         )}
       </div>

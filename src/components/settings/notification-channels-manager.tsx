@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Plus, Send, Trash2, Copy } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -134,7 +135,7 @@ export function NotificationChannelsManager({
                 toast.success("Copied")
               }}
             >
-              <Copy className="w-3.5 h-3.5" />
+              <Icon name="fi-rr-copy" size={3.5} />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setSigningSecret(null)}>
               Done
@@ -178,12 +179,12 @@ export function NotificationChannelsManager({
                   {testingId === channel.id ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Send className="w-3.5 h-3.5" />
+                    <Icon name="fi-rr-paper-plane" size={3.5} />
                   )}
                   <span className="ml-1">Test</span>
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => handleDelete(channel.id)}>
-                  <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+                  <Icon name="fi-rr-trash" size={3.5} className="text-muted-foreground" />
                 </Button>
               </div>
             </div>
@@ -247,7 +248,7 @@ export function NotificationChannelsManager({
         </div>
       ) : (
         <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-1" />
+          <Icon name="fi-rr-plus" className="mr-1" />
           Add channel
         </Button>
       )}

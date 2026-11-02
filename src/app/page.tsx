@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useDashboardStats } from "@/hooks/useDashboardStats"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useUser } from "@/contexts/user-context"
-import { ExternalLink, HelpCircle, Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -205,14 +205,14 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-base font-semibold text-foreground">Key stats</h2>
-            <HelpCircle className="w-4 h-4 text-muted-foreground" />
+            <Icon name="fi-rr-interrogation" className="text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
             <Card className="h-28 py-0 justify-center animate-enter">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTicketsSolved}</div>
               </CardContent>
@@ -221,7 +221,7 @@ export default function Dashboard() {
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Total time spent</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
               </CardContent>
@@ -230,7 +230,7 @@ export default function Dashboard() {
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Percentage solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
               </CardContent>
@@ -301,7 +301,7 @@ export default function Dashboard() {
                       <div className="col-span-2 text-sm text-foreground tabular-nums">{helper.time}</div>
                       <div className="col-span-1 flex justify-end">
                         <Link href={`/helpers/${helper.id}`}>
-                          <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-muted-foreground cursor-pointer" />
+                          <Icon name="fi-rr-arrow-up-right-from-square" className="text-muted-foreground hover:text-muted-foreground cursor-pointer" />
                         </Link>
                       </div>
                     </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState, type ReactNode } from "react"
-import { ChevronRight } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { cn } from "@/lib/utils"
 import { transactionCountLabel } from "@/lib/ticket-groups"
 
@@ -61,7 +61,7 @@ export function TransactionsToggle({
         className,
       )}
     >
-      <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
+      <Icon name="fi-rr-angle-small-right" size={3} className={cn("transition-transform", expanded && "rotate-90")} />
       {transactionCountLabel(count, noun)}
     </button>
   )

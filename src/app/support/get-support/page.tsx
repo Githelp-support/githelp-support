@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { HelpCircle, ChevronLeft } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import Link from "next/link"
 import Image from "next/image"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -118,7 +118,7 @@ export default function GetSupportPage() {
       <div className="space-y-8">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-normal text-text-secondary">The {projectName} support space</h2>
-          <HelpCircle className="h-4 w-4 text-text-tertiary" />
+          <Icon name="fi-rr-interrogation" className="text-text-tertiary" />
         </div>
 
         <p className="text-text-secondary">
@@ -140,7 +140,7 @@ export default function GetSupportPage() {
               href={`/support${supportQuery}`}
               className="inline-flex items-center gap-2 text-brand-primary hover:text-brand-primary-hover transition-colors cursor-pointer"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <Icon name="fi-rr-angle-small-left" />
               <span>Go back</span>
             </Link>
           </div>

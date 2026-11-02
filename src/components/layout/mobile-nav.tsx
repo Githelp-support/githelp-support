@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { Menu, X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { usePathname, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -52,7 +52,7 @@ export function MobileNavToggle({ className }: { className?: string }) {
       className={cn("lg:hidden -ml-2 text-text-muted hover:text-foreground", className)}
       onClick={() => setOpen(!open)}
     >
-      <Menu className="size-5" aria-hidden />
+      <Icon name="fi-rr-menu-burger" size={5} />
     </Button>
   )
 }
@@ -92,7 +92,7 @@ export function MobileSidebarSheet({ children, label = "Menu" }: { children: Rea
               aria-label="Close menu"
               className="absolute right-2 top-3 z-10 text-text-muted hover:text-foreground"
             >
-              <X className="size-4" aria-hidden />
+              <Icon name="fi-rr-cross" />
             </Button>
           </DialogPrimitive.Close>
           {/* The sidebar fills the sheet; it stretches as a flex item like it does in the shell row. */}

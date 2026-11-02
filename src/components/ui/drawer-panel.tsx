@@ -1,7 +1,7 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -77,7 +77,7 @@ export function DrawerPanel({
                     className="size-8 shrink-0 text-muted-foreground hover:bg-surface-hover"
                     aria-label="Close"
                   >
-                    <X className="size-[18px] stroke-[1.5]" />
+                    <Icon name="fi-rr-cross" className="[--icon-size:18px]" />
                   </Button>
                 </DialogPrimitive.Close>
                 <DialogPrimitive.Title className="text-lg font-semibold text-foreground">{title}</DialogPrimitive.Title>
@@ -97,7 +97,7 @@ export function DrawerPanel({
                         className="size-8 shrink-0 text-muted-foreground hover:bg-surface-hover"
                         aria-label="Close"
                       >
-                        <X className="size-[18px] stroke-[1.5]" />
+                        <Icon name="fi-rr-cross" className="[--icon-size:18px]" />
                       </Button>
                     </DialogPrimitive.Close>
                     {headerAction}

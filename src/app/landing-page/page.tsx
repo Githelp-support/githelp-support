@@ -7,7 +7,7 @@ import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
-import { Plus, Trash2, ExternalLink, Copy, Check, FolderOpen } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import Link from "next/link"
 import { useUserProjects, useProjectResources, useCreateProjectResource, useDeleteProjectResource } from "@/hooks/useProject"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -112,7 +112,7 @@ export default function LandingPageSettings() {
                 target="_blank"
               >
                 <Button variant="outline" size="sm" className="text-text-muted border-border bg-transparent cursor-pointer">
-                  <ExternalLink className="w-4 h-4" />
+                  <Icon name="fi-rr-arrow-up-right-from-square" />
                   Open
                 </Button>
               </Link>
@@ -124,12 +124,12 @@ export default function LandingPageSettings() {
               >
                 {copied ? (
                   <>
-                    <Check className="w-4 h-4" />
+                    <Icon name="fi-rr-check" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4" />
+                    <Icon name="fi-rr-copy" />
                     Copy link
                   </>
                 )}
@@ -172,7 +172,7 @@ export default function LandingPageSettings() {
                     variant="lavender"
                     className="text-ui"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Icon name="fi-rr-plus" />
                     {createResource.isPending ? "Adding..." : "Add resource"}
                   </Button>
                 </div>
@@ -185,7 +185,7 @@ export default function LandingPageSettings() {
                 {resourcesLoading ? (
                   <ListSkeleton rows={3} avatar={false} badge={false} className="divide-y-0 [&>div]:px-0" />
                 ) : resources.length === 0 ? (
-                  <EmptyState size="sm" icon={FolderOpen} title="No resources added yet" description="Links you add here show on the support page." />
+                  <EmptyState size="sm" icon="fi-rr-folder-open" title="No resources added yet" description="Links you add here show on the support page." />
                 ) : (
                   <div className="space-y-3">
                     {resources.map((resource) => (
@@ -196,7 +196,7 @@ export default function LandingPageSettings() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="text-sm font-medium text-foreground">{resource.name}</h3>
-                            <ExternalLink className="w-3 h-3 text-text-tertiary" />
+                            <Icon name="fi-rr-arrow-up-right-from-square" size={3} className="text-text-tertiary" />
                           </div>
                           <p className="text-xs text-text-tertiary mt-1">{resource.url}</p>
                         </div>
@@ -207,7 +207,7 @@ export default function LandingPageSettings() {
                           disabled={deleteResource.isPending}
                           className="text-red-500 hover:text-red-600 hover:bg-red-50"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Icon name="fi-rr-trash" />
                         </Button>
                       </div>
                     ))}

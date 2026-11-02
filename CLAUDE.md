@@ -16,7 +16,7 @@ Next.js 16 (App Router) with React 19, Supabase backend at `../backend`.
 | Data Fetching   | Supabase client + `supabase.functions.invoke()` for Edge Functions |
 | Realtime        | Supabase subscriptions (tickets, messages)     |
 | Testing         | Vitest + React Testing Library                |
-| Icons           | Lucide React, Flaticon UIcons                 |
+| Icons           | Flaticon UIcons via `Icon` (`src/components/ui/icon.tsx`); Lucide only for the `Loader2` spinner and radio dots |
 | Fonts           | Nudica (body, self-hosted from `src/fonts/nudica`), Geist Mono (mono), Outfit (avatar initials) |
 
 ## Design tokens

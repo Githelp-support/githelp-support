@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Clock, Target, HelpCircle } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { formatDuration } from "@/lib/format"
 import { RATES_NOT_CONFIGURED, type TicketRates } from "@/lib/ticket-pricing"
@@ -95,11 +95,11 @@ export function RatesAndDetailsContent({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4 mb-8">
           {/* Average response time */}
           <div className="bg-card rounded-lg p-6 shadow-none border border-border-subtle">
-            <Clock className="h-5 w-5 text-text-secondary mb-2" />
+            <Icon name="fi-rr-clock" size={5} className="text-text-secondary mb-2" />
             <div className="flex items-center gap-2 mb-4">
               <h3 className="text-sm font-semibold text-text-secondary">Average response time</h3>
               <span title="Average time from a ticket being created until a helper claims it or replies, whichever comes first.">
-                <HelpCircle className="h-4 w-4 text-text-tertiary" />
+                <Icon name="fi-rr-interrogation" className="text-text-tertiary" />
               </span>
             </div>
             <p className="text-lg font-semibold text-support-header">
@@ -113,10 +113,10 @@ export function RatesAndDetailsContent({
 
           {/* Core team support */}
           <div className="bg-card rounded-lg p-6 shadow-none border border-border-subtle">
-            <Target className="h-5 w-5 text-text-secondary mb-2" />
+            <Icon name="fi-rr-target" size={5} className="text-text-secondary mb-2" />
             <div className="flex items-center gap-2 mb-4">
               <h3 className="text-sm font-semibold text-text-secondary">Core team support</h3>
-              <HelpCircle className="h-4 w-4 text-text-tertiary" />
+              <Icon name="fi-rr-interrogation" className="text-text-tertiary" />
             </div>
             <p className="text-lg font-semibold text-support-header">Yes</p>
           </div>
@@ -131,7 +131,7 @@ export function RatesAndDetailsContent({
           >
             Get an SLA
           </Button>
-          <HelpCircle className="h-4 w-4 text-text-tertiary" />
+          <Icon name="fi-rr-interrogation" className="text-text-tertiary" />
         </div>
       </div>
     </div>

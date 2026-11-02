@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { safeInternalPath } from "@/lib/safe-redirect"
 import { useRouter } from "next/navigation"
-import { Bell, CheckCheck } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
@@ -87,7 +87,7 @@ export default function NotificationsPage() {
               onClick={() => markAllRead.mutate()}
               disabled={unreadCount === 0 || markAllRead.isPending}
             >
-              <CheckCheck className="w-4 h-4 mr-1" />
+              <Icon name="fi-rr-check-double" className="mr-1" />
               Mark all as read
             </Button>
           </div>
@@ -99,7 +99,7 @@ export default function NotificationsPage() {
           ) : visible.length === 0 ? (
             <Card>
               <EmptyState
-                icon={Bell}
+                icon="fi-rr-bell"
                 title={filter === "unread" ? "You're all caught up." : "No notifications yet."}
                 description={filter === "unread" ? undefined : "Updates about your tickets and payments will appear here."}
               />

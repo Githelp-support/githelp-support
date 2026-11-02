@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Search, FolderOpen } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
 
@@ -64,7 +64,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
       {resourcesLoading ? (
         <ListSkeleton rows={3} avatar={false} badge={false} className="max-w-xl divide-y-0 [&>div]:px-0" />
       ) : resources.length === 0 ? (
-        <EmptyState icon={FolderOpen} title="No resources available yet." className="items-start px-0 text-left" />
+        <EmptyState icon="fi-rr-folder-open" title="No resources available yet." className="items-start px-0 text-left" />
       ) : (
         <div className="flex flex-wrap gap-3">
           {resources.map((resource) => (
@@ -88,7 +88,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
 
             {/* Search input */}
             <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />
+              <Icon name="fi-rr-search" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
               <Input
                 type="text"
                 placeholder="Search FAQs"

@@ -2,7 +2,8 @@
 
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, Shield, Wrench, LifeBuoy } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon, type IconProps } from "@/components/ui/icon"
 import { cn } from "@/lib/utils"
 import type { UserRole } from "@/contexts/user-context"
 
@@ -15,28 +16,28 @@ export const ROLE_OPTIONS: {
     role: UserRole
     title: string
     description: string
-    icon: typeof Shield
+    icon: IconProps["name"]
 }[] = [
     {
         role: "admin",
         title: "Admin",
         description:
             "I own or maintain a project and want to offer support for it on Githelp. Admins create the project, invite helpers, set prices and manage tickets.",
-        icon: Shield,
+        icon: "fi-rr-shield",
     },
     {
         role: "helper",
         title: "Helper",
         description:
             "I know a project well and want to help its users and get paid for it. Helpers join an existing project and pick up support tickets.",
-        icon: Wrench,
+        icon: "fi-rr-wrench-simple",
     },
     {
         role: "user",
         title: "User",
         description:
             "I need help with a project. Users browse projects on Githelp and open support tickets that the project's helpers answer.",
-        icon: LifeBuoy,
+        icon: "fi-rr-life-ring",
     },
 ]
 
@@ -64,7 +65,6 @@ export function RoleOptionCards({
     return (
         <>
             {ROLE_OPTIONS.filter((option) => roles.includes(option.role)).map((option) => {
-                const Icon = option.icon
                 const extra = hint?.(option.role)
                 return (
                     <Button
@@ -78,7 +78,7 @@ export function RoleOptionCards({
                         variant="outline"
                     >
                         <div className="flex items-start gap-3 w-full">
-                            {showIcons && <Icon className="w-6 h-6 shrink-0 mt-0.5 text-brand-primary" />}
+                            {showIcons && <Icon name={option.icon} size={6} className="mt-0.5 text-brand-primary" />}
                             <div className="flex-1">
                                 <div className="font-semibold text-lg text-foreground">{option.title}</div>
                                 <div className="text-sm text-muted-foreground mt-1">{option.description}</div>

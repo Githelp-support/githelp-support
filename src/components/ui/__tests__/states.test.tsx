@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
-import { Inbox } from "lucide-react"
 import { Skeleton, ListSkeleton, PageSkeleton } from "../skeleton"
 import { EmptyState } from "../empty-state"
 import { ErrorState } from "../error-state"
@@ -33,7 +32,7 @@ describe("EmptyState", () => {
   it("renders the icon tile, title, description and action", () => {
     render(
       <EmptyState
-        icon={Inbox}
+        icon="fi-rr-inbox"
         title="No tickets to show"
         description="Tickets you open will appear here."
         action={<button type="button">Get support</button>}

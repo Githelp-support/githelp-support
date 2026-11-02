@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { useEffect, useRef, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { useUser } from "@/contexts/user-context"
@@ -87,7 +87,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
               onClick={handleBackClick}
               className="mt-1 flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             >
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+              <Icon name="fi-rr-arrow-left" className="text-muted-foreground" />
               {backButtonText && (
                 <span className="text-sm font-medium text-muted-foreground hover:text-foreground">{backButtonText}</span>
               )}
@@ -106,7 +106,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
                       aria-label="More information"
                       className="inline-flex cursor-help items-center justify-center rounded-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                     >
-                      <Info className="h-5 w-5" aria-hidden />
+                      <Icon name="fi-rr-info" size={5} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" align="start" className="max-w-64">

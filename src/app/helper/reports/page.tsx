@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
@@ -161,7 +161,7 @@ function StatementLink({ transfer }: { transfer: PaymentTransfer }) {
         href={`/helper/reports/payouts/${transfer.id}`}
         title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
       >
-        <FileText className="w-3.5 h-3.5" />
+        <Icon name="fi-rr-document" size={3.5} />
         Statement
       </Link>
     </Button>
@@ -462,7 +462,7 @@ export default function HelperReportsPage() {
               title={exportTitle("CSV")}
               onClick={() => exportCsv(targetMonth)}
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <Icon name="fi-rr-file-spreadsheet" size={3.5} />
               Export CSV
             </Button>
             <Button
@@ -474,7 +474,7 @@ export default function HelperReportsPage() {
               title={exportTitle("PDF")}
               onClick={() => exportPdf(targetMonth)}
             >
-              <Download className="w-3.5 h-3.5" />
+              <Icon name="fi-rr-download" size={3.5} />
               Download PDF
             </Button>
           </div>
@@ -569,7 +569,7 @@ export default function HelperReportsPage() {
                             className={KEBAB_BUTTON_CLASS}
                             aria-label="More actions"
                           >
-                            <MoreVertical className="w-4 h-4" />
+                            <Icon name="fi-rr-menu-dots-vertical" />
                           </Button>
                         </span>
                       </div>
@@ -656,7 +656,7 @@ export default function HelperReportsPage() {
                                 aria-label={`More actions for ticket ${payout.ticketShortId}`}
                                 onClick={stopRowNavigation}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
@@ -666,7 +666,7 @@ export default function HelperReportsPage() {
                                   title="Each payout has its own statement"
                                   onSelect={() => toggle(payout.id)}
                                 >
-                                  <FileText />
+                                  <Icon name="fi-rr-document" />
                                   Statements
                                 </DropdownMenuItem>
                               ) : (
@@ -675,7 +675,7 @@ export default function HelperReportsPage() {
                                     href={`/helper/reports/payouts/${payout.transfers[0].id}`}
                                     title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
                                   >
-                                    <FileText />
+                                    <Icon name="fi-rr-document" />
                                     Statement
                                   </Link>
                                 </DropdownMenuItem>
@@ -684,7 +684,7 @@ export default function HelperReportsPage() {
                                 title="Download all your payouts on this ticket as a PDF for your accounting"
                                 onSelect={() => exportPdf(null, wholeTicket(payout))}
                               >
-                                <Download />
+                                <Icon name="fi-rr-download" />
                                 PDF
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -828,7 +828,7 @@ export default function HelperReportsPage() {
                             className={KEBAB_BUTTON_CLASS}
                             aria-label="More actions"
                           >
-                            <MoreVertical className="w-4 h-4" />
+                            <Icon name="fi-rr-menu-dots-vertical" />
                           </Button>
                         </span>
                       </div>
@@ -886,7 +886,7 @@ export default function HelperReportsPage() {
                               aria-label={`More actions for ${row.period}`}
                               onClick={stopRowNavigation}
                             >
-                              <MoreVertical className="w-4 h-4" />
+                              <Icon name="fi-rr-menu-dots-vertical" />
                             </Button>
                           </DropdownMenuTrigger>
                           {/* Portalled, but React events still bubble to the row. */}
@@ -895,14 +895,14 @@ export default function HelperReportsPage() {
                               title={`Download the ${row.period} payout report as PDF`}
                               onSelect={() => exportPdf(row.period)}
                             >
-                              <Download />
+                              <Icon name="fi-rr-download" />
                               PDF
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               title={`Export the ${row.period} payout report as CSV`}
                               onSelect={() => exportCsv(row.period)}
                             >
-                              <FileSpreadsheet />
+                              <Icon name="fi-rr-file-spreadsheet" />
                               CSV
                             </DropdownMenuItem>
                           </DropdownMenuContent>

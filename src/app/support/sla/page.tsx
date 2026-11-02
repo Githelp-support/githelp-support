@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { HelpCircle } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useProject, useProjectBySlug } from "@/hooks/useProject"
@@ -86,7 +86,7 @@ export default function SLAEntryPage() {
       <div className="max-w-2xl">
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-xl font-normal text-text-secondary">Type in your SLA ID</h2>
-          <HelpCircle className="h-4 w-4 text-text-tertiary" />
+          <Icon name="fi-rr-interrogation" className="text-text-tertiary" />
         </div>
 
         <p className="text-text-secondary mb-8">

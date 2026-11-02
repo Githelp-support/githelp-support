@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Copy, Check } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { SLA_CREATION_UNAVAILABLE_TOOLTIP } from "@/lib/constants"
 
 interface SLAConfirmationModalProps {
@@ -62,7 +62,7 @@ export function SLAConfirmationModal({ isOpen, onClose, slaId }: SLAConfirmation
               className="text-muted-foreground hover:bg-brand-primary/10"
             >
               <span key={String(copied)} className="inline-flex animate-fade-in">
-                {copied ? <Check className="h-4 w-4 text-status-success-text" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Icon name="fi-rr-check" className="text-status-success-text" /> : <Icon name="fi-rr-copy" />}
               </span>
             </Button>
           </div>

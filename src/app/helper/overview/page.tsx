@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { formatDateTime } from "@/lib/format"
 import Link from "next/link"
-import { HelpCircle, Info, MessageCircle } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -100,14 +100,14 @@ export default function HelperOverviewPage() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-base font-semibold text-foreground">Key stats</h2>
-            <HelpCircle className="w-4 h-4 text-muted-foreground" />
+            <Icon name="fi-rr-interrogation" className="text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
             <Card className="h-28 py-0 justify-center animate-enter">
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Number of tickets solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{ticketsSolvedInPeriod}</div>
               </CardContent>
@@ -116,7 +116,7 @@ export default function HelperOverviewPage() {
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Total time spent</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.totalTimeSpent}</div>
               </CardContent>
@@ -125,7 +125,7 @@ export default function HelperOverviewPage() {
               <CardContent className="px-7">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">Percentage solved</span>
-                  <Info className="w-3 h-3 text-muted-foreground" />
+                  <Icon name="fi-rr-info" size={3} className="text-muted-foreground" />
                 </div>
                 <div className="text-stat font-medium text-foreground tabular-nums">{keyStats.percentageSolved}%</div>
               </CardContent>
@@ -158,7 +158,7 @@ export default function HelperOverviewPage() {
               ) : recentTickets.length === 0 ? (
                 <EmptyState
                   size="sm"
-                  icon={MessageCircle}
+                  icon="fi-rr-comment"
                   title="No tickets to show"
                   description="Tickets you work on will appear here."
                 />
@@ -200,7 +200,7 @@ export default function HelperOverviewPage() {
                                 {ticket.title?.trim() || "Untitled ticket"}
                               </p>
                               <div className="flex items-center gap-1 mt-1">
-                                <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                                <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">
                                   {ticket.message_count} messages
                                 </span>
@@ -223,10 +223,7 @@ export default function HelperOverviewPage() {
                         </div>
                         <div className="col-span-1 flex justify-end">
                           {ticket.has_unread ? (
-                            <i
-                              className="fi fi-rr-comments inline-flex items-center justify-center leading-none text-brand-primary"
-                              aria-label="Unread messages"
-                            />
+                            <Icon name="fi-rr-comments" className="text-brand-primary" aria-hidden={false} aria-label="Unread messages" role="img" />
                           ) : null}
                         </div>
                       </div>

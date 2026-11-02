@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Info, Landmark } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Logo } from "@/components/brand/logo"
 import { useProject, useProjectPaymentSettings, useUpdateProjectPaymentSettings } from "@/hooks/useProject"
@@ -488,7 +488,7 @@ export default function PaymentSettingsPage() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-semibold text-foreground">Team</h2>
-                        <Info className="w-4 h-4 text-muted-foreground" />
+                        <Icon name="fi-rr-info" className="text-muted-foreground" />
                       </div>
                       <Button
                         variant="lavender"
@@ -552,7 +552,7 @@ export default function PaymentSettingsPage() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-semibold text-foreground">Community</h2>
-                        <Info className="w-4 h-4 text-muted-foreground" />
+                        <Icon name="fi-rr-info" className="text-muted-foreground" />
                       </div>
                       <Button
                         variant="lavender"
@@ -622,7 +622,7 @@ export default function PaymentSettingsPage() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-semibold text-foreground">External Consultants and Companies</h2>
-                        <Info className="w-4 h-4 text-muted-foreground" />
+                        <Icon name="fi-rr-info" className="text-muted-foreground" />
                       </div>
                       <Button
                         variant="lavender"
@@ -740,7 +740,7 @@ export default function PaymentSettingsPage() {
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">By the ticket</span>
-                          <Info className="w-4 h-4 text-muted-foreground" />
+                          <Icon name="fi-rr-info" className="text-muted-foreground" />
                         </div>
                         <p className="text-xs text-muted-foreground">
                           Users pay per support ticket based on the configured ticket cost below.
@@ -764,7 +764,7 @@ export default function PaymentSettingsPage() {
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground">SLA</span>
-                          <Info className="w-4 h-4 text-muted-foreground" />
+                          <Icon name="fi-rr-info" className="text-muted-foreground" />
                         </div>
                         <p className="text-xs text-muted-foreground">
                           Users subscribe to a service-level agreement with guaranteed response times.
@@ -918,7 +918,7 @@ export default function PaymentSettingsPage() {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-semibold text-foreground">Spending caps</h2>
-                    <Info className="w-4 h-4 text-muted-foreground" />
+                    <Icon name="fi-rr-info" className="text-muted-foreground" />
                   </div>
                   <Button
                     variant="lavender"
@@ -939,7 +939,7 @@ export default function PaymentSettingsPage() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-ui font-semibold text-foreground">Org-wide monthly cap</span>
-                      <Info className="w-4 h-4 text-muted-foreground" />
+                      <Icon name="fi-rr-info" className="text-muted-foreground" />
                     </div>
                     <div className="flex items-center gap-2">
                       <Input
@@ -959,7 +959,7 @@ export default function PaymentSettingsPage() {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-ui font-semibold text-foreground">Default per-user monthly cap</span>
-                      <Info className="w-4 h-4 text-muted-foreground" />
+                      <Icon name="fi-rr-info" className="text-muted-foreground" />
                     </div>
                     <div className="flex items-center gap-2">
                       <Input
@@ -1022,7 +1022,7 @@ export default function PaymentSettingsPage() {
                       onClick={handleSetupPayouts}
                       disabled={!project?.organization_id || startConnect.isPending}
                     >
-                      <Landmark className="w-4 h-4" />
+                      <Icon name="fi-rr-bank" />
                       {startConnect.isPending ? "Starting..." : "Set up payouts"}
                     </Button>
                     <span className="text-sm text-muted-foreground">
@@ -1061,7 +1061,7 @@ function InfoTooltip({
             className="inline-flex shrink-0 items-center justify-center rounded-sm text-muted-foreground"
             onClick={() => setOpen((v) => !v)}
           >
-            <Info className="w-4 h-4 text-muted-foreground" />
+            <Icon name="fi-rr-info" className="text-muted-foreground" />
           </button>
         </TooltipTrigger>
           <TooltipContent

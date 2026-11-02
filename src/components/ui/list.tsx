@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 import { cn } from "@/lib/utils"
 
@@ -36,11 +36,11 @@ export type SortDirection = "asc" | "desc"
 
 /** Neutral chevrons while the column is unsorted, a brand chevron once it sorts. */
 function SortIcon({ active, direction }: { active: boolean; direction: SortDirection | null }) {
-  if (!active || !direction) return <ChevronsUpDown className="size-4 text-muted-foreground" aria-hidden />
+  if (!active || !direction) return <Icon name="fi-rr-sort" className="text-muted-foreground" />
   return direction === "asc" ? (
-    <ChevronUp className="size-4 text-brand-primary" aria-hidden />
+    <Icon name="fi-rr-angle-small-up" className="text-brand-primary" />
   ) : (
-    <ChevronDown className="size-4 text-brand-primary" aria-hidden />
+    <Icon name="fi-rr-angle-small-down" className="text-brand-primary" />
   )
 }
 

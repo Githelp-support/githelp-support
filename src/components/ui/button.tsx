@@ -31,9 +31,9 @@ const buttonVariants = cva(
           "bg-surface-hover border border-border-control text-foreground hover:bg-surface-active",
       },
       size: {
-        default: "h-8 px-3.5 has-[>svg]:px-3",
-        sm: "h-7 px-2.5 has-[>svg]:px-2.5",
-        lg: "h-10 px-4 has-[>svg]:px-3.5",
+        default: "h-8 px-3.5 has-[>svg]:px-3 has-[>i]:px-3",
+        sm: "h-7 px-2.5 has-[>svg]:px-2.5 has-[>i]:px-2.5",
+        lg: "h-10 px-4 has-[>svg]:px-3.5 has-[>i]:px-3.5",
         icon: "size-8",
         "icon-sm": "size-7",
         "icon-lg": "size-10",

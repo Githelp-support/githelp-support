@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { NewTicketModal } from "@/components/modals/new-ticket-modal"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { getTicketStatusBadgeClass } from "@/lib/status-colors"
-import { MessageCircle, Plus, User } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
@@ -222,7 +222,7 @@ export default function SupportTicketsPage() {
                       <CardContent className="px-5 py-4">
                         <div className="text-xl font-semibold text-foreground mb-1">{stats.inProgress}</div>
                         <div className="flex items-center gap-2">
-                          <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                          <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">Active tickets</span>
                         </div>
                       </CardContent>
@@ -242,7 +242,7 @@ export default function SupportTicketsPage() {
                       <CardContent className="px-5 py-4">
                         <div className="text-xl font-semibold text-foreground mb-1">{stats.completed}</div>
                         <div className="flex items-center gap-2">
-                          <User className="w-3 h-3 text-muted-foreground" />
+                          <Icon name="fi-rr-user" size={3} className="text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">Completed tickets</span>
                         </div>
                       </CardContent>
@@ -253,7 +253,7 @@ export default function SupportTicketsPage() {
                   onClick={() => setIsNewTicketModalOpen(true)}
                   className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-ui"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Icon name="fi-rr-plus" />
                   New ticket
                 </Button>
               </div>
@@ -266,12 +266,12 @@ export default function SupportTicketsPage() {
               ) : tickets.length === 0 ? (
                 <Card>
                   <EmptyState
-                    icon={MessageCircle}
+                    icon="fi-rr-comment"
                     title="No tickets yet"
                     description="You have not created any support tickets yet."
                     action={
                       <Button variant="brand" onClick={() => setIsNewTicketModalOpen(true)}>
-                        <Plus className="h-4 w-4" />
+                        <Icon name="fi-rr-plus" />
                         New ticket
                       </Button>
                     }
@@ -371,7 +371,7 @@ export default function SupportTicketsPage() {
                                   </h4>
                                   <p className="text-xs text-muted-foreground">{ticket.title}</p>
                                   <div className="flex items-center gap-1 mt-1">
-                                    <MessageCircle className="w-3 h-3 text-muted-foreground" />
+                                    <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
                                     <span className="text-xs text-muted-foreground">
                                       {ticket.messages} messages
                                     </span>

@@ -1,9 +1,6 @@
 "use client"
 
-import {
-  ChevronsLeft,
-  ChevronRight,
-} from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -291,7 +288,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               }
             }}
           >
-            <ChevronsLeft className="w-5 h-5" />
+            <Icon name="fi-rr-angle-double-small-left" size={5} />
           </Button>
         ) : (
           <Button
@@ -309,7 +306,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               }
             }}
           >
-            <ChevronRight className="w-5 h-5" />
+            <Icon name="fi-rr-angle-small-right" size={5} />
           </Button>
         )}
       </div>
@@ -431,9 +428,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                           aria-label={`${isExpanded ? "Collapse" : "Expand"} ${item.name}`}
                           className="shrink-0 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                         >
-                          <ChevronRight
-                            className={`h-4 w-4 opacity-70 transition-transform duration-base ease-out ${isExpanded ? "rotate-90" : ""}`}
-                          />
+                          <Icon name="fi-rr-angle-small-right" className={`opacity-70 transition-transform duration-base ease-out ${isExpanded ? "rotate-90" : ""}`} />
                         </button>
                       </div>
                       {/* Sub-items stay mounted; the height animates with grid-template-rows and

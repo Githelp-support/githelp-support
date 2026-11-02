@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, LogIn } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { startGuestSignIn } from "@/lib/guest-adoption"
 
@@ -45,7 +46,7 @@ export function GuestBanner({ redirectTo, onSignIn }: GuestBannerProps) {
         You&rsquo;re chatting as a guest. Sign in to get notified when a helper replies and to get help.
       </p>
       <Button variant="lavender" className="cursor-pointer" onClick={() => void handleSignIn()} disabled={pending}>
-        {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+        {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon name="fi-rr-sign-in-alt" />}
         Sign in
       </Button>
     </div>

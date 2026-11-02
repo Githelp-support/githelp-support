@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Loader2, Copy, Check } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { useProjectSelection } from "@/contexts/project-context"
 import {
   useProjectKeywords,
@@ -249,7 +250,7 @@ export default function ProjectSettingsPage() {
                         {promoteToAdmin.isPending ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <Plus className="size-4" />
+                          <Icon name="fi-rr-plus" />
                         )}
                         Promote
                       </Button>
@@ -276,7 +277,7 @@ export default function ProjectSettingsPage() {
                         {createInvite.isPending ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <Plus className="size-4" />
+                          <Icon name="fi-rr-plus" />
                         )}
                         Create invite
                       </Button>
@@ -290,7 +291,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-foreground"
                           aria-label="Copy invite link"
                         >
-                          {copiedInvite ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedInvite ? <Icon name="fi-rr-check" size={3.5} /> : <Icon name="fi-rr-copy" size={3.5} />}
                         </button>
                       </div>
                     )}
@@ -323,7 +324,7 @@ export default function ProjectSettingsPage() {
                     onClick={handleAddKeyword}
                     disabled={!newKeyword.trim() || createKeyword.isPending}
                   >
-                    {createKeyword.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                    {createKeyword.isPending ? <Loader2 className="size-4 animate-spin" /> : <Icon name="fi-rr-plus" />}
                     Add
                   </Button>
                 </div>
@@ -350,7 +351,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-destructive p-0.5"
                           aria-label={`Remove ${kw.value}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Icon name="fi-rr-trash" />
                         </button>
                       </div>
                     ))}
@@ -383,7 +384,7 @@ export default function ProjectSettingsPage() {
                     onClick={handleAddCategory}
                     disabled={!newCategory.trim() || createCategory.isPending}
                   >
-                    {createCategory.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                    {createCategory.isPending ? <Loader2 className="size-4 animate-spin" /> : <Icon name="fi-rr-plus" />}
                     Add
                   </Button>
                 </div>
@@ -410,7 +411,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-destructive p-0.5"
                           aria-label={`Remove ${cat.value}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Icon name="fi-rr-trash" />
                         </button>
                       </div>
                     ))}

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { MessageCircle, BookOpen, Mail, ArrowRight } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
@@ -194,14 +194,14 @@ export default function HelpPage() {
                   <>
                     <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
                       <Link href={GITHELP_SUPPORT_URL} className="inline-flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
+                        <Icon name="fi-rr-comment" />
                         Open support chat
-                        <ArrowRight className="w-4 h-4" />
+                        <Icon name="fi-rr-arrow-right" />
                       </Link>
                     </Button>
                     <Button variant="outline" asChild>
                       <Link href="/support/tickets" className="inline-flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
+                        <Icon name="fi-rr-envelope" />
                         My tickets
                       </Link>
                     </Button>
@@ -211,7 +211,7 @@ export default function HelpPage() {
                   <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
                     <Link href="/auth/signin" className="inline-flex items-center gap-2">
                       Sign in to get support
-                      <ArrowRight className="w-4 h-4" />
+                      <Icon name="fi-rr-arrow-right" />
                     </Link>
                   </Button>
                 )}
@@ -221,7 +221,7 @@ export default function HelpPage() {
 
           {/* Documentation link placeholder */}
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <BookOpen className="w-5 h-5 shrink-0" />
+            <Icon name="fi-rr-book-alt" size={5} className="shrink-0" />
             <span>
               For detailed guides and API docs, see Documentation in the sidebar when available.
             </span>

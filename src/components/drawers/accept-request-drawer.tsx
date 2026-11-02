@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
-import { Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 interface AcceptRequestDrawerProps {
   isOpen: boolean
@@ -47,7 +47,7 @@ export function AcceptRequestDrawer({ isOpen, onClose, onSubmit, requestData }: 
       isOpen={isOpen}
       onClose={onClose}
       title="Accept helper request"
-      headerAction={<Info className="w-4 h-4 text-muted-foreground" />}
+      headerAction={<Icon name="fi-rr-info" className="text-muted-foreground" />}
       footer={
         <div className="flex space-x-3">
           <Button type="button" variant="outline" onClick={onClose} className="flex-1">

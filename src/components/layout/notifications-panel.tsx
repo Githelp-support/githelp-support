@@ -1,5 +1,5 @@
 "use client"
-import { X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { safeInternalPath } from "@/lib/safe-redirect"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -132,7 +132,7 @@ export function NotificationsPanel({
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
           <h2 className="text-base font-semibold text-foreground">Notifications</h2>
           <button onClick={onClose} aria-label="Close notifications" className="p-1 hover:bg-surface-hover rounded-md transition-colors duration-fast ease-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
-            <X className="w-5 h-5 text-muted-foreground" />
+            <Icon name="fi-rr-cross" size={5} className="text-muted-foreground" />
           </button>
         </div>
 

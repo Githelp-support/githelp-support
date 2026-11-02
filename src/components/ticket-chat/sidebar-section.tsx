@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { cn } from "@/lib/utils"
 
 /**
@@ -34,7 +34,7 @@ export function SidebarSectionHeading({
         <h3 className="uppercase leading-none" style={HEADING_STYLE}>
           {children}
         </h3>
-        <Info className="w-4 h-4 text-muted-foreground shrink-0" />
+        <Icon name="fi-rr-info" className="text-muted-foreground shrink-0" />
       </div>
     )
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Info, Landmark } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
@@ -89,7 +89,7 @@ export default function HelperPayoutPage() {
           <div className="bg-card rounded-lg py-6 pr-6">
             <div className="flex items-center gap-2">
               <h2 className="text-base font-semibold text-foreground">Payout details</h2>
-              <Info className="w-4 h-4 text-muted-foreground" />
+              <Icon name="fi-rr-info" className="text-muted-foreground" />
             </div>
 
             <div className="mt-8 flex flex-col gap-10">
@@ -126,7 +126,7 @@ export default function HelperPayoutPage() {
                   onClick={handleSetupPayout}
                   disabled={!userId || startConnect.isPending}
                 >
-                  <Landmark className="w-4 h-4" />
+                  <Icon name="fi-rr-bank" />
                   {startConnect.isPending ? "Starting..." : "Set up payout with Stripe"}
                 </Button>
                 <span className="text-sm text-muted-foreground">

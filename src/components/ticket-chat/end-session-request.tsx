@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { Clock, Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 /**
  * Customer-side "End session" confirmation. Makes it explicit that pressing
@@ -80,7 +80,7 @@ export function EndSessionRequestedBanner({
         className,
       )}
     >
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+      <Icon name="fi-rr-info" className="mt-0.5 shrink-0 text-brand-primary" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">The helper has been notified that you&apos;d like to end the session.</p>
         <p className="text-muted-foreground">
@@ -124,7 +124,7 @@ export function EndSessionRequestedHelperBanner({
         className,
       )}
     >
-      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+      <Icon name="fi-rr-clock" className="mt-0.5 shrink-0 text-amber-700" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">
           {requesterName ? requesterName : "The user"} has asked to end this session{when ? ` (${when})` : ""}.
