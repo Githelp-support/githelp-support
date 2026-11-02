@@ -180,7 +180,7 @@ export function formatSummaryDuration(hours: number, minutes: number): string {
 /** YYYY-MM-DD → dd/mm/yyyy without timezone surprises; anything else is shown as-is. */
 export function formatSummaryDate(date: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date)
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : date
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : date
 }
 
 function sumMinutes(entries: TimeEntrySummaryItem[]): { hours: number; minutes: number } {

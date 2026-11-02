@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { formatDate } from "@/lib/format"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,15 +24,7 @@ function SLASortIcon({ column, sortConfig }: { column: string; sortConfig: SortC
   return <SortIcon active={sortConfig.key === column} direction={sortConfig.direction} />
 }
 
-// Helper function to format date
-const formatSlaDate = (dateString: string | null) => {
-  if (!dateString) return ""
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
+const formatSlaDate = (dateString: string | null) => (dateString ? formatDate(dateString) : "")
 
 export default function SLAsPage() {
   const [currentFilter, setCurrentFilter] = useState<"active" | "deactivated" | "archived">("active")

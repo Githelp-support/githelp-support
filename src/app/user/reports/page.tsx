@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, type SyntheticEvent } from "react"
+import { formatDate } from "@/lib/format"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -51,14 +52,6 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { ErrorState } from "@/components/ui/error-state"
 
 // dd/mm/yyyy, matching the helper reports page
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
-
 // Payments and Monthly reports: the column header already says "Amount (USD)",
 // so USD amounts drop the prefix. Any other currency keeps it so it is never silently hidden.
 const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)

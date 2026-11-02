@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { formatDate } from "@/lib/format"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -66,7 +67,7 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     const entry: TimeEntry = {
       id: Date.now().toString(),
       type: timeType,
-      date: new Date().toLocaleDateString("en-GB"),
+      date: formatDate(new Date()),
       hours: validation.hours,
       minutes: validation.minutes,
       note: note.trim() || undefined, // Include note if provided

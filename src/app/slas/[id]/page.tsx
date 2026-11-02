@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, use, useMemo } from "react"
+import { formatDate } from "@/lib/format"
 import Link from "next/link"
 import { ArrowLeft, Info, Copy, Edit, ExternalLink } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
@@ -606,7 +607,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               </div>
                             </td>
                             <td className="px-6 py-3 text-ui text-muted-foreground">
-                              {new Date(ticket.created_at).toLocaleDateString("en-GB")}
+                              {formatDate(ticket.created_at)}
                             </td>
                             <td className="px-6 py-3">
                               <div className="flex items-center gap-2">

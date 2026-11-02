@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, use, type KeyboardEvent, type SyntheticEvent } from "react"
+import { formatDate } from "@/lib/format"
 import { MessageCircle, Mail, Info, ArrowLeft, HelpCircle, ExternalLink, List, MoreVertical } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -107,14 +108,6 @@ function cycleSort<T extends string>(
   if (current !== field) set(field, "asc")
   else if (direction === "asc") set(field, "desc")
   else set(null, "asc")
-}
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
 }
 
 /** Extract a short ticket ID for display (e.g. from uuid 02735023-... to 2735023) */

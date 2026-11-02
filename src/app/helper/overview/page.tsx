@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { formatDateTime } from "@/lib/format"
 import Link from "next/link"
 import { HelpCircle, Info, MessageCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -25,15 +26,6 @@ import { ListHeader, listRowClass } from "@/components/ui/list"
 const RECENT_TICKETS_LIMIT = 5
 
 // "dd.mm.yyyy, HH:mm", matching the Tickets page
-function formatDate(dateString: string) {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  const hours = String(date.getHours()).padStart(2, "0")
-  const minutes = String(date.getMinutes()).padStart(2, "0")
-  return `${day}.${month}.${year}, ${hours}:${minutes}`
-}
 
 export default function HelperOverviewPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("all")
@@ -173,7 +165,7 @@ export default function HelperOverviewPage() {
               ) : (
                 recentTickets.map((ticket) => {
                   const projectName = ticket.project_name || "Project"
-                  const lastInteraction = formatDate(ticket.last_interaction_at)
+                  const lastInteraction = formatDateTime(ticket.last_interaction_at)
                   return (
                     <Link
                       key={ticket.id}

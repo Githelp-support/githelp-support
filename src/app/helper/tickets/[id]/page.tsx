@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/layout/header"
+import { formatDateTime } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -392,13 +393,7 @@ export default function TicketDetailPage() {
         id: "system-claimed",
         sender: "system",
         content: "Ticket is claimed",
-        timestamp: new Date().toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        timestamp: formatDateTime(new Date()),
         avatar: claimer.name?.[0]?.toUpperCase() || "H",
         senderName: claimer.name || "Helper",
         senderId: claimer.id,
@@ -418,13 +413,7 @@ export default function TicketDetailPage() {
             : (msg.sender_type === "system"
                 ? guestSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind, "helper")
                 : null) ?? msg.content,
-        timestamp: new Date(msg.created_at).toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        timestamp: formatDateTime(msg.created_at),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
         senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
         senderId: msg.sender_id ?? msg.sender?.id,
@@ -722,8 +711,8 @@ export default function TicketDetailPage() {
 
   const handleLogTime = (entry: TimeEntry) => {
     if (!currentHelperId || !ticketId) return
-    // entry.date from drawer is en-GB (dd/mm/yyyy) -> convert to YYYY-MM-DD
-    const dateParts = entry.date.split("/")
+    // entry.date from the drawer is dd.mm.yyyy -> convert to YYYY-MM-DD
+    const dateParts = entry.date.split(".")
     const dateIso = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1].padStart(2, "0")}-${dateParts[0].padStart(2, "0")}` : new Date().toISOString().slice(0, 10)
     const timeMilliseconds = (entry.hours * 3600 + entry.minutes * 60) * 1000
     // The drawer validates, but never let a non-positive or absurd duration
@@ -979,13 +968,7 @@ export default function TicketDetailPage() {
                           }}
                         >
                           {firstIssueMessage.timestamp
-                            ? new Date(firstIssueMessage.timestamp).toLocaleString("en-GB", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
+                            ? formatDateTime(firstIssueMessage.timestamp)
                             : "—"}
                         </span>
                       </div>

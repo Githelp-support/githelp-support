@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { formatDateTime } from "@/lib/format"
 import {
   Dialog,
   DialogContent,
@@ -113,12 +114,7 @@ export function EndSessionRequestedHelperBanner({
   className?: string
 }) {
   const when = requestedAt
-    ? new Date(requestedAt).toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? formatDateTime(requestedAt)
     : null
   return (
     <div

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { formatDateTime } from "@/lib/format"
 import Link from "next/link"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { useUser } from "@/contexts/user-context"
@@ -45,15 +46,6 @@ interface UITicket {
   projectId: string
 }
 
-function formatDate(dateString: string) {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  const hours = String(date.getHours()).padStart(2, "0")
-  const minutes = String(date.getMinutes()).padStart(2, "0")
-  return `${day}.${month}.${year}, ${hours}:${minutes}`
-}
 
 function TicketsSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
   return <SortIcon active={sortField === field} direction={sortDirection} />
@@ -107,7 +99,7 @@ export default function SupportTicketsPage() {
         type,
         status,
         displayStatus,
-        createdAt: formatDate(ticket.created_at),
+        createdAt: formatDateTime(ticket.created_at),
         messages: ticket.message_count || 0,
         projectId: ticket.project_id,
       }

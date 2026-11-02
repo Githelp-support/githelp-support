@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { formatDate } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -48,14 +49,6 @@ function ReportsSortIcon<T extends string>({ field, sortField, sortDirection }: 
 }
 
 // Helper function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
-
 // Helper function to get month/year from date
 const getMonthYear = (dateString: string) => {
   const date = new Date(dateString)

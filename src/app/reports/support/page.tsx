@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, type SyntheticEvent } from "react"
+import { formatDate } from "@/lib/format"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/layout/header"
@@ -120,14 +121,6 @@ function cycleSort<T extends string>(
   if (current !== field) set(field, "asc")
   else if (direction === "asc") set(field, "desc")
   else set(null, "asc")
-}
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
 }
 
 function getMonthYear(dateString: string) {

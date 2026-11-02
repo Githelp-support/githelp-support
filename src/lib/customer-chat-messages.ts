@@ -1,4 +1,5 @@
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
+import { formatDateTime } from "./format";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
 import { formatDuration } from "@/lib/format";
 
@@ -68,16 +69,9 @@ export function hasVisitorLeft(messages: KindMessage[] | undefined, ticketStatus
     return activeVisitorLeft(messages, ticketStatus) !== null;
 }
 
-/** dd/mm/yyyy, hh:mm — the timestamp format used throughout the chat UI. */
+/** dd.mm.yyyy, HH:MM — the timestamp format used throughout the chat UI. */
 export function formatChatTimestamp(date: Date | string): string {
-    const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
+    return formatDateTime(date);
 }
 
 /** Row shape returned by `useTicketMessages` (only the fields we read). */

@@ -22,6 +22,14 @@ export function formatDate(value: string | Date): string {
   return `${day}.${month}.${date.getFullYear()}`
 }
 
+/** dd.mm.yyyy, HH:MM — the timestamp format for chat messages and ticket lists. */
+export function formatDateTime(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  return `${formatDate(date)}, ${hours}:${minutes}`
+}
+
 /**
  * Format a date string as a relative time (e.g. "Just now", "5 min", "2h", "3d").
  * Use for notifications, activity feeds, etc.

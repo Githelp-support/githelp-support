@@ -12,7 +12,7 @@ import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
 import { GuestTicketBadge, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
-import { truncateText } from "@/lib/format"
+import { formatDateTime, truncateText } from "@/lib/format"
 import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } from "@/hooks/useTicketParticipants"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -53,15 +53,6 @@ interface Ticket {
 const GENERAL_TYPE = "General"
 
 // Helper function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = date.getFullYear()
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${day}.${month}.${year}, ${hours}:${minutes}`
-}
 
 type SortField = "title" | "createdAt" | "priority" | "status" | "type"
 type SortDirection = "asc" | "desc"
@@ -127,7 +118,7 @@ export default function TicketsPage() {
         topics: ticket.keywords?.map((k) => k.value) || [],
         status: ticket.status as "available" | "claimed" | "in-progress" | "completed",
         priority: ticket.priority as "low" | "medium" | "high",
-        createdAt: formatDate(ticket.created_at),
+        createdAt: formatDateTime(ticket.created_at),
         messages: ticket.message_count || 0,
         helper: undefined as { name: string; avatar: string } | undefined, // TODO: Fetch helper data if ticket is claimed/in-progress
       }
