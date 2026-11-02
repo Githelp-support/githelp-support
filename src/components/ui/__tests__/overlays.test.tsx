@@ -55,9 +55,9 @@ describe("DrawerPanel", () => {
     expect(onClose).toHaveBeenCalledTimes(2)
   })
 
-  it("slides in from the right as a side sheet", () => {
+  it("slides in from the right as a side sheet at the standard 440px width", () => {
     render(
-      <DrawerPanel isOpen onClose={() => {}} title="Log time" width="w-[440px]">
+      <DrawerPanel isOpen onClose={() => {}} title="Log time">
         <p>Body</p>
       </DrawerPanel>,
     )

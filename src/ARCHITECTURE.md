@@ -32,7 +32,7 @@ This document describes the structure and conventions used in the codebase to ke
 
 ## Adding a new drawer or modal
 
-- Use **`DrawerPanel`** from `@/components/ui/drawer-panel` for right-side drawers. Pass `title`, `footer`, and `children`; the panel handles backdrop, header with close button, and layout.
+- Use **`DrawerPanel`** from `@/components/ui/drawer-panel` for right-side drawers. Pass `title`, `footer`, and `children`; the panel handles backdrop, header with close button, layout and the standard 440px width.
 - For modals, use the existing Dialog from `@/components/ui/dialog` or a similar single-purpose wrapper.
 
 ## Adding a new page or feature

@@ -99,7 +99,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
   return (
     <>
-      <DrawerPanel isOpen={isOpen} onClose={onClose} title="Creating new SLA" width="w-[500px]">
+      <DrawerPanel isOpen={isOpen} onClose={onClose} title="Creating new SLA">
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto max-h-full">

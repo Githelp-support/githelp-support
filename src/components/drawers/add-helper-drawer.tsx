@@ -220,7 +220,6 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
       isOpen={isOpen}
       onClose={handleClose}
       title="Add new helper"
-      width="w-[440px]"
       className="shadow-2xl"
       footerClassName="border-t-0"
       footer={

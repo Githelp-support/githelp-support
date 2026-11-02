@@ -18,7 +18,7 @@ export interface DrawerPanelProps {
   children: React.ReactNode
   /** Optional footer (e.g. Cancel / Submit buttons) */
   footer?: React.ReactNode
-  /** Panel width; default w-96. Use e.g. w-[500px] for wider drawers */
+  /** Panel width. Every drawer uses the 440px standard; only override for a drawer whose content cannot fit. */
   width?: string
   /** Backdrop colour; default bg-black/20 */
   backdropClassName?: string
@@ -42,7 +42,7 @@ export function DrawerPanel({
   headerAction,
   children,
   footer,
-  width = "w-96",
+  width = "w-[440px]",
   backdropClassName = "bg-black/20",
   className,
   footerClassName,
