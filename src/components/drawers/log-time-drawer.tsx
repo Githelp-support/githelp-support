@@ -91,40 +91,71 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
       isOpen={isOpen}
       onClose={handleClose}
       title="Log time"
+      className="shadow-2xl"
+      footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
-          <Button variant="outline" onClick={handleClose} className="flex-1">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            className="flex-1 py-2.5 rounded-md text-ui font-medium shadow-sm"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!hours && !minutes} variant="default" className="flex-1">
+          <Button
+            type="submit"
+            form="log-time-form"
+            disabled={!hours && !minutes}
+            variant="default"
+            className="flex-1 py-2.5 rounded-md text-ui font-medium bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground shadow-md"
+          >
             Log time
           </Button>
         </div>
       }
     >
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
-        <div>
-          <h3 className="font-medium text-foreground mb-4">Type of time</h3>
-          <RadioGroup value={timeType} onValueChange={(value) => setTimeType(value as "together" | "solo")}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="together" id="together" />
-              <Label htmlFor="together" className="text-sm text-muted-foreground">
-                Together - Time spent actively working with the user
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="solo" id="solo" />
-              <Label htmlFor="solo" className="text-sm text-muted-foreground">
-                Solo - Time spent researching or preparing solutions
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
+      <form
+        id="log-time-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleSubmit()
+        }}
+        className="flex-1 flex flex-col min-h-0"
+      >
+        <div className="flex-1 px-6 py-5 space-y-6 overflow-auto">
+          <div className="space-y-3">
+            <Label className="text-ui font-semibold text-foreground">Type of time</Label>
+            <RadioGroup
+              value={timeType}
+              onValueChange={(value) => setTimeType(value as "together" | "solo")}
+              className="grid gap-2.5"
+            >
+              <div className="flex items-center space-x-2.5">
+                <RadioGroupItem
+                  value="together"
+                  id="together"
+                  className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary"
+                />
+                <Label htmlFor="together" className="cursor-pointer text-sm text-foreground/80">
+                  Together - Time spent actively working with the user
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2.5">
+                <RadioGroupItem
+                  value="solo"
+                  id="solo"
+                  className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary"
+                />
+                <Label htmlFor="solo" className="cursor-pointer text-sm text-foreground/80">
+                  Solo - Time spent researching or preparing solutions
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
 
-        <div>
-          <h3 className="font-medium text-foreground mb-4">Duration</h3>
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
               <FormField label="Hours" id="hours">
                 <Input
                   id="hours"
@@ -138,11 +169,9 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
                   placeholder="0"
                   aria-invalid={!!durationError}
                   aria-describedby={durationError ? "duration-error" : undefined}
-                  className="border-input"
+                  className="h-10 rounded-lg border-border"
                 />
               </FormField>
-            </div>
-            <div className="flex-1">
               <FormField label="Minutes" id="minutes">
                 <Input
                   id="minutes"
@@ -156,38 +185,36 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
                   placeholder="0"
                   aria-invalid={!!durationError}
                   aria-describedby={durationError ? "duration-error" : undefined}
-                  className="border-input"
+                  className="h-10 rounded-lg border-border"
                 />
               </FormField>
             </div>
+            {durationError && (
+              <p id="duration-error" role="alert" className="text-xs leading-relaxed text-destructive">
+                {durationError}
+              </p>
+            )}
           </div>
-          {durationError && (
-            <p id="duration-error" role="alert" className="mt-2 text-sm text-destructive">
-              {durationError}
-            </p>
-          )}
-        </div>
 
-        <div>
           <FormField label="Note (optional)" id="note">
             <Textarea
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Add a note about what you worked on..."
-              className="border-input min-h-[80px] resize-none"
+              className="rounded-lg border-border min-h-20 resize-none"
             />
           </FormField>
-        </div>
 
-        <div className="bg-muted/50 rounded-lg p-4 border border-border">
-          <h4 className="font-medium text-foreground mb-2">Time tracking</h4>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Log time as you work on the ticket. Together time is billed at the full rate, while solo time may be billed
-            at a reduced rate depending on the SLA agreement.
-          </p>
+          <div className="rounded-lg border border-border-subtle bg-bg-subtle p-4">
+            <h4 className="text-ui font-semibold text-foreground mb-1">Time tracking</h4>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Log time as you work on the ticket. Together time is billed at the full rate, while solo time may be
+              billed at a reduced rate depending on the SLA agreement.
+            </p>
+          </div>
         </div>
-      </div>
+      </form>
     </DrawerPanel>
   )
 }
