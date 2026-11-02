@@ -83,7 +83,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             onClick={() => {
               setIsCollapsed(true)
               if (typeof window !== "undefined") {
@@ -101,7 +101,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             onClick={() => {
               setIsCollapsed(false)
               if (typeof window !== "undefined") {
@@ -136,11 +136,11 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
           content size on short viewports so the profile stays visible without
           scrolling. */}
       <nav className="flex-1 min-h-0 px-3 pb-3 overflow-hidden">
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {navigationItems.map((item) => {
             const isActive = activeTab === item.name
-            const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
-            const inactiveClasses = "text-text-muted hover:bg-bg-subtle hover:text-sidebar-foreground"
+            const activeClasses = "bg-brand-primary/[0.08] font-medium text-brand-primary"
+            const inactiveClasses = "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
 
             return (
               <button
@@ -148,11 +148,11 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
                 type="button"
                 onClick={() => onTabChange(item.name)}
                 title={isCollapsed ? item.name : undefined}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                className={`w-full flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                   isActive ? activeClasses : inactiveClasses
                 } ${isCollapsed ? "justify-center" : ""}`}
               >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
                   <FlaticonIcon iconClass={item.icon} />
                 </span>
                 {!isCollapsed && item.name}
@@ -173,9 +173,9 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
             target="_blank"
             rel="noopener noreferrer"
             title={isCollapsed ? "Open my user portal" : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 text-text-muted hover:bg-bg-subtle hover:text-sidebar-foreground ${isCollapsed ? "justify-center" : ""}`}
+            className={`w-full flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground ${isCollapsed ? "justify-center" : ""}`}
           >
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
               <FlaticonIcon iconClass="fi-rr-user" />
             </span>
             {!isCollapsed && "Open my user portal"}
