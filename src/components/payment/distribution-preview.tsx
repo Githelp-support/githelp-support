@@ -24,22 +24,6 @@ const HOVER_CLOSE_DELAY_MS = 150
  * Info button + popover explaining the Stripe fee. Opens on hover and on
  * click; a click pins it open until Esc or a click outside.
  */
-/** The label with the fee popover after its last word, so the two never split across lines. */
-function LabelWithInfo({ label }: { label: string }) {
-  const cut = label.lastIndexOf(" ")
-  const head = cut === -1 ? "" : label.slice(0, cut + 1)
-  const tail = cut === -1 ? label : label.slice(cut + 1)
-  return (
-    <>
-      {head}
-      <span className="whitespace-nowrap">
-        {tail}
-        <StripeFeeInfo />
-      </span>
-    </>
-  )
-}
-
 function StripeFeeInfo() {
   const [open, setOpen] = useState(false)
   const pinnedRef = useRef(false)
@@ -81,7 +65,7 @@ function StripeFeeInfo() {
         <button
           type="button"
           aria-label="About the Stripe fee"
-          className="ml-1.5 inline-flex align-[-2px] items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
+          className="ml-2 inline-flex align-[-2px] items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
           onMouseEnter={() => {
             cancelClose()
             closedByHoverRef.current = false
@@ -196,7 +180,7 @@ export function DistributionPreview({
   const sumMoney = formatCurrency(oneHourTotal)
 
   return (
-    <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-5">
+    <div className="shrink-0 w-full sm:w-[300px] bg-muted/50 rounded-lg border border-border p-5">
       <h4 className="text-sm font-semibold text-foreground mb-4">
         1st hour of support - Distribution
       </h4>
@@ -208,8 +192,10 @@ export function DistributionPreview({
               key={label}
               className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm"
             >
-              <span className="pl-2.5 text-muted-foreground">
-                {info ? <LabelWithInfo label={label} /> : label}
+              {/* One line always: the card is sized so label, button and a three-digit amount fit. */}
+              <span className="pl-2.5 text-muted-foreground whitespace-nowrap">
+                {label}
+                {info && <StripeFeeInfo />}
               </span>
               <span className="text-right text-foreground font-medium tabular-nums">
                 <span className="mr-1">{money.symbol}</span>

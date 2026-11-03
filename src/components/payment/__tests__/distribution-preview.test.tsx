@@ -99,13 +99,12 @@ describe("DistributionPreview", () => {
   it("keeps the info button on the same line as the last word of the Stripe label", () => {
     renderPreview()
 
-    // The last word and the button share a no-wrap span, so the button can
-    // never drop to its own line or drift away from the text.
-    const tail = getInfoButton().parentElement
-    expect(tail).toHaveClass("whitespace-nowrap")
-    expect(tail?.firstChild?.textContent).toBe("transaction)")
-    expect(tail?.lastElementChild).toBe(getInfoButton())
-    expect(tail?.parentElement?.textContent).toBe("Stripe (per transaction)")
+    // Label and button share a no-wrap cell, so the button can never drop to
+    // a second line or drift away from the text.
+    const cell = getInfoButton().parentElement
+    expect(cell).toHaveClass("whitespace-nowrap")
+    expect(cell?.firstChild?.textContent).toBe("Stripe (per transaction)")
+    expect(cell?.lastElementChild).toBe(getInfoButton())
   })
 
   it("closes the popover when Escape is pressed", async () => {
