@@ -25,7 +25,10 @@ const flushTimers = () =>
 
 /** Returns the grid row (label + amount) that contains the given label text. */
 const getRow = (label: string) => {
-  const row = screen.getByText(label).closest("div.grid")
+  // Match the label cell by its full text: the Stripe label is split around
+  // the info button, so a plain string matcher would not find it.
+  const cell = screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === label)
+  const row = cell.closest("div.grid")
   if (!row) throw new Error(`No row found for "${label}"`)
   return row as HTMLElement
 }
@@ -93,13 +96,16 @@ describe("DistributionPreview", () => {
     }
   })
 
-  it("places the info button top-aligned, right of the Stripe label text", () => {
+  it("keeps the info button on the same line as the last word of the Stripe label", () => {
     renderPreview()
 
-    const label = getInfoButton().parentElement
-    expect(label).toHaveClass("items-start")
-    expect(label?.firstChild?.textContent).toBe("Stripe (per transaction)")
-    expect(label?.lastElementChild).toBe(getInfoButton())
+    // The last word and the button share a no-wrap span, so the button can
+    // never drop to its own line or drift away from the text.
+    const tail = getInfoButton().parentElement
+    expect(tail).toHaveClass("whitespace-nowrap")
+    expect(tail?.firstChild?.textContent).toBe("transaction)")
+    expect(tail?.lastElementChild).toBe(getInfoButton())
+    expect(tail?.parentElement?.textContent).toBe("Stripe (per transaction)")
   })
 
   it("closes the popover when Escape is pressed", async () => {

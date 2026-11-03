@@ -24,6 +24,22 @@ const HOVER_CLOSE_DELAY_MS = 150
  * Info button + popover explaining the Stripe fee. Opens on hover and on
  * click; a click pins it open until Esc or a click outside.
  */
+/** The label with the fee popover after its last word, so the two never split across lines. */
+function LabelWithInfo({ label }: { label: string }) {
+  const cut = label.lastIndexOf(" ")
+  const head = cut === -1 ? "" : label.slice(0, cut + 1)
+  const tail = cut === -1 ? label : label.slice(cut + 1)
+  return (
+    <>
+      {head}
+      <span className="whitespace-nowrap">
+        {tail}
+        <StripeFeeInfo />
+      </span>
+    </>
+  )
+}
+
 function StripeFeeInfo() {
   const [open, setOpen] = useState(false)
   const pinnedRef = useRef(false)
@@ -65,7 +81,7 @@ function StripeFeeInfo() {
         <button
           type="button"
           aria-label="About the Stripe fee"
-          className="mt-[3px] inline-flex shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
+          className="ml-1.5 inline-flex align-[-2px] items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
           onMouseEnter={() => {
             cancelClose()
             closedByHoverRef.current = false
@@ -190,17 +206,12 @@ export function DistributionPreview({
           return (
             <div
               key={label}
-              className="grid grid-cols-3 items-center text-sm"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm"
             >
-              {info ? (
-                <span className="col-span-2 pl-2.5 text-muted-foreground inline-flex items-start gap-1.5">
-                  {label}
-                  <StripeFeeInfo />
-                </span>
-              ) : (
-                <span className="col-span-2 pl-2.5 text-muted-foreground">{label}</span>
-              )}
-              <span className="text-foreground font-medium tabular-nums">
+              <span className="pl-2.5 text-muted-foreground">
+                {info ? <LabelWithInfo label={label} /> : label}
+              </span>
+              <span className="text-right text-foreground font-medium tabular-nums">
                 <span className="mr-1">{money.symbol}</span>
                 {money.amount}
               </span>
@@ -208,9 +219,9 @@ export function DistributionPreview({
           )
         })}
       </div>
-      <div className="border-t border-border mt-3 pt-3 grid grid-cols-3 items-center">
-        <span className="col-span-2 text-sm font-semibold text-brand-primary">Sum</span>
-        <span className="text-sm font-semibold text-brand-primary tabular-nums">
+      <div className="border-t border-border mt-3 pt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <span className="text-sm font-semibold text-brand-primary">Sum</span>
+        <span className="text-right text-sm font-semibold text-brand-primary tabular-nums">
           <span className="mr-1">{sumMoney.symbol}</span>
           {sumMoney.amount}
         </span>
