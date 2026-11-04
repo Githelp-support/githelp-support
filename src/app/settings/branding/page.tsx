@@ -76,7 +76,7 @@ export default function BrandingSettingsPage() {
               {/* Logo Upload Section */}
               <div className="bg-background rounded-lg py-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-base font-semibold text-foreground">Logo</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Logo</h2>
                 </div>
 
                 <div className="space-y-6">
@@ -119,7 +119,7 @@ export default function BrandingSettingsPage() {
 
               {/* Primary Color Section */}
               <div className="bg-background rounded-lg py-6">
-                <h2 className="text-base font-semibold text-foreground mb-2">Primary color</h2>
+                <h2 className="text-base font-subtitle text-foreground mb-2">Primary color</h2>
 
                 <div className="space-y-6">
                   <Label htmlFor="primary-color" className="text-sm leading-normal tracking-tight text-text-muted">

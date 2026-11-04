@@ -170,14 +170,14 @@ export default function ProfileSettingsPage() {
               {displayAvatar}
             </div>
             <div className="flex items-center gap-4">
-              <h1 className="text-base font-semibold text-foreground">{displayName}</h1>
+              <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
             </div>
           </div>
 
           <div className="divide-y divide-border-subtle">
           {/* Editable contact information */}
           <section className="py-6 first:pt-0">
-            <h2 className="text-base font-semibold text-foreground mb-4">Contact information</h2>
+            <h2 className="text-base font-subtitle text-foreground mb-4">Contact information</h2>
             <div className="space-y-4">
               <div className="flex gap-5">
                 <FormField label="Display name" className="flex-1 max-w-md">

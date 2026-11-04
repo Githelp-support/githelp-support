@@ -180,7 +180,7 @@ export default function WaitingPage() {
                         <div className="flex items-start gap-4">
                             <Icon name="fi-rr-envelope" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
                             <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-foreground mb-2">
+                                <h3 className="font-subtitle text-lg text-foreground mb-2">
                                     {onboardingStatus?.hasPendingRequest ? "Waiting for approval" : "Wait for an invite"}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mb-4">
@@ -209,7 +209,7 @@ export default function WaitingPage() {
                         <div className="flex items-start gap-4">
                             <Icon name="fi-rr-users" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
                             <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-foreground mb-2">Request to become a member</h3>
+                                <h3 className="font-subtitle text-lg text-foreground mb-2">Request to become a member</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     Visit a project&apos;s landing page and request to become a helper. You&apos;ll need the project ID or landing page URL from a project admin.
                                 </p>
@@ -227,7 +227,7 @@ export default function WaitingPage() {
                         <div className="flex items-start gap-4">
                             <Icon name="fi-rr-plus" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
                             <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-foreground mb-2">Create a new project</h3>
+                                <h3 className="font-subtitle text-lg text-foreground mb-2">Create a new project</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     Start your own project and invite helpers to join you.
                                 </p>

@@ -204,7 +204,7 @@ export default function Dashboard() {
         {/* Key Stats */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-base font-semibold text-foreground">Key stats</h2>
+            <h2 className="text-base font-subtitle text-foreground">Key stats</h2>
             <Icon name="fi-rr-interrogation" className="text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
@@ -242,7 +242,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-8">
           {/* Helpers Table */}
           <div>
-            <h2 className="text-base font-semibold text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
+            <h2 className="text-base font-subtitle text-foreground mb-3">Helpers ({filteredHelpers.length})</h2>
             <div className="mb-4">
               <TabSelector
                 options={[
@@ -313,7 +313,7 @@ export default function Dashboard() {
 
           {/* Issue Types Table */}
           <div>
-            <h2 className="text-base font-semibold text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
+            <h2 className="text-base font-subtitle text-foreground mb-3">Issue types ({filteredIssueTypes.length})</h2>
             <div className="mb-4">
               <TabSelector
                 options={[

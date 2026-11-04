@@ -84,7 +84,7 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
 
   return (
     <div className="bg-background rounded-lg p-6 mb-6">
-      <h2 className="text-base font-semibold text-foreground mb-1">
+      <h2 className="text-base font-subtitle text-foreground mb-1">
         Channels
       </h2>
       <p className="text-sm text-muted-foreground mb-5">

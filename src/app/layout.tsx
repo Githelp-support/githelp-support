@@ -29,13 +29,13 @@ const inter = Inter({
 
 // Nudica is a static family (files in src/fonts/nudica, license alongside).
 // It ships Regular, Medium and Bold only, so the weight ranges below map the
-// app's 450 to Regular and 600 to Bold.
+// app's 450 to Regular, 550 (font-subtitle) to Medium and 600 to Bold.
 const nudica = localFont({
   src: [
     { path: "../fonts/nudica/nudica-regular-webfont.woff2", weight: "400 450", style: "normal" },
     { path: "../fonts/nudica/nudica-regularitalic-webfont.woff2", weight: "400 450", style: "italic" },
-    { path: "../fonts/nudica/nudica-medium-webfont.woff2", weight: "500", style: "normal" },
-    { path: "../fonts/nudica/nudica-mediumitalic-webfont.woff2", weight: "500", style: "italic" },
+    { path: "../fonts/nudica/nudica-medium-webfont.woff2", weight: "500 599", style: "normal" },
+    { path: "../fonts/nudica/nudica-mediumitalic-webfont.woff2", weight: "500 599", style: "italic" },
     { path: "../fonts/nudica/nudica-bold-webfont.woff2", weight: "600 700", style: "normal" },
     { path: "../fonts/nudica/nudica-bolditalic-webfont.woff2", weight: "600 700", style: "italic" },
   ],

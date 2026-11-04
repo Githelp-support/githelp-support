@@ -90,6 +90,7 @@
   --text-display--letter-spacing: -0.02em;
   /* Font weights. Inter is variable, so 450 renders as a true weight; Nudica is static and maps 450 to Regular and 600 to Bold (ranges in layout.tsx) */
   --font-weight-book: 450;            /* sidebar + project menu items at rest */
+  --font-weight-subtitle: 550;        /* sub-titles: section, drawer, dialog and option-card titles at 16–18px (Nudica renders it as Medium) */
   /* Shadows (GitHelp's soft grey-blue shadow is rgba(134,140,152,…)) */
   --shadow-control: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 0 rgba(0, 0, 0, 0.04);
   --shadow-soft: 0 4px 15px rgba(134, 140, 152, 0.2);
@@ -547,13 +548,12 @@
     font-family: var(--font-mono);
   }
   /*
-   * Tighten tracking on headings that render at 18px+.
-   * Scoped via selector to h1–h4 (which match our typography scale
-   * for sizes >= 1.125rem). h5/h6 typically render <18px and keep
-   * default tracking. :where() keeps specificity at 0 so utility
-   * classes (e.g. tracking-normal) can override without !important.
+   * Page titles only: -0.01em on 24px+ headings (text-title and
+   * text-display carry their own tracking in the theme). Sub-titles at
+   * 16–20px keep letter-spacing 0. :where() keeps the heading part at
+   * specificity 0; a tracking-* utility still wins (utilities layer).
    */
-  :where(h1, h2, h3, h4) {
+  :where(h1, h2, h3, h4):is(.text-2xl, .text-3xl) {
     letter-spacing: -0.01em;
   }
 }

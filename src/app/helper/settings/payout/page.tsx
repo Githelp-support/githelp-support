@@ -88,7 +88,7 @@ export default function HelperPayoutPage() {
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="bg-card rounded-lg py-6 pr-6">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground">Payout details</h2>
+              <h2 className="text-base font-subtitle text-foreground">Payout details</h2>
               <Icon name="fi-rr-info" className="text-muted-foreground" />
             </div>
 

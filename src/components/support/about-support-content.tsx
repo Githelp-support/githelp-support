@@ -54,7 +54,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
                 <div className="w-0.5 flex-1 bg-brand-primary min-h-[2rem]"></div>
               </div>
               <div className="flex-1 pb-8">
-                <h3 className="text-base font-semibold text-text-secondary mb-2">Choose how to get help</h3>
+                <h3 className="text-base font-subtitle text-text-secondary mb-2">Choose how to get help</h3>
                 <p className="text-sm text-text-tertiary">
                   You can get help through standard support or through an SLA. Getting help through an SLA requires
                   no registration, if accepted by your employer.
@@ -68,7 +68,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
                 <div className="w-5 h-5 rounded-full bg-brand-primary flex-shrink-0"></div>
               </div>
               <div className="flex-1">
-                <h3 className="text-base font-semibold text-text-secondary mb-2">Register or share details</h3>
+                <h3 className="text-base font-subtitle text-text-secondary mb-2">Register or share details</h3>
                 <p className="text-sm text-text-tertiary">
                   Register an account or share your email and card details before getting started. Registration only
                   takes a couple of minutes.
@@ -91,7 +91,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
                 <div className="w-0.5 flex-1 bg-brand-primary min-h-[2rem]"></div>
               </div>
               <div className="flex-1 pb-8">
-                <h3 className="text-base font-semibold text-text-secondary mb-2">Wait for a helper to connect</h3>
+                <h3 className="text-base font-subtitle text-text-secondary mb-2">Wait for a helper to connect</h3>
                 <p className="text-sm text-text-tertiary">
                   How long it takes varies. Looking into &quot;Rates and details&quot; will give you an idea about average
                   waiting time. The helper is normally someone on the core team of the project.
@@ -106,7 +106,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
                 <div className="w-0.5 flex-1 bg-brand-primary min-h-[2rem]"></div>
               </div>
               <div className="flex-1 pb-8">
-                <h3 className="text-base font-semibold text-text-secondary mb-2">Start chatting</h3>
+                <h3 className="text-base font-subtitle text-text-secondary mb-2">Start chatting</h3>
                 <p className="text-sm text-text-tertiary">
                   Describe your issue, in text or by sharing code, and get help. If the helper can&apos;t help you, you
                   are normally not charged anything.
@@ -120,7 +120,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
                 <div className="w-5 h-5 rounded-full bg-brand-primary flex-shrink-0"></div>
               </div>
               <div className="flex-1">
-                <h3 className="text-base font-semibold text-text-secondary mb-2">Issue is solved</h3>
+                <h3 className="text-base font-subtitle text-text-secondary mb-2">Issue is solved</h3>
                 <p className="text-sm text-text-tertiary">
                   When you are pleased with the assistance, the chat is ended, and time spent is logged by the
                   helper.
@@ -143,7 +143,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
                 <div className="w-0.5 flex-1 bg-brand-primary min-h-[2rem]"></div>
               </div>
               <div className="flex-1 pb-8">
-                <h3 className="text-base font-semibold text-text-secondary mb-2">Choose how to pay</h3>
+                <h3 className="text-base font-subtitle text-text-secondary mb-2">Choose how to pay</h3>
                 <p className="text-sm text-text-tertiary">
                   If you are using support both privately and through your employer, you are asked to specify who
                   you want the support charged to. The amount is charged to your card.
@@ -161,7 +161,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
                 <div className="w-5 h-5 rounded-full bg-brand-primary flex-shrink-0"></div>
               </div>
               <div className="flex-1">
-                <h3 className="text-base font-semibold text-text-secondary mb-2">Receive documentation</h3>
+                <h3 className="text-base font-subtitle text-text-secondary mb-2">Receive documentation</h3>
                 <p className="text-sm text-text-tertiary">
                   You will receive a report via cards or email, showing payment and support details. If you are
                   registered, you can also retrieve any support documentation from the Github user login page.

@@ -227,7 +227,7 @@ export default function AuthConfirmedPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
         <div className="max-w-md rounded-lg border border-border bg-card p-6 text-center">
-          <h1 className="text-lg font-semibold text-foreground mb-2">Sign-in didn&rsquo;t complete</h1>
+          <h1 className="text-lg font-subtitle text-foreground mb-2">Sign-in didn&rsquo;t complete</h1>
           <p className="text-sm text-muted-foreground">
             {AUTH_CALLBACK_FAILURE_COPY[linkFailed].message}{" "}
             <Link

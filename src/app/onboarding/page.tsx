@@ -800,7 +800,7 @@ export default function OnboardingPage() {
                             <div className="flex items-start gap-3">
                                 <Icon name="fi-rr-plus" size={6} className="shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
-                                    <div className="font-semibold text-lg text-foreground">Create from scratch</div>
+                                    <div className="font-subtitle text-lg text-foreground">Create from scratch</div>
                                     <div className="text-sm text-muted-foreground mt-1">
                                         {trimmedName ? `Start with the name "${trimmedName}"` : "Start with a project name"}
                                     </div>
@@ -816,7 +816,7 @@ export default function OnboardingPage() {
                             <div className="flex items-start gap-3">
                                 <Icon name="fi-brands-github" size={6} className="shrink-0 mt-0.5 text-brand-primary" />
                                 <div>
-                                    <div className="font-semibold text-lg text-foreground">Import from GitHub</div>
+                                    <div className="font-subtitle text-lg text-foreground">Import from GitHub</div>
                                     <div className="text-sm text-muted-foreground mt-1">
                                         Connect GitHub and select a repository
                                     </div>
@@ -834,7 +834,7 @@ export default function OnboardingPage() {
                                 <div className="flex items-start gap-3 w-full">
                                     <Icon name="fi-rr-flask" size={6} className="mt-0.5 text-brand-primary" />
                                     <div className="flex-1">
-                                        <div className="font-semibold text-lg text-foreground">Try a sandbox</div>
+                                        <div className="font-subtitle text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
                                             Explore a demo project pre-filled with helpers, tickets, and reports
                                         </div>

@@ -177,7 +177,7 @@ export default function ProjectSettingsPage() {
             <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-base font-semibold text-foreground">Admins</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Admins</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Admins can manage helpers, settings, payouts, and invite other admins.
@@ -304,7 +304,7 @@ export default function ProjectSettingsPage() {
             <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-base font-semibold text-foreground">Keywords & topics</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Keywords & topics</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Keywords help categorize tickets and let helpers indicate which topics they can help with.
@@ -364,7 +364,7 @@ export default function ProjectSettingsPage() {
             <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-base font-semibold text-foreground">Help categories</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Help categories</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Help categories classify ticket types (e.g. Bug, Best practice, Documentation).

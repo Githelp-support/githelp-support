@@ -80,7 +80,7 @@ export function DrawerPanel({
                     <Icon name="fi-rr-cross" className="[--icon-size:18px]" />
                   </Button>
                 </DialogPrimitive.Close>
-                <DialogPrimitive.Title className="text-lg font-semibold text-foreground">{title}</DialogPrimitive.Title>
+                <DialogPrimitive.Title className="text-lg font-subtitle text-foreground">{title}</DialogPrimitive.Title>
                 {headerAction}
               </div>
             </div>

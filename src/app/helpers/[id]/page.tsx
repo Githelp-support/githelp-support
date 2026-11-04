@@ -417,7 +417,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 {helper.avatar}
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-base font-semibold text-foreground">{helper.name}</h1>
+                <h1 className="text-base font-subtitle text-foreground">{helper.name}</h1>
                 <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
                   {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
                 </Badge>
@@ -466,7 +466,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         {/* Key stats */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-base font-semibold text-foreground">Key stats</h2>
+            <h2 className="text-base font-subtitle text-foreground">Key stats</h2>
             <Icon name="fi-rr-interrogation" className="text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 stagger">
@@ -502,7 +502,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
 
         {/* All tickets */}
         <div className="space-y-4">
-          <h2 className="text-base font-semibold text-foreground">All tickets</h2>
+          <h2 className="text-base font-subtitle text-foreground">All tickets</h2>
           <div className="bg-card rounded-lg border border-border overflow-x-auto">
             <ListHeader>
               <div className="grid gap-4 items-center" style={HELPER_TICKETS_GRID}>

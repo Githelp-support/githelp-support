@@ -18,7 +18,7 @@ export default function IntegrationsSettingsPage() {
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-2xl">
             <div className="bg-background rounded-lg p-6 mb-6">
-              <h2 className="text-base font-semibold text-foreground mb-1">
+              <h2 className="text-base font-subtitle text-foreground mb-1">
                 Delivery channels
               </h2>
               <p className="text-sm text-muted-foreground mb-5">

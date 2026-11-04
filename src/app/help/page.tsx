@@ -158,7 +158,7 @@ export default function HelpPage() {
         <div className="max-w-3xl space-y-8">
           {/* Intro */}
           <div>
-            <h2 className="text-base font-semibold text-foreground mb-1">Having an issue?</h2>
+            <h2 className="text-base font-subtitle text-foreground mb-1">Having an issue?</h2>
             <p className="text-sm text-muted-foreground">
               Use the topics below to find answers. If you still need help, reach out through support or create a ticket for your project.
             </p>

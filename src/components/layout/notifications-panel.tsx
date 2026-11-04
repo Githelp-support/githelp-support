@@ -130,7 +130,7 @@ export function NotificationsPanel({
         style={{ top: `${position.top}px`, right: `${position.right}px` }}
       >
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-foreground">Notifications</h2>
+          <h2 className="text-base font-subtitle text-foreground">Notifications</h2>
           <button onClick={onClose} aria-label="Close notifications" className="p-1 hover:bg-surface-hover rounded-md transition-colors duration-fast ease-out cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
             <Icon name="fi-rr-cross" size={5} className="text-muted-foreground" />
           </button>

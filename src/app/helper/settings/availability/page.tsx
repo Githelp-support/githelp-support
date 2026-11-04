@@ -20,7 +20,7 @@ export default function HelperSettingsPage() {
               <div className="flex items-start gap-3">
                 <Icon name="fi-rr-calendar-clock" size={5} className="text-muted-foreground shrink-0 mt-0.5" />
                 <div>
-                  <h2 className="text-base font-semibold text-foreground mb-1">Availability settings are coming soon</h2>
+                  <h2 className="text-base font-subtitle text-foreground mb-1">Availability settings are coming soon</h2>
                   <p className="text-sm text-muted-foreground">
                     You will be able to mark yourself unavailable and set working hours here. Until then, every active
                     helper is notified about new tickets and can claim them.

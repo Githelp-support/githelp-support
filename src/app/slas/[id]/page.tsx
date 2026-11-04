@@ -272,7 +272,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Agreement details</h2>
+              <h2 className="text-lg font-subtitle text-foreground">Agreement details</h2>
               <Icon name="fi-rr-info" className="text-muted-foreground" />
             </div>
             <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted bg-transparent" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
@@ -392,7 +392,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         {/* Key stats */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Key stats</h2>
+            <h2 className="text-lg font-subtitle text-foreground">Key stats</h2>
             <Icon name="fi-rr-info" className="text-muted-foreground" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -440,7 +440,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
           {/* Helpers */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Helpers ({helpersSummary.length})</h2>
+              <h2 className="text-lg font-subtitle text-foreground">Helpers ({helpersSummary.length})</h2>
             </div>
 
             {/* Helper filter tabs */}
@@ -533,7 +533,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
 
           {/* Issue types — not yet available in DB schema; show placeholder */}
           <div>
-            <h2 className="text-lg font-semibold text-foreground mb-4">Issue types</h2>
+            <h2 className="text-lg font-subtitle text-foreground mb-4">Issue types</h2>
             <Card className="py-0">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -559,7 +559,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
 
         {/* All tickets */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">All tickets ({filteredTickets.length})</h2>
+          <h2 className="text-lg font-subtitle text-foreground mb-4">All tickets ({filteredTickets.length})</h2>
           <Card className="py-0">
             <CardContent className="p-0">
               <div className="overflow-x-auto">

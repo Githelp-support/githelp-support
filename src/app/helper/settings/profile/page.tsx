@@ -221,7 +221,7 @@ export default function HelperProfilePage() {
               {displayAvatar}
             </div>
             <div className="flex items-center gap-4">
-              <h1 className="text-base font-semibold text-foreground">{displayName}</h1>
+              <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
               <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
                 {categoryLabel}
               </Badge>
@@ -233,7 +233,7 @@ export default function HelperProfilePage() {
           <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-base font-semibold text-foreground">Contact information</h2>
+              <h2 className="text-base font-subtitle text-foreground">Contact information</h2>
             </div>
             <div className="space-y-4">
               <div className="flex gap-5">
@@ -295,7 +295,7 @@ export default function HelperProfilePage() {
           <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-base font-semibold text-foreground">Helper category</h2>
+              <h2 className="text-base font-subtitle text-foreground">Helper category</h2>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-sm font-medium">
@@ -313,7 +313,7 @@ export default function HelperProfilePage() {
           <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-base font-semibold text-foreground">Topics & keywords</h2>
+              <h2 className="text-base font-subtitle text-foreground">Topics & keywords</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Select the project topics you can help with. This helps route relevant tickets to you.

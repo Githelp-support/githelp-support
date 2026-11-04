@@ -98,7 +98,7 @@ export default function LandingPageSettings() {
         <div className="max-w-4xl">
 
           <div className="bg-background rounded-lg p-6 mb-3">
-            <h2 className="text-base font-semibold text-foreground mb-5">Your support page</h2>
+            <h2 className="text-base font-subtitle text-foreground mb-5">Your support page</h2>
             <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
             <div className="flex items-center gap-2 mt-3">
               <Link
@@ -141,7 +141,7 @@ export default function LandingPageSettings() {
           <div className="space-y-3">
             {/* Add Resource Section */}
               <div className="bg-background rounded-lg p-6">
-                <h2 className="text-base font-semibold text-foreground mb-5">Add resource</h2>
+                <h2 className="text-base font-subtitle text-foreground mb-5">Add resource</h2>
 
                 <div className="space-y-4">
                   <FormField label="Name" id="resource-name">
@@ -180,7 +180,7 @@ export default function LandingPageSettings() {
 
               {/* Resources List Section */}
               <div className="bg-background rounded-lg p-6">
-                <h2 className="text-base font-semibold text-foreground mb-5">Resources</h2>
+                <h2 className="text-base font-subtitle text-foreground mb-5">Resources</h2>
 
                 {resourcesLoading ? (
                   <ListSkeleton rows={3} avatar={false} badge={false} className="divide-y-0 [&>div]:px-0" />

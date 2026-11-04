@@ -177,7 +177,7 @@ export default function ProjectLandingPage() {
                             <div className="bg-muted/50 rounded-lg p-6 border border-border">
                                 <div className="flex items-center gap-3 mb-2">
                                     <Icon name="fi-rr-check-circle" className="[--icon-size:19px] text-green-600" />
-                                    <h3 className="font-semibold text-lg text-foreground">Request submitted</h3>
+                                    <h3 className="font-subtitle text-lg text-foreground">Request submitted</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     Your request to become a helper has been submitted. The project admin will review your request and notify you once a decision has been made.
@@ -185,7 +185,7 @@ export default function ProjectLandingPage() {
                             </div>
                         ) : (
                             <div>
-                                <h3 className="font-semibold text-lg text-foreground mb-4">Become a helper</h3>
+                                <h3 className="font-subtitle text-lg text-foreground mb-4">Become a helper</h3>
                                 <p className="text-sm text-muted-foreground mb-6">
                                     Request to become a helper for {projectName}. Once approved by a project admin, you&apos;ll be able to help with support tickets.
                                 </p>
@@ -227,7 +227,7 @@ export default function ProjectLandingPage() {
 
                 {/* Support Link */}
                 <div className="bg-card rounded-lg shadow-sm border border-border p-8">
-                    <h3 className="font-semibold text-lg text-foreground mb-4">Need support?</h3>
+                    <h3 className="font-subtitle text-lg text-foreground mb-4">Need support?</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                         If you&apos;re looking for help with this project, visit the support page.
                     </p>

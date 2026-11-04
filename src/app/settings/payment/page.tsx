@@ -487,7 +487,7 @@ export default function PaymentSettingsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <h2 className="text-base font-semibold text-foreground">Team</h2>
+                        <h2 className="text-base font-subtitle text-foreground">Team</h2>
                         <Icon name="fi-rr-info" className="text-muted-foreground" />
                       </div>
                       <Button
@@ -551,7 +551,7 @@ export default function PaymentSettingsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <h2 className="text-base font-semibold text-foreground">Community</h2>
+                        <h2 className="text-base font-subtitle text-foreground">Community</h2>
                         <Icon name="fi-rr-info" className="text-muted-foreground" />
                       </div>
                       <Button
@@ -621,7 +621,7 @@ export default function PaymentSettingsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <h2 className="text-base font-semibold text-foreground">External Consultants and Companies</h2>
+                        <h2 className="text-base font-subtitle text-foreground">External Consultants and Companies</h2>
                         <Icon name="fi-rr-info" className="text-muted-foreground" />
                       </div>
                       <Button
@@ -715,7 +715,7 @@ export default function PaymentSettingsPage() {
               {/* Users of support Section */}
               <div className="bg-card rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-6">
-                  <h2 className="text-base font-semibold text-foreground">Payment options</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Payment options</h2>
                   <InfoTooltip
                     label="About payment options"
                     content="Choose how users can pay for support. With pay per ticket, users pay for each ticket that gets claimed. With SLAs, users get support under the terms of an agreement. You can offer one or both."
@@ -789,7 +789,7 @@ export default function PaymentSettingsPage() {
               {/* Ticket cost Section */}
               <div className="bg-card rounded-lg p-6">
                 <div className="flex items-center gap-2 mb-6">
-                  <h2 className="text-base font-semibold text-foreground">Ticket cost</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Ticket cost</h2>
                   <InfoTooltip
                     label="About Stripe fees"
                     className="max-w-sm"
@@ -917,7 +917,7 @@ export default function PaymentSettingsPage() {
               <div className="bg-card rounded-lg border border-border p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-semibold text-foreground">Spending caps</h2>
+                    <h2 className="text-base font-subtitle text-foreground">Spending caps</h2>
                     <Icon name="fi-rr-info" className="text-muted-foreground" />
                   </div>
                   <Button
@@ -982,7 +982,7 @@ export default function PaymentSettingsPage() {
               {/* Set up payouts Section */}
               <div className="bg-card rounded-lg p-6">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-semibold text-foreground">Set up payouts</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Set up payouts</h2>
                   <InfoTooltip
                     label="About setting up payouts"
                     content="Payouts are set up through Stripe. You will be sent to Stripe's own website to complete the set up."

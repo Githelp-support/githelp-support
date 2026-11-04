@@ -199,7 +199,7 @@ export default function UserPaymentSettingsPage() {
         <div className="max-w-3xl space-y-6">
           <div className="bg-card rounded-lg p-6">
             <div className="flex items-center gap-2 mb-2">
-              <h2 className="text-base font-semibold text-foreground">Card and payment</h2>
+              <h2 className="text-base font-subtitle text-foreground">Card and payment</h2>
               <Icon name="fi-rr-info" className="text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
