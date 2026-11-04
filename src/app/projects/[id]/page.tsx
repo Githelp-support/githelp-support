@@ -167,7 +167,7 @@ export default function ProjectLandingPage() {
                             </div>
                         </div>
                         <div className="flex-1">
-                            <h1 className="text-2xl font-semibold text-foreground">{projectName}</h1>
+                            <h1 className="text-2xl font-medium text-foreground">{projectName}</h1>
                         </div>
                     </div>
 

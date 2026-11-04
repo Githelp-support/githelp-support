@@ -20,7 +20,7 @@ export default function GlobalError({
     <html lang="en">
       <body className="m-0 flex min-h-screen items-center justify-center bg-page-muted p-6 font-sans text-foreground">
         <div className="max-w-sm text-center">
-          <h1 className="mb-2 text-xl font-semibold text-text-heading">Something went wrong</h1>
+          <h1 className="mb-2 text-xl font-medium text-text-heading">Something went wrong</h1>
           <p className="mb-6 text-text-muted">
             A critical error occurred. Please refresh the page or try again later.
           </p>

@@ -97,7 +97,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           <div className="min-w-0">
             {aboveTitle && <div className="mb-2">{aboveTitle}</div>}
             <div ref={titleRowRef} className="flex items-center gap-3">
-              <h1 className={cn("truncate text-title font-semibold text-foreground", titleClassName)}>{title}</h1>
+              <h1 className={cn("truncate text-title font-medium text-foreground", titleClassName)}>{title}</h1>
               {info && (
                 <Tooltip>
                   <TooltipTrigger asChild>

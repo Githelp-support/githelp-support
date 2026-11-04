@@ -408,7 +408,7 @@ export default function OnboardingPage() {
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
                 <Card className="w-full max-w-2xl">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-2xl font-semibold">
+                        <CardTitle className="text-2xl font-medium">
                             {isAddingRole ? "Add a new role" : "Welcome to Githelp! How will you use it?"}
                         </CardTitle>
                         <CardDescription className="text-sm mt-2">
@@ -454,7 +454,7 @@ export default function OnboardingPage() {
                             <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-semibold">What is the name of the project?</CardTitle>
+                        <CardTitle className="text-2xl font-medium">What is the name of the project?</CardTitle>
                         <CardDescription>
                             {onboardingRole === "admin"
                                 ? "We'll check whether the project is already on Githelp before you create it."
@@ -600,7 +600,7 @@ export default function OnboardingPage() {
                                 projectName={selectedMatch.name}
                                 size="w-10 h-10"
                             />
-                            <CardTitle className="text-2xl font-semibold">{selectedMatch.name} is already on Githelp</CardTitle>
+                            <CardTitle className="text-2xl font-medium">{selectedMatch.name} is already on Githelp</CardTitle>
                         </div>
                         <CardDescription>
                             Projects have a single team of admins. To manage this project you need an invite from one of its
@@ -677,7 +677,7 @@ export default function OnboardingPage() {
                             <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-semibold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
+                        <CardTitle className="text-2xl font-medium">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
                         <CardDescription>
                             Do you want to create it? You&apos;ll become the project&apos;s first admin and can invite helpers
                             and other admins afterwards.
@@ -720,7 +720,7 @@ export default function OnboardingPage() {
                             <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-semibold">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
+                        <CardTitle className="text-2xl font-medium">&quot;{trimmedName}&quot; isn&apos;t on Githelp yet</CardTitle>
                         <CardDescription>
                             Only the project&apos;s owners can add it to Githelp. Once it&apos;s here, you can request to become
                             one of its helpers.
@@ -784,7 +784,7 @@ export default function OnboardingPage() {
                             <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-semibold">
+                        <CardTitle className="text-2xl font-medium">
                             {trimmedName ? `Create ${trimmedName}` : "Create a new project"}
                         </CardTitle>
                         <CardDescription>
@@ -865,7 +865,7 @@ export default function OnboardingPage() {
                             <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-semibold">Import from GitHub</CardTitle>
+                        <CardTitle className="text-2xl font-medium">Import from GitHub</CardTitle>
                         <CardDescription>
                             Select a repository to create a project. If the repo belongs to an organization, we&apos;ll create or match that organization.
                         </CardDescription>
@@ -980,7 +980,7 @@ export default function OnboardingPage() {
                             <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
-                        <CardTitle className="text-2xl font-semibold">Create a new project</CardTitle>
+                        <CardTitle className="text-2xl font-medium">Create a new project</CardTitle>
                         <CardDescription>
                             Give your project a name to get started
                         </CardDescription>

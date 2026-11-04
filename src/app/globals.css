@@ -84,10 +84,9 @@
   --text-stat--line-height: 1.75rem;  /* 28px */
   --text-title: 1.5rem;               /* 24px — page titles */
   --text-title--line-height: 2rem;    /* 32px */
-  --text-title--letter-spacing: -0.01em;
   --text-display: 1.875rem;           /* 30px — public support welcome page only */
   --text-display--line-height: 2.25rem; /* 36px */
-  --text-display--letter-spacing: -0.02em;
+  /* Letter-spacing: never below 0 at 16px and above (no tight tracking on titles or sub-titles). */
   /* Font weights. Inter is variable, so 450 renders as a true weight; Nudica is static and maps 450 to Regular and 600 to Bold (ranges in layout.tsx) */
   --font-weight-book: 450;            /* sidebar + project menu items at rest */
   --font-weight-subtitle: 550;        /* sub-titles: section, drawer, dialog and option-card titles at 16–18px (Nudica renders it as Medium) */
@@ -546,15 +545,6 @@
   code,
   pre {
     font-family: var(--font-mono);
-  }
-  /*
-   * Page titles only: -0.01em on 24px+ headings (text-title and
-   * text-display carry their own tracking in the theme). Sub-titles at
-   * 16–20px keep letter-spacing 0. :where() keeps the heading part at
-   * specificity 0; a tracking-* utility still wins (utilities layer).
-   */
-  :where(h1, h2, h3, h4):is(.text-2xl, .text-3xl) {
-    letter-spacing: -0.01em;
   }
 }
 

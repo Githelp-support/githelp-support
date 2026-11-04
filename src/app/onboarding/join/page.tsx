@@ -93,7 +93,7 @@ export default function JoinProjectPage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-lg py-7 gap-6">
                 <CardHeader className="px-7">
-                    <CardTitle className="text-2xl font-semibold">Join an existing project</CardTitle>
+                    <CardTitle className="text-2xl font-medium">Join an existing project</CardTitle>
                     <CardDescription>
                         Enter a project ID, or connect with GitHub to find projects you&apos;ve contributed to that are registered in the system.
                     </CardDescription>

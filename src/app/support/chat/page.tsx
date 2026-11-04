@@ -585,7 +585,7 @@ export default function UserSupportChatPage() {
       <>
         <main className="flex-1 overflow-y-auto bg-page-muted">
           <div className="max-w-3xl mx-auto px-6 py-12">
-            <h1 className="text-2xl font-semibold text-foreground mb-2">
+            <h1 className="text-2xl font-medium text-foreground mb-2">
               Which project do you need support with?
             </h1>
             <p className="text-muted-foreground mb-6">

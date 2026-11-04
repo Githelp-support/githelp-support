@@ -583,7 +583,7 @@ export default function SupportPage() {
     return (
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
-          <h1 className="text-2xl font-semibold text-text-secondary mb-2">Missing project identifier</h1>
+          <h1 className="text-2xl font-medium text-text-secondary mb-2">Missing project identifier</h1>
           <p className="text-text-tertiary mb-6">
             This support page is project-specific. Please open it using a link that includes either a project <span className="font-semibold">slug</span> or <span className="font-semibold">id</span>.
           </p>

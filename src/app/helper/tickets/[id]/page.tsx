@@ -865,7 +865,7 @@ export default function TicketDetailPage() {
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
             <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
-              <h1 className="text-2xl font-semibold text-foreground mb-2">
+              <h1 className="text-2xl font-medium text-foreground mb-2">
                 Ticket not found or you don&apos;t have access
               </h1>
               <p className="text-muted-foreground mb-6">

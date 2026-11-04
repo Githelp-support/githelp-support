@@ -257,7 +257,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             {getInitial(slaName)}
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground mb-2">{slaName}</h1>
+            <h1 className="text-2xl font-medium text-foreground mb-2">{slaName}</h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Space ID:</span>
               <span className="font-mono tabular-nums">{spaceId}</span>
