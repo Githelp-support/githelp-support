@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
  * has the same heading and separator treatment.
  */
 
+// 11px, so the heading takes the font-sans (Inter) class like every size below 16px.
 const HEADING_STYLE = {
   fontSize: "11px",
   letterSpacing: "0.05em",
@@ -31,7 +32,7 @@ export function SidebarSectionHeading({
   if (info) {
     return (
       <div className={cn("flex items-center gap-2 mb-3", className)}>
-        <h3 className="uppercase leading-none" style={HEADING_STYLE}>
+        <h3 className="font-sans uppercase leading-none" style={HEADING_STYLE}>
           {children}
         </h3>
         <Icon name="fi-rr-info" className="text-muted-foreground shrink-0" />
@@ -39,7 +40,7 @@ export function SidebarSectionHeading({
     )
   }
   return (
-    <h3 className={cn("mb-3 uppercase", className)} style={HEADING_STYLE}>
+    <h3 className={cn("mb-3 font-sans uppercase", className)} style={HEADING_STYLE}>
       {children}
     </h3>
   )

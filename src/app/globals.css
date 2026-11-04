@@ -38,7 +38,8 @@
   --color-support-header: var(--support-header);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;      /* Inter: text at 15px and below */
+  --font-display: var(--font-nudica), ui-sans-serif, system-ui, sans-serif; /* Nudica: text at 16px and above */
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -87,7 +88,7 @@
   --text-display: 1.875rem;           /* 30px — public support welcome page only */
   --text-display--line-height: 2.25rem; /* 36px */
   --text-display--letter-spacing: -0.02em;
-  /* Font weights (Inter is variable, so 450 renders as a true weight) */
+  /* Font weights. Inter is variable, so 450 renders as a true weight; Nudica is static and maps 450 to Regular and 600 to Bold (ranges in layout.tsx) */
   --font-weight-book: 450;            /* sidebar + project menu items at rest */
   /* Shadows (GitHelp's soft grey-blue shadow is rgba(134,140,152,…)) */
   --shadow-control: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 0 rgba(0, 0, 0, 0.04);
@@ -105,6 +106,44 @@
 /* Flaticon UIcons glyph box (see components/ui/icon.tsx). The glyph is a font
    character, so the box and the font size both follow --icon-size. */
 @layer components {
+  /*
+   * Font by size: Inter (font-sans) for text at 15px and below, Nudica
+   * (font-display) for 16px and above. The body is 16px and set to
+   * font-display, and every size utility sets its own family, so nested
+   * sizes switch correctly in both directions. An explicit font-sans,
+   * font-display or font-mono on the same element still wins (utilities
+   * layer). Add any new size token here.
+   *
+   * @apply, not var(--font-sans): the --font-inter / --font-nudica variables
+   * come from next/font classes on <body>, so the theme variables on :root
+   * cannot resolve them and `font-family: var(--font-sans)` would silently
+   * inherit instead. @apply inlines the stack, like the utilities do.
+   */
+  .text-2xs,
+  .text-xs,
+  .text-ui,
+  .text-sm {
+    @apply font-sans;
+  }
+  .text-base,
+  .text-lg,
+  .text-xl,
+  .text-2xl,
+  .text-3xl,
+  .text-4xl,
+  .text-stat,
+  .text-title,
+  .text-display {
+    @apply font-display;
+  }
+  /* Inputs, selects and textareas are text-base on mobile and md:text-sm from 768px. */
+  .md\:text-sm {
+    @apply md:font-sans;
+  }
+  .file\:text-sm::file-selector-button {
+    @apply font-sans;
+  }
+
   .icon {
     display: inline-flex;
     align-items: center;
@@ -455,7 +494,7 @@
   padding: 0.25rem 0.5rem 0.25rem 1rem;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--muted) 60%, var(--background));
-  font-family: var(--font-sans);
+  @apply font-sans; /* 11px: Inter (see "Font by size"); var(--font-sans) would not resolve here */
   font-size: 0.6875rem;
   line-height: 1.25rem;
   color: var(--muted-foreground);
@@ -499,7 +538,8 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Inter character variant: single-storey 'a' (cv11) */
+    /* Inter character variant: single-storey 'a' (cv11). Inherited by every
+       element; Nudica has no cv11 feature, so it is a no-op there. */
     font-feature-settings: "cv11";
   }
   code,
