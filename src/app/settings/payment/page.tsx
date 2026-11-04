@@ -485,19 +485,9 @@ export default function PaymentSettingsPage() {
               <div className="bg-card rounded-lg p-6">
                 <div className="flex flex-col sm:flex-row gap-10">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base font-subtitle text-foreground">Team</h2>
-                        <Icon name="fi-rr-info" className="text-muted-foreground" />
-                      </div>
-                      <Button
-                        variant="lavender"
-                        size="sm"
-                        onClick={handleSaveTeamSettings}
-                        disabled={!hasTeamChanges || !teamPercentageValid || updatePaymentSettings.isPending || settingsLoading}
-                      >
-                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                      </Button>
+                    <div className="flex items-center gap-2 mb-4">
+                      <h2 className="text-base font-subtitle text-foreground">Team</h2>
+                      <Icon name="fi-rr-info" className="text-muted-foreground" />
                     </div>
 
                     <div className="space-y-4">
@@ -537,6 +527,17 @@ export default function PaymentSettingsPage() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="flex mt-6">
+                      <Button
+                        variant="lavender"
+                        size="sm"
+                        onClick={handleSaveTeamSettings}
+                        disabled={!hasTeamChanges || !teamPercentageValid || updatePaymentSettings.isPending || settingsLoading}
+                      >
+                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
                   </div>
                   <DistributionPreview
                     helperPercentage={teamMemberRatio[0]}
@@ -549,19 +550,9 @@ export default function PaymentSettingsPage() {
               <div className="bg-card rounded-lg p-6">
                 <div className="flex flex-col sm:flex-row gap-10">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base font-subtitle text-foreground">Community</h2>
-                        <Icon name="fi-rr-info" className="text-muted-foreground" />
-                      </div>
-                      <Button
-                        variant="lavender"
-                        size="sm"
-                        onClick={handleSaveCommunitySettings}
-                        disabled={!hasCommunityChanges || !communityPercentageValid || updatePaymentSettings.isPending || settingsLoading}
-                      >
-                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                      </Button>
+                    <div className="flex items-center gap-2 mb-4">
+                      <h2 className="text-base font-subtitle text-foreground">Community</h2>
+                      <Icon name="fi-rr-info" className="text-muted-foreground" />
                     </div>
 
                     <div className="space-y-4">
@@ -607,6 +598,17 @@ export default function PaymentSettingsPage() {
                         <p className="text-ui text-muted-foreground">Payment to community helper can&apos;t be below 85%</p>
                       </div>
                     </div>
+
+                    <div className="flex mt-6">
+                      <Button
+                        variant="lavender"
+                        size="sm"
+                        onClick={handleSaveCommunitySettings}
+                        disabled={!hasCommunityChanges || !communityPercentageValid || updatePaymentSettings.isPending || settingsLoading}
+                      >
+                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
                   </div>
                   <DistributionPreview
                     helperPercentage={communityHelperRatio[0]}
@@ -619,19 +621,9 @@ export default function PaymentSettingsPage() {
               <div className="bg-card rounded-lg p-6">
                 <div className="flex flex-col sm:flex-row gap-10">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base font-subtitle text-foreground">External Consultants and Companies</h2>
-                        <Icon name="fi-rr-info" className="text-muted-foreground" />
-                      </div>
-                      <Button
-                        variant="lavender"
-                        size="sm"
-                        onClick={handleSaveConsultantSettings}
-                        disabled={!hasConsultantChanges || !consultantPercentageValid || updatePaymentSettings.isPending || settingsLoading}
-                      >
-                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
-                      </Button>
+                    <div className="flex items-center gap-2 mb-4">
+                      <h2 className="text-base font-subtitle text-foreground">External Consultants and Companies</h2>
+                      <Icon name="fi-rr-info" className="text-muted-foreground" />
                     </div>
 
                     <div className="space-y-6">
@@ -699,6 +691,17 @@ export default function PaymentSettingsPage() {
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="flex mt-6">
+                      <Button
+                        variant="lavender"
+                        size="sm"
+                        onClick={handleSaveConsultantSettings}
+                        disabled={!hasConsultantChanges || !consultantPercentageValid || updatePaymentSettings.isPending || settingsLoading}
+                      >
+                        {updatePaymentSettings.isPending ? "Saving..." : "Save"}
+                      </Button>
                     </div>
                   </div>
                   <DistributionPreview
