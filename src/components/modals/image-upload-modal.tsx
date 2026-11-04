@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Upload, X, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -198,14 +199,14 @@ export function ImageUploadModal({
                     className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
                     type="button"
                   >
-                    <X className="h-4 w-4" />
+                    <Icon name="fi-rr-cross" />
                   </button>
                 )}
               </div>
             ) : (
               <div className="flex h-32 w-full items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted">
                 <div className="text-center">
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <Icon name="fi-rr-upload" size={8} className="mx-auto text-muted-foreground" />
                   <p className="mt-2 text-sm text-muted-foreground">No image selected</p>
                 </div>
               </div>
@@ -232,7 +233,7 @@ export function ImageUploadModal({
                 asChild
               >
                 <span>
-                  <Upload className="h-4 w-4" />
+                  <Icon name="fi-rr-upload" />
                   {selectedFile ? "Change Image" : "Select Image"}
                 </span>
               </Button>

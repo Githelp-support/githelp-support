@@ -89,10 +89,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (isLoading || onboardingLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+      <div className="min-h-screen flex items-center justify-center bg-page-muted">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
-          <p className="text-[14px] text-muted-foreground">Checking authentication...</p>
+          <p className="text-sm text-muted-foreground">Checking authentication...</p>
         </div>
       </div>
     )

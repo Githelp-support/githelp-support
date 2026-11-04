@@ -131,10 +131,10 @@ describe("buildHelperPayoutReport", () => {
         // Three transfers on one ticket: the ticket's total (failed transfer
         // left out of it, but flagged in the status) and each transfer below.
         expect(payouts.rows).toEqual([
-            ["12/08/2026", "abcdef0", "Login broken", "Bug", "Failed", "3 transfers", "USD 13.00"],
-            ["10/08/2026", "", "Transfer 1 of 3", "", "Pending", "-", "USD 3.00"],
-            ["10/08/2026", "", "Transfer 2 of 3", "", "Failed", "tr_1", "USD 2.50"],
-            ["12/08/2026", "", "Transfer 3 of 3", "", "Paid out", "tr_1", "USD 10.00"],
+            ["12.08.2026", "abcdef0", "Login broken", "Bug", "Failed", "3 transfers", "USD 13.00"],
+            ["10.08.2026", "", "Transfer 1 of 3", "", "Pending", "-", "USD 3.00"],
+            ["10.08.2026", "", "Transfer 2 of 3", "", "Failed", "tr_1", "USD 2.50"],
+            ["12.08.2026", "", "Transfer 3 of 3", "", "Paid out", "tr_1", "USD 10.00"],
         ])
         expect(payouts.rowKinds).toEqual(["ticket", "transaction", "transaction", "transaction"])
         expect(payouts.totals).toEqual([
@@ -214,14 +214,14 @@ describe("buildProjectPayoutReport", () => {
             ["Pending to project", "USD 0.00"],
         ])
         expect(charges.rows).toEqual([
-            ["10/08/2026", "other", "Slow page", "On hold", "pi_1", "USD 9.00", "-", "-", "-"],
-            ["11/08/2026", "abcdef0", "Login broken", "Captured", "pi_1", "USD 42.00", "USD 7.00", "USD 20.00", "USD 15.00"],
+            ["10.08.2026", "other", "Slow page", "On hold", "pi_1", "USD 9.00", "-", "-", "-"],
+            ["11.08.2026", "abcdef0", "Login broken", "Captured", "pi_1", "USD 42.00", "USD 7.00", "USD 20.00", "USD 15.00"],
         ])
         expect(payouts.rows).toEqual([
-            ["10/08/2026", "other", "Slow page", "Ada", "Pending", "-", "USD 4.00"],
-            ["12/08/2026", "abcdef0", "Login broken", "Ada", "Paid out", "tr_1", "USD 10.00"],
+            ["10.08.2026", "other", "Slow page", "Ada", "Pending", "-", "USD 4.00"],
+            ["12.08.2026", "abcdef0", "Login broken", "Ada", "Paid out", "tr_1", "USD 10.00"],
         ])
-        expect(share.rows).toEqual([["12/08/2026", "abcdef0", "Login broken", "Paid out", "tr_2", "USD 15.00"]])
+        expect(share.rows).toEqual([["12.08.2026", "abcdef0", "Login broken", "Paid out", "tr_2", "USD 15.00"]])
         // Every ticket here has a single transaction, so the plain layout is kept.
         expect(charges.rowKinds).toBeUndefined()
     })
@@ -251,15 +251,15 @@ describe("buildProjectPayoutReport", () => {
         })
         const [, charges, payouts] = report.sections
         expect(charges.rows).toEqual([
-            ["19/08/2026", "abcdef0", "Login broken", "Captured", "2 charges", "USD 54.00", "USD 9.00", "USD 26.00", "USD 19.00"],
-            ["11/08/2026", "", "Charge 1 of 2", "Captured", "pi_1", "USD 42.00", "USD 7.00", "USD 20.00", "USD 15.00"],
-            ["19/08/2026", "", "Charge 2 of 2", "Captured", "pi_2", "USD 12.00", "USD 2.00", "USD 6.00", "USD 4.00"],
+            ["19.08.2026", "abcdef0", "Login broken", "Captured", "2 charges", "USD 54.00", "USD 9.00", "USD 26.00", "USD 19.00"],
+            ["11.08.2026", "", "Charge 1 of 2", "Captured", "pi_1", "USD 42.00", "USD 7.00", "USD 20.00", "USD 15.00"],
+            ["19.08.2026", "", "Charge 2 of 2", "Captured", "pi_2", "USD 12.00", "USD 2.00", "USD 6.00", "USD 4.00"],
         ])
         expect(charges.rowKinds).toEqual(["ticket", "transaction", "transaction"])
         expect(payouts.rows).toEqual([
-            ["20/08/2026", "abcdef0", "Login broken", "Ada", "Paid out", "2 transfers", "USD 26.00"],
-            ["12/08/2026", "", "Transfer 1 of 2", "", "Paid out", "tr_1", "USD 20.00"],
-            ["20/08/2026", "", "Transfer 2 of 2", "", "Paid out", "tr_2", "USD 6.00"],
+            ["20.08.2026", "abcdef0", "Login broken", "Ada", "Paid out", "2 transfers", "USD 26.00"],
+            ["12.08.2026", "", "Transfer 1 of 2", "", "Paid out", "tr_1", "USD 20.00"],
+            ["20.08.2026", "", "Transfer 2 of 2", "", "Paid out", "tr_2", "USD 6.00"],
         ])
         // Totals still add up the transactions once.
         expect(charges.totals?.[0]).toEqual(["Captured", "USD 54.00"])
@@ -298,10 +298,10 @@ describe("buildUserTicketReport", () => {
         expect(report.fileName).toBe("githelp-ticket-abcdef0-acme")
         const [transactions] = report.sections
         expect(transactions.rows).toEqual([
-            ["1", "05/08/2026", "Declined charge", "Failed", "USD 9.00"],
-            ["2", "11/08/2026", "Charge", "Paid", "USD 42.00"],
-            ["3", "19/08/2026", "Charge", "Paid", "USD 12.00"],
-            ["4", "20/08/2026", "Card hold", "On hold", "USD 30.00"],
+            ["1", "05.08.2026", "Declined charge", "Failed", "USD 9.00"],
+            ["2", "11.08.2026", "Charge", "Paid", "USD 42.00"],
+            ["3", "19.08.2026", "Charge", "Paid", "USD 12.00"],
+            ["4", "20.08.2026", "Card hold", "On hold", "USD 30.00"],
         ])
         expect(transactions.totals).toEqual([
             ["Paid", "USD 54.00"],
@@ -349,10 +349,10 @@ describe("buildUserMonthlyReport", () => {
         expect(report.meta).toContainEqual(["Customer", "Grace"])
         const [charges] = report.sections
         expect(charges.rows).toEqual([
-            ["02/08/2026", "1234567", "Deploy", "Acme", "USD 5.00"],
-            ["19/08/2026", "abcdef0", "Login broken (2 charges)", "Acme", "USD 54.00"],
-            ["11/08/2026", "", "Charge 1 of 2", "", "USD 42.00"],
-            ["19/08/2026", "", "Charge 2 of 2", "", "USD 12.00"],
+            ["02.08.2026", "1234567", "Deploy", "Acme", "USD 5.00"],
+            ["19.08.2026", "abcdef0", "Login broken (2 charges)", "Acme", "USD 54.00"],
+            ["11.08.2026", "", "Charge 1 of 2", "", "USD 42.00"],
+            ["19.08.2026", "", "Charge 2 of 2", "", "USD 12.00"],
         ])
         expect(charges.rowKinds).toEqual(["ticket", "ticket", "transaction", "transaction"])
         expect(charges.totals).toEqual([
@@ -416,18 +416,18 @@ describe("CSV", () => {
         expect(csvCell("-2+3")).toBe("'-2+3")
         expect(csvCell("@cmd")).toBe("'@cmd")
         expect(csvCell("USD -2.50")).toBe("USD -2.50")
-        expect(csvCell("12/08/2026")).toBe("12/08/2026")
+        expect(csvCell("12.08.2026")).toBe("12.08.2026")
     })
 
     it("quotes cells that need it and separates sections", () => {
         const section = {
             heading: "Payouts",
             columns: [{ label: "Date" }, { label: "Description" }, { label: "Amount", align: "right" as const }],
-            rows: [["12/08/2026", 'Fix "login", again', "USD 10.00"]],
+            rows: [["12.08.2026", 'Fix "login", again', "USD 10.00"]],
             totals: [["Paid out", "USD 10.00"] as [string, string]],
         }
         expect(sectionToCsv(section)).toBe(
-            'Date,Description,Amount\r\n12/08/2026,"Fix ""login"", again",USD 10.00\r\nPaid out,USD 10.00',
+            'Date,Description,Amount\r\n12.08.2026,"Fix ""login"", again",USD 10.00\r\nPaid out,USD 10.00',
         )
         const csv = reportToCsv({
             title: "Helper payout report",
@@ -438,7 +438,7 @@ describe("CSV", () => {
             fileName: "x",
         })
         expect(csv).toBe(
-            "Helper payout report,August 2026\r\nHelper,Ada\r\n\r\nPayouts\r\nDate,Description,Amount\r\n12/08/2026,\"Fix \"\"login\"\", again\",USD 10.00\r\nPaid out,USD 10.00\r\n",
+            "Helper payout report,August 2026\r\nHelper,Ada\r\n\r\nPayouts\r\nDate,Description,Amount\r\n12.08.2026,\"Fix \"\"login\"\", again\",USD 10.00\r\nPaid out,USD 10.00\r\n",
         )
     })
 })

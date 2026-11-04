@@ -78,7 +78,7 @@ export function HelperInviteAcceptance({ onComplete, projectName }: HelperInvite
 
                     <div className="space-y-2">
                         <label htmlFor="github" className="text-sm font-medium">
-                            GitHub username <span className="text-gray-400">(optional)</span>
+                            GitHub username <span className="text-text-tertiary">(optional)</span>
                         </label>
                         <Input
                             id="github"
@@ -99,7 +99,7 @@ export function HelperInviteAcceptance({ onComplete, projectName }: HelperInvite
                     <Button
                         type="submit"
                         disabled={isSubmitting || !name.trim()}
-                        className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                        variant="brand" className="w-full"
                     >
                         {isSubmitting ? (
                             <>

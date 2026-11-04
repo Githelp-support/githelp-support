@@ -1,13 +1,13 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Loader2, Copy, Check } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { useProjectSelection } from "@/contexts/project-context"
 import {
   useProjectKeywords,
@@ -20,7 +20,7 @@ import {
 import { useHelpers } from "@/hooks/useHelpers"
 import { useCreateProjectInvite } from "@/hooks/useProject"
 import { useProjectAdmins, usePromoteToAdmin } from "@/hooks/useProjectAdmins"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { toast } from "sonner"
 
 export default function ProjectSettingsPage() {
@@ -156,37 +156,35 @@ export default function ProjectSettingsPage() {
 
   if (!projectId) {
     return (
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header title="Project Settings" subtitle="Manage keywords and help categories" />
-          <main className="flex-1 py-6 px-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header title="Project Settings" subtitle="Manage keywords and help categories" />
+        <main className="flex-1 px-8 py-6 overflow-y-auto">
+          <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to manage its keywords and help categories.</p>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
-        <main className="flex-1 py-6 px-8 overflow-y-auto">
-          <div className="max-w-4xl space-y-[18px]">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
+      <main className="flex-1 px-8 py-6 overflow-y-auto">
+        <div className="max-w-3xl divide-y divide-border-subtle">
+          <div className="max-w-4xl space-y-4">
             {/* Admins */}
-            <Card className="border-0 shadow-none rounded-lg py-0">
+            <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-base font-semibold text-foreground">Admins</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Admins</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Admins can manage helpers, settings, payouts, and invite other admins.
                 </p>
 
                 {adminsLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground text-[14px]">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading admins...
                   </div>
@@ -197,7 +195,7 @@ export default function ProjectSettingsPage() {
                     {admins.map((admin) => (
                       <div key={admin.user_id} className="flex items-center gap-3 px-4 py-3 bg-card">
                         <div
-                          className="w-9 h-9 rounded-[12px] flex items-center justify-center text-sm font-medium text-foreground"
+                          className={`w-9 h-9 ${SQUIRCLE_RADIUS[36]} flex items-center justify-center text-sm font-medium text-foreground`}
                           style={{ backgroundColor: getAvatarColorHexForId(admin.user_id) }}
                         >
                           {getInitials(admin.name, admin.email)}
@@ -217,7 +215,7 @@ export default function ProjectSettingsPage() {
 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-[13px] font-semibold text-foreground mb-2">Promote an existing helper</p>
+                    <p className="text-ui font-semibold text-foreground mb-2">Promote an existing helper</p>
                     <div className="flex gap-2">
                       <Select
                         value={promoteHelperId}
@@ -245,14 +243,14 @@ export default function ProjectSettingsPage() {
                       </Select>
                       <Button
                         size="sm"
-                        className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
+                        className="h-auto gap-2.5 px-5 py-2 has-[>svg]:px-5 text-ui font-medium"
                         onClick={handlePromoteHelper}
                         disabled={!promoteHelperId || promoteToAdmin.isPending}
                       >
                         {promoteToAdmin.isPending ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <Plus className="size-4" />
+                          <Icon name="fi-rr-plus" />
                         )}
                         Promote
                       </Button>
@@ -260,7 +258,7 @@ export default function ProjectSettingsPage() {
                   </div>
 
                   <div>
-                    <p className="text-[13px] font-semibold text-foreground mb-2">Invite a new admin</p>
+                    <p className="text-ui font-semibold text-foreground mb-2">Invite a new admin</p>
                     <div className="flex gap-2">
                       <Input
                         type="email"
@@ -272,14 +270,14 @@ export default function ProjectSettingsPage() {
                       />
                       <Button
                         size="sm"
-                        className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
+                        className="h-auto gap-2.5 px-5 py-2 has-[>svg]:px-5 text-ui font-medium"
                         onClick={handleInviteAdmin}
                         disabled={createInvite.isPending}
                       >
                         {createInvite.isPending ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
-                          <Plus className="size-4" />
+                          <Icon name="fi-rr-plus" />
                         )}
                         Create invite
                       </Button>
@@ -293,7 +291,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-foreground"
                           aria-label="Copy invite link"
                         >
-                          {copiedInvite ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedInvite ? <Icon name="fi-rr-check" size={3.5} /> : <Icon name="fi-rr-copy" size={3.5} />}
                         </button>
                       </div>
                     )}
@@ -303,10 +301,10 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Keywords / Topics */}
-            <Card className="border-0 shadow-none rounded-lg py-0">
+            <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-base font-semibold text-foreground">Keywords & topics</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Keywords & topics</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Keywords help categorize tickets and let helpers indicate which topics they can help with.
@@ -322,17 +320,17 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
-                    className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
+                    className="h-auto gap-2.5 px-5 py-2 has-[>svg]:px-5 text-ui font-medium"
                     onClick={handleAddKeyword}
                     disabled={!newKeyword.trim() || createKeyword.isPending}
                   >
-                    {createKeyword.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                    {createKeyword.isPending ? <Loader2 className="size-4 animate-spin" /> : <Icon name="fi-rr-plus" />}
                     Add
                   </Button>
                 </div>
 
                 {keywordsLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground text-[14px]">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading keywords...
                   </div>
@@ -343,9 +341,9 @@ export default function ProjectSettingsPage() {
                     {keywords.map((kw) => (
                       <div
                         key={kw.id}
-                        className="flex items-center gap-[10px] rounded-md border border-[rgba(0,0,0,0.06)] px-5 py-2 bg-muted/50"
+                        className="flex items-center gap-2.5 rounded-md border border-border-subtle px-5 py-2 bg-muted/50"
                       >
-                        <span className="text-[13px] font-medium">{kw.value}</span>
+                        <span className="text-ui font-medium">{kw.value}</span>
                         <button
                           type="button"
                           onClick={() => handleDeleteKeyword(kw.id)}
@@ -353,7 +351,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-destructive p-0.5"
                           aria-label={`Remove ${kw.value}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Icon name="fi-rr-trash" />
                         </button>
                       </div>
                     ))}
@@ -363,10 +361,10 @@ export default function ProjectSettingsPage() {
             </Card>
 
             {/* Help categories */}
-            <Card className="border-0 shadow-none rounded-lg py-0">
+            <Card className="border-0 py-0">
               <CardContent className="py-6 px-0">
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-base font-semibold text-foreground">Help categories</h2>
+                  <h2 className="text-base font-subtitle text-foreground">Help categories</h2>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
                   Help categories classify ticket types (e.g. Bug, Best practice, Documentation).
@@ -382,17 +380,17 @@ export default function ProjectSettingsPage() {
                   />
                   <Button
                     size="sm"
-                    className="h-auto gap-[10px] px-5 py-2 has-[>svg]:px-5 text-[13px] font-medium"
+                    className="h-auto gap-2.5 px-5 py-2 has-[>svg]:px-5 text-ui font-medium"
                     onClick={handleAddCategory}
                     disabled={!newCategory.trim() || createCategory.isPending}
                   >
-                    {createCategory.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                    {createCategory.isPending ? <Loader2 className="size-4 animate-spin" /> : <Icon name="fi-rr-plus" />}
                     Add
                   </Button>
                 </div>
 
                 {categoriesLoading ? (
-                  <div className="flex items-center gap-2 text-muted-foreground text-[14px]">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Loading categories...
                   </div>
@@ -403,9 +401,9 @@ export default function ProjectSettingsPage() {
                     {helpCategories.map((cat) => (
                       <div
                         key={cat.id}
-                        className="flex items-center gap-[10px] rounded-md border border-[rgba(0,0,0,0.06)] px-5 py-2 bg-muted/50"
+                        className="flex items-center gap-2.5 rounded-md border border-border-subtle px-5 py-2 bg-muted/50"
                       >
-                        <span className="text-[13px] font-medium">{cat.value}</span>
+                        <span className="text-ui font-medium">{cat.value}</span>
                         <button
                           type="button"
                           onClick={() => handleDeleteCategory(cat.id)}
@@ -413,7 +411,7 @@ export default function ProjectSettingsPage() {
                           className="text-muted-foreground hover:text-destructive p-0.5"
                           aria-label={`Remove ${cat.value}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Icon name="fi-rr-trash" />
                         </button>
                       </div>
                     ))}
@@ -422,8 +420,8 @@ export default function ProjectSettingsPage() {
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

@@ -35,7 +35,7 @@ function ConnectReturnContent() {
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
       <div className="max-w-md space-y-4 text-center">
-        <h1 className="text-2xl font-semibold">Account setup complete</h1>
+        <h1 className="text-2xl font-medium">Account setup complete</h1>
         {sync.isPending && (
           <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -68,7 +68,7 @@ function ConnectReturnContent() {
         )}
         <Link
           href={backHref}
-          className="inline-block rounded-md bg-[#554abf] px-4 py-2 text-sm font-medium text-white"
+          className="inline-block rounded-md bg-brand-primary px-4 py-2 text-sm font-medium text-brand-foreground"
         >
           Back to payment settings
         </Link>

@@ -1,10 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { formatDate } from "@/lib/format"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { FormField } from "@/components/ui/form-field"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { useState } from "react"
 import { validateLoggedDuration, type TimeEntryReviewStatus } from "@/lib/time-entries"
@@ -39,6 +41,19 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
   const [note, setNote] = useState("") // Added note state
   const [durationError, setDurationError] = useState<string | null>(null)
 
+  // The drawer stays mounted while closed (exit animation); reset the form on close.
+  const resetForm = () => {
+    setTimeType("together")
+    setHours("")
+    setMinutes("")
+    setNote("")
+    setDurationError(null)
+  }
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const handleSubmit = () => {
     // Whole numbers only, minutes < 60, total between 1 minute and 24 hours;
     // a zero or negative entry must never reach the database.
@@ -52,20 +67,14 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     const entry: TimeEntry = {
       id: Date.now().toString(),
       type: timeType,
-      date: new Date().toLocaleDateString("en-GB"),
+      date: formatDate(new Date()),
       hours: validation.hours,
       minutes: validation.minutes,
       note: note.trim() || undefined, // Include note if provided
     }
 
     onLogTime(entry)
-
-    // Reset form
-    setTimeType("together")
-    setHours("")
-    setMinutes("")
-    setNote("") // Reset note field
-    onClose()
+    handleClose()
   }
 
   const handleHoursChange = (value: string) => {
@@ -77,113 +86,135 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
     if (durationError) setDurationError(null)
   }
 
-  if (!isOpen) return null
-
   return (
     <DrawerPanel
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Log time"
+      className="shadow-2xl"
+      footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            className="flex-1 py-2.5 rounded-md text-ui font-medium shadow-sm"
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!hours && !minutes} variant="default" className="flex-1">
+          <Button
+            type="submit"
+            form="log-time-form"
+            disabled={!hours && !minutes}
+            variant="default"
+            className="flex-1 py-2.5 rounded-md text-ui font-medium bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground shadow-md"
+          >
             Log time
           </Button>
         </div>
       }
     >
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
-        <div>
-          <h3 className="font-medium text-foreground mb-4">Type of time</h3>
-          <RadioGroup value={timeType} onValueChange={(value) => setTimeType(value as "together" | "solo")}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="together" id="together" />
-              <Label htmlFor="together" className="text-sm text-muted-foreground">
-                Together - Time spent actively working with the user
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="solo" id="solo" />
-              <Label htmlFor="solo" className="text-sm text-muted-foreground">
-                Solo - Time spent researching or preparing solutions
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        <div>
-          <h3 className="font-medium text-foreground mb-4">Duration</h3>
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <Label htmlFor="hours" className="text-sm text-muted-foreground mb-2 block">
-                Hours
-              </Label>
-              <Input
-                id="hours"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="24"
-                step="1"
-                value={hours}
-                onChange={(e) => handleHoursChange(e.target.value)}
-                placeholder="0"
-                aria-invalid={!!durationError}
-                aria-describedby={durationError ? "duration-error" : undefined}
-                className="border-input"
-              />
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="minutes" className="text-sm text-muted-foreground mb-2 block">
-                Minutes
-              </Label>
-              <Input
-                id="minutes"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="59"
-                step="1"
-                value={minutes}
-                onChange={(e) => handleMinutesChange(e.target.value)}
-                placeholder="0"
-                aria-invalid={!!durationError}
-                aria-describedby={durationError ? "duration-error" : undefined}
-                className="border-input"
-              />
-            </div>
+      <form
+        id="log-time-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleSubmit()
+        }}
+        className="flex-1 flex flex-col min-h-0"
+      >
+        <div className="flex-1 px-6 py-5 space-y-6 overflow-auto">
+          <div className="space-y-3">
+            <Label className="text-ui font-semibold text-foreground">Type of time</Label>
+            <RadioGroup
+              value={timeType}
+              onValueChange={(value) => setTimeType(value as "together" | "solo")}
+              className="grid gap-2.5"
+            >
+              <div className="flex items-center space-x-2.5">
+                <RadioGroupItem
+                  value="together"
+                  id="together"
+                  className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary"
+                />
+                <Label htmlFor="together" className="cursor-pointer text-sm text-foreground/80">
+                  Together - Time spent actively working with the user
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2.5">
+                <RadioGroupItem
+                  value="solo"
+                  id="solo"
+                  className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary"
+                />
+                <Label htmlFor="solo" className="cursor-pointer text-sm text-foreground/80">
+                  Solo - Time spent researching or preparing solutions
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
-          {durationError && (
-            <p id="duration-error" role="alert" className="mt-2 text-sm text-destructive">
-              {durationError}
+
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Hours" id="hours">
+                <Input
+                  id="hours"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="24"
+                  step="1"
+                  value={hours}
+                  onChange={(e) => handleHoursChange(e.target.value)}
+                  placeholder="0"
+                  aria-invalid={!!durationError}
+                  aria-describedby={durationError ? "duration-error" : undefined}
+                  className="h-10 rounded-lg border-border"
+                />
+              </FormField>
+              <FormField label="Minutes" id="minutes">
+                <Input
+                  id="minutes"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="59"
+                  step="1"
+                  value={minutes}
+                  onChange={(e) => handleMinutesChange(e.target.value)}
+                  placeholder="0"
+                  aria-invalid={!!durationError}
+                  aria-describedby={durationError ? "duration-error" : undefined}
+                  className="h-10 rounded-lg border-border"
+                />
+              </FormField>
+            </div>
+            {durationError && (
+              <p id="duration-error" role="alert" className="text-xs leading-relaxed text-destructive">
+                {durationError}
+              </p>
+            )}
+          </div>
+
+          <FormField label="Note (optional)" id="note">
+            <Textarea
+              id="note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add a note about what you worked on..."
+              className="rounded-lg border-border min-h-20 resize-none"
+            />
+          </FormField>
+
+          <div className="rounded-lg border border-border-subtle bg-bg-subtle p-4">
+            <h4 className="text-ui font-semibold text-foreground mb-1">Time tracking</h4>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Log time as you work on the ticket. Together time is billed at the full rate, while solo time may be
+              billed at a reduced rate depending on the SLA agreement.
             </p>
-          )}
+          </div>
         </div>
-
-        <div>
-          <Label htmlFor="note" className="text-sm text-muted-foreground mb-2 block">
-            Note (optional)
-          </Label>
-          <Textarea
-            id="note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Add a note about what you worked on..."
-            className="border-input min-h-[80px] resize-none"
-          />
-        </div>
-
-        <div className="bg-muted/50 rounded-lg p-4 border border-border">
-          <h4 className="font-medium text-foreground mb-2">Time tracking</h4>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Log time as you work on the ticket. Together time is billed at the full rate, while solo time may be billed
-            at a reduced rate depending on the SLA agreement.
-          </p>
-        </div>
-      </div>
+      </form>
     </DrawerPanel>
   )
 }

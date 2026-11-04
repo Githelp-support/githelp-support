@@ -60,6 +60,29 @@ export function getAvatarColorHexForId(id: string | null | undefined): string {
   return avatarColorsHex[hashStringToIndex(id, avatarColorsHex.length)]
 }
 
+/**
+ * GitHelp's proportional "squircle" corner for avatars, project logos and
+ * icon tiles: about 34% of the element size. Keys are the pixel size of the
+ * element; values are literal Tailwind classes so the compiler can see them.
+ */
+export const SQUIRCLE_RADIUS = {
+  20: "rounded-[7px]",
+  22: "rounded-[8px]",
+  24: "rounded-[8px]",
+  28: "rounded-[10px]",
+  32: "rounded-[11px]",
+  36: "rounded-[12px]",
+  42: "rounded-[14px]",
+  48: "rounded-[16.5px]",
+} as const
+
+export type SquircleSize = keyof typeof SQUIRCLE_RADIUS
+
+/** Radius class for a squircle of `sizePx`; unknown sizes get the 9px fallback used by the project switcher. */
+export function squircleRadiusClass(sizePx: number): string {
+  return (SQUIRCLE_RADIUS as Record<number, string>)[sizePx] ?? "rounded-[9px]"
+}
+
 /** Tooltip (native `title`) for buttons that are not wired to any functionality yet. */
 export const ILLUSTRATIVE_BUTTON_TOOLTIP = "This button is currently just illustrative"
 

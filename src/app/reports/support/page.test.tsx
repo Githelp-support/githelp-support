@@ -427,13 +427,13 @@ describe("ReportsSupportPage", () => {
 
       const sep = helperRow("Sep Helper", "September 2026")
       expect(within(sep).getByText("Sep Helper")).toBeInTheDocument()
-      expect(within(sep).getByText("30/09/2026")).toBeInTheDocument()
+      expect(within(sep).getByText("30.09.2026")).toBeInTheDocument()
       expect(within(sep).getByText("40.00")).toBeInTheDocument()
       expect(sep).not.toHaveTextContent("USD")
       expect(sep).not.toHaveTextContent(/Completed|Pending|Failed/)
 
       const aug = helperRow("Aug Helper", "August 2026")
-      expect(within(aug).getByText("31/08/2026")).toBeInTheDocument()
+      expect(within(aug).getByText("31.08.2026")).toBeInTheDocument()
       expect(within(aug).getByText("10.00")).toBeInTheDocument()
     })
 
@@ -489,11 +489,11 @@ describe("ReportsSupportPage", () => {
       // Latest ticket first; a ticket's transactions stay together, oldest first.
       expect(lines.map((line) => within(line).getByRole("link").textContent)).toEqual(["3333333", "2222222", "2222222"])
       expect(within(lines[0]).getByRole("link")).toHaveAttribute("href", `/helper/tickets/${OTHER_SEP_TICKET}`)
-      expect(lines[0]).toHaveTextContent("20/09/2026")
+      expect(lines[0]).toHaveTextContent("20.09.2026")
       expect(lines[0]).toHaveTextContent("15.00")
-      expect(lines[1]).toHaveTextContent("05/09/2026")
+      expect(lines[1]).toHaveTextContent("05.09.2026")
       expect(lines[1]).toHaveTextContent("20.00")
-      expect(lines[2]).toHaveTextContent("07/09/2026")
+      expect(lines[2]).toHaveTextContent("07.09.2026")
       expect(lines[2]).toHaveTextContent("5.00")
       for (const line of lines) {
         expect(within(line).getByRole("button", { name: "Receipt" })).toBeInTheDocument()

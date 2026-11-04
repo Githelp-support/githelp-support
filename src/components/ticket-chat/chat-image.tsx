@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ImageOff } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { useTicketAttachmentUrl } from "@/hooks/useTicketAttachments"
 import { parseTicketAttachmentPath } from "@/lib/ticket-attachments"
@@ -32,7 +32,7 @@ export function ChatImage({ src, alt }: ChatImageProps) {
   if (!url || isError || failed) {
     return (
       <span className="my-1 inline-flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-        <ImageOff className="h-4 w-4 shrink-0" />
+        <Icon name="fi-rr-image-slash" className="shrink-0" />
         Image unavailable
       </span>
     )

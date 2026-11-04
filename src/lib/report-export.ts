@@ -12,6 +12,7 @@
  * has the whole picture, hence these documents.
  */
 import type { Payment, PaymentTransfer } from "@/hooks/usePayments"
+import { formatDate } from "./format"
 import type { HelperTimeEntry } from "@/hooks/useHelperTimeEntries"
 import {
     aggregateHelperMonthly,
@@ -77,12 +78,9 @@ export function formatMoney(smallestUnit: number, currency: string = "usd"): str
     return `${code} ${(smallestUnit / 100).toFixed(2)}`
 }
 
-/** dd/mm/yyyy, matching the on-screen tables. */
+/** dd.mm.yyyy, matching the on-screen tables. */
 export function formatReportDate(iso: string): string {
-    const date = new Date(iso)
-    const day = String(date.getDate()).padStart(2, "0")
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    return `${day}/${month}/${date.getFullYear()}`
+    return formatDate(iso)
 }
 
 /** "24 September 2026, 14:05" for the generated-at stamp. */

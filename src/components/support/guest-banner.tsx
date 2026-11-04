@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, LogIn } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { startGuestSignIn } from "@/lib/guest-adoption"
 
@@ -38,14 +39,14 @@ export function GuestBanner({ redirectTo, onSignIn }: GuestBannerProps) {
 
   return (
     <div
-      className="mx-4 mb-2 rounded-[10px] border border-border bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+      className="animate-enter mx-4 mb-2 rounded-lg border border-border bg-card px-4 py-3 flex flex-wrap items-center justify-between gap-3"
       data-slot="guest-banner"
     >
       <p className="text-sm text-foreground">
         You&rsquo;re chatting as a guest. Sign in to get notified when a helper replies and to get help.
       </p>
-      <Button variant="lavender" size="sm" className="cursor-pointer" onClick={() => void handleSignIn()} disabled={pending}>
-        {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+      <Button variant="lavender" className="cursor-pointer" onClick={() => void handleSignIn()} disabled={pending}>
+        {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon name="fi-rr-sign-in-alt" />}
         Sign in
       </Button>
     </div>

@@ -3,7 +3,7 @@
 import * as React from "react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getAvatarColorHexForId } from "@/lib/constants"
+import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
 export type ProfileAvatarSize = "sm" | "md" | "lg"
@@ -15,15 +15,17 @@ type SizePreset = {
 }
 
 /**
- * Size presets matching the dimensions currently used across the app:
- * - sm: sidebar (w-7 h-7 rounded-[10px])
- * - md: right-sidebar participants / helpers list (w-8 h-8 rounded-[11px])
- * - lg: profile header (w-12 h-12 rounded-[16.5px])
+ * Size presets matching the dimensions used across the app. Corners come
+ * from the shared squircle map so every avatar keeps the same proportion:
+ * - sm: sidebar (28px)
+ * - md: right-sidebar participants / helpers list (32px)
+ * - lg: profile header (48px)
+ * Initials stay proportional to their avatar (text-[21px] in the 48px one).
  */
 const SIZE_PRESETS: Record<ProfileAvatarSize, SizePreset> = {
-  sm: { dimensions: "w-7 h-7", rounded: "rounded-[10px]", text: "text-sm" },
-  md: { dimensions: "w-8 h-8", rounded: "rounded-[11px]", text: "text-sm" },
-  lg: { dimensions: "w-12 h-12", rounded: "rounded-[16.5px]", text: "text-[21px]" },
+  sm: { dimensions: "w-7 h-7", rounded: SQUIRCLE_RADIUS[28], text: "text-sm" },
+  md: { dimensions: "w-8 h-8", rounded: SQUIRCLE_RADIUS[32], text: "text-sm" },
+  lg: { dimensions: "w-12 h-12", rounded: SQUIRCLE_RADIUS[48], text: "text-[21px]" },
 }
 
 export interface ProfileAvatarProps {

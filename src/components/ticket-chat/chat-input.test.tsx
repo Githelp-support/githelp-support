@@ -24,3 +24,16 @@ describe("TicketChatInput sending", () => {
         expect(onSend).not.toHaveBeenCalled()
     })
 })
+
+describe("TicketChatInput toolbar", () => {
+    it("wraps the toolbar so the end content stays visible on narrow screens", () => {
+        render(
+            <TicketChatInput value="" onChange={() => {}} onSend={() => {}} toolbarEndContent={<button>End session</button>} />,
+        )
+        const toolbar = screen.getByText("End session").closest(".border-b") as HTMLElement
+        expect(toolbar.className).toMatch(/flex-wrap/)
+        // Tighter gap and gutter below md keep the eight formatting buttons on one row at 375px.
+        expect(toolbar.className).toMatch(/max-md:gap-1/)
+        expect(toolbar.className).toMatch(/max-md:px-3/)
+    })
+})

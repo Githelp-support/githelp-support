@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/lib/supabase/client"
 import { hasSignedInSession } from "@/lib/supabase/auth-state"
-import { Loader2, CheckCircle, LogIn, XCircle } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
@@ -267,10 +268,10 @@ export default function InviteAcceptancePage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
-                    <p className="text-[14px] text-muted-foreground">Loading invite...</p>
+                    <p className="text-sm text-muted-foreground">Loading invite...</p>
                 </div>
             </div>
         )
@@ -278,11 +279,11 @@ export default function InviteAcceptancePage() {
 
     if (error || !project) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
-                            <XCircle className="w-6 h-6 text-red-500" />
+                            <Icon name="fi-rr-cross-circle" size={6} className="text-red-500" />
                             <CardTitle>Invalid invite link</CardTitle>
                         </div>
                         <CardDescription>
@@ -313,18 +314,18 @@ export default function InviteAcceptancePage() {
                 : `You've joined ${projectName} ${inviteRoleLabel(inviteData?.invite_type)}.`
             : `This invite is for ${projectName}, which you are already a member of. Open your dashboard to continue.`
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex flex-col items-start gap-4 mb-2 text-left">
-                            <CheckCircle className="w-6 h-6 text-green-600" />
+                            <Icon name="fi-rr-check-circle" size={6} className="text-green-600" />
                             <CardTitle>{title}</CardTitle>
                         </div>
                         <CardDescription className="text-left">{description}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Link href="/">
-                            <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
+                            <Button variant="brand" className="w-full">
                                 Go to dashboard
                             </Button>
                         </Link>
@@ -337,7 +338,7 @@ export default function InviteAcceptancePage() {
     // Show profile completion form if needed
     if (isAuthenticated && needsProfile && inviteData?.invite_type === "helper") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
                 <HelperInviteAcceptance
                     projectName={project?.name ?? "the project"}
                     onComplete={handleProfileComplete}
@@ -349,10 +350,10 @@ export default function InviteAcceptancePage() {
     const inviteTypeLabel = inviteRoleLabel(inviteData?.invite_type)
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff] p-4">
+        <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold">You&apos;ve been invited!</CardTitle>
+                    <CardTitle className="text-2xl font-medium">You&apos;ve been invited!</CardTitle>
                     <CardDescription className="text-sm mt-2">
                         Join {project?.name ?? "this project"} {inviteTypeLabel}
                     </CardDescription>
@@ -364,8 +365,8 @@ export default function InviteAcceptancePage() {
                                 Sign in to accept this invitation and join the project.
                             </p>
                             <Link href={`/auth/signin?redirect=${encodeURIComponent(`/invite/${token}`)}`}>
-                                <Button className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white">
-                                    <LogIn className="w-4 h-4" />
+                                <Button variant="brand" className="w-full">
+                                    <Icon name="fi-rr-sign-in-alt" />
                                     Sign in to continue
                                 </Button>
                             </Link>
@@ -378,7 +379,7 @@ export default function InviteAcceptancePage() {
                             <Button
                                 onClick={handleAcceptInvite}
                                 disabled={isProcessing}
-                                className="w-full bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                variant="brand" className="w-full"
                             >
                                 {isProcessing ? (
                                     <>

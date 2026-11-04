@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { formatDateTime } from "@/lib/format"
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { Clock, Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 /**
  * Customer-side "End session" confirmation. Makes it explicit that pressing
@@ -43,8 +44,8 @@ export function EndSessionRequestDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
             Keep session open
           </Button>
-          <Button onClick={onConfirm} disabled={pending}>
-            {pending ? "Notifying helper…" : "Ask to end session"}
+          <Button onClick={onConfirm} loading={pending}>
+            Ask to end session
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -75,11 +76,11 @@ export function EndSessionRequestedBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-brand-primary/30 bg-brand-primary/5 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-brand-primary/30 bg-brand-primary/5 px-4 py-3",
         className,
       )}
     >
-      <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+      <Icon name="fi-rr-info" className="mt-0.5 shrink-0 text-brand-primary" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">The helper has been notified that you&apos;d like to end the session.</p>
         <p className="text-muted-foreground">
@@ -87,8 +88,8 @@ export function EndSessionRequestedBanner({
           cancel this request at any time until the helper ends the session.
         </p>
       </div>
-      <Button variant="outline" size="sm" onClick={onCancel} disabled={pending} className="shrink-0 cursor-pointer">
-        {pending ? "Cancelling…" : "Cancel request"}
+      <Button variant="outline" onClick={onCancel} loading={pending} className="shrink-0 cursor-pointer">
+        Cancel request
       </Button>
     </div>
   )
@@ -113,22 +114,17 @@ export function EndSessionRequestedHelperBanner({
   className?: string
 }) {
   const when = requestedAt
-    ? new Date(requestedAt).toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? formatDateTime(requestedAt)
     : null
   return (
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >
-      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+      <Icon name="fi-rr-clock" className="mt-0.5 shrink-0 text-amber-700" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">
           {requesterName ? requesterName : "The user"} has asked to end this session{when ? ` (${when})` : ""}.
@@ -140,11 +136,11 @@ export function EndSessionRequestedHelperBanner({
       </div>
       <div className="flex shrink-0 gap-2">
         {onLogTime && (
-          <Button variant="outline" size="sm" onClick={onLogTime} className="cursor-pointer">
+          <Button variant="outline" onClick={onLogTime} className="cursor-pointer">
             Log time
           </Button>
         )}
-        <Button size="sm" onClick={onEndSession} className="cursor-pointer">
+        <Button onClick={onEndSession} className="cursor-pointer">
           End session
         </Button>
       </div>

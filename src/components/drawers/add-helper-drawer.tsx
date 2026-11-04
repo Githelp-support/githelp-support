@@ -10,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { FormField } from "@/components/ui/form-field"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
-import { Copy, Check, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Image from "next/image"
 import { supabase } from "@/lib/supabase/client"
@@ -220,7 +221,6 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
       isOpen={isOpen}
       onClose={handleClose}
       title="Add new helper"
-      width="w-[440px]"
       className="shadow-2xl"
       footerClassName="border-t-0"
       footer={
@@ -230,7 +230,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-md text-[13px] font-medium shadow-sm"
+            className="flex-1 py-2.5 rounded-md text-ui font-medium shadow-sm"
           >
             {hasSuccessResult ? "Close" : "Cancel"}
           </Button>
@@ -240,7 +240,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
               form="add-helper-form"
               disabled={isSubmitting || !canSubmit}
               variant="default"
-              className="flex-1 py-2.5 rounded-md text-[13px] font-medium bg-brand-primary hover:bg-brand-primary/90 text-white shadow-md"
+              className="flex-1 py-2.5 rounded-md text-ui font-medium bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground shadow-md"
             >
               {isSubmitting ? "Creating..." : "Create invite"}
             </Button>
@@ -288,7 +288,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
             </FormField>
 
             <div className="space-y-3">
-              <Label className="text-[13px] font-semibold text-foreground">Invite method</Label>
+              <Label className="text-ui font-semibold text-foreground">Invite method</Label>
               <RadioGroup
                 value={formData.inviteMethod}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, inviteMethod: value as "email" | "link" | "contributors" | "github_username" }))}
@@ -421,9 +421,9 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                     className="rounded-xl border-border/60 hover:bg-muted/60"
                   >
                     {copied ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <Icon name="fi-rr-check" className="text-green-600" />
                     ) : (
-                      <Copy className="w-4 h-4" />
+                      <Icon name="fi-rr-copy" />
                     )}
                   </Button>
                 </div>
@@ -455,7 +455,7 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                           setTimeout(() => setCopied(false), 2000)
                         }}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Icon name="fi-rr-copy" />
                       </Button>
                     </div>
                   ))}

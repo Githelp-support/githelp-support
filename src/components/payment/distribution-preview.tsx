@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 
 import {
   Popover,
@@ -65,7 +65,7 @@ function StripeFeeInfo() {
         <button
           type="button"
           aria-label="About the Stripe fee"
-          className="mt-[3px] inline-flex shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
+          className="ml-2 inline-flex align-[-2px] items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
           onMouseEnter={() => {
             cancelClose()
             closedByHoverRef.current = false
@@ -87,7 +87,7 @@ function StripeFeeInfo() {
             }
           }}
         >
-          <Info className="size-3.5" aria-hidden="true" />
+          <Icon name="fi-rr-info" size={3.5} />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -95,7 +95,7 @@ function StripeFeeInfo() {
         sideOffset={6}
         // Same dark style as the Radix tooltips elsewhere in the app
         // (see InfoTooltip in settings/payment/page.tsx).
-        className="z-[60] w-auto max-w-xs rounded-md border-0 bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-white shadow-md"
+        className="z-[60] w-auto max-w-xs rounded-md border-0 bg-foreground px-3 py-2 font-sans text-xs leading-relaxed text-background shadow-popover"
         onMouseEnter={cancelClose}
         onMouseLeave={scheduleClose}
         onOpenAutoFocus={(event) => {
@@ -108,7 +108,7 @@ function StripeFeeInfo() {
           closedByHoverRef.current = false
         }}
       >
-        <h5 className="mb-1 text-[14px] font-semibold">
+        <h5 className="mb-1 text-sm font-semibold">
           About the Stripe fee
         </h5>
         <p>
@@ -180,8 +180,8 @@ export function DistributionPreview({
   const sumMoney = formatCurrency(oneHourTotal)
 
   return (
-    <div className="shrink-0 w-full sm:w-[280px] bg-muted/50 rounded-lg border border-border p-5">
-      <h4 className="text-[14px] font-semibold text-foreground mb-4">
+    <div className="shrink-0 w-full sm:w-[300px] bg-muted/50 rounded-lg border border-border p-5">
+      <h4 className="text-sm font-semibold text-foreground mb-4">
         1st hour of support - Distribution
       </h4>
       <div className="space-y-3">
@@ -190,32 +190,29 @@ export function DistributionPreview({
           return (
             <div
               key={label}
-              className="grid grid-cols-3 items-center text-[14px]"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm"
             >
-              {info ? (
-                <span className="col-span-2 pl-[10px] text-muted-foreground inline-flex items-start gap-1.5">
-                  {label}
-                  <StripeFeeInfo />
-                </span>
-              ) : (
-                <span className="col-span-2 pl-[10px] text-muted-foreground">{label}</span>
-              )}
-              <span className="text-foreground font-medium tabular-nums">
-                <span className="mr-[3px]">{money.symbol}</span>
+              {/* One line always: the card is sized so label, button and a three-digit amount fit. */}
+              <span className="pl-2.5 text-muted-foreground whitespace-nowrap">
+                {label}
+                {info && <StripeFeeInfo />}
+              </span>
+              <span className="text-right text-foreground font-medium tabular-nums">
+                <span className="mr-1">{money.symbol}</span>
                 {money.amount}
               </span>
             </div>
           )
         })}
       </div>
-      <div className="border-t border-border mt-3 pt-3 grid grid-cols-3 items-center">
-        <span className="col-span-2 text-[14px] font-bold text-brand-primary">Sum</span>
-        <span className="text-[14px] font-bold text-brand-primary tabular-nums">
-          <span className="mr-[3px]">{sumMoney.symbol}</span>
+      <div className="border-t border-border mt-3 pt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <span className="text-sm font-semibold text-brand-primary">Sum</span>
+        <span className="text-right text-sm font-semibold text-brand-primary tabular-nums">
+          <span className="mr-1">{sumMoney.symbol}</span>
           {sumMoney.amount}
         </span>
       </div>
-      <p className="mt-3 text-[12px] leading-snug text-muted-foreground">
+      <p className="mt-3 text-xs leading-snug text-muted-foreground">
         Assumes one transaction.
       </p>
     </div>

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -26,20 +26,20 @@ function SelectValue({
 }
 
 const selectTriggerVariants = cva(
-  "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-brand-primary data-[state=open]:border-brand-primary aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-all outline-none disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground [&_i:not([class*='text-'])]:text-muted-foreground focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary/20 data-[state=open]:border-brand-primary aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-1 text-base md:text-sm whitespace-nowrap shadow-xs transition-[color,background-color,border-color,box-shadow] duration-fast ease-out outline-none disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-8 data-[size=sm]:h-7 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default: "dark:bg-input/30 dark:hover:bg-input/50",
         outline: "border-border text-muted-foreground bg-transparent hover:bg-muted",
         lavender:
-          "bg-brand-primary/10 border border-brand-primary text-brand-primary [&_svg]:text-brand-primary hover:bg-brand-primary hover:text-white hover:[&_svg]:text-white dark:bg-brand-primary/20 dark:border-brand-primary dark:text-brand-primary dark:[&_svg]:text-brand-primary dark:hover:bg-brand-primary dark:hover:text-white dark:hover:[&_svg]:text-white",
+          "bg-brand-primary/10 border border-brand-primary text-brand-primary [&_svg]:text-brand-primary [&_i]:text-brand-primary hover:bg-brand-primary hover:text-brand-foreground hover:[&_svg]:text-white hover:[&_i]:text-white dark:bg-brand-primary/20 dark:border-brand-primary dark:text-brand-primary dark:[&_svg]:text-brand-primary [&_i]:text-brand-primary dark:hover:bg-brand-primary dark:hover:text-brand-foreground dark:hover:[&_svg]:text-white hover:[&_i]:text-white",
         neutral:
-          "bg-[rgba(0,0,0,0.05)] border border-[rgba(0,0,0,0.1)] text-foreground [&_svg]:text-foreground hover:bg-[rgba(0,0,0,0.08)] dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10",
+          "bg-surface-hover border border-border-control text-foreground [&_svg]:text-foreground [&_i]:text-foreground hover:bg-surface-active dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10",
       },
       size: {
-        default: "h-9",
-        sm: "h-8",
+        default: "h-8",
+        sm: "h-7",
       },
     },
     defaultVariants: {
@@ -66,7 +66,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 opacity-50" />
+        <Icon name="fi-rr-angle-small-down" className="opacity-50" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -84,7 +84,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-popover text-popover-foreground font-sans data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md",
+          "bg-popover text-popover-foreground font-sans data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border border-border-subtle shadow-popover",
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           className
@@ -131,14 +131,14 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground [&_i:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}
     >
       <span className="absolute right-2 flex size-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
+          <Icon name="fi-rr-check" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -172,7 +172,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon className="size-4" />
+      <Icon name="fi-rr-angle-small-up" />
     </SelectPrimitive.ScrollUpButton>
   )
 }
@@ -190,7 +190,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon className="size-4" />
+      <Icon name="fi-rr-angle-small-down" />
     </SelectPrimitive.ScrollDownButton>
   )
 }

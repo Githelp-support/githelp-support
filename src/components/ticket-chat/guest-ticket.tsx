@@ -1,6 +1,6 @@
 "use client"
 
-import { UserX } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -32,7 +32,7 @@ export function GuestTicketBadge({ className }: { className?: string }) {
       )}
       title="Opened by a visitor who hasn't signed in yet"
     >
-      <UserX aria-hidden />
+      <Icon name="fi-rr-user-xmark" />
       Guest — not signed in
     </Badge>
   )
@@ -62,7 +62,7 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation =
         {pending ? "Claiming…" : "Claim ticket"}
       </Button>
       {isGuest && showExplanation && (
-        <p id="guest-claim-explanation" className="text-[13px] text-muted-foreground">
+        <p id="guest-claim-explanation" className="text-ui text-muted-foreground">
           {GUEST_CLAIM_BLOCKED_COPY}
         </p>
       )}
@@ -74,7 +74,7 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation =
 export function VisitorLeftAction({ onStartNewConversation }: { onStartNewConversation: () => void }) {
   return (
     <div className="mt-2">
-      <Button type="button" size="sm" variant="lavender" className="cursor-pointer" onClick={onStartNewConversation}>
+      <Button type="button" variant="lavender" className="cursor-pointer" onClick={onStartNewConversation}>
         Start a new conversation
       </Button>
     </div>

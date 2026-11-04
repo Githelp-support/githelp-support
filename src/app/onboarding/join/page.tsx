@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ExternalLink, Github, Loader2, Users, CheckCircle, ArrowLeft } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { supabase } from "@/lib/supabase/client"
 import { signInWithGitHub } from "@/lib/supabase/auth"
 import { useListContributedProjects } from "@/hooks/useProject"
@@ -92,14 +93,14 @@ export default function JoinProjectPage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-lg py-7 gap-6">
                 <CardHeader className="px-7">
-                    <CardTitle className="text-2xl font-bold">Join an existing project</CardTitle>
+                    <CardTitle className="text-2xl font-medium">Join an existing project</CardTitle>
                     <CardDescription>
                         Enter a project ID, or connect with GitHub to find projects you&apos;ve contributed to that are registered in the system.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="px-7 space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="project-id" className="text-[13px] font-semibold">Project ID or Slug</Label>
+                        <Label htmlFor="project-id" className="text-ui font-semibold">Project ID or Slug</Label>
                         <div className="flex gap-2">
                             <Input
                                 id="project-id"
@@ -119,7 +120,7 @@ export default function JoinProjectPage() {
                                 disabled={!projectId.trim()}
                                 variant="lavender"
                             >
-                                <ExternalLink className="w-4 h-4" />
+                                <Icon name="fi-rr-arrow-up-right-from-square" />
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -130,7 +131,7 @@ export default function JoinProjectPage() {
                     <div className="space-y-4">
                         <div>
                             <h3 className="font-semibold text-foreground mb-1">Find projects you&apos;ve contributed to</h3>
-                            <p className="text-sm text-muted-foreground mb-[18px]">
+                            <p className="text-sm text-muted-foreground mb-4">
                                 See which of your GitHub contributions are registered as projects. Request to become a helper and the project admin can approve.
                             </p>
                             {!githubToken ? (
@@ -139,7 +140,7 @@ export default function JoinProjectPage() {
                                     variant="outline"
                                     className="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white border-[#24292e]"
                                 >
-                                    <Github className="w-4 h-4" />
+                                    <Icon name="fi-brands-github" />
                                     Connect with GitHub
                                 </Button>
                             ) : loadingContributed ? (
@@ -167,7 +168,7 @@ export default function JoinProjectPage() {
                                                 </div>
                                                 {hasRequested ? (
                                                     <div className="flex items-center gap-2 text-sm text-green-600 flex-shrink-0">
-                                                        <CheckCircle className="w-4 h-4" />
+                                                        <Icon name="fi-rr-check-circle" />
                                                         Requested
                                                     </div>
                                                 ) : (
@@ -181,7 +182,7 @@ export default function JoinProjectPage() {
                                                             <Loader2 className="w-4 h-4 animate-spin" />
                                                         ) : (
                                                             <>
-                                                                <Users className="w-4 h-4" />
+                                                                <Icon name="fi-rr-users" />
                                                                 Request
                                                             </>
                                                         )}
@@ -201,7 +202,7 @@ export default function JoinProjectPage() {
                             variant="outline"
                             className="w-full"
                         >
-                            <ArrowLeft className="w-4 h-4" />
+                            <Icon name="fi-rr-arrow-left" />
                             Back
                         </Button>
                     </div>

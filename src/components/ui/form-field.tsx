@@ -38,7 +38,7 @@ export function FormField({
       {(label != null || labelAction != null) && (
         <div className="flex items-center justify-between gap-2">
           {label != null && (
-            <Label htmlFor={id} className="text-[13px] font-semibold text-foreground">
+            <Label htmlFor={id} className="text-ui font-semibold text-foreground">
               {label}
             </Label>
           )}
@@ -50,7 +50,7 @@ export function FormField({
         <p
           className={cn(
             "text-xs leading-relaxed",
-            error ? "text-destructive" : "text-muted-foreground/70"
+            error ? "text-destructive" : "text-muted-foreground"
           )}
         >
           {hint}

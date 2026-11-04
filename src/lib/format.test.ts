@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseTimeDisplayToMinutes, formatRelativeTime, formatDuration, truncateText } from "./format"
+import { parseTimeDisplayToMinutes, formatDate, formatRelativeTime, formatDuration, truncateText } from "./format"
 
 describe("parseTimeDisplayToMinutes", () => {
   it("returns 0 for dash placeholder", () => {
@@ -97,5 +97,12 @@ describe("truncateText", () => {
   it("respects a custom maxLength", () => {
     expect(truncateText("abcdef", 3)).toBe("abc…")
     expect(truncateText("abc", 3)).toBe("abc")
+  })
+})
+
+describe("formatDate", () => {
+  it("zero-pads day and month as dd.mm.yyyy", () => {
+    expect(formatDate(new Date(2026, 1, 1))).toBe("01.02.2026")
+    expect(formatDate(new Date(2026, 11, 25).toISOString())).toBe("25.12.2026")
   })
 })
