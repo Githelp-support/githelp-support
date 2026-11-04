@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Icon } from "@/components/ui/icon"
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -34,13 +34,16 @@ function ListHeader({ className, ...props }: React.ComponentProps<"div">) {
 
 export type SortDirection = "asc" | "desc"
 
-/** Neutral chevrons while the column is unsorted, a brand chevron once it sorts. */
+/**
+ * Neutral chevrons while the column is unsorted, a brand chevron once it sorts.
+ * Deliberately Lucide, not UIcons: the stacked chevrons read better at 16px.
+ */
 function SortIcon({ active, direction }: { active: boolean; direction: SortDirection | null }) {
-  if (!active || !direction) return <Icon name="fi-rr-sort" className="text-muted-foreground" />
+  if (!active || !direction) return <ChevronsUpDown className="size-4 text-muted-foreground" aria-hidden />
   return direction === "asc" ? (
-    <Icon name="fi-rr-angle-small-up" className="text-brand-primary" />
+    <ChevronUp className="size-4 text-brand-primary" aria-hidden />
   ) : (
-    <Icon name="fi-rr-angle-small-down" className="text-brand-primary" />
+    <ChevronDown className="size-4 text-brand-primary" aria-hidden />
   )
 }
 

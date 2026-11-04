@@ -16,7 +16,7 @@ Next.js 16 (App Router) with React 19, Supabase backend at `../backend`.
 | Data Fetching   | Supabase client + `supabase.functions.invoke()` for Edge Functions |
 | Realtime        | Supabase subscriptions (tickets, messages)     |
 | Testing         | Vitest + React Testing Library                |
-| Icons           | Flaticon UIcons via `Icon` (`src/components/ui/icon.tsx`); Lucide only for the `Loader2` spinner and radio dots |
+| Icons           | Flaticon UIcons via `Icon` (`src/components/ui/icon.tsx`); Lucide only for the `Loader2` spinner, radio dots and the table `SortIcon` chevrons |
 | Fonts           | By size: Inter (`font-sans`) for text at 15px and below, Nudica (`font-display`, self-hosted from `src/fonts/nudica`) for 16px and above; the size utilities set the family (rules in `globals.css`). Geist Mono (mono), Outfit (avatar initials) |
 
 ## Design tokens
