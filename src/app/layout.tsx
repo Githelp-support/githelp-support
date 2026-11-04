@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Outfit } from "next/font/google"
-import localFont from "next/font/local"
+import { Inter, Outfit } from "next/font/google"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { UserProvider } from "@/contexts/user-context"
@@ -18,20 +17,10 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { GuestAdoptionConfirmDialog } from "@/components/auth/guest-adoption-confirm-dialog"
 import { Suspense } from "react"
 
-// Nudica is a static family (files in src/fonts/nudica, license alongside).
-// The app asks for 400, 450, 500 and 600: the weight ranges below map 450 to
-// Regular and 600 to Bold, since Nudica ships no Book or Semibold cut.
-const nudica = localFont({
-  src: [
-    { path: "../fonts/nudica/nudica-regular-webfont.woff2", weight: "400 450", style: "normal" },
-    { path: "../fonts/nudica/nudica-regularitalic-webfont.woff2", weight: "400 450", style: "italic" },
-    { path: "../fonts/nudica/nudica-medium-webfont.woff2", weight: "500", style: "normal" },
-    { path: "../fonts/nudica/nudica-mediumitalic-webfont.woff2", weight: "500", style: "italic" },
-    { path: "../fonts/nudica/nudica-bold-webfont.woff2", weight: "600 700", style: "normal" },
-    { path: "../fonts/nudica/nudica-bolditalic-webfont.woff2", weight: "600 700", style: "italic" },
-  ],
-  variable: "--font-nudica",
-  display: "swap",
+// Variable font: every weight the app uses (400/500/600) renders from one file.
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
 })
 
 const outfit = Outfit({
@@ -53,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className={`font-sans ${nudica.variable} ${GeistMono.variable} ${outfit.variable} h-full`}>
+      <body className={`font-sans ${inter.variable} ${GeistMono.variable} ${outfit.variable} h-full`}>
         <TooltipProvider delayDuration={300}>
         <Suspense fallback={<LoadingFallback />}>
           <ReactQueryProvider>
