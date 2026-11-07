@@ -681,7 +681,7 @@ export default function SupportPage() {
                 <h1 className="text-display font-normal text-text-secondary text-left">
                   Welcome to the support page for <span className="font-medium">{projectName}</span>
                 </h1>
-                <p className="text-base font-normal font-sans text-text-secondary text-left">
+                <p className="text-base font-normal font-sans text-muted-foreground text-left">
                   Get help with an issue by an expert validated by {projectName}
                 </p>
                 <div className="flex items-center gap-3">
