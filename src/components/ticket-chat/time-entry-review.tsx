@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { Icon } from "@/components/ui/icon"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { TIME_ENTRY_AUTO_ACCEPT_HOURS, type TimeEntryReviewStatus } from "@/lib/time-entries"
 
 /** Wording shown to the customer next to the reason field when they decline an entry. */
@@ -163,6 +164,9 @@ export interface TimeEntrySummaryItem {
   note?: string | null
   reviewStatus: TimeEntryReviewStatus
   helperName?: string | null
+  /** Stable id for the helper's avatar colour (user id, falling back to helper_id). */
+  helperUserId?: string | null
+  helperAvatarUrl?: string | null
 }
 
 export interface TimeEntrySummaryDecline {
@@ -291,9 +295,13 @@ function TimeEntrySummaryForm({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 shrink-0 bg-muted rounded-full flex items-center justify-center">
-                        <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                      </div>
+                      {/* Same 32px avatar as the people list, so the helper's colour matches everywhere */}
+                      <ProfileAvatar
+                        id={entry.helperUserId}
+                        name={entry.helperName}
+                        avatarUrl={entry.helperAvatarUrl ?? null}
+                        size="md"
+                      />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground capitalize">
                           {entry.type}
