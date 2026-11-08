@@ -97,8 +97,8 @@
   --shadow-soft: 0 4px 15px rgba(134, 140, 152, 0.2);
   --shadow-popover: 0 4px 12px rgba(134, 140, 152, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
   --shadow-modal: 0 12px 40px rgba(134, 140, 152, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.04);
-  /* Card treatment: 1px ring + three neutral layers; .dark overrides --shadow-card below */
-  --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04), 0 16px 32px -8px rgba(0, 0, 0, 0.06);
+  /* Card treatment: 1px ring + three neutral layers. Referenced (not inlined) so the :root/.dark values of --card-shadow apply */
+  --shadow-card: var(--card-shadow);
   --shadow-tab: 0 0 7px rgba(134, 140, 152, 0.3);
   /* Motion: quick, purposeful, never bouncy */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -402,7 +402,7 @@
   --surface-page: var(--page-muted);
   --surface-card: var(--card);
   --ring-card: rgba(0, 0, 0, 0.08);
-  --shadow-card: 0 0 0 1px var(--ring-card), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04), 0 16px 32px -8px rgba(0, 0, 0, 0.06);
+  --card-shadow: 0 0 0 1px var(--ring-card), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04), 0 16px 32px -8px rgba(0, 0, 0, 0.06);
   /* Avatar/helper palette (indexed) */
   --avatar-1: #f4bccc;
   --avatar-2: #d1f7ea;
@@ -473,7 +473,7 @@
   --page-muted: #161620;
   /* Card treatment – dark overrides (surface-page/surface-card follow --page-muted/--card) */
   --ring-card: rgba(255, 255, 255, 0.1);
-  --shadow-card: 0 0 0 1px var(--ring-card), 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.24), 0 16px 32px -8px rgba(0, 0, 0, 0.32);
+  --card-shadow: 0 0 0 1px var(--ring-card), 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.24), 0 16px 32px -8px rgba(0, 0, 0, 0.32);
   /* Avatar/helper palette – dark overrides (slightly muted for dark backgrounds) */
   --avatar-1: #4d2a36;
   --avatar-2: #1f4d3d;
