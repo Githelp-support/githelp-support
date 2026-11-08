@@ -137,7 +137,7 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
                   id="together"
                   className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary"
                 />
-                <Label htmlFor="together" className="cursor-pointer text-sm text-foreground/80">
+                <Label htmlFor="together" className="cursor-pointer text-sm font-normal text-foreground/80">
                   Together - Time spent actively working with the user
                 </Label>
               </div>
@@ -147,7 +147,7 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
                   id="solo"
                   className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary"
                 />
-                <Label htmlFor="solo" className="cursor-pointer text-sm text-foreground/80">
+                <Label htmlFor="solo" className="cursor-pointer text-sm font-normal text-foreground/80">
                   Solo - Time spent researching or preparing solutions
                 </Label>
               </div>
@@ -209,8 +209,8 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
           <div className="rounded-lg border border-border-subtle bg-bg-subtle p-4">
             <h4 className="text-ui font-semibold text-foreground mb-1">Time tracking</h4>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Log time as you work on the ticket. Together time is billed at the full rate, while solo time may be
-              billed at a reduced rate depending on the SLA agreement.
+              Log time as you work on the ticket. We recommend writing a short note, so it is easier for the user to
+              follow what the time logged is for.
             </p>
           </div>
         </div>
