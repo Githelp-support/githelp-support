@@ -1308,7 +1308,7 @@ export default function TicketDetailPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsEndTicketDrawerOpen(true)}
-                    className="cursor-pointer text-foreground font-semibold text-sm hover:bg-transparent"
+                    className="cursor-pointer text-foreground font-medium text-sm hover:bg-transparent"
                   >
                     End session
                   </Button>

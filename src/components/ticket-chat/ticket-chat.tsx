@@ -585,7 +585,7 @@ export function TicketChat(props: TicketChatProps) {
                   size="sm"
                   onClick={() => setEndSessionDialogOpen(true)}
                   disabled={endSessionRequestPending}
-                  className="cursor-pointer text-foreground font-semibold text-sm hover:bg-transparent"
+                  className="cursor-pointer text-foreground font-medium text-sm hover:bg-transparent"
                 >
                   End session
                 </Button>
