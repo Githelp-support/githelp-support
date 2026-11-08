@@ -12,6 +12,8 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { HelperInviteAcceptance } from "@/components/auth/helper-invite-acceptance"
+import { inviteCardClassName, inviteCardSectionClassName } from "@/components/auth/invite-card"
+import { cn } from "@/lib/utils"
 import { useAcceptProjectInvite } from "@/hooks/useProject"
 import { useEnterProject } from "@/hooks/useEnterProject"
 import { homeRouteForRole } from "@/lib/roles"
@@ -268,7 +270,7 @@ export default function InviteAcceptancePage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-page-muted">
+            <div className="min-h-screen flex items-center justify-center bg-surface-page">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
                     <p className="text-sm text-muted-foreground">Loading invite...</p>
@@ -279,9 +281,9 @@ export default function InviteAcceptancePage() {
 
     if (error || !project) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
-                <Card className="w-full max-w-md">
-                    <CardHeader>
+            <div className="min-h-screen flex items-center justify-center bg-surface-page p-4">
+                <Card className={inviteCardClassName}>
+                    <CardHeader className={inviteCardSectionClassName}>
                         <div className="flex items-center gap-3 mb-2">
                             <Icon name="fi-rr-cross-circle" size={6} className="text-red-500" />
                             <CardTitle>Invalid invite link</CardTitle>
@@ -290,7 +292,7 @@ export default function InviteAcceptancePage() {
                             {error || "This invite link is invalid or has expired."}
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className={inviteCardSectionClassName}>
                         <Link href="/">
                             <Button variant="outline" className="w-full">Go to homepage</Button>
                         </Link>
@@ -314,16 +316,16 @@ export default function InviteAcceptancePage() {
                 : `You've joined ${projectName} ${inviteRoleLabel(inviteData?.invite_type)}.`
             : `This invite is for ${projectName}, which you are already a member of. Open your dashboard to continue.`
         return (
-            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
-                <Card className="w-full max-w-md">
-                    <CardHeader>
+            <div className="min-h-screen flex items-center justify-center bg-surface-page p-4">
+                <Card className={inviteCardClassName}>
+                    <CardHeader className={inviteCardSectionClassName}>
                         <div className="flex flex-col items-start gap-4 mb-2 text-left">
                             <Icon name="fi-rr-check-circle" size={6} className="text-green-600" />
                             <CardTitle>{title}</CardTitle>
                         </div>
                         <CardDescription className="text-left">{description}</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className={inviteCardSectionClassName}>
                         <Link href="/">
                             <Button variant="brand" className="w-full">
                                 Go to dashboard
@@ -338,7 +340,7 @@ export default function InviteAcceptancePage() {
     // Show profile completion form if needed
     if (isAuthenticated && needsProfile && inviteData?.invite_type === "helper") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
+            <div className="min-h-screen flex items-center justify-center bg-surface-page p-4">
                 <HelperInviteAcceptance
                     projectName={project?.name ?? "the project"}
                     onComplete={handleProfileComplete}
@@ -350,15 +352,15 @@ export default function InviteAcceptancePage() {
     const inviteTypeLabel = inviteRoleLabel(inviteData?.invite_type)
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-page-muted p-4">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
+        <div className="min-h-screen flex items-center justify-center bg-surface-page p-4">
+            <Card className={inviteCardClassName}>
+                <CardHeader className={cn(inviteCardSectionClassName, "text-center")}>
                     <CardTitle className="text-2xl font-medium">You&apos;ve been invited!</CardTitle>
                     <CardDescription className="text-sm mt-2">
                         Join {project?.name ?? "this project"} {inviteTypeLabel}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className={cn(inviteCardSectionClassName, "space-y-4")}>
                     {!isAuthenticated ? (
                         <>
                             <p className="text-sm text-muted-foreground text-center">

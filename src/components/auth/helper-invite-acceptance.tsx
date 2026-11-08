@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { inviteCardClassName, inviteCardSectionClassName } from "@/components/auth/invite-card"
 import { supabase } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 
@@ -52,14 +53,14 @@ export function HelperInviteAcceptance({ onComplete, projectName }: HelperInvite
     }
 
     return (
-        <Card className="w-full max-w-md">
-            <CardHeader>
+        <Card className={inviteCardClassName}>
+            <CardHeader className={inviteCardSectionClassName}>
                 <CardTitle>Complete your profile</CardTitle>
                 <CardDescription>
                     To join {projectName} as a helper, we need some information about you.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className={inviteCardSectionClassName}>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <label htmlFor="name" className="text-sm font-medium">
