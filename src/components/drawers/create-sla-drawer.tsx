@@ -102,9 +102,9 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
       <DrawerPanel isOpen={isOpen} onClose={onClose} title="Creating new SLA">
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto max-h-full">
+          <div className="flex-1 px-6 py-6 space-y-7 overflow-y-auto max-h-full">
             {/* Contact details */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h3 className="text-sm font-medium text-foreground">Contact details</h3>
 
               <FormField label="Contract name">
@@ -140,7 +140,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             </div>
 
             {/* Support limitations */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h3 className="text-sm font-medium text-foreground">Support limitations</h3>
 
               <RadioGroup
@@ -172,7 +172,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
             {/* Hours included */}
             {formData.supportLimitation === "limited" && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <h3 className="text-sm font-medium text-foreground">Hours included</h3>
 
                 <FormField label="Monthly hours included in contract">
@@ -201,7 +201,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             )}
 
             {/* Subscription cost */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                 Subscription cost
                 <Icon name="fi-rr-info" className="text-text-tertiary" />
@@ -239,7 +239,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
 
             {/* Rates beyond included hours */}
             {formData.supportLimitation === "limited" && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <h3 className="text-sm font-medium text-foreground">Rates beyond included hours</h3>
 
                 <div className="space-y-2">
@@ -276,7 +276,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             )}
 
             {/* Response times */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h3 className="text-sm font-medium text-foreground">Response times</h3>
 
               <div className="space-y-2">
