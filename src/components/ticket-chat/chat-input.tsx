@@ -223,10 +223,10 @@ export function TicketChatInput({
     >
       <div className="bg-muted flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border max-md:gap-1 max-md:px-3">
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("**")} title="Bold">
-          <Icon name="fi-rr-bold" size={3.5} />
+          <Icon name="fi-rr-b" />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("*")} title="Italic">
-          <Icon name="fi-rr-italic" size={3.5} />
+          <Icon name="fi-rr-italic" />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertFormat("~~")} title="Strikethrough">
           <Icon name="fi-rr-strikethrough" />
@@ -239,10 +239,10 @@ export function TicketChatInput({
           <Icon name="fi-rr-list" />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={insertCode} title="Inline code">
-          <Icon name="fi-rr-code-simple" className="[--icon-size:18px]" />
+          <Icon name="fi-rr-code-simple" />
         </Button>
         <Button type="button" variant="ghost" size="sm" className="w-8 p-0" onClick={() => insertCodeBlock()} title="Code block">
-          <Icon name="fi-rr-square-code" className="[--icon-size:18px]" />
+          <Icon name="fi-rr-square-code" />
         </Button>
         <Button
           type="button"
@@ -253,7 +253,7 @@ export function TicketChatInput({
           onClick={onImageClick}
           disabled={!onImageClick}
         >
-          <Icon name="fi-rr-picture" className="[--icon-size:18px]" />
+          <Icon name="fi-rr-picture" />
         </Button>
         {toolbarEndContent != null && <div className="ml-auto">{toolbarEndContent}</div>}
       </div>
@@ -271,20 +271,20 @@ export function TicketChatInput({
           spellCheck={!isInsideOpenFence(value, value.length)}
         />
         <div className="flex items-center gap-2 mt-2">
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Icon name="fi-rr-plus" size={3.5} />
+          <Button variant="ghost" size="sm" className="size-6 p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+            <Icon name="fi-rr-plus" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Icon name="fi-rr-smile" className="[--icon-size:18px]" />
+          <Button variant="ghost" size="sm" className="size-6 p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+            <Icon name="fi-rr-smile" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Icon name="fi-rr-at" className="[--icon-size:17px]" />
+          <Button variant="ghost" size="sm" className="size-6 p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+            <Icon name="fi-rr-at" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Icon name="fi-rr-video-camera" className="[--icon-size:22px]" />
+          <Button variant="ghost" size="sm" className="size-6 p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+            <Icon name="fi-rr-video-camera-alt" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-[22px] w-[22px] p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-            <Icon name="fi-rr-microphone" className="[--icon-size:22px]" />
+          <Button variant="ghost" size="sm" className="size-6 p-0" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+            <Icon name="fi-rr-microphone" />
           </Button>
           {imagesUploading && (
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status">
@@ -301,9 +301,9 @@ export function TicketChatInput({
               className="bg-transparent hover:bg-transparent p-0 h-auto w-auto disabled:opacity-50"
             >
               {sending ? (
-                <Loader2 className="w-[26px] h-[26px] text-foreground animate-spin" />
+                <Loader2 className="size-5 text-foreground animate-spin" />
               ) : (
-                <Icon name="fi-rr-paper-plane" className="[--icon-size:26px] text-foreground" />
+                <Icon name="fi-rr-paper-plane-top" size={5} className="text-foreground" />
               )}
             </Button>
           </div>
