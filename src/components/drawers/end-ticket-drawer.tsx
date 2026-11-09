@@ -174,13 +174,13 @@ export function EndTicketDrawer({
           <RadioGroup value={supportOutcome} onValueChange={setSupportOutcome}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="able-to-help" id="able-to-help" />
-              <Label htmlFor="able-to-help" className="text-sm text-muted-foreground">
+              <Label htmlFor="able-to-help" className="text-sm font-normal text-muted-foreground">
                 Was able to help
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="not-able-to-help" id="not-able-to-help" />
-              <Label htmlFor="not-able-to-help" className="text-sm text-muted-foreground flex items-center gap-2">
+              <Label htmlFor="not-able-to-help" className="text-sm font-normal text-muted-foreground flex items-center gap-2">
                 Was not able to help
                 <Icon name="fi-rr-info" className="text-muted-foreground" />
               </Label>

@@ -296,21 +296,21 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
               >
                 <div className="flex items-center space-x-2.5">
                   <RadioGroupItem value="link" id="link" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
-                  <Label htmlFor="link" className="cursor-pointer text-sm text-foreground/80">Generate shareable link</Label>
+                  <Label htmlFor="link" className="cursor-pointer text-sm font-normal text-foreground/80">Generate shareable link</Label>
                 </div>
                 <div className="flex items-center space-x-2.5">
                   <RadioGroupItem value="email" id="email" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
-                  <Label htmlFor="email" className="cursor-pointer text-sm text-foreground/80">Send via email</Label>
+                  <Label htmlFor="email" className="cursor-pointer text-sm font-normal text-foreground/80">Send via email</Label>
                 </div>
                 {projectId && (
                   <>
                     <div className="flex items-center space-x-2.5">
                       <RadioGroupItem value="contributors" id="contributors" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
-                      <Label htmlFor="contributors" className="cursor-pointer text-sm text-foreground/80">From contributors</Label>
+                      <Label htmlFor="contributors" className="cursor-pointer text-sm font-normal text-foreground/80">From contributors</Label>
                     </div>
                     <div className="flex items-center space-x-2.5">
                       <RadioGroupItem value="github_username" id="github_username" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
-                      <Label htmlFor="github_username" className="cursor-pointer text-sm text-foreground/80">GitHub username</Label>
+                      <Label htmlFor="github_username" className="cursor-pointer text-sm font-normal text-foreground/80">GitHub username</Label>
                     </div>
                   </>
                 )}
