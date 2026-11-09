@@ -45,7 +45,7 @@ describe("TimeEntrySummaryDialog", () => {
     const list = screen.getByRole("list", { name: "Logged time to confirm" })
     expect(within(list).getAllByRole("listitem")).toHaveLength(2)
     expect(within(list).getByText("Fixed the webhook")).toBeInTheDocument()
-    expect(within(list).getAllByText("08/10/2026")).toHaveLength(2)
+    expect(within(list).getAllByText("08.10.2026")).toHaveLength(2)
     // 1:30 + 0:45 pending + 2:00 already confirmed; the declined 5h is not charged.
     expect(screen.getByTestId("summary-total")).toHaveTextContent("04:15 h")
     expect(screen.getByText(/Already confirmed earlier: 02:00 h/)).toBeInTheDocument()
@@ -118,9 +118,9 @@ describe("TimeEntrySummaryDialog", () => {
 })
 
 describe("formatSummaryDate", () => {
-  it("renders YYYY-MM-DD as dd/mm/yyyy and leaves other strings alone", () => {
-    expect(formatSummaryDate("2026-10-08")).toBe("08/10/2026")
-    expect(formatSummaryDate("08/10/2026")).toBe("08/10/2026")
+  it("renders YYYY-MM-DD as dd.mm.yyyy and leaves other strings alone", () => {
+    expect(formatSummaryDate("2026-10-08")).toBe("08.10.2026")
+    expect(formatSummaryDate("08.10.2026")).toBe("08.10.2026")
   })
 })
 

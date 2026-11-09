@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, type SyntheticEvent } from "react"
+import { formatDate } from "@/lib/format"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -13,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, FileSpreadsheet, FileText, MoreVertical } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { usePaymentTransfers, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useProject } from "@/hooks/useProject"
 import { useUser } from "@/contexts/user-context"
@@ -21,7 +22,6 @@ import { useRealtimePaymentTransfers } from "@/hooks/useRealtimePaymentTransfers
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useHelperTimeEntries } from "@/hooks/useHelperTimeEntries"
 import { useProjectSelection } from "@/contexts/project-context"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import {
   HELPER_MONTHLY_PREVIEW_ROWS,
@@ -48,6 +48,10 @@ import { buildHelperPayoutReport, reportToCsv, type ReportDocument } from "@/lib
 import { downloadCsv, downloadReportPdf } from "@/lib/report-pdf"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { ListHeader, SortHeader, listRowClass } from "@/components/ui/list"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ErrorState } from "@/components/ui/error-state"
 
 /** One ticket's payouts to this helper; a ticket paid out more than once lists each transfer underneath. */
 interface PayoutData {
@@ -68,14 +72,6 @@ interface PayoutData {
 }
 
 // dd/mm/yyyy
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const day = String(date.getDate()).padStart(2, "0")
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
-
 // Payouts: the column header already says "Earnings (USD)", so USD amounts drop the prefix.
 // Any other currency keeps it so it is never silently hidden.
 const formatAmountValue = (cents: number) => (cents / 100).toFixed(2)
@@ -112,11 +108,11 @@ const MONTHLY_GRID = {
 }
 // Monthly reports column offsets (header and rows alike):
 // Description sits 30px closer to Period (142px -> 112px between the texts).
-const MONTHLY_DESCRIPTION_CLASS = "-ml-[30px]"
+const MONTHLY_DESCRIPTION_CLASS = "-ml-8 pr-28"
 // Earnings sits a further 80px closer to Description (180px -> 100px between the texts).
-const MONTHLY_EARNINGS_CLASS = "-ml-[110px]"
+const MONTHLY_EARNINGS_CLASS = "-ml-28"
 // Status sits 70px closer to the kebab menu (134px -> 64px between the badge and the menu).
-const MONTHLY_STATUS_CLASS = "pl-[70px]"
+const MONTHLY_STATUS_CLASS = "pl-18"
 const OUTLINE_BUTTON_CLASS = "text-muted-foreground border-border hover:bg-muted bg-transparent"
 const KEBAB_BUTTON_CLASS = "text-muted-foreground hover:bg-muted"
 
@@ -133,46 +129,10 @@ function TicketText({ text }: { text: string }) {
   )
 }
 
-function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string | null; sortDirection: SortDirection }) {
-  if (sortField !== field) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "asc" ? (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  )
-}
-
-function SortHeader({
-  label,
-  field,
-  sortField,
-  sortDirection,
-  onSort,
-}: {
-  label: string
-  field: string
-  sortField: string | null
-  sortDirection: SortDirection
-  onSort: (field: string) => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(field)}
-      className="flex items-center space-x-2 hover:text-brand-primary cursor-pointer"
-    >
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <SortIcon field={field} sortField={sortField} sortDirection={sortDirection} />
-    </button>
-  )
-}
-
 /** Status badge for a single payout, as on the admin Support reports. */
 function PayoutStatusBadge({ status }: { status: PaymentTransfer["status"] }) {
   return (
-    <Badge className={`${getStatusBadgeClass(status)} flex items-center gap-1 w-fit text-[13px] px-3 py-1`}>
+    <Badge className={`${getStatusBadgeClass(status)} flex items-center gap-1 w-fit text-ui px-3 py-1`}>
       {status === "pending" && (
         <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
           <circle cx="6" cy="6" r="2" fill="currentColor" />
@@ -201,7 +161,7 @@ function StatementLink({ transfer }: { transfer: PaymentTransfer }) {
         href={`/helper/reports/payouts/${transfer.id}`}
         title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
       >
-        <FileText className="w-3.5 h-3.5" />
+        <Icon name="fi-rr-document" size={3.5} />
         Statement
       </Link>
     </Button>
@@ -230,12 +190,18 @@ export default function HelperReportsPage() {
 
   useRealtimePaymentTransfers(projectId)
   // Fetch payment transfers only once we know the current user's helper row (avoids unscoped queries).
-  const { data: transfersData, isLoading: transfersLoading, isFetched: transfersFetched } = usePaymentTransfers({
+  const {
+    data: transfersData,
+    isLoading: transfersLoading,
+    isFetched: transfersFetched,
+    isError: transfersError,
+    refetch: refetchTransfers,
+  } = usePaymentTransfers({
     helperId: helperId ?? undefined,
     projectId,
     enabled: transfersQueryEnabled,
   })
-  const { data: timeEntries, isLoading: timeLoading } = useHelperTimeEntries(helperId, projectId)
+  const { data: timeEntries, isLoading: timeLoading, isError: timeError, refetch: refetchTime } = useHelperTimeEntries(helperId, projectId)
 
   // Last 12 months for the month filter dropdown
   const months = useMemo(() => {
@@ -437,465 +403,248 @@ export default function HelperReportsPage() {
     `Download the ${targetMonth ?? "all-time"} payout report as ${kind} for your accounting`
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <Sidebar />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header title="Reports and Payouts" subtitle="Keep track of reports and transactions" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Reports and Payouts" subtitle="Keep track of reports and transactions" />
-
-        <main className="flex-1 overflow-auto p-6 space-y-6">
-          {/* Tab Navigation */}
-          <div className="mb-6">
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab("monthly")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                  activeTab === "monthly"
-                    ? "text-brand-primary border-brand-primary"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                }`}
-              >
-                Monthly reports
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("payouts")}
-                className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-                  activeTab === "payouts"
-                    ? "text-brand-primary border-brand-primary"
-                    : "text-muted-foreground border-transparent hover:text-foreground"
-                }`}
-              >
-                Payouts
-              </button>
-            </div>
-            <div className="h-px bg-border -mx-6" />
+      <main className="flex-1 overflow-auto px-8 py-6 space-y-6">
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab("monthly")}
+              className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                activeTab === "monthly"
+                  ? "text-brand-primary border-brand-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              Monthly reports
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("payouts")}
+              className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
+                activeTab === "payouts"
+                  ? "text-brand-primary border-brand-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              Payouts
+            </button>
           </div>
+          <div className="h-px bg-border -mx-6" />
+        </div>
 
-          {/* Filters */}
-          <div className="flex gap-2">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[180px] h-9 text-muted-foreground">
-                <SelectValue placeholder="Choose period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="current">Current month</SelectItem>
-                {monthOptions.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {month}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="ml-auto flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                className={`h-9 ${OUTLINE_BUTTON_CLASS}`}
-                disabled={!hasRealData}
-                title={exportTitle("CSV")}
-                onClick={() => exportCsv(targetMonth)}
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                Export CSV
-              </Button>
-              <Button
-                variant="lavender"
-                size="sm"
-                type="button"
-                className="h-9"
-                disabled={!hasRealData}
-                title={exportTitle("PDF")}
-                onClick={() => exportPdf(targetMonth)}
-              >
-                <Download className="w-3.5 h-3.5" />
-                Download PDF
-              </Button>
-            </div>
+        {/* Filters */}
+        <div className="flex gap-2">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger variant={selectedPeriod !== "all" ? "neutral" : "outline"} className="w-44">
+              <SelectValue placeholder="Choose period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="current">Current month</SelectItem>
+              {monthOptions.map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="ml-auto flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              className={`h-9 ${OUTLINE_BUTTON_CLASS}`}
+              disabled={!hasRealData}
+              title={exportTitle("CSV")}
+              onClick={() => exportCsv(targetMonth)}
+            >
+              <Icon name="fi-rr-file-spreadsheet" size={3.5} />
+              Export CSV
+            </Button>
+            <Button
+              variant="lavender"
+              size="sm"
+              type="button"
+              className="h-9"
+              disabled={!hasRealData}
+              title={exportTitle("PDF")}
+              onClick={() => exportPdf(targetMonth)}
+            >
+              <Icon name="fi-rr-download" size={3.5} />
+              Download PDF
+            </Button>
           </div>
+        </div>
 
-          {!projectId && (
-            <div className="rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-600">
-              Select a project to see your payouts and monthly reports.
-            </div>
-          )}
+        {!projectId && (
+          <div className="rounded-lg bg-bg-subtle px-4 py-3 text-sm text-text-muted">
+            Select a project to see your payouts and monthly reports.
+          </div>
+        )}
 
-          {showPreview && (
-            <div className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 px-4 py-3 text-sm text-foreground">
-              {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
-            </div>
-          )}
+        {showPreview && (
+          <div className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 px-4 py-3 text-sm text-foreground">
+            {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
+          </div>
+        )}
 
-          {/* Payouts Table */}
-          {activeTab === "payouts" && (
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded border-border"
-                      checked={selectedRows.length === payouts.length && payouts.length > 0}
-                      onChange={handleSelectAll}
-                      disabled={payouts.length === 0}
-                      aria-label="Select all payouts"
-                    />
-                  </div>
-                  <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
-                    <SortHeader label="Ticket ID" field="ticketId" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                  </div>
-                  <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
-                    <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                  </div>
-                  <div className="min-w-0 whitespace-nowrap">
-                    <SortHeader label="Earnings (USD)" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                  </div>
-                  <div className="min-w-0">
-                    <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                  </div>
-                  <div />
+        {/* Payouts Table */}
+        {activeTab === "payouts" && (
+          <div className="bg-card rounded-lg border border-border overflow-x-auto">
+            <ListHeader>
+              <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="rounded border-border"
+                    checked={selectedRows.length === payouts.length && payouts.length > 0}
+                    onChange={handleSelectAll}
+                    disabled={payouts.length === 0}
+                    aria-label="Select all payouts"
+                  />
                 </div>
+                <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                  <SortHeader label="Ticket ID" field="ticketId" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                </div>
+                <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                  <SortHeader label="Date" field="date" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                </div>
+                <div className="min-w-0 whitespace-nowrap">
+                  <SortHeader label="Earnings (USD)" field="amount" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                </div>
+                <div className="min-w-0">
+                  <SortHeader label="Status" field="status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                </div>
+                <div />
               </div>
+            </ListHeader>
 
-              <div className="divide-y divide-border">
-                {isBusy ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading payouts...</div>
-                ) : showPreview ? (
-                  PAYOUT_PREVIEW_ROWS.map((payout) => (
-                    <div key={payout.id} role="presentation" className="px-6 py-4 opacity-80">
-                      <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                        <div className="flex items-center">
-                          <Checkbox disabled checked={false} />
-                        </div>
-                        <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-foreground font-mono tabular-nums">
-                              {payout.ticketId}
-                            </span>
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                              Preview
-                            </Badge>
-                          </div>
-                          <TicketText text={payout.ticketTitle} />
-                        </div>
-                        <div className={cn("min-w-0 text-sm text-muted-foreground", COLUMN_SPACING_CLASS)}>{payout.date}</div>
-                        <div className="min-w-0 text-sm text-foreground whitespace-nowrap">
-                          {payout.amount.replace(/^USD\s+/, "")}
-                        </div>
-                        <div className="min-w-0">
-                          <PayoutStatusBadge status={payout.status} />
-                        </div>
-                        <div className="flex items-center justify-end">
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              disabled
-                              className={KEBAB_BUTTON_CLASS}
-                              aria-label="More actions"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
+            <div className="divide-y divide-border-subtle">
+              {isBusy ? (
+                <ListSkeleton rows={5} />
+              ) : transfersError || timeError ? (
+                <ErrorState
+                  size="sm"
+                  onRetry={() => {
+                    void refetchTransfers()
+                    void refetchTime()
+                  }}
+                />
+              ) : showPreview ? (
+                PAYOUT_PREVIEW_ROWS.map((payout) => (
+                  <div key={payout.id} role="presentation" className={listRowClass({ className: "opacity-80" })}>
+                    <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                      <div className="flex items-center">
+                        <Checkbox disabled checked={false} />
+                      </div>
+                      <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-foreground font-mono tabular-nums">
+                            {payout.ticketId}
                           </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : payouts.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("payouts")}</div>
-                ) : (
-                  payouts.map((payout) => {
-                    const href = payout.ticketId ? `/helper/tickets/${payout.ticketId}` : null
-                    const count = payout.transfers.length
-                    const expanded = count > 1 && isExpanded(payout.id)
-                    const panelId = transactionsPanelId(payout.id)
-                    return (
-                      <div
-                        key={payout.id}
-                        className={cn(
-                          "px-6 py-4 hover:bg-[#f7f9ff]",
-                          href &&
-                            "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
-                        )}
-                        {...(href
-                          ? {
-                              role: "link",
-                              tabIndex: 0,
-                              "aria-label": `Open ticket ${payout.ticketShortId}`,
-                              onClick: () => router.push(href),
-                              // Only when the row itself has focus, not a control inside it.
-                              onKeyDown: (event) => {
-                                if (event.key === "Enter" && event.target === event.currentTarget) {
-                                  router.push(href)
-                                }
-                              },
-                            }
-                          : {})}
-                      >
-                        <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
-                          <div className="flex items-center">
-                            <Checkbox
-                              checked={selectedRows.includes(payout.id)}
-                              onCheckedChange={() => handleRowSelect(payout.id)}
-                              onClick={stopRowNavigation}
-                              aria-label={`Select payout for ticket ${payout.ticketShortId}`}
-                            />
-                          </div>
-                          <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
-                            {href ? (
-                              <Link
-                                href={href}
-                                onClick={stopRowNavigation}
-                                className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
-                              >
-                                {payout.ticketShortId}
-                              </Link>
-                            ) : (
-                              <span className="text-sm font-medium text-foreground">—</span>
-                            )}
-                            <TicketText text={payout.ticketTitle} />
-                          </div>
-                          <div className={cn("min-w-0 text-sm text-muted-foreground", COLUMN_SPACING_CLASS)}>
-                            {formatDate(payout.date)}
-                          </div>
-                          <div className="min-w-0 text-sm text-foreground">
-                            <div className="whitespace-nowrap">
-                              {formatPayoutAmount(payout.amountSmallestUnit, payout.currency)}
-                            </div>
-                            {payout.failedSmallestUnit > 0 && (
-                              <div className="text-xs text-red-700">
-                                {formatPayoutAmount(payout.failedSmallestUnit, payout.currency)} failed
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <PayoutStatusBadge status={payout.status} />
-                          </div>
-                          <div className="flex items-center justify-end">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={KEBAB_BUTTON_CLASS}
-                                  aria-label={`More actions for ticket ${payout.ticketShortId}`}
-                                  onClick={stopRowNavigation}
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              {/* Portalled, but React events still bubble to the row. */}
-                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
-                                {count > 1 ? (
-                                  <DropdownMenuItem
-                                    title="Each payout has its own statement"
-                                    onSelect={() => toggle(payout.id)}
-                                  >
-                                    <FileText />
-                                    Statements
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem asChild>
-                                    <Link
-                                      href={`/helper/reports/payouts/${payout.transfers[0].id}`}
-                                      title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
-                                    >
-                                      <FileText />
-                                      Statement
-                                    </Link>
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                  title="Download all your payouts on this ticket as a PDF for your accounting"
-                                  onSelect={() => exportPdf(null, wholeTicket(payout))}
-                                >
-                                  <Download />
-                                  PDF
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                        {count > 1 && (
-                          <div className="w-fit" onClick={stopRowNavigation}>
-                            <TransactionsToggle
-                              className="ml-12 mt-2"
-                              count={count}
-                              expanded={expanded}
-                              onToggle={() => toggle(payout.id)}
-                              panelId={panelId}
-                              noun="payout"
-                            />
-                          </div>
-                        )}
-                        {expanded && (
-                          <div className="cursor-default" onClick={stopRowNavigation}>
-                            {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
-                            <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
-                              {payout.transfers.map((transfer, index) => {
-                                const reference = payoutReference(transfer)
-                                return (
-                                  <div
-                                    key={transfer.id}
-                                    role="listitem"
-                                    className="grid items-center gap-4 px-[11px] py-2 text-sm"
-                                    style={PAYOUTS_GRID}
-                                  >
-                                    <span />
-                                    {/* Index with the statement reference underneath, left-aligned with the ticket ID. */}
-                                    <span className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
-                                      <span className="block text-xs text-muted-foreground tabular-nums">
-                                        {index + 1} of {count}
-                                      </span>
-                                      <span className="block truncate font-mono text-xs text-foreground" title={reference}>
-                                        {reference}
-                                      </span>
-                                    </span>
-                                    <span className={cn("min-w-0 text-muted-foreground tabular-nums", COLUMN_SPACING_CLASS)}>
-                                      {formatDate(transferDate(transfer))}
-                                    </span>
-                                    <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
-                                      {formatPayoutAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
-                                    </span>
-                                    <span className="min-w-0">
-                                      <PayoutStatusBadge status={transfer.status} />
-                                    </span>
-                                    {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
-                                    <span className="flex items-center justify-end [&>*]:shrink-0">
-                                      <StatementLink transfer={transfer} />
-                                    </span>
-                                  </div>
-                                )
-                              })}
-                            </TransactionsPanel>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Monthly Reports Tab Content */}
-          {activeTab === "monthly" && (
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
-              <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
-                <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="rounded border-border"
-                      checked={monthlySelectedRows.length === monthlyReports.length && monthlyReports.length > 0}
-                      onChange={handleMonthlySelectAll}
-                      disabled={monthlyReports.length === 0}
-                      aria-label="Select all monthly reports"
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
-                    <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className={cn("min-w-0 whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
-                    <SortHeader label="Earnings (USD)" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
-                    <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
-                  </div>
-                  <div />
-                </div>
-              </div>
-              <div className="divide-y divide-border">
-                {isBusy ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">Loading reports...</div>
-                ) : showPreview ? (
-                  HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
-                    <div key={row.id} role="presentation" className="px-6 py-4 opacity-80">
-                      <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                        <div className="flex items-center">
-                          <Checkbox disabled checked={false} />
-                        </div>
-                        <div className="min-w-0 flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium text-foreground">{row.period}</span>
-                          <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                          <Badge variant="outline" className="text-xs uppercase tracking-wide">
                             Preview
                           </Badge>
                         </div>
-                        <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
-                          <span className="text-sm text-muted-foreground">{row.description}</span>
-                        </div>
-                        <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
-                          {row.earnings.replace(/^USD\s+/, "")}
-                        </div>
-                        <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
-                            {row.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-end">
-                          <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              disabled
-                              className={KEBAB_BUTTON_CLASS}
-                              aria-label="More actions"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </span>
-                        </div>
+                        <TicketText text={payout.ticketTitle} />
+                      </div>
+                      <div className={cn("min-w-0 truncate text-sm text-muted-foreground", COLUMN_SPACING_CLASS)} title={payout.date}>{payout.date}</div>
+                      <div className="min-w-0 text-sm text-foreground whitespace-nowrap">
+                        {payout.amount.replace(/^USD\s+/, "")}
+                      </div>
+                      <div className="min-w-0">
+                        <PayoutStatusBadge status={payout.status} />
+                      </div>
+                      <div className="flex items-center justify-end">
+                        <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            disabled
+                            className={KEBAB_BUTTON_CLASS}
+                            aria-label="More actions"
+                          >
+                            <Icon name="fi-rr-menu-dots-vertical" />
+                          </Button>
+                        </span>
                       </div>
                     </div>
-                  ))
-                ) : monthlyReports.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-muted-foreground text-[14px]">{emptyMessage("monthly reports")}</div>
-                ) : (
-                  monthlyReports.map((row) => (
+                  </div>
+                ))
+              ) : payouts.length === 0 ? (
+                <EmptyState size="sm" title={emptyMessage("payouts")} />
+              ) : (
+                payouts.map((payout) => {
+                  const href = payout.ticketId ? `/helper/tickets/${payout.ticketId}` : null
+                  const count = payout.transfers.length
+                  const expanded = count > 1 && isExpanded(payout.id)
+                  const panelId = transactionsPanelId(payout.id)
+                  return (
                     <div
-                      key={row.id}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View payouts for ${row.period}`}
-                      className="px-6 py-4 hover:bg-[#f7f9ff] cursor-pointer focus-visible:outline-none focus-visible:bg-[#f7f9ff]"
-                      onClick={() => openMonthPayouts(row.period)}
-                      onKeyDown={(e) => {
-                        if (e.target !== e.currentTarget) return
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault()
-                          openMonthPayouts(row.period)
-                        }
-                      }}
+                      key={payout.id}
+                      className={cn(
+                        "px-6 py-4 hover:bg-page-muted",
+                        href &&
+                          "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary",
+                      )}
+                      {...(href
+                        ? {
+                            role: "link",
+                            tabIndex: 0,
+                            "aria-label": `Open ticket ${payout.ticketShortId}`,
+                            onClick: () => router.push(href),
+                            // Only when the row itself has focus, not a control inside it.
+                            onKeyDown: (event) => {
+                              if (event.key === "Enter" && event.target === event.currentTarget) {
+                                router.push(href)
+                              }
+                            },
+                          }
+                        : {})}
                     >
-                      <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
-                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="grid gap-4 items-center" style={PAYOUTS_GRID}>
+                        <div className="flex items-center">
                           <Checkbox
-                            checked={monthlySelectedRows.includes(row.id)}
-                            onCheckedChange={() => handleMonthlyRowSelect(row.id)}
-                            aria-label={`Select monthly report for ${row.period}`}
+                            checked={selectedRows.includes(payout.id)}
+                            onCheckedChange={() => handleRowSelect(payout.id)}
+                            onClick={stopRowNavigation}
+                            aria-label={`Select payout for ticket ${payout.ticketShortId}`}
                           />
                         </div>
+                        <div className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                          {href ? (
+                            <Link
+                              href={href}
+                              onClick={stopRowNavigation}
+                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                            >
+                              {payout.ticketShortId}
+                            </Link>
+                          ) : (
+                            <span className="text-sm font-medium text-foreground">—</span>
+                          )}
+                          <TicketText text={payout.ticketTitle} />
+                        </div>
+                        <div className={cn("min-w-0 text-sm text-muted-foreground", COLUMN_SPACING_CLASS)}>
+                          {formatDate(payout.date)}
+                        </div>
+                        <div className="min-w-0 text-sm text-foreground">
+                          <div className="whitespace-nowrap">
+                            {formatPayoutAmount(payout.amountSmallestUnit, payout.currency)}
+                          </div>
+                          {payout.failedSmallestUnit > 0 && (
+                            <div className="text-xs text-red-700">
+                              {formatPayoutAmount(payout.failedSmallestUnit, payout.currency)} failed
+                            </div>
+                          )}
+                        </div>
                         <div className="min-w-0">
-                          <span className="text-sm font-medium text-foreground">{row.period}</span>
-                        </div>
-                        <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
-                          <span className="text-sm text-muted-foreground">{row.description}</span>
-                        </div>
-                        <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
-                          {formatPayoutAmount(row.earningsSmallestUnit, row.currency)}
-                        </div>
-                        <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
-                          <Badge className={`${getStatusBadgeClass(row.status)} hover:opacity-90 text-[13px] px-3 py-1`}>
-                            {row.status}
-                          </Badge>
+                          <PayoutStatusBadge status={payout.status} />
                         </div>
                         <div className="flex items-center justify-end">
                           <DropdownMenu>
@@ -904,40 +653,269 @@ export default function HelperReportsPage() {
                                 variant="ghost"
                                 size="sm"
                                 className={KEBAB_BUTTON_CLASS}
-                                aria-label={`More actions for ${row.period}`}
+                                aria-label={`More actions for ticket ${payout.ticketShortId}`}
                                 onClick={stopRowNavigation}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
                             <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                              {count > 1 ? (
+                                <DropdownMenuItem
+                                  title="Each payout has its own statement"
+                                  onSelect={() => toggle(payout.id)}
+                                >
+                                  <Icon name="fi-rr-document" />
+                                  Statements
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/helper/reports/payouts/${payout.transfers[0].id}`}
+                                    title="Payout statement: your proof of payment for this payout (printable, save as PDF)"
+                                  >
+                                    <Icon name="fi-rr-document" />
+                                    Statement
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
-                                title={`Download the ${row.period} payout report as PDF`}
-                                onSelect={() => exportPdf(row.period)}
+                                title="Download all your payouts on this ticket as a PDF for your accounting"
+                                onSelect={() => exportPdf(null, wholeTicket(payout))}
                               >
-                                <Download />
+                                <Icon name="fi-rr-download" />
                                 PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                title={`Export the ${row.period} payout report as CSV`}
-                                onSelect={() => exportCsv(row.period)}
-                              >
-                                <FileSpreadsheet />
-                                CSV
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
                       </div>
+                      {count > 1 && (
+                        <div className="w-fit" onClick={stopRowNavigation}>
+                          <TransactionsToggle
+                            className="ml-12 mt-2"
+                            count={count}
+                            expanded={expanded}
+                            onToggle={() => toggle(payout.id)}
+                            panelId={panelId}
+                            noun="payout"
+                          />
+                        </div>
+                      )}
+                      {expanded && (
+                        <div className="cursor-default" onClick={stopRowNavigation}>
+                          {/* The panel reaches 12px past the row's columns; border + line padding bring the lines back onto the same grid. */}
+                          <TransactionsPanel id={panelId} className="-mx-3 overflow-x-visible">
+                            {payout.transfers.map((transfer, index) => {
+                              const reference = payoutReference(transfer)
+                              return (
+                                <div
+                                  key={transfer.id}
+                                  role="listitem"
+                                  className="grid items-center gap-4 px-3 py-2 text-sm"
+                                  style={PAYOUTS_GRID}
+                                >
+                                  <span />
+                                  {/* Index with the statement reference underneath, left-aligned with the ticket ID. */}
+                                  <span className={cn("min-w-0", COLUMN_SPACING_CLASS)}>
+                                    <span className="block text-xs text-muted-foreground tabular-nums">
+                                      {index + 1} of {count}
+                                    </span>
+                                    <span className="block truncate font-mono text-xs text-foreground" title={reference}>
+                                      {reference}
+                                    </span>
+                                  </span>
+                                  <span className={cn("min-w-0 text-muted-foreground tabular-nums", COLUMN_SPACING_CLASS)}>
+                                    {formatDate(transferDate(transfer))}
+                                  </span>
+                                  <span className="min-w-0 whitespace-nowrap text-foreground tabular-nums">
+                                    {formatPayoutAmount(transfer.amount_smallest_unit, transfer.currency || payout.currency)}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <PayoutStatusBadge status={transfer.status} />
+                                  </span>
+                                  {/* Wider than the kebab column: right-aligned, it extends left into the spacing before it. */}
+                                  <span className="flex items-center justify-end [&>*]:shrink-0">
+                                    <StatementLink transfer={transfer} />
+                                  </span>
+                                </div>
+                              )
+                            })}
+                          </TransactionsPanel>
+                        </div>
+                      )}
                     </div>
-                  ))
-                )}
-              </div>
+                  )
+                })
+              )}
             </div>
-          )}
-        </main>
-      </div>
+          </div>
+        )}
+
+        {/* Monthly Reports Tab Content */}
+        {activeTab === "monthly" && (
+          <div className="bg-card rounded-lg border border-border overflow-x-auto">
+            <ListHeader>
+              <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="rounded border-border"
+                    checked={monthlySelectedRows.length === monthlyReports.length && monthlyReports.length > 0}
+                    onChange={handleMonthlySelectAll}
+                    disabled={monthlyReports.length === 0}
+                    aria-label="Select all monthly reports"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <SortHeader label="Period" field="period" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                </div>
+                <div className={cn("min-w-0", MONTHLY_DESCRIPTION_CLASS)}>
+                  <SortHeader label="Description" field="description" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                </div>
+                <div className={cn("min-w-0 whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
+                  <SortHeader label="Earnings (USD)" field="earnings" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                </div>
+                <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
+                  <SortHeader label="Status" field="status" sortField={monthlySortField} sortDirection={monthlySortDirection} onSort={handleMonthlySort} />
+                </div>
+                <div />
+              </div>
+            </ListHeader>
+            <div className="divide-y divide-border-subtle">
+              {isBusy ? (
+                <ListSkeleton rows={5} />
+              ) : transfersError || timeError ? (
+                <ErrorState
+                  size="sm"
+                  onRetry={() => {
+                    void refetchTransfers()
+                    void refetchTime()
+                  }}
+                />
+              ) : showPreview ? (
+                HELPER_MONTHLY_PREVIEW_ROWS.map((row) => (
+                  <div key={row.id} role="presentation" className={listRowClass({ className: "opacity-80" })}>
+                    <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                      <div className="flex items-center">
+                        <Checkbox disabled checked={false} />
+                      </div>
+                      <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-foreground">{row.period}</span>
+                        <Badge variant="outline" className="text-xs uppercase tracking-wide">
+                          Preview
+                        </Badge>
+                      </div>
+                      <div className={cn("min-w-0 truncate", MONTHLY_DESCRIPTION_CLASS)} title={row.description}>
+                        <span className="text-sm text-muted-foreground">{row.description}</span>
+                      </div>
+                      <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
+                        {row.earnings.replace(/^USD\s+/, "")}
+                      </div>
+                      <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
+                        <Badge className={getStatusBadgeClass(row.status)}>
+                          {row.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-end">
+                        <span title={ILLUSTRATIVE_BUTTON_TOOLTIP} className="inline-flex">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            disabled
+                            className={KEBAB_BUTTON_CLASS}
+                            aria-label="More actions"
+                          >
+                            <Icon name="fi-rr-menu-dots-vertical" />
+                          </Button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : monthlyReports.length === 0 ? (
+                <EmptyState size="sm" title={emptyMessage("monthly reports")} />
+              ) : (
+                monthlyReports.map((row) => (
+                  <div
+                    key={row.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View payouts for ${row.period}`}
+                    className={listRowClass({ interactive: true })}
+                    onClick={() => openMonthPayouts(row.period)}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        openMonthPayouts(row.period)
+                      }
+                    }}
+                  >
+                    <div className="grid gap-4 items-center" style={MONTHLY_GRID}>
+                      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={monthlySelectedRows.includes(row.id)}
+                          onCheckedChange={() => handleMonthlyRowSelect(row.id)}
+                          aria-label={`Select monthly report for ${row.period}`}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium text-foreground">{row.period}</span>
+                      </div>
+                      <div className={cn("min-w-0 truncate", MONTHLY_DESCRIPTION_CLASS)} title={row.description}>
+                        <span className="text-sm text-muted-foreground">{row.description}</span>
+                      </div>
+                      <div className={cn("min-w-0 text-sm text-foreground whitespace-nowrap", MONTHLY_EARNINGS_CLASS)}>
+                        {formatPayoutAmount(row.earningsSmallestUnit, row.currency)}
+                      </div>
+                      <div className={cn("min-w-0", MONTHLY_STATUS_CLASS)}>
+                        <Badge className={getStatusBadgeClass(row.status)}>
+                          {row.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={KEBAB_BUTTON_CLASS}
+                              aria-label={`More actions for ${row.period}`}
+                              onClick={stopRowNavigation}
+                            >
+                              <Icon name="fi-rr-menu-dots-vertical" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          {/* Portalled, but React events still bubble to the row. */}
+                          <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuItem
+                              title={`Download the ${row.period} payout report as PDF`}
+                              onSelect={() => exportPdf(row.period)}
+                            >
+                              <Icon name="fi-rr-download" />
+                              PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              title={`Export the ${row.period} payout report as CSV`}
+                              onSelect={() => exportCsv(row.period)}
+                            >
+                              <Icon name="fi-rr-file-spreadsheet" />
+                              CSV
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

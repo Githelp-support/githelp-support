@@ -1,0 +1,102 @@
+import * as React from "react"
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+/**
+ * Shared list chrome. Pages keep their own column grids, sorting, links and
+ * click handlers; these only standardise the header band and the row frame.
+ *
+ * - `ListHeader`: GitHelp's lavender header band (brand-primary/10), h-10,
+ *   px-6, text-xs/500 in text-muted (muted-foreground is only 4.1:1 on the
+ *   tint), hairline below. Sort buttons inside keep their brand hover.
+ * - `SortHeader` / `SortIcon`: a sortable column label for the band. It
+ *   inherits the band's type; the band supplies the hover and focus styles.
+ * - `ListRow` / `listRowClass`: min-h-12, px-6, text-ui, hover surface and,
+ *   when interactive, a visible focus ring. Use `bordered` when the rows are
+ *   not inside a `divide-y` container.
+ */
+
+function ListHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="list-header"
+      className={cn(
+        "flex min-h-10 items-center border-b border-border-subtle bg-brand-primary/10 px-6 py-2 text-xs font-medium text-text-muted max-md:min-w-[40rem]",
+        "[&_button]:cursor-pointer [&_button]:rounded-sm [&_button:hover]:text-brand-primary [&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-brand-primary/40",
+        "[&>*]:flex-1",
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
+export type SortDirection = "asc" | "desc"
+
+/**
+ * Neutral chevrons while the column is unsorted, a brand chevron once it sorts.
+ * Deliberately Lucide, not UIcons: the stacked chevrons read better at 16px.
+ */
+function SortIcon({ active, direction }: { active: boolean; direction: SortDirection | null }) {
+  if (!active || !direction) return <ChevronsUpDown className="size-4 text-muted-foreground" aria-hidden />
+  return direction === "asc" ? (
+    <ChevronUp className="size-4 text-brand-primary" aria-hidden />
+  ) : (
+    <ChevronDown className="size-4 text-brand-primary" aria-hidden />
+  )
+}
+
+/** A sortable column label inside `ListHeader`. */
+function SortHeader<T extends string>({
+  label,
+  field,
+  sortField,
+  sortDirection,
+  onSort,
+  className,
+}: {
+  label: string
+  field: T
+  sortField: T | null
+  sortDirection: SortDirection | null
+  onSort: (field: T) => void
+  className?: string
+}) {
+  return (
+    <button type="button" onClick={() => onSort(field)} className={cn("flex items-center gap-2", className)}>
+      <span>{label}</span>
+      <SortIcon active={sortField === field} direction={sortDirection} />
+    </button>
+  )
+}
+
+export interface ListRowOptions {
+  /** Row navigates or expands: pointer cursor plus a focus ring. */
+  interactive?: boolean
+  /** Visual tone. `subtle` is the grey background of unclaimed tickets. */
+  tone?: "default" | "subtle"
+  /** Draw the hairline on the row itself (rows outside a `divide-y` parent). */
+  bordered?: boolean
+  className?: string
+}
+
+/** Class string for rows rendered as links or buttons (see `ListRow` for a div). */
+function listRowClass({ interactive = false, tone = "default", bordered = false, className }: ListRowOptions = {}) {
+  return cn(
+    "min-h-12 px-6 py-3 text-ui transition-colors duration-fast ease-out hover:bg-surface-hover max-md:min-w-[40rem]",
+    tone === "subtle" && "bg-bg-subtle/50",
+    bordered && "border-b border-border-subtle last:border-b-0",
+    interactive &&
+      "cursor-pointer focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary/40",
+    className,
+  )
+}
+
+type ListRowProps = React.ComponentProps<"div"> & Omit<ListRowOptions, "className">
+
+function ListRow({ interactive, tone, bordered, className, ...props }: ListRowProps) {
+  return <div data-slot="list-row" className={listRowClass({ interactive, tone, bordered, className })} {...props} />
+}
+
+export { ListHeader, ListRow, SortHeader, SortIcon, listRowClass }

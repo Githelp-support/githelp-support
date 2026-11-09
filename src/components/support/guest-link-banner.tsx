@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { useUser } from "@/contexts/user-context"
 import {
@@ -85,13 +85,13 @@ export function GuestLinkBanner() {
 
   return (
     <div
-      className="mx-4 mt-3 rounded-[10px] border border-border bg-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-3"
+      className="animate-enter mx-4 mt-3 rounded-lg border border-border bg-card px-4 py-2.5 flex flex-wrap items-center justify-between gap-3"
       data-slot="guest-link-banner"
       role="status"
     >
       <p className="text-sm text-foreground">You have a guest conversation from this browser.</p>
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="lavender" className="cursor-pointer" disabled={pending} onClick={() => void handleLink()}>
+        <Button variant="lavender" className="cursor-pointer" disabled={pending} onClick={() => void handleLink()}>
           Link it to your account
         </Button>
         <button
@@ -100,7 +100,7 @@ export function GuestLinkBanner() {
           className="p-1 rounded-md hover:bg-muted text-muted-foreground cursor-pointer"
           onClick={() => setDismissedFor(raw)}
         >
-          <X className="w-4 h-4" />
+          <Icon name="fi-rr-cross" />
         </button>
       </div>
     </div>

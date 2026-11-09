@@ -13,7 +13,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { Check, Clock, X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { TIME_ENTRY_AUTO_ACCEPT_HOURS, type TimeEntryReviewStatus } from "@/lib/time-entries"
 
 /** Wording shown to the customer next to the reason field when they decline an entry. */
@@ -53,8 +54,8 @@ export function DeleteTimeEntryDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
             Keep it
           </Button>
-          <Button variant="destructive" onClick={() => void onConfirm()} disabled={pending}>
-            {pending ? "Deleting…" : "Delete"}
+          <Button variant="destructive" onClick={() => void onConfirm()} loading={pending}>
+            Delete
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -101,7 +102,7 @@ export function TimeEntryReviewStatusBadge({
     <span
       data-status={status}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
         status === "accepted" && "bg-emerald-50 text-emerald-700",
         status === "declined" && "bg-red-50 text-red-700",
         status === "pending" && "bg-muted text-muted-foreground",
@@ -109,11 +110,11 @@ export function TimeEntryReviewStatusBadge({
       )}
     >
       {status === "accepted" ? (
-        <Check className="h-3 w-3" />
+        <Icon name="fi-rr-check" size={3} />
       ) : status === "declined" ? (
-        <X className="h-3 w-3" />
+        <Icon name="fi-rr-cross" size={3} />
       ) : (
-        <Clock className="h-3 w-3" />
+        <Icon name="fi-rr-clock" size={3} />
       )}
       {label}
     </span>
@@ -163,6 +164,9 @@ export interface TimeEntrySummaryItem {
   note?: string | null
   reviewStatus: TimeEntryReviewStatus
   helperName?: string | null
+  /** Stable id for the helper's avatar colour (user id, falling back to helper_id). */
+  helperUserId?: string | null
+  helperAvatarUrl?: string | null
 }
 
 export interface TimeEntrySummaryDecline {
@@ -180,7 +184,7 @@ export function formatSummaryDuration(hours: number, minutes: number): string {
 /** YYYY-MM-DD → dd/mm/yyyy without timezone surprises; anything else is shown as-is. */
 export function formatSummaryDate(date: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date)
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : date
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : date
 }
 
 function sumMinutes(entries: TimeEntrySummaryItem[]): { hours: number; minutes: number } {
@@ -286,14 +290,18 @@ function TimeEntrySummaryForm({
                   data-declined={declined || undefined}
                   className={cn(
                     "rounded-lg border border-border p-3",
-                    declined ? "border-red-200 bg-red-50/60" : "bg-white",
+                    declined ? "border-red-200 bg-red-50/60" : "bg-background",
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 shrink-0 bg-muted rounded-full flex items-center justify-center">
-                        <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                      </div>
+                      {/* Same 32px avatar as the people list, so the helper's colour matches everywhere */}
+                      <ProfileAvatar
+                        id={entry.helperUserId}
+                        name={entry.helperName}
+                        avatarUrl={entry.helperAvatarUrl ?? null}
+                        size="md"
+                      />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground capitalize">
                           {entry.type}
@@ -329,7 +337,7 @@ function TimeEntrySummaryForm({
                           setDeclines((prev) => ({ ...prev, [entry.id]: e.target.value.slice(0, DECLINE_REASON_MAX_LENGTH) }))
                         }
                         placeholder="e.g. We only worked together for about 20 minutes, not an hour."
-                        className="border-input min-h-[72px] resize-none bg-white"
+                        className="border-input min-h-[72px] resize-none bg-background"
                         maxLength={DECLINE_REASON_MAX_LENGTH}
                         autoFocus
                         disabled={pending}
@@ -409,11 +417,11 @@ export function TimeEntrySummaryBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >
-      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+      <Icon name="fi-rr-clock" className="mt-0.5 shrink-0 text-amber-700" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">{who} is ready to end the session and needs you to confirm the logged time.</p>
         <p className="text-muted-foreground">
@@ -422,7 +430,7 @@ export function TimeEntrySummaryBanner({
           {autoAcceptHint ? ` It is confirmed automatically ${autoAcceptHint} if you don't respond.` : ""}
         </p>
       </div>
-      <Button size="sm" onClick={onReview} className="shrink-0 cursor-pointer">
+      <Button onClick={onReview} className="shrink-0 cursor-pointer">
         Review &amp; confirm
       </Button>
     </div>
@@ -451,11 +459,11 @@ export function TimeEntryAwaitingApprovalBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-[10px] border border-amber-300 bg-amber-50 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
         className,
       )}
     >
-      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+      <Icon name="fi-rr-clock" className="mt-0.5 shrink-0 text-amber-700" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-medium">Waiting for {who} to confirm the logged time</p>
         <p className="text-muted-foreground">

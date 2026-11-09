@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { cn } from "@/lib/utils"
 
 /**
@@ -11,10 +11,11 @@ import { cn } from "@/lib/utils"
  * has the same heading and separator treatment.
  */
 
+// 11px, so the heading takes the font-sans (Inter) class like every size below 16px.
 const HEADING_STYLE = {
   fontSize: "11px",
   letterSpacing: "0.05em",
-  color: "rgba(0,0,0,0.5)",
+  color: "var(--muted-foreground)",
   fontWeight: 500,
 } as const
 
@@ -31,15 +32,15 @@ export function SidebarSectionHeading({
   if (info) {
     return (
       <div className={cn("flex items-center gap-2 mb-3", className)}>
-        <h3 className="uppercase leading-none" style={HEADING_STYLE}>
+        <h3 className="font-sans uppercase leading-none" style={HEADING_STYLE}>
           {children}
         </h3>
-        <Info className="w-4 h-4 text-muted-foreground shrink-0" />
+        <Icon name="fi-rr-info" className="text-muted-foreground shrink-0" />
       </div>
     )
   }
   return (
-    <h3 className={cn("mb-3 uppercase", className)} style={HEADING_STYLE}>
+    <h3 className={cn("mb-3 font-sans uppercase", className)} style={HEADING_STYLE}>
       {children}
     </h3>
   )
@@ -58,5 +59,5 @@ export function SidebarEmpty({
   children?: ReactNode
   className?: string
 }) {
-  return <div className={cn("text-center text-muted-foreground text-[13px] py-4", className)}>{children}</div>
+  return <div className={cn("text-center text-muted-foreground text-ui py-4", className)}>{children}</div>
 }

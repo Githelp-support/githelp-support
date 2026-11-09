@@ -125,7 +125,7 @@ describe("Dashboard (admin Overview)", () => {
     expect(screen.getByText("Type")).toBeInTheDocument()
     expect(screen.getAllByText("Name")).toHaveLength(1)
 
-    const issueHeaderRow = screen.getByText("Type").parentElement!
+    const issueHeaderRow = screen.getByText("Type").closest("button")!.parentElement!
     expect(Array.from(issueHeaderRow.children).map((cell) => cell.textContent)).toEqual([
       "Type",
       "No of tickets",
@@ -174,7 +174,7 @@ describe("Dashboard (admin Overview)", () => {
     render(<Dashboard />)
 
     expect(mocks.replace).toHaveBeenCalledWith("/helper/overview")
-    expect(screen.getByText("Loading…")).toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
   })
 })

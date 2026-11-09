@@ -16,9 +16,9 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f7f9ff]">
+    <div className="flex flex-1 min-h-0 items-center justify-center bg-page-muted">
       <div className="text-center max-w-md px-4">
-        <h1 className="text-xl font-semibold text-foreground mb-2">Something went wrong</h1>
+        <h1 className="text-xl font-medium text-foreground mb-2">Something went wrong</h1>
         <p className="text-muted-foreground mb-6">
           An unexpected error occurred. You can try again or return to the dashboard.
         </p>

@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronsLeft, ChevronRight } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -8,11 +8,14 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 interface PublicSupportSidebarProps {
   className?: string
   activeTab: string
   onTabChange: (tab: string) => void
+  /** Inside the mobile sheet the sidebar is always expanded and has no collapse toggle. */
+  forceExpanded?: boolean
 }
 
 interface NavigationItem {
@@ -29,7 +32,7 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
-export function PublicSupportSidebar({ className, activeTab, onTabChange }: PublicSupportSidebarProps) {
+export function PublicSupportSidebar({ className, activeTab, onTabChange, forceExpanded = false }: PublicSupportSidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user } = useUser()
@@ -41,7 +44,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
   // server `window` is undefined so we fall back to `false`; the root element
   // uses `suppressHydrationWarning` so the server/client class difference on
   // first paint doesn't warn.
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+  const [storedCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     try {
       return window.localStorage.getItem("public-support-sidebar:collapsed") === "true"
@@ -49,6 +52,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       return false
     }
   })
+  const isCollapsed = forceExpanded ? false : storedCollapsed
 
   const navigationItems: NavigationItem[] = [
     { name: "Get support", icon: "fi-rr-comments" },
@@ -72,14 +76,14 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
       // content height). Stretching as a flex item uses the row's actual
       // laid-out height instead, so the sidebar always fills the area below
       // the TopBar and the profile block stays pinned to the bottom.
-      className={`${isCollapsed ? "w-16" : "w-64"} bg-[#FAFAFA] border-r border-sidebar-border flex flex-col transition-all duration-300 self-stretch overflow-hidden shrink-0 ${className}`}
+      className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
+      <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
         {!isCollapsed ? (
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             onClick={() => {
               setIsCollapsed(true)
               if (typeof window !== "undefined") {
@@ -91,13 +95,13 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
               }
             }}
           >
-            <ChevronsLeft className="w-5 h-5" />
+            <Icon name="fi-rr-angle-double-small-left" size={5} />
           </Button>
         ) : (
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
             onClick={() => {
               setIsCollapsed(false)
               if (typeof window !== "undefined") {
@@ -109,7 +113,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
               }
             }}
           >
-            <ChevronRight className="w-5 h-5" />
+            <Icon name="fi-rr-angle-small-right" size={5} />
           </Button>
         )}
       </div>
@@ -132,11 +136,11 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
           content size on short viewports so the profile stays visible without
           scrolling. */}
       <nav className="flex-1 min-h-0 px-3 pb-3 overflow-hidden">
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {navigationItems.map((item) => {
             const isActive = activeTab === item.name
-            const activeClasses = "bg-brand-primary/[0.08] text-brand-primary"
-            const inactiveClasses = "text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground"
+            const activeClasses = "bg-brand-primary/[0.08] font-medium text-brand-primary"
+            const inactiveClasses = "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
 
             return (
               <button
@@ -144,11 +148,11 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
                 type="button"
                 onClick={() => onTabChange(item.name)}
                 title={isCollapsed ? item.name : undefined}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 ${
+                className={`w-full flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                   isActive ? activeClasses : inactiveClasses
                 } ${isCollapsed ? "justify-center" : ""}`}
               >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
                   <FlaticonIcon iconClass={item.icon} />
                 </span>
                 {!isCollapsed && item.name}
@@ -169,9 +173,9 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
             target="_blank"
             rel="noopener noreferrer"
             title={isCollapsed ? "Open my user portal" : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 min-h-[40px] rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30 text-[#55555E] hover:bg-bg-subtle hover:text-sidebar-foreground ${isCollapsed ? "justify-center" : ""}`}
+            className={`w-full flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground ${isCollapsed ? "justify-center" : ""}`}
           >
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
               <FlaticonIcon iconClass="fi-rr-user" />
             </span>
             {!isCollapsed && "Open my user portal"}
@@ -192,9 +196,9 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange }: Publ
               size="sm"
             />
           ) : (
-            <Avatar className="w-7 h-7 rounded-[10px] shrink-0">
+            <Avatar className={`w-7 h-7 ${SQUIRCLE_RADIUS[28]} shrink-0`}>
               <AvatarFallback
-                className="bg-[#868c98] text-white text-sm rounded-[10px] font-medium"
+                className="bg-text-tertiary text-white text-sm rounded-lg font-medium"
               >
                 {user.avatar}
               </AvatarFallback>

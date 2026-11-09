@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase/client";
 
 export interface TicketWithDetails {
@@ -250,13 +251,6 @@ export function useUserActiveTicketsSidebar(
                     lastMessageIdByTicket.set(m.ticket_id, m.id);
                 }
             );
-
-            const formatDate = (dateStr: string) => {
-                const d = new Date(dateStr);
-                return `${String(d.getDate()).padStart(2, "0")}.${String(
-                    d.getMonth() + 1
-                ).padStart(2, "0")}.${d.getFullYear()}`;
-            };
 
             const items = tickets.map((t) => {
                 const projectName = projectMap.get(t.project_id) ?? "Project";

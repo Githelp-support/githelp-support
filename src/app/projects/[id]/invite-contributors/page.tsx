@@ -14,7 +14,8 @@ import {
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { supabase } from "@/lib/supabase/client"
 import { getFunctionErrorMessage } from "@/lib/functions-error"
-import { Loader2, Check, Copy, Users, ArrowRight, ShieldAlert } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
@@ -145,7 +146,7 @@ export default function InviteContributorsPage() {
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
-                            <ShieldAlert className="w-6 h-6 text-amber-600" />
+                            <Icon name="fi-rr-shield-exclamation" size={6} className="text-amber-600" />
                             <CardTitle>{project ? "Not authorized" : "Project not found"}</CardTitle>
                         </div>
                         <CardDescription>
@@ -175,7 +176,7 @@ export default function InviteContributorsPage() {
                 <CardHeader>
                     <div className="flex items-start justify-between">
                         <div>
-                            <CardTitle className="text-2xl font-bold">
+                            <CardTitle className="text-2xl font-medium">
                                 Invite contributors as helpers
                             </CardTitle>
                             <CardDescription className="mt-1">
@@ -185,7 +186,7 @@ export default function InviteContributorsPage() {
                         </div>
                         <Button variant="outline" asChild>
                             <Link href={`/projects/${projectId}`}>
-                                <ArrowRight className="w-4 h-4 rotate-180" />
+                                <Icon name="fi-rr-arrow-right" className="rotate-180" />
                                 Back to project
                             </Link>
                         </Button>
@@ -256,11 +257,11 @@ export default function InviteContributorsPage() {
                                                 </div>
                                             </button>
                                             {invitedLogins.has(c.login) && (
-                                                <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                                <Icon name="fi-rr-check" size={5} className="text-green-600 flex-shrink-0" />
                                             )}
                                             {selectedContributors.has(c.login) && !invitedLogins.has(c.login) && (
                                                 <div className="w-5 h-5 rounded border-2 border-brand-primary bg-brand-primary flex-shrink-0 flex items-center justify-center">
-                                                    <Check className="w-3 h-3 text-white" />
+                                                    <Icon name="fi-rr-check" size={3} className="text-white" />
                                                 </div>
                                             )}
                                         </div>
@@ -280,7 +281,7 @@ export default function InviteContributorsPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <Users className="w-4 h-4" />
+                                        <Icon name="fi-rr-users" />
                                         Invite {selectedContributors.size} as helpers
                                     </>
                                 )}
@@ -302,9 +303,9 @@ export default function InviteContributorsPage() {
                                                 onClick={() => copyInviteUrl(url)}
                                             >
                                                 {copiedToken === url ? (
-                                                    <Check className="w-4 h-4" />
+                                                    <Icon name="fi-rr-check" />
                                                 ) : (
-                                                    <Copy className="w-4 h-4" />
+                                                    <Icon name="fi-rr-copy" />
                                                 )}
                                             </Button>
                                         </div>

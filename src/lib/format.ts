@@ -12,6 +12,25 @@ export function parseTimeDisplayToMinutes(time: string): number {
 }
 
 /**
+ * Format a date as zero-padded dd.mm.yyyy (01.02.2026), the way the ticket
+ * lists show dates. Never use the bare browser locale for a list column.
+ */
+export function formatDate(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  const day = String(date.getDate()).padStart(2, "0")
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  return `${day}.${month}.${date.getFullYear()}`
+}
+
+/** dd.mm.yyyy, HH:MM — the timestamp format for chat messages and ticket lists. */
+export function formatDateTime(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  return `${formatDate(date)}, ${hours}:${minutes}`
+}
+
+/**
  * Format a date string as a relative time (e.g. "Just now", "5 min", "2h", "3d").
  * Use for notifications, activity feeds, etc.
  */
@@ -27,7 +46,7 @@ export function formatRelativeTime(createdAt: string): string {
   if (diffMins < 60) return `${diffMins} min`
   if (diffHours < 24) return `${diffHours}h`
   if (diffDays < 7) return `${diffDays}d`
-  return created.toLocaleDateString()
+  return formatDate(created)
 }
 
 /**

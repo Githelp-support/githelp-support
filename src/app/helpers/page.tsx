@@ -8,7 +8,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { MoreVertical, Plus, Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, X } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { AddHelperDrawer } from "@/components/drawers/add-helper-drawer"
 import { AcceptRequestDrawer } from "@/components/drawers/accept-request-drawer"
@@ -33,7 +32,11 @@ import {
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { formatDate } from "@/lib/format"
 import Link from "next/link"
+import { ListSkeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
 function isPendingInvite(invite: {
   is_active: boolean
@@ -69,14 +72,7 @@ type SortField = "name" | "discordUser" | "category" | "githubAccount"
 type SortDirection = "asc" | "desc" | null
 
 function HelpersSortIcon({ field, sortField, sortDirection }: { field: SortField; sortField: SortField | null; sortDirection: SortDirection }) {
-  if (sortField !== field || sortDirection === null) {
-    return <ChevronsUpDown className="w-4 h-4 text-muted-foreground" />
-  }
-  return sortDirection === "desc" ? (
-    <ChevronDown className="w-4 h-4 text-brand-primary" />
-  ) : (
-    <ChevronUp className="w-4 h-4 text-brand-primary" />
-  )
+  return <SortIcon active={sortField === field} direction={sortDirection} />
 }
 
 const mapCategoryToLabel = {
@@ -459,15 +455,22 @@ export default function HelpersPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-
+    <>
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="List of helpers" subtitle="Manage your support team" />
+        <Header
+          title="List of helpers"
+          subtitle="Manage your support team"
+          actions={
+            <Button variant="brand" onClick={() => setIsDrawerOpen(true)}>
+              <Icon name="fi-rr-plus" />
+              Add new helper
+            </Button>
+          }
+        />
 
         {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 px-8 py-6 overflow-y-auto">
           {/* Filter tabs and Add button */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex space-x-1">
@@ -524,30 +527,26 @@ export default function HelpersPage() {
               {showAddSelfAsHelper && (
                 <Button
                   variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-ui font-medium"
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
-                  <i className="fi fi-rr-user inline-flex items-center justify-center leading-none w-4 h-4" />
+                  <Icon name="fi-rr-user" />
                   Add myself as helper
                 </Button>
               )}
               {isAdmin && (
                 <Button
                   variant="ghost"
-                  className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/10 rounded-md text-[13px] font-medium"
+                  className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/10 rounded-md text-ui font-medium"
                   onClick={handleCopyInvitationLink}
                   disabled={!projectId}
                   title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
                 >
-                  <Copy className="w-4 h-4" />
+                  <Icon name="fi-rr-copy" />
                   Copy invitation link
                 </Button>
               )}
-              <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
-                <Plus className="w-4 h-4" />
-                Add new helper
-              </Button>
             </div>
           </div>
 
@@ -556,20 +555,20 @@ export default function HelpersPage() {
             {/* Added/Requests dropdown and Search input - 50/50 split */}
             <div className="grid grid-cols-2 gap-4">
               <Select value={currentView} onValueChange={(value) => handleViewChange(value as "added" | "requests" | "invited")}>
-                <SelectTrigger className="w-full h-[46px] data-[size=default]:h-[46px] border-[#E1E1E1] shadow-none rounded-lg text-[14px] font-normal">
+                <SelectTrigger variant="outline" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="added" className="text-[14px] font-normal">Added</SelectItem>
-                  <SelectItem value="requests" className="text-[14px] font-normal">Requests</SelectItem>
-                  <SelectItem value="invited" className="text-[14px] font-normal">Invites</SelectItem>
+                  <SelectItem value="added">Added</SelectItem>
+                  <SelectItem value="requests">Requests</SelectItem>
+                  <SelectItem value="invited">Invites</SelectItem>
                 </SelectContent>
               </Select>
               <div className="relative">
-                <Search className="w-[18px] h-[18px] absolute left-3.5 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" />
+                <Icon name="fi-rr-search" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
                 <Input
                   placeholder="Search name or GitHub account"
-                  className="pl-10 h-[46px] border-[#E1E1E1] shadow-none rounded-lg text-[13px] placeholder:text-[#94a3b8] focus:border-brand-primary transition-colors"
+                  className="pl-8 placeholder:text-text-tertiary"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -578,41 +577,39 @@ export default function HelpersPage() {
 
             {/* Open for new helpers toggle - separate row */}
             <div className="flex items-center space-x-3">
-              <span className="text-[13px] font-medium text-foreground">Open for new helpers</span>
+              <span className="text-ui font-medium text-foreground">Open for new helpers</span>
               <Switch
                 checked={openForNewHelpers}
                 onCheckedChange={(checked) => void handleOpenForNewHelpersChange(checked)}
                 disabled={!project || updateProject.isPending}
                 aria-label="Open for new helpers"
-                className="h-[22px] w-[38px] p-[3px] border-0"
+                className="h-[22px] w-[38px] p-1 border-0"
               />
             </div>
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-lg border border-[#E1E1E1] shadow-none overflow-hidden">
+          <div className="bg-card rounded-lg border border-border-subtle shadow-none overflow-x-auto">
             {/* Table Header */}
-            <div className="bg-brand-primary/10 px-6 py-3 border-b border-border">
+            <ListHeader>
               {currentView === "invited" ? (
                 <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                   <div>
                     <input type="checkbox" className="rounded border-border" />
                   </div>
+                  <div className="col-span-3">
+                    <span>Helper</span>
+                  </div>
+                  <div className="col-span-3">
+                    <span>Category</span>
+                  </div>
                   <div className="col-span-2">
-                    <span className="text-sm font-medium text-foreground">Helper</span>
+                    <span>Created</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span>Status</span>
                   </div>
                   <div className="col-span-1"></div>
-                  <div className="col-span-2">
-                    <span className="text-sm font-medium text-foreground">Category</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-sm font-medium text-foreground">Created</span>
-                  </div>
-                  <div className="col-span-1"></div>
-                  <div className="col-span-1">
-                    <span className="text-sm font-medium text-foreground">Status</span>
-                  </div>
-                  <div className="col-span-2"></div>
                 </div>
               ) : (
                 <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
@@ -624,7 +621,7 @@ export default function HelpersPage() {
                       onClick={() => handleSort("name")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
                     >
-                      <span className="text-sm font-medium text-foreground">Helper</span>
+                      <span>Helper</span>
                       <HelpersSortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
@@ -633,7 +630,7 @@ export default function HelpersPage() {
                       onClick={() => handleSort("githubAccount")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
                     >
-                      <span className="text-sm font-medium text-foreground">Github user</span>
+                      <span>Github user</span>
                       <HelpersSortIcon field="githubAccount" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
@@ -642,44 +639,43 @@ export default function HelpersPage() {
                       onClick={() => handleSort("category")}
                       className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
                     >
-                      <span className="text-sm font-medium text-foreground">Category</span>
+                      <span>Category</span>
                       <HelpersSortIcon field="category" sortField={sortField} sortDirection={sortDirection} />
                     </button>
                   </div>
                   <div className="col-span-3"></div>
                 </div>
               )}
-            </div>
+            </ListHeader>
 
             {/* Table Body */}
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-border-subtle">
               {(() => {
                 if (!projectId) {
                   return (
                     <div className="px-6 py-12 text-center">
-                      <p className="text-[13px] text-muted-foreground mb-2">Select a project from the sidebar to view helpers.</p>
-                      <p className="text-[13px] text-muted-foreground">If you don&apos;t see any projects, you may need to create one or be invited to a project first.</p>
+                      <p className="text-ui text-muted-foreground mb-2">Select a project from the sidebar to view helpers.</p>
+                      <p className="text-ui text-muted-foreground">If you don&apos;t see any projects, you may need to create one or be invited to a project first.</p>
                     </div>
                   )
                 }
                 if (helpersLoading || requestsLoading || invitesLoading) {
-                  return <div className="px-6 py-8 text-center text-[14px] text-muted-foreground">Loading...</div>
+                  return <ListSkeleton rows={5} />
                 }
                 if (currentView === "invited") {
                   if (filteredInvites.length > 0) {
                   return filteredInvites.map((invite) => (
-                      <div key={invite.id} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                      <div key={invite.id} className={listRowClass()}>
                         <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                           <div>
                             <input type="checkbox" className="rounded border-border" />
                           </div>
-                          <div className="col-span-2 flex items-center space-x-2">
+                          <div className="col-span-3 flex items-center space-x-2">
                             <span className="text-sm font-medium text-foreground">
                               {invite.invitee_identifier || invite.email || invite.github_username || "No identifier"}
                             </span>
                           </div>
-                          <div className="col-span-1"></div>
-                          <div className="col-span-2 flex items-center space-x-2">
+                          <div className="col-span-3 flex items-center space-x-2">
                             <span className="text-sm text-muted-foreground">
                               {invite.category
                                 ? mapCategoryToLabel[invite.category as keyof typeof mapCategoryToLabel]
@@ -688,42 +684,37 @@ export default function HelpersPage() {
                           </div>
                           <div className="col-span-2 flex items-center space-x-2">
                             <span className="text-sm text-muted-foreground tabular-nums">
-                              {new Date(invite.created_at).toLocaleDateString()}
+                              {formatDate(invite.created_at)}
                             </span>
                           </div>
-                          <div className="col-span-1"></div>
-                          <div className="col-span-1">
+                          <div className="col-span-2">
                             <Badge 
                               variant="secondary" 
-                              className={invite.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}
+                              className={invite.is_active ? "bg-green-100 text-green-700" : "bg-bg-subtle text-text-secondary"}
                             >
                               {invite.is_active ? "Active" : "Revoked"}
                             </Badge>
                           </div>
-                          <div className="col-span-2 flex items-center justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-muted-foreground border-border hover:bg-muted bg-transparent"
-                              onClick={() => handleCopyInviteLink(invite.invite_url)}
-                            >
-                              <Copy className="w-4 h-4 mr-1" />
-                              Copy link
-                            </Button>
-                            {invite.is_active && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 border-red-200 hover:bg-red-50 bg-transparent"
-                                onClick={() => handleRevokeInvite(invite.id)}
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Revoke
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
+                          <div className="col-span-1 flex items-center justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" aria-label="Invite actions">
+                                  <Icon name="fi-rr-menu-dots-vertical" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem onSelect={() => void handleCopyInviteLink(invite.invite_url)}>
+                                  <Icon name="fi-rr-copy" />
+                                  Copy link
+                                </DropdownMenuItem>
+                                {invite.is_active && (
+                                  <DropdownMenuItem variant="destructive" onSelect={() => void handleRevokeInvite(invite.id)}>
+                                    <Icon name="fi-rr-cross" />
+                                    Revoke
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                       </div>
@@ -732,25 +723,25 @@ export default function HelpersPage() {
                   const hasActiveInvites = helperInvitesData?.some((invite) => isPendingInvite(invite))
                   if (!hasActiveInvites) {
                     return (
-                      <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending invites</div>
+                      <div className="px-6 py-8 text-center text-ui text-muted-foreground">No pending invites</div>
                     )
                   }
                   return (
                     <div className="px-6 py-12 text-center text-muted-foreground">
-                      <p className="text-[13px] mb-2">No invites match your filters.</p>
-                      <p className="text-[13px]">Try clearing search or switching category to see invites.</p>
+                      <p className="text-ui mb-2">No invites match your filters.</p>
+                      <p className="text-ui">Try clearing search or switching category to see invites.</p>
                     </div>
                   )
                 }
                 if (currentView === "added") {
                   if (filteredHelpers.length > 0) {
                     return filteredHelpers.map((helper, index) => (
-                    <div key={index} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                    <div key={index} className={listRowClass()}>
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
+                        <div className="col-span-3 flex items-center gap-4">
                           <ProfileAvatar
                             id={helper.avatarId}
                             name={helper.name}
@@ -760,10 +751,10 @@ export default function HelpersPage() {
                         </div>
                         <div className="col-span-3 flex items-center space-x-2">
                           <GithubIcon className="w-4 h-4 text-foreground" />
-                          <span className="text-sm text-[#0F0F11]">{helper.githubAccount || "-"}</span>
+                          <span className="text-sm text-text-heading">{helper.githubAccount || "-"}</span>
                         </div>
                         <div className="col-span-2">
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-[13px] px-3 py-1">
+                          <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-ui px-3 py-1">
                             {helper.category
                               ? mapCategoryToLabel[helper.category as keyof typeof mapCategoryToLabel]
                               : ""}
@@ -791,7 +782,7 @@ export default function HelpersPage() {
                                 className="text-muted-foreground hover:bg-muted"
                                 aria-label={`More actions for ${helper.name}`}
                               >
-                                <MoreVertical className="w-4 h-4" />
+                                <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
@@ -800,7 +791,7 @@ export default function HelpersPage() {
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >
-                                <i className="fi fi-rr-user inline-flex items-center justify-center leading-none size-4 shrink-0 text-[12.8px]" />
+                                <Icon name="fi-rr-user" />
                                 Remove as helper
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -813,31 +804,35 @@ export default function HelpersPage() {
                   const noRealHelpers = (helpersData?.length ?? 0) === 0
                   if (noRealHelpers && projectId) {
                     return (
-                      <div className="px-6 py-12 text-center">
-                        <p className="text-[13px] text-muted-foreground mb-2">No helpers yet.</p>
-                        <p className="text-[13px] text-muted-foreground mb-4">Add helpers by inviting them via email or sharing an invite link.</p>
-                        <Button className="bg-brand-primary hover:bg-brand-primary/90 text-white rounded-md px-5 py-2.5 text-[13px] font-medium shadow-sm" onClick={() => setIsDrawerOpen(true)}>
-                          <Plus className="w-4 h-4" />
-                          Add new helper
-                        </Button>
-                      </div>
+                      <EmptyState
+                        icon="fi-rr-users"
+                        title="No helpers yet."
+                        description="Add helpers by inviting them via email or sharing an invite link."
+                        action={
+                          <Button variant="brand" onClick={() => setIsDrawerOpen(true)}>
+                            <Icon name="fi-rr-plus" />
+                            Add new helper
+                          </Button>
+                        }
+                      />
                     )
                   }
                   return (
-                    <div className="px-6 py-12 text-center text-muted-foreground">
-                      <p className="text-[13px] mb-2">No helpers match your filters.</p>
-                      <p className="text-[13px]">Try clearing search or switching category to see your team.</p>
-                    </div>
+                    <EmptyState
+                      icon="fi-rr-users"
+                      title="No helpers match your filters."
+                      description="Try clearing search or switching category to see your team."
+                    />
                   )
                 }
                 return filteredRequests.length > 0 ? (
                   filteredRequests.map((request, index) => (
-                    <div key={request.user_id || index} className="px-6 py-4 hover:bg-[#f7f9ff]">
+                    <div key={request.user_id || index} className={listRowClass()}>
                       <div className="grid gap-4 items-center" style={{ gridTemplateColumns: '2rem repeat(11, 1fr)' }}>
                         <div>
                           <input type="checkbox" className="rounded border-border" />
                         </div>
-                        <div className="col-span-3 flex items-center gap-[18px]">
+                        <div className="col-span-3 flex items-center gap-4">
                           <ProfileAvatar
                             id={request.user_id ?? request.email ?? request.name}
                             name={request.name}
@@ -847,7 +842,7 @@ export default function HelpersPage() {
                         </div>
                         <div className="col-span-3 flex items-center space-x-2">
                           <GithubIcon className="w-4 h-4 text-foreground" />
-                          <span className="text-sm text-[#0F0F11]">{request.githubAccount}</span>
+                          <span className="text-sm text-text-heading">{request.githubAccount}</span>
                         </div>
                         <div className="col-span-5 flex items-center justify-end space-x-2">
                           <Button
@@ -860,20 +855,20 @@ export default function HelpersPage() {
                           </Button>
                           <Button
                             size="sm"
-                            className="bg-brand-primary hover:bg-brand-primary/90 text-white"
+                            className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
                             onClick={() => handleAcceptRequest(index)}
                           >
                             Accept
                           </Button>
                           <Button variant="ghost" size="sm" className="text-muted-foreground hover:bg-muted" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
-                            <MoreVertical className="w-4 h-4" />
+                            <Icon name="fi-rr-menu-dots-vertical" />
                           </Button>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">No pending requests</div>
+                  <div className="px-6 py-8 text-center text-ui text-muted-foreground">No pending requests</div>
                 )
               })()}
             </div>
@@ -905,7 +900,7 @@ export default function HelpersPage() {
         isRemoving={removeHelper.isPending}
         onConfirm={handleConfirmRemoveHelper}
       />
-    </div>
+    </>
   )
 }
 

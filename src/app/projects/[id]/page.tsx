@@ -9,7 +9,8 @@ import { useCreatePendingRequest } from "@/hooks/usePendingRequests"
 import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardingStatus"
 import { supabase } from "@/lib/supabase/client"
 import { hasSignedInSession } from "@/lib/supabase/auth-state"
-import { Loader2, CheckCircle, LogIn } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Image from "next/image"
 import Link from "next/link"
@@ -156,7 +157,7 @@ export default function ProjectLandingPage() {
                                 ) : (
                                     <Avatar className="w-[82px] h-[82px]">
                                         <AvatarFallback
-                                            className={cn("text-white text-[26px]", !branding?.primary_color && "bg-[#3c2ec5]")}
+                                            className={cn("text-brand-foreground text-[26px]", !branding?.primary_color && "bg-brand-primary")}
                                             style={branding?.primary_color ? { backgroundColor: branding.primary_color } : undefined}
                                         >
                                             {projectName?.[0]?.toUpperCase() || "?"}
@@ -166,7 +167,7 @@ export default function ProjectLandingPage() {
                             </div>
                         </div>
                         <div className="flex-1">
-                            <h1 className="text-2xl font-semibold text-foreground">{projectName}</h1>
+                            <h1 className="text-2xl font-medium text-foreground">{projectName}</h1>
                         </div>
                     </div>
 
@@ -175,8 +176,8 @@ export default function ProjectLandingPage() {
                         {hasRequested ? (
                             <div className="bg-muted/50 rounded-lg p-6 border border-border">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <CheckCircle className="w-[19px] h-[19px] text-green-600" />
-                                    <h3 className="font-semibold text-lg text-foreground">Request submitted</h3>
+                                    <Icon name="fi-rr-check-circle" className="[--icon-size:19px] text-green-600" />
+                                    <h3 className="font-subtitle text-lg text-foreground">Request submitted</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     Your request to become a helper has been submitted. The project admin will review your request and notify you once a decision has been made.
@@ -184,7 +185,7 @@ export default function ProjectLandingPage() {
                             </div>
                         ) : (
                             <div>
-                                <h3 className="font-semibold text-lg text-foreground mb-4">Become a helper</h3>
+                                <h3 className="font-subtitle text-lg text-foreground mb-4">Become a helper</h3>
                                 <p className="text-sm text-muted-foreground mb-6">
                                     Request to become a helper for {projectName}. Once approved by a project admin, you&apos;ll be able to help with support tickets.
                                 </p>
@@ -192,7 +193,7 @@ export default function ProjectLandingPage() {
                                     <Button
                                         onClick={handleRequestHelper}
                                         disabled={createRequest.isPending}
-                                        className="bg-[#554abf] hover:bg-[#4a3fa3] text-white"
+                                        variant="brand"
                                     >
                                         {createRequest.isPending ? (
                                             <>
@@ -201,7 +202,7 @@ export default function ProjectLandingPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <i className="fi fi-rr-user-add inline-flex items-center justify-center leading-none w-4 h-4" />
+                                                <Icon name="fi-rr-user-add" />
                                                 Request to become a helper
                                             </>
                                         )}
@@ -212,8 +213,8 @@ export default function ProjectLandingPage() {
                                             You need to sign in to request helper status.
                                         </p>
                                         <Link href={`/auth/signin?redirect=${encodeURIComponent(`/projects/${projectId}`)}`}>
-                                            <Button className="bg-[#554abf] hover:bg-[#4a3fa3] text-white">
-                                                <LogIn className="w-4 h-4" />
+                                            <Button variant="brand">
+                                                <Icon name="fi-rr-sign-in-alt" />
                                                 Sign in to continue
                                             </Button>
                                         </Link>
@@ -226,12 +227,12 @@ export default function ProjectLandingPage() {
 
                 {/* Support Link */}
                 <div className="bg-card rounded-lg shadow-sm border border-border p-8">
-                    <h3 className="font-semibold text-lg text-foreground mb-4">Need support?</h3>
+                    <h3 className="font-subtitle text-lg text-foreground mb-4">Need support?</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                         If you&apos;re looking for help with this project, visit the support page.
                     </p>
                     <Link href={`/support?project=${projectId}`}>
-                        <Button variant="outline" className="border-[#554abf] text-[#554abf] hover:bg-[#554abf] hover:text-white">
+                        <Button variant="outline" className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground">
                             Visit support page
                         </Button>
                     </Link>

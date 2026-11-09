@@ -39,7 +39,23 @@ describe("Button", () => {
   it("applies the ghost variant class", () => {
     render(<Button variant="ghost">Ghost</Button>)
     const btn = screen.getByRole("button")
-    expect(btn.className).toMatch("hover:bg-[rgba(0,0,0,0.04)]")
+    expect(btn.className).toMatch("hover:bg-surface-hover")
+  })
+
+  it("applies the brand variant (solid brand purple with brand hover)", () => {
+    render(<Button variant="brand">Get support</Button>)
+    const btn = screen.getByRole("button")
+    expect(btn.className).toMatch(/\bbg-brand-primary\b/)
+    expect(btn.className).toMatch(/text-brand-foreground/)
+    expect(btn.className).toMatch(/hover:bg-brand-primary-hover/)
+  })
+
+  it("uses token-based styling, never hardcoded hex or rgba", () => {
+    for (const variant of ["default", "outline", "ghost", "lavender", "neutral", "brand"] as const) {
+      const { unmount } = render(<Button variant={variant}>{variant}</Button>)
+      expect(screen.getByRole("button").className).not.toMatch(/#[0-9a-fA-F]{3,6}|rgba\(/)
+      unmount()
+    }
   })
 
   it("applies additional className prop", () => {

@@ -33,8 +33,8 @@ export function TicketUnavailableNotice({
 }: TicketUnavailableNoticeProps) {
   if (linking) {
     return (
-      <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200" role="status">
-        <h1 className="text-2xl font-semibold text-foreground mb-2 flex items-center gap-2">
+      <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle" role="status">
+        <h1 className="text-2xl font-medium text-foreground mb-2 flex items-center gap-2">
           {!deferred && <Loader2 className="w-5 h-5 animate-spin text-brand-primary" />}
           {deferred ? "Link your guest conversation?" : "Linking your conversation…"}
         </h1>
@@ -53,8 +53,8 @@ export function TicketUnavailableNotice({
   }
   if (expired) {
     return (
-      <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-        <h1 className="text-2xl font-semibold text-foreground mb-2">Conversation not linked</h1>
+      <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
+        <h1 className="text-2xl font-medium text-foreground mb-2">Conversation not linked</h1>
         <p className="text-muted-foreground">This guest conversation wasn&rsquo;t linked to your account in time.</p>
         <p className="mt-4">
           <Link href={newConversationHref} className="text-brand-primary font-medium hover:underline">
@@ -65,8 +65,8 @@ export function TicketUnavailableNotice({
     )
   }
   return (
-    <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-      <h1 className="text-2xl font-semibold text-foreground mb-2">Ticket not found</h1>
+    <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
+      <h1 className="text-2xl font-medium text-foreground mb-2">Ticket not found</h1>
       <p className="text-muted-foreground">
         This ticket may have been removed or you may not have access to it.
       </p>

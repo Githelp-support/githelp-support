@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
-import { Clock, Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { useState } from "react"
 import type { TimeEntry } from "./log-time-drawer"
 import { TimeEntriesReviewStatus } from "@/components/ticket-chat/time-entry-review"
@@ -47,6 +48,12 @@ export function EndTicketDrawer({
   const [supportOutcome, setSupportOutcome] = useState("")
   const [ending, setEnding] = useState(false)
 
+  // The drawer stays mounted while closed (exit animation); reset the form on close.
+  const handleClose = () => {
+    setSupportOutcome("")
+    onClose()
+  }
+
   const formatTimeEntry = (entry: TimeEntry) => {
     return {
       type: entry.type === "together" ? "Together" : "Solo",
@@ -80,7 +87,7 @@ export function EndTicketDrawer({
     setEnding(true)
     try {
       await onEndTicket(supportOutcome)
-      onClose()
+      handleClose()
     } catch {
       // The page already reported the failure; keep the drawer open to retry.
     } finally {
@@ -88,38 +95,37 @@ export function EndTicketDrawer({
     }
   }
 
-  if (!isOpen) return null
-
   return (
     <DrawerPanel
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="End ticket"
       footerClassName="border-t-0"
       footer={
         <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="outline" onClick={handleClose} className="flex-1">
             Cancel
           </Button>
           {needsSummary ? (
             <Button
               onClick={() => void onRequestTimeReview?.()}
-              disabled={requestTimeReviewPending}
+              loading={requestTimeReviewPending}
               title="The user confirms all logged time at once before the session ends"
               variant="default"
               className="flex-1"
             >
-              {requestTimeReviewPending ? "Sending…" : "Send summary to user"}
+              Send summary to user
             </Button>
           ) : (
             <Button
               onClick={() => void handleEndTicket()}
-              disabled={!canEnd || ending}
+              disabled={!canEnd}
+              loading={ending}
               title={waitingForUser ? "Waiting for the user to confirm the logged time" : undefined}
               variant="default"
               className="flex-1"
             >
-              {ending ? "Ending…" : waitingForUser ? "Waiting for user confirmation" : "End ticket"}
+              {waitingForUser ? "Waiting for user confirmation" : "End ticket"}
             </Button>
           )}
         </div>
@@ -137,7 +143,7 @@ export function EndTicketDrawer({
         {needsSummary && (
           <div role="status" className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-foreground">
             <p className="font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-brand-primary" />
+              <Icon name="fi-rr-clock" className="text-brand-primary" />
               {pendingReview.length === 1
                 ? "1 logged entry needs the user's confirmation."
                 : `${pendingReview.length} logged entries need the user's confirmation.`}
@@ -152,7 +158,7 @@ export function EndTicketDrawer({
         {waitingForUser && (
           <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
             <p className="font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-amber-700" />
+              <Icon name="fi-rr-clock" className="text-amber-700" />
               Waiting for the user to confirm the logged time.
             </p>
             <p className="text-muted-foreground mt-1">
@@ -176,7 +182,7 @@ export function EndTicketDrawer({
               <RadioGroupItem value="not-able-to-help" id="not-able-to-help" />
               <Label htmlFor="not-able-to-help" className="text-sm text-muted-foreground flex items-center gap-2">
                 Was not able to help
-                <Info className="w-4 h-4 text-muted-foreground" />
+                <Icon name="fi-rr-info" className="text-muted-foreground" />
               </Label>
             </div>
           </RadioGroup>
@@ -192,9 +198,13 @@ export function EndTicketDrawer({
                   <div key={entry.id} className="py-2">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">{formatted.type === "Together" ? "T" : "S"}</span>
-                        </div>
+                        {/* Same 32px avatar as the people list, so the helper's colour matches everywhere */}
+                        <ProfileAvatar
+                          id={entry.helperUser?.id ?? entry.helperId}
+                          name={entry.helperUser?.name}
+                          avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                          size="md"
+                        />
                         <div>
                           <p className="text-sm font-medium text-foreground">{formatted.type}</p>
                           <p className="text-xs text-muted-foreground">{formatted.date}</p>
@@ -230,7 +240,7 @@ export function EndTicketDrawer({
         </div>
 
         <div className="bg-muted/50 rounded-lg p-4 border border-border">
-          <h4 className="text-[13px] font-semibold text-foreground mb-2">Completed support</h4>
+          <h4 className="text-ui font-semibold text-foreground mb-2">Completed support</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
             If the support was completed successfully, log the time spent. If you were not able to help, consider
             adjusting any time spent, in accordance with the user&apos;s expectations and actual delivery.

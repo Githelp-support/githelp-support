@@ -4,7 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { loginUserGoogle, signInWithEmail, signInWithGitHub } from "@/lib/supabase/auth"
-import { Loader2, Mail } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { refreshSavedGuestAdoption } from "@/lib/guest-adoption"
 
 interface SignInOptionsProps {
@@ -84,7 +85,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
       <Button
         onClick={handleGitHubSignIn}
         disabled={isLoading}
-        className="w-full bg-[#3C2EC5] hover:bg-[#3C2EC5]/90 text-white"
+        variant="brand" className="w-full"
         size="lg"
       >
         {isLoading ? (
@@ -104,7 +105,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
       <Button
         onClick={handleGoogleSignIn}
         disabled={isLoading}
-        className="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-300"
+        className="w-full bg-background hover:bg-surface-hover text-text-secondary border border-border-control"
         size="lg"
       >
         {isLoading ? (
@@ -193,7 +194,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
               </>
             ) : (
               <>
-                <Mail className="w-5 h-5 mr-2" />
+                <Icon name="fi-rr-envelope" size={5} className="mr-2" />
                 Email me a sign-in link
               </>
             )}

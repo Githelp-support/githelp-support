@@ -1,6 +1,6 @@
 "use client"
 
-import { Info } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useProjectSelection } from "@/contexts/project-context"
@@ -20,7 +20,7 @@ export function SandboxBanner() {
   return (
     <div className="shrink-0 w-full bg-amber-100 dark:bg-amber-950/40 border-b border-amber-300 dark:border-amber-800 px-6 py-2 flex items-center justify-between gap-4 text-sm text-amber-900 dark:text-amber-100">
       <div className="flex items-center gap-2 min-w-0">
-        <Info className="w-4 h-4 shrink-0" />
+        <Icon name="fi-rr-info" className="shrink-0" />
         <span className="truncate">
           You are exploring a sandbox project. Data here is for demo purposes only.
         </span>

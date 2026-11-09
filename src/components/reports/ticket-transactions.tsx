@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState, type ReactNode } from "react"
-import { ChevronRight } from "lucide-react"
+import { Icon } from "@/components/ui/icon"
 import { cn } from "@/lib/utils"
 import { transactionCountLabel } from "@/lib/ticket-groups"
 
@@ -57,11 +57,11 @@ export function TransactionsToggle({
       aria-expanded={expanded}
       aria-controls={expanded ? panelId : undefined}
       className={cn(
-        "mt-1 inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2 py-0.5 text-[11px] font-medium text-brand-primary hover:bg-brand-primary/15 cursor-pointer",
+        "mt-1 inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2 py-0.5 text-xs font-medium text-brand-primary hover:bg-brand-primary/15 cursor-pointer",
         className,
       )}
     >
-      <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
+      <Icon name="fi-rr-angle-small-right" size={3} className={cn("transition-transform", expanded && "rotate-90")} />
       {transactionCountLabel(count, noun)}
     </button>
   )
