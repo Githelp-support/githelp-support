@@ -628,7 +628,8 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                             <td className="px-6 py-3">
                               {(isCompleted || isCancelled) ? (
                                 <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
-                                  ✓ {isCompleted ? "Completed" : "Cancelled"}
+                                  <Icon name="fi-rr-check" />
+                                  {isCompleted ? "Completed" : "Cancelled"}
                                 </Badge>
                               ) : (
                                 <Badge variant="secondary" className="border-0 capitalize">

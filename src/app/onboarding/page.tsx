@@ -619,7 +619,12 @@ export default function OnboardingPage() {
                                             ask them to add you as an admin.
                                         </li>
                                         <li>
-                                            They can do that from <span className="text-foreground">Settings → Project → Admins</span>{" "}
+                                            They can do that from{" "}
+                                            <span className="text-foreground">
+                                                Settings <Icon name="fi-rr-angle-small-right" size={3.5} className="align-middle" />{" "}
+                                                Project <Icon name="fi-rr-angle-small-right" size={3.5} className="align-middle" />{" "}
+                                                Admins
+                                            </span>{" "}
                                             by sending an invite to{" "}
                                             <span className="text-foreground">{user.email ?? "your email address"}</span>.
                                         </li>

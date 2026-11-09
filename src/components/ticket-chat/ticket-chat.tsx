@@ -406,7 +406,7 @@ export function TicketChat(props: TicketChatProps) {
                                     className="text-xs"
                                     style={{
                                       color: "var(--muted-foreground)",
-                                      fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                                      fontFamily: 'var(--font-mono)',
                                       fontVariantNumeric: 'tabular-nums',
                                     }}
                                   >
@@ -441,7 +441,7 @@ export function TicketChat(props: TicketChatProps) {
                                       className="text-xs"
                                       style={{
                                         color: "var(--muted-foreground)",
-                                        fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+                                        fontFamily: 'var(--font-mono)',
                                         fontVariantNumeric: 'tabular-nums',
                                       }}
                                     >
@@ -472,13 +472,17 @@ export function TicketChat(props: TicketChatProps) {
                                       : "text-sm text-foreground"
                                   }
                                 >
-                                  <MarkdownContent
-                                    content={
-                                      msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
-                                        ? `✓ ${msg.content}`
-                                        : msg.content
-                                    }
-                                  />
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized" ? (
+                                    // The check sits in a box one text line tall, so it stays on the first line when the message wraps.
+                                    <div className="flex items-start gap-1.5 leading-normal">
+                                      <span className="flex h-lh shrink-0 items-center">
+                                        <Icon name="fi-rr-check" size={3.5} />
+                                      </span>
+                                      <MarkdownContent content={msg.content} className="min-w-0" />
+                                    </div>
+                                  ) : (
+                                    <MarkdownContent content={msg.content} />
+                                  )}
                                   {msg.senderType === "system" &&
                                     msg.paymentMetadata?.kind === "visitor_left" &&
                                     onStartNewConversation && (

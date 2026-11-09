@@ -78,7 +78,7 @@ export function CustomerChatIntro({
               className="text-xs"
               style={{
                 color: "var(--muted-foreground)",
-                fontFamily: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                fontFamily: "var(--font-mono)",
                 fontVariantNumeric: "tabular-nums",
               }}
             >

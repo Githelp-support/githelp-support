@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect } from "react"
+import { fontVariables } from "./fonts"
 import "./globals.css"
 
-// Replaces the root layout when it throws, so it brings its own <html>/<body>
-// and imports globals.css itself to get the tokens.
+// Replaces the root layout when it throws, so it brings its own <html>/<body>,
+// imports globals.css itself to get the tokens and sets the font variables.
 export default function GlobalError({
   error,
   reset,
@@ -17,7 +18,7 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <html lang="en">
+    <html lang="en" className={fontVariables}>
       <body className="m-0 flex min-h-screen items-center justify-center bg-page-muted p-6 font-sans text-foreground">
         <div className="max-w-sm text-center">
           <h1 className="mb-2 text-xl font-medium text-text-heading">Something went wrong</h1>

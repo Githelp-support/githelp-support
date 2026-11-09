@@ -20,7 +20,7 @@ export interface CodeBlockProps {
 const LINE_NUMBER_THRESHOLD = 3
 
 /** Same stack the chat timestamps use; explicit so nothing upstream can swap it for the sans font. */
-const CODE_FONT = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+const CODE_FONT = "var(--font-mono)"
 
 /**
  * Editor-style code block used for fenced code in chat messages: a header
