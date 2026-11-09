@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { Icon } from "@/components/ui/icon"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { useState } from "react"
 import type { TimeEntry } from "./log-time-drawer"
 import { TimeEntriesReviewStatus } from "@/components/ticket-chat/time-entry-review"
@@ -197,9 +198,13 @@ export function EndTicketDrawer({
                   <div key={entry.id} className="py-2">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">{formatted.type === "Together" ? "T" : "S"}</span>
-                        </div>
+                        {/* Same 32px avatar as the people list, so the helper's colour matches everywhere */}
+                        <ProfileAvatar
+                          id={entry.helperUser?.id ?? entry.helperId}
+                          name={entry.helperUser?.name}
+                          avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                          size="md"
+                        />
                         <div>
                           <p className="text-sm font-medium text-foreground">{formatted.type}</p>
                           <p className="text-xs text-muted-foreground">{formatted.date}</p>
