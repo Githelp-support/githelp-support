@@ -1,6 +1,5 @@
 import { Inter, Outfit } from "next/font/google"
 import localFont from "next/font/local"
-import { GeistMono } from "geist/font/mono"
 
 // Two body faces, picked by size (see the "Font by size" rules in globals.css):
 // Inter for text at 15px and below, Nudica for 16px and above.
@@ -33,7 +32,17 @@ const outfit = Outfit({
   variable: "--font-outfit",
 })
 
-export { GeistMono }
+// Geist Mono is declared here, from the woff2 the `geist` package ships, instead
+// of importing `GeistMono` from "geist/font/mono": the package's own fallback
+// list starts with ui-monospace and SFMono-Regular, which would put San Francisco
+// Mono back into every mono stack. Same file, variable and weight range.
+export const GeistMono = localFont({
+  src: "../../node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+  adjustFontFallback: false,
+  fallback: ["Menlo", "Consolas", "monospace"],
+})
 
 // Goes on <html> (root layout and global-error), so --font-inter, --font-nudica,
 // --font-geist-mono and --font-outfit exist on :root and the theme variables
