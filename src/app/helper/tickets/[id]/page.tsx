@@ -1308,7 +1308,7 @@ export default function TicketDetailPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsEndTicketDrawerOpen(true)}
-                    className="cursor-pointer text-foreground font-semibold text-sm hover:bg-transparent"
+                    className="cursor-pointer text-foreground font-medium text-sm hover:bg-transparent"
                   >
                     End session
                   </Button>
@@ -1476,9 +1476,7 @@ export default function TicketDetailPage() {
             {!isTicketEnded && canManageTicket && (
               <Button
                 variant="outline"
-                disabled={!paymentGate.isReady}
-                title={!paymentGate.isReady ? "Waiting for payment authorization" : undefined}
-                className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
                 onClick={() => {
                   if (isAdminButNotHelper) {
                     setPendingAction("logTime")
@@ -1488,7 +1486,7 @@ export default function TicketDetailPage() {
                   }
                 }}
               >
-                {paymentGate.isReady ? "Log time" : "Log time (waiting for payment)"}
+                Log time
               </Button>
             )}
           </div>
