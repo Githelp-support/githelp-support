@@ -22,12 +22,16 @@ import {
   TIME_ENTRY_AUTO_ACCEPT_HOURS,
   describeAutoAcceptDeadline,
   formatTime,
+  isTimeReviewRejected,
   MAX_TIME_ENTRY_MS,
+  type TimeReviewMessageMetadata,
 } from "@/hooks/useTimeEntries"
 import {
   DeleteTimeEntryDialog,
   TimeEntriesReviewStatus,
   TimeEntryAwaitingApprovalBanner,
+  TimeEntryRejectedBanner,
+  TimeReviewSystemMessage,
 } from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
@@ -86,6 +90,8 @@ interface Message {
   metadataKind?: string
   /** `time_entries_confirmed` message in which the user declined at least one entry. */
   hasDeclines?: boolean
+  /** Raw `metadata` of the persisted message (read by `TimeReviewSystemMessage`). */
+  metadata?: TimeReviewMessageMetadata
 }
 
 const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
@@ -334,6 +340,17 @@ export default function TicketDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeReviewRequestedAt, isTicketEnded])
 
+  // The user rejected the whole summary and no newer one has been sent. Read
+  // from the chat (the rejection is a `time_entries_confirmed` message), so it
+  // clears as soon as the helper sends a new summary or the ticket ends.
+  const timeReviewRejected = useMemo(
+    () =>
+      !isTicketEnded &&
+      !timeReviewRequested &&
+      isTimeReviewRejected((messagesData ?? []).map((msg) => msg.metadata as TimeReviewMessageMetadata)),
+    [isTicketEnded, timeReviewRequested, messagesData]
+  )
+
   const handleRequestTimeEntryReview = async () => {
     if (!ticketId) return
     try {
@@ -409,6 +426,7 @@ export default function TicketDetailPage() {
         type: undefined,
         metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
         hasDeclines: ((msg.metadata as { declined?: unknown[] } | null | undefined)?.declined?.length ?? 0) > 0,
+        metadata: msg.metadata as TimeReviewMessageMetadata,
       }))
     )
   }, [messagesData, isClaimed, claimer])
@@ -1125,7 +1143,11 @@ export default function TicketDetailPage() {
                                   : "text-sm text-foreground"
                               }
                             >
-                              <MarkdownContent content={msg.content} />
+                              {msg.sender === "system" && msg.metadataKind === "time_entries_confirmed" ? (
+                                <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
+                              ) : (
+                                <MarkdownContent content={msg.content} />
+                              )}
                             </div>
                           </div>
                         </>
@@ -1256,12 +1278,18 @@ export default function TicketDetailPage() {
             </div>
             </div>
 
-            {timeReviewRequested && (
+            {timeReviewRequested ? (
               <TimeEntryAwaitingApprovalBanner
                 pendingCount={pendingReviewCount}
                 customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
                 autoAcceptHint={describeAutoAcceptDeadline(timeReviewRequestedAt)}
               />
+            ) : (
+              timeReviewRejected && (
+                <TimeEntryRejectedBanner
+                  customerName={(ticketDetails?.user as { name?: string } | undefined)?.name ?? null}
+                />
+              )
             )}
 
             {endRequested && canManageTicket && (

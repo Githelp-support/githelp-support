@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useId, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -10,11 +10,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { FormField } from "@/components/ui/form-field"
 import { Label } from "@/components/ui/label"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { Icon } from "@/components/ui/icon"
-import { TIME_ENTRY_AUTO_ACCEPT_HOURS, type TimeEntryReviewStatus } from "@/lib/time-entries"
+import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
+import {
+  TIME_ENTRY_AUTO_ACCEPT_HOURS,
+  getTimeEntriesRejection,
+  isManualTimeConfirmation,
+  type TimeEntryReviewStatus,
+  type TimeReviewMessageMetadata,
+} from "@/lib/time-entries"
 
 /** Wording shown to the customer next to the reason field when they decline an entry. */
 export const DECLINE_TIME_ENTRY_PROMPT =
@@ -163,6 +172,8 @@ export interface TimeEntrySummaryItem {
   note?: string | null
   reviewStatus: TimeEntryReviewStatus
   helperName?: string | null
+  /** Profile of the helper who logged it, for the avatar. */
+  helperUser?: { id: string; name: string; avatarUrl: string | null }
 }
 
 export interface TimeEntrySummaryDecline {
@@ -188,12 +199,18 @@ function sumMinutes(entries: TimeEntrySummaryItem[]): { hours: number; minutes: 
   return { hours: Math.floor(total / 60), minutes: total % 60 }
 }
 
+/** The two steps of the summary dialog: the summary itself, or explaining a rejection of all of it. */
+type TimeEntrySummaryView = "summary" | "reject"
+
 /**
  * Customer-side summary of everything the helper logged, confirmed with a
  * single action before the session ends. Each not-yet-confirmed entry can be
  * declined individually; a decline needs a reason, which the RPC posts into
  * the chat for the helper. Entries confirmed earlier (a previous summary) are
  * listed read-only so the total matches what will be charged.
+ *
+ * "Reject logged time" switches the dialog to a second view that asks for one
+ * explanation and declines every pending entry with it.
  */
 export function TimeEntrySummaryDialog({
   open,
@@ -211,39 +228,71 @@ export function TimeEntrySummaryDialog({
   /** e.g. "in about 5 hours" — when the summary is confirmed automatically if left alone. */
   autoAcceptHint?: string | null
 }) {
+  const [view, setView] = useState<TimeEntrySummaryView>("summary")
+  // Back to the summary whenever the dialog closes, whether the customer
+  // dismissed it or the parent closed it after a confirmation.
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (!open) setView("summary")
+  }
+  const rejecting = view === "reject"
+
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Confirm the logged time</DialogTitle>
+          <DialogTitle>{rejecting ? "Logged time rejected" : "Confirm the logged time"}</DialogTitle>
           <DialogDescription className="leading-relaxed">
-            The helper is ready to end the session. This is the time they logged on this ticket. Confirm it to let the
-            session end; only confirmed time is charged.
-            {autoAcceptHint ? ` It is confirmed automatically ${autoAcceptHint} otherwise.` : ""}
+            {rejecting ? (
+              "You have rejected the time logged. Please explain why you are rejecting the logged time. Your explanation will be shared with your helper(s) in the ticket chat, so you together can coordinate what the logged time should be."
+            ) : (
+              <>
+                The helper is ready to end the session. This is the time they logged on this ticket. Confirm it to let
+                the session end; only confirmed time is charged.
+                {autoAcceptHint ? ` It is confirmed automatically ${autoAcceptHint} otherwise.` : ""}
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
         {/* Content unmounts with the dialog, so every summary starts without stale declines. */}
         {open && (
-          <TimeEntrySummaryForm entries={entries} pending={pending} onCancel={() => onOpenChange(false)} onConfirm={onConfirm} />
+          <TimeEntrySummaryForm
+            entries={entries}
+            pending={pending}
+            view={view}
+            onViewChange={setView}
+            onConfirm={onConfirm}
+          />
         )}
       </DialogContent>
     </Dialog>
   )
 }
 
+/**
+ * Body and footer of both views. It stays mounted while the dialog is open, so
+ * the per-entry decline drafts survive a trip to the reject view and back.
+ */
 function TimeEntrySummaryForm({
   entries,
   pending,
-  onCancel,
+  view,
+  onViewChange,
   onConfirm,
 }: {
   entries: TimeEntrySummaryItem[]
   pending?: boolean
-  onCancel: () => void
+  view: TimeEntrySummaryView
+  onViewChange: (view: TimeEntrySummaryView) => void
   onConfirm: (declines: TimeEntrySummaryDecline[]) => void | Promise<void>
 }) {
   // entryId → reason draft. Presence in the map means "declined".
   const [declines, setDeclines] = useState<Record<string, string>>({})
+  // One explanation for rejecting everything that is pending.
+  const [rejectReason, setRejectReason] = useState("")
+  const rejectReasonId = useId()
+  const rejecting = view === "reject"
 
   const toConfirm = useMemo(() => entries.filter((e) => e.reviewStatus === "pending"), [entries])
   const alreadyConfirmed = useMemo(() => entries.filter((e) => e.reviewStatus === "accepted"), [entries])
@@ -270,13 +319,18 @@ function TimeEntrySummaryForm({
       Object.entries(declines).map(([entryId, reason]) => ({ entryId, reason: reason.trim() })),
     )
 
+  const trimmedRejectReason = rejectReason.trim()
+  const submitRejection = () =>
+    void onConfirm(toConfirm.map((e) => ({ entryId: e.id, reason: trimmedRejectReason })))
+
   return (
     <>
-      <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 space-y-4">
+      {/* Hidden rather than unmounted in the reject view, so Cancel returns to it as it was left. */}
+      <div hidden={rejecting} className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 space-y-4">
         {toConfirm.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">There is no logged time waiting for your confirmation.</p>
         ) : (
-          <ul className="space-y-2" aria-label="Logged time to confirm">
+          <ul className="max-h-54 space-y-2 overflow-y-auto" aria-label="Logged time to confirm">
             {toConfirm.map((entry) => {
               const declined = declinedIds.has(entry.id)
               const reasonId = `decline-reason-${entry.id}`
@@ -291,9 +345,14 @@ function TimeEntrySummaryForm({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 shrink-0 bg-muted rounded-full flex items-center justify-center">
-                        <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                      </div>
+                      <ProfileAvatar
+                        id={entry.helperUser?.id}
+                        name={entry.helperUser?.name ?? entry.helperName}
+                        avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                        size="sm"
+                        radius="8.25px"
+                        className="w-6 h-6"
+                      />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground capitalize">
                           {entry.type}
@@ -316,7 +375,7 @@ function TimeEntrySummaryForm({
                       </button>
                     </div>
                   </div>
-                  {entry.note && <p className="text-xs text-muted-foreground mt-2 ml-11">{entry.note}</p>}
+                  {entry.note && <p className="text-xs text-muted-foreground mt-2 ml-9">{entry.note}</p>}
                   {declined && (
                     <div className="mt-3 space-y-1.5">
                       <Label htmlFor={reasonId} className="text-xs text-muted-foreground">
@@ -367,9 +426,9 @@ function TimeEntrySummaryForm({
         </div>
       </div>
 
-      <DialogFooter>
-        <Button variant="outline" onClick={onCancel} disabled={pending}>
-          Not now
+      <DialogFooter hidden={rejecting} className="mt-0.75">
+        <Button variant="outline" onClick={() => onViewChange("reject")} disabled={pending || toConfirm.length === 0}>
+          Reject logged time
         </Button>
         <Button onClick={submit} disabled={!canSubmit}>
           {pending
@@ -381,6 +440,36 @@ function TimeEntrySummaryForm({
                 : "Confirm logged time"}
         </Button>
       </DialogFooter>
+
+      {rejecting && (
+        <>
+          <FormField label="Your explanation" id={rejectReasonId}>
+            <Textarea
+              id={rejectReasonId}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value.slice(0, DECLINE_REASON_MAX_LENGTH))}
+              rows={5}
+              // Fixed sizing so `rows` sets the height (the primitive grows with its content).
+              className="field-sizing-fixed resize-none"
+              maxLength={DECLINE_REASON_MAX_LENGTH}
+              autoFocus
+              disabled={pending}
+            />
+          </FormField>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onViewChange("summary")} disabled={pending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={submitRejection}
+              disabled={trimmedRejectReason.length === 0 || toConfirm.length === 0}
+              loading={pending}
+            >
+              Submit
+            </Button>
+          </DialogFooter>
+        </>
+      )}
     </>
   )
 }
@@ -467,5 +556,69 @@ export function TimeEntryAwaitingApprovalBanner({
         </p>
       </div>
     </div>
+  )
+}
+
+/**
+ * Helper-side strip above the chat input after the user rejected the whole
+ * summary. The explanation itself is in the chat (`TimeReviewSystemMessage`).
+ */
+export function TimeEntryRejectedBanner({
+  customerName,
+  className,
+}: {
+  customerName?: string | null
+  className?: string
+}) {
+  return (
+    <div
+      role="status"
+      className={cn(
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-amber-300 bg-amber-50 px-4 py-3",
+        className,
+      )}
+    >
+      <Icon name="fi-rr-cross-circle" className="mt-0.5 shrink-0 text-amber-700" />
+      <div className="flex-1 text-sm leading-relaxed text-foreground">
+        <p className="font-medium">{customerName || "The user"} has rejected the logged time</p>
+        <p className="text-muted-foreground">See the explanation for the rejection in the chat.</p>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Body of a `time_entries_confirmed` chat message. A rejection of the whole
+ * summary shows who rejected it and their explanation as a quote; anything
+ * else keeps the message's own text, with a "Confirmed" badge when the user
+ * (not the 24h job) confirmed time.
+ */
+export function TimeReviewSystemMessage({
+  content,
+  metadata,
+}: {
+  content: string
+  metadata?: TimeReviewMessageMetadata
+}) {
+  const rejection = getTimeEntriesRejection(metadata)
+  if (rejection) {
+    return (
+      <div className="space-y-2 text-sm leading-normal">
+        <p className="font-medium text-foreground">{rejection.reviewerName} rejected the logged time</p>
+        <blockquote className="border-l-2 border-muted-foreground/40 pl-3 whitespace-pre-wrap break-words text-text-secondary">
+          {rejection.reason}
+        </blockquote>
+      </div>
+    )
+  }
+  return (
+    <>
+      <MarkdownContent content={content} />
+      {isManualTimeConfirmation(metadata) && (
+        <div className="mt-2 flex justify-start">
+          <TimeEntryReviewStatusBadge status="accepted" />
+        </div>
+      )}
+    </>
   )
 }

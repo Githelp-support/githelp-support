@@ -17,6 +17,7 @@ import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components
 import {
   TimeEntrySummaryBanner,
   TimeEntrySummaryDialog,
+  TimeReviewSystemMessage,
   type TimeEntrySummaryDecline,
   type TimeEntrySummaryItem,
 } from "@/components/ticket-chat/time-entry-review"
@@ -472,13 +473,17 @@ export function TicketChat(props: TicketChatProps) {
                                       : "text-sm text-foreground"
                                   }
                                 >
-                                  <MarkdownContent
-                                    content={
-                                      msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
-                                        ? `✓ ${msg.content}`
-                                        : msg.content
-                                    }
-                                  />
+                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "time_entries_confirmed" ? (
+                                    <TimeReviewSystemMessage content={msg.content} metadata={msg.paymentMetadata} />
+                                  ) : (
+                                    <MarkdownContent
+                                      content={
+                                        msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_authorized"
+                                          ? `✓ ${msg.content}`
+                                          : msg.content
+                                      }
+                                    />
+                                  )}
                                   {msg.senderType === "system" &&
                                     msg.paymentMetadata?.kind === "visitor_left" &&
                                     onStartNewConversation && (
