@@ -102,8 +102,8 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
       <DrawerPanel isOpen={isOpen} onClose={onClose} title="Creating new SLA">
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 px-6 py-5 space-y-6 overflow-y-auto max-h-full">
-            <div className="space-y-4">
+          <div className="flex-1 px-6 py-5 space-y-7 overflow-y-auto max-h-full">
+            <div className="space-y-5">
               <FormField label="Contract name">
                 <Input
                   placeholder="Choose name"
@@ -253,7 +253,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   />
                 </div>
 
-                <FormField label="USD/min - First 60 min">
+                <FormField label="USD/min - First 60 min" className="pt-1">
                   <Input
                     placeholder="USD 0.00"
                     value={formData.firstSixtyMinRate}
@@ -262,7 +262,7 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                   />
                 </FormField>
 
-                <FormField label="USD/min - After 60 min">
+                <FormField label="USD/min - After 60 min" className="pt-1">
                   <Input
                     placeholder="USD 0.00"
                     value={formData.afterSixtyMinRate}
