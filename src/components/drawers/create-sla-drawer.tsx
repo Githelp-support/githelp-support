@@ -102,11 +102,8 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
       <DrawerPanel isOpen={isOpen} onClose={onClose} title="Creating new SLA">
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto max-h-full">
-            {/* Contact details */}
+          <div className="flex-1 px-6 py-5 space-y-6 overflow-y-auto max-h-full">
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-foreground">Contact details</h3>
-
               <FormField label="Contract name">
                 <Input
                   placeholder="Choose name"
@@ -140,8 +137,8 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             </div>
 
             {/* Support limitations */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-foreground">Support limitations</h3>
+            <div className="space-y-3">
+              <Label className="text-ui font-semibold text-foreground">Support limitations</Label>
 
               <RadioGroup
                 value={formData.supportLimitation}
@@ -151,18 +148,18 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
                     setFormData((prev) => ({ ...prev, monthlyHours: "", unusedHoursRollover: false, startPrice: "", firstSixtyMinRate: "", afterSixtyMinRate: "" }))
                   }
                 }}
-                className="space-y-3"
+                className="grid gap-2.5"
               >
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="unlimited" id="unlimited" className="border-border-control" />
-                  <Label htmlFor="unlimited" className="text-sm text-text-secondary flex items-center gap-2">
+                <div className="flex items-center space-x-2.5">
+                  <RadioGroupItem value="unlimited" id="unlimited" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                  <Label htmlFor="unlimited" className="cursor-pointer text-sm font-normal text-foreground/80">
                     Unlimited hours
                     <Icon name="fi-rr-info" className="text-text-tertiary" />
                   </Label>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <RadioGroupItem value="limited" id="limited" className="border-border-control" />
-                  <Label htmlFor="limited" className="text-sm text-text-secondary flex items-center gap-2">
+                <div className="flex items-center space-x-2.5">
+                  <RadioGroupItem value="limited" id="limited" className="size-[18px] border-muted-foreground/40 data-[state=checked]:border-primary" />
+                  <Label htmlFor="limited" className="cursor-pointer text-sm font-normal text-foreground/80">
                     Limited hours
                     <Icon name="fi-rr-info" className="text-text-tertiary" />
                   </Label>
@@ -200,21 +197,22 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
               </div>
             )}
 
-            {/* Subscription cost */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-                Subscription cost
+            {/* Subscription */}
+            <div className="space-y-3">
+              <Label className="text-ui font-semibold text-foreground">
+                Subscription
                 <Icon name="fi-rr-info" className="text-text-tertiary" />
-              </h3>
+              </Label>
 
-              <FormField label="Cost">
+              <div className="space-y-2">
+                <label className="text-sm text-text-secondary flex items-center gap-2">Cost</label>
                 <Input
                   placeholder="USD 0.00"
                   value={formData.subscriptionCost}
                   onChange={(e) => handleInputChange("subscriptionCost", e.target.value)}
                   className="border-border-control"
                 />
-              </FormField>
+              </div>
 
               <div className="space-y-2">
                 <label className="text-sm text-text-secondary flex items-center gap-2">
@@ -276,8 +274,8 @@ export function CreateSLADrawer({ isOpen, onClose, onSubmit }: CreateSLADrawerPr
             )}
 
             {/* Response times */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-foreground">Response times</h3>
+            <div className="space-y-3">
+              <Label className="text-ui font-semibold text-foreground">Response times</Label>
 
               <div className="space-y-2">
                 <label className="text-sm text-text-secondary flex items-center gap-2">
