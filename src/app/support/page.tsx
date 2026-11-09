@@ -684,9 +684,9 @@ export default function SupportPage() {
                   </div>
                 )}
                 <h1 className="text-display font-normal text-text-secondary text-left">
-                  Welcome to the support page for <span className="font-semibold">{projectName}</span>
+                  Welcome to the support page for <span className="font-medium">{projectName}</span>
                 </h1>
-                <p className="text-base font-medium text-text-secondary text-left">
+                <p className="text-base font-normal font-sans text-muted-foreground text-left">
                   Get help with an issue by an expert validated by {projectName}
                 </p>
                 <div className="flex items-center gap-3">
@@ -806,7 +806,7 @@ export default function SupportPage() {
           )
         ) : (
           <div className="flex-1 overflow-y-auto">
-            <div className={`max-w-7xl mx-auto py-8 px-6 md:py-12 ${activeTab === "rates" ? "md:px-18" : ""}`}>
+            <div className="max-w-7xl mx-auto py-8 px-6 md:py-12 md:px-18">
               {activeTab === "rates" && (
                 <RatesAndDetailsContent
                   projectName={projectName}
