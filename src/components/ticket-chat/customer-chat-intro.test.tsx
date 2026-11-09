@@ -18,9 +18,12 @@ const baseProps = {
 describe("CustomerChatIntro rates", () => {
   it("lists the three rates for a paid project", () => {
     render(<CustomerChatIntro {...baseProps} />)
-    expect(screen.getByText("USD 10.00")).toBeInTheDocument()
-    expect(screen.getByText("USD 1.50/min")).toBeInTheDocument()
-    expect(screen.getByText("USD 1.00/min")).toBeInTheDocument()
+    expect(screen.getByText("10.00")).toBeInTheDocument()
+    expect(screen.getByText("Start price (USD)")).toBeInTheDocument()
+    expect(screen.getByText("1.50")).toBeInTheDocument()
+    expect(screen.getByText("First 60 min (USD/min)")).toBeInTheDocument()
+    expect(screen.getByText("1.00")).toBeInTheDocument()
+    expect(screen.getByText("After 60 min (USD/min)")).toBeInTheDocument()
     expect(screen.queryByText("Free support")).not.toBeInTheDocument()
   })
 
@@ -34,8 +37,8 @@ describe("CustomerChatIntro rates", () => {
     )
     expect(screen.getByText("Free support")).toBeInTheDocument()
     expect(screen.getByText(/Acme offers support for free/)).toBeInTheDocument()
-    expect(screen.queryByText("USD 0.00")).not.toBeInTheDocument()
-    expect(screen.queryByText("Start price")).not.toBeInTheDocument()
+    expect(screen.queryByText("0.00")).not.toBeInTheDocument()
+    expect(screen.queryByText("Start price (USD)")).not.toBeInTheDocument()
     // The rest of the intro is unaffected.
     expect(screen.getByText("Welcome!")).toBeInTheDocument()
     expect(screen.getByText(/signed in as Alice/)).toBeInTheDocument()
