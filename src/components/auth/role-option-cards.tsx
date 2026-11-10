@@ -81,8 +81,8 @@ export function RoleOptionCards({
                             {showIcons && <Icon name={option.icon} size={6} className="mt-0.5 text-brand-primary" />}
                             <div className="flex-1">
                                 <div className="font-subtitle text-lg text-foreground">{option.title}</div>
-                                <div className="text-sm text-muted-foreground mt-1">{option.description}</div>
-                                {extra ? <div className="text-xs text-muted-foreground mt-2">{extra}</div> : null}
+                                <div className="text-sm font-normal text-muted-foreground mt-1">{option.description}</div>
+                                {extra ? <div className="text-xs font-normal text-muted-foreground mt-2">{extra}</div> : null}
                             </div>
                             {busyRole === option.role && (
                                 <Loader2 className="w-5 h-5 mt-1 animate-spin text-muted-foreground shrink-0" />

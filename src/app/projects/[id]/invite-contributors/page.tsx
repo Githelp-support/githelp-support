@@ -174,23 +174,13 @@ export default function InviteContributorsPage() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-2xl">
                 <CardHeader>
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <CardTitle className="text-2xl font-medium">
-                                Invite contributors as helpers
-                            </CardTitle>
-                            <CardDescription className="mt-1">
-                                Select top contributors from {fullName || "your repository"} to invite as helpers.
-                                They&apos;ll receive a unique link. If they sign in with GitHub, we&apos;ll match them automatically.
-                            </CardDescription>
-                        </div>
-                        <Button variant="outline" asChild>
-                            <Link href={`/projects/${projectId}`}>
-                                <Icon name="fi-rr-arrow-right" className="rotate-180" />
-                                Back to project
-                            </Link>
-                        </Button>
-                    </div>
+                    <CardTitle className="text-2xl font-medium">
+                        Invite contributors as helpers
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                        Select top contributors from {fullName || "your repository"} to invite as helpers.
+                        They&apos;ll receive a unique link. If they sign in with GitHub, we&apos;ll match them automatically.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {!githubToken ? (
@@ -245,12 +235,12 @@ export default function InviteContributorsPage() {
                                                 <Image
                                                     src={c.avatar_url}
                                                     alt={c.login}
-                                                    width={40}
-                                                    height={40}
+                                                    width={32}
+                                                    height={32}
                                                     className="rounded-full"
                                                 />
                                                 <div className="min-w-0">
-                                                    <div className="font-medium truncate">{c.login}</div>
+                                                    <div className="text-sm font-medium truncate">{c.login}</div>
                                                     <div className="text-sm text-muted-foreground">
                                                         {c.contributions} contributions
                                                     </div>
@@ -281,7 +271,7 @@ export default function InviteContributorsPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <Icon name="fi-rr-users" />
+                                        <Icon name="fi-rr-user-add" />
                                         Invite {selectedContributors.size} as helpers
                                     </>
                                 )}
@@ -323,7 +313,7 @@ export default function InviteContributorsPage() {
 
                     <div className="pt-2.5">
                         <Button asChild>
-                            <Link href="/">Continue to dashboard</Link>
+                            <Link href="/">{hasInvited ? "Go to project dashboard" : "Add helpers later"}</Link>
                         </Button>
                     </div>
                 </CardContent>
