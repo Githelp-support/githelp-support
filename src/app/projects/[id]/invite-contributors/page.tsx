@@ -313,7 +313,7 @@ export default function InviteContributorsPage() {
 
                     <div className="pt-2.5">
                         <Button asChild>
-                            <Link href="/">Add helpers later</Link>
+                            <Link href="/">{hasInvited ? "Go to project dashboard" : "Add helpers later"}</Link>
                         </Button>
                     </div>
                 </CardContent>

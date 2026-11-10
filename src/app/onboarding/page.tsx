@@ -67,17 +67,15 @@ type OnboardingRole = "admin" | "helper"
 function ProjectLogo({
     logoUrl,
     projectName,
-    size = "w-8 h-8",
 }: {
     logoUrl: string | null | undefined
     projectName: string
-    size?: string
 }) {
     const hasLogo = typeof logoUrl === "string" && logoUrl.length > 0
     return (
-        <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${SQUIRCLE_RADIUS[32]} shrink-0`}>
+        <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} shrink-0`}>
             {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
-            <AvatarFallback className={`bg-brand-primary text-brand-foreground text-xs ${SQUIRCLE_RADIUS[32]}`}>
+            <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                 {projectName?.[0]?.toUpperCase() || "?"}
             </AvatarFallback>
         </Avatar>
@@ -526,7 +524,6 @@ export default function OnboardingPage() {
                                                     <ProjectLogo
                                                         logoUrl={match.logo_url}
                                                         projectName={match.name}
-                                                        size="w-8 h-8"
                                                     />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="font-medium text-foreground truncate">{match.name}</div>
@@ -598,7 +595,6 @@ export default function OnboardingPage() {
                             <ProjectLogo
                                 logoUrl={selectedMatch.logo_url}
                                 projectName={selectedMatch.name}
-                                size="w-10 h-10"
                             />
                             <CardTitle className="text-2xl font-medium">{selectedMatch.name} is already on Githelp</CardTitle>
                         </div>
@@ -794,11 +790,11 @@ export default function OnboardingPage() {
                     <CardContent className="space-y-4">
                         <Button
                             onClick={() => setStep("create-manual")}
-                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
+                            className="group w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
-                                <Icon name="fi-rr-add-folder" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-brand-primary" />
+                                <Icon name="fi-rr-add-folder" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
                                 <div>
                                     <div className="font-subtitle text-lg text-foreground">Create from scratch</div>
                                     <div className="text-sm font-normal text-muted-foreground mt-1">
@@ -810,11 +806,11 @@ export default function OnboardingPage() {
 
                         <Button
                             onClick={() => setStep("create-github")}
-                            className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
+                            className="group w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary"
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
-                                <Icon name="fi-brands-github" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-brand-primary" />
+                                <Icon name="fi-brands-github" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
                                 <div>
                                     <div className="font-subtitle text-lg text-foreground">Import from GitHub</div>
                                     <div className="text-sm font-normal text-muted-foreground mt-1">
@@ -828,11 +824,11 @@ export default function OnboardingPage() {
                             <Button
                                 onClick={handleCreateSandbox}
                                 disabled={isCreating}
-                                className="w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
+                                className="group w-full h-auto py-6 flex flex-col items-start gap-2 bg-background hover:bg-surface-hover text-left border-2 border-border hover:border-brand-primary disabled:opacity-50"
                                 variant="outline"
                             >
                                 <div className="flex items-start gap-3 w-full">
-                                    <Icon name="fi-rr-flask" size={6} className="mt-0.5 text-brand-primary" />
+                                    <Icon name="fi-rr-flask" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
                                     <div className="flex-1">
                                         <div className="font-subtitle text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
