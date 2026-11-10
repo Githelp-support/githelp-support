@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import type { CustomerTimeEntryDisplay } from "@/hooks/useCustomerTicketSidebar"
 import type { UserActiveTicketSidebarItem } from "@/hooks/useTicketsWithDetails"
 import { SidebarSectionHeading, SidebarDivider } from "./sidebar-section"
@@ -48,9 +49,15 @@ export function CustomerTicketSidebarFooter({
                   <div key={entry.id} className="py-2 border-b border-border">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">{entry.type === "together" ? "T" : "S"}</span>
-                        </div>
+                        {/* Same 24px size as the helper ticket page; radius scaled from the chat avatars */}
+                        <ProfileAvatar
+                          id={entry.helperUserId}
+                          name={entry.helperName}
+                          avatarUrl={entry.helperAvatarUrl ?? null}
+                          size="sm"
+                          radius="8.25px"
+                          className="w-6 h-6"
+                        />
                         <span className="text-ui text-muted-foreground capitalize">{entry.type}</span>
                       </div>
                       <span
@@ -113,8 +120,7 @@ export function CustomerTicketSidebarFooter({
                       />
                     ) : (
                       <div
-                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-                        style={{ backgroundColor: getAvatarColorHexForId(item.id) }}
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center bg-brand-primary text-brand-foreground text-sm font-medium shrink-0`}
                       >
                         {item.avatarInitial}
                       </div>

@@ -14,6 +14,7 @@ import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -505,12 +506,11 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                           <tr key={helper.id} className="border-b border-border-subtle text-ui transition-colors duration-fast ease-out hover:bg-surface-hover">
                             <td className="px-6 py-3">
                               <div className="flex items-center gap-3">
-                                <div
-                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                                  style={{ backgroundColor: avatarColor(helperAvatarKeyMap.get(helper.id) ?? helper.id) }}
-                                >
-                                  {getInitial(helper.name)}
-                                </div>
+                                <ProfileAvatar
+                                  id={helperAvatarKeyMap.get(helper.id) ?? helper.id}
+                                  name={helper.name}
+                                  size="md"
+                                />
                                 <span className="text-sm text-foreground font-medium">{helper.name}</span>
                               </div>
                             </td>
@@ -611,12 +611,14 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                             </td>
                             <td className="px-6 py-3">
                               <div className="flex items-center gap-2">
-                                <div
-                                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold"
-                                  style={{ backgroundColor: avatarColor(primaryHelperAvatarKey) }}
-                                >
-                                  {getInitial(primaryHelperName)}
-                                </div>
+                                {/* Same size as before (24px); radius scaled from the chat avatars (9.625px at 28px) */}
+                                <ProfileAvatar
+                                  id={primaryHelperAvatarKey}
+                                  name={primaryHelperName}
+                                  size="sm"
+                                  radius="8.25px"
+                                  className="w-6 h-6"
+                                />
                                 <span className="text-sm text-muted-foreground">{primaryHelperName}</span>
                               </div>
                             </td>

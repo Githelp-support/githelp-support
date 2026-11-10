@@ -132,7 +132,7 @@ describe("TimeEntrySummaryDialog", () => {
         onOpenChange={() => {}}
         onConfirm={() => {}}
         entries={[
-          item({ helperUser: { id: "u-ada", name: "Ada", avatarUrl: null } }),
+          item({ helperUserId: "u-ada" }),
           item({ id: "e2", helperName: "Grace", note: "Fixed the webhook" }),
         ]}
       />,

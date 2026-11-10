@@ -47,7 +47,8 @@ import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicke
 import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
-import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
+import { getAvatarColorHexForId } from "@/lib/constants"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { prepareOutgoingMessage } from "@/lib/code-format"
 import { stripTicketAttachments } from "@/lib/ticket-attachments"
 import { RatesAndDetailsContent } from "@/components/support/rates-and-details-content"
@@ -73,6 +74,10 @@ const TAB_KEY_TO_LABEL: Record<TabKey, string> = {
 export default function SupportPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("get-support")
   const [hasEnteredChat, setHasEnteredChat] = useState(false)
+  // Controlled so the "I have an SLA ID" explanation opens on tap/click as
+  // well as on hover and focus (the latter two come from Radix via the
+  // root TooltipProvider).
+  const [slaTipOpen, setSlaTipOpen] = useState(false)
   const { user, setProjectRole } = useUser()
   // Guests (anonymous session, see user-context) chat without an account:
   // `user.id` stays undefined for them, `guestId` carries their auth id.
@@ -681,9 +686,9 @@ export default function SupportPage() {
                   </div>
                 )}
                 <h1 className="text-display font-normal text-text-secondary text-left">
-                  Welcome to the support page for <span className="font-semibold">{projectName}</span>
+                  Welcome to the support page for <span className="font-medium">{projectName}</span>
                 </h1>
-                <p className="text-base font-medium text-text-secondary text-left">
+                <p className="text-base font-normal font-sans text-muted-foreground text-left">
                   Get help with an issue by an expert validated by {projectName}
                 </p>
                 <div className="flex items-center gap-3">
@@ -693,12 +698,20 @@ export default function SupportPage() {
                   >
                     Get support
                   </Button>
-                  <Button
-                    title={ILLUSTRATIVE_BUTTON_TOOLTIP}
-                    variant="lavender"
-                  >
-                    I have an SLA ID
-                  </Button>
+                  <Tooltip open={slaTipOpen} onOpenChange={setSlaTipOpen}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="lavender"
+                        onClick={() => setSlaTipOpen((v) => !v)}
+                      >
+                        I have an SLA ID
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start">
+                      Accessing help through an SLA ID is currently not activated.
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </div>
@@ -795,7 +808,7 @@ export default function SupportPage() {
           )
         ) : (
           <div className="flex-1 overflow-y-auto">
-            <div className={`max-w-7xl mx-auto py-8 px-6 md:py-12 ${activeTab === "rates" ? "md:px-18" : ""}`}>
+            <div className="max-w-7xl mx-auto py-8 px-6 md:py-12 md:px-18">
               {activeTab === "rates" && (
                 <RatesAndDetailsContent
                   projectName={projectName}

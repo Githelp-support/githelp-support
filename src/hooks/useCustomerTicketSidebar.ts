@@ -22,8 +22,9 @@ export interface CustomerTimeEntryDisplay {
     autoAccepted?: boolean;
     /** Helper who logged it; shown in the confirmation summary. */
     helperName?: string | null;
-    /** Profile of that helper, for their avatar in the confirmation summary. */
-    helperUser?: { id: string; name: string; avatarUrl: string | null };
+    /** Stable id for the helper's avatar colour (user id, falling back to helper_id). */
+    helperUserId?: string | null;
+    helperAvatarUrl?: string | null;
 }
 
 /**
@@ -84,9 +85,8 @@ export function useCustomerTicketSidebar(
                 declineReason: entry.decline_reason ?? null,
                 autoAccepted: entry.auto_accepted ?? false,
                 helperName: helperUser?.name ?? null,
-                helperUser: helperUser
-                    ? { id: helperUser.id, name: helperUser.name, avatarUrl: helperUser.avatar_url ?? null }
-                    : undefined,
+                helperUserId: helperUser?.id ?? entry.helper_id ?? null,
+                helperAvatarUrl: helperUser?.avatar_url ?? null,
             };
         });
         // Declined entries stay listed (marked as declined) but don't count.

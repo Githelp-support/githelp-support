@@ -172,8 +172,9 @@ export interface TimeEntrySummaryItem {
   note?: string | null
   reviewStatus: TimeEntryReviewStatus
   helperName?: string | null
-  /** Profile of the helper who logged it, for the avatar. */
-  helperUser?: { id: string; name: string; avatarUrl: string | null }
+  /** Stable id for the helper's avatar colour (user id, falling back to helper_id). */
+  helperUserId?: string | null
+  helperAvatarUrl?: string | null
 }
 
 export interface TimeEntrySummaryDecline {
@@ -346,9 +347,9 @@ function TimeEntrySummaryForm({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <ProfileAvatar
-                        id={entry.helperUser?.id}
-                        name={entry.helperUser?.name ?? entry.helperName}
-                        avatarUrl={entry.helperUser?.avatarUrl ?? null}
+                        id={entry.helperUserId}
+                        name={entry.helperName}
+                        avatarUrl={entry.helperAvatarUrl ?? null}
                         size="sm"
                         radius="8.25px"
                         className="w-6 h-6"
