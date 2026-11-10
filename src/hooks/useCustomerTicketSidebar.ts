@@ -73,6 +73,7 @@ export function useCustomerTicketSidebar(
         const entries: CustomerTimeEntryDisplay[] = timeEntriesFromDb.map((entry) => {
             const { hours, minutes } = timeMillisecondsToHoursMinutes(entry.time_milliseconds);
             const reviewStatus = getTimeEntryReviewStatus(entry);
+            const helperUser = entry.helper?.user;
             return {
                 id: entry.id,
                 type: entry.type,
@@ -83,9 +84,9 @@ export function useCustomerTicketSidebar(
                 reviewStatus,
                 declineReason: entry.decline_reason ?? null,
                 autoAccepted: entry.auto_accepted ?? false,
-                helperName: entry.helper?.user?.name ?? null,
-                helperUserId: entry.helper?.user?.id ?? entry.helper_id ?? null,
-                helperAvatarUrl: entry.helper?.user?.avatar_url ?? null,
+                helperName: helperUser?.name ?? null,
+                helperUserId: helperUser?.id ?? entry.helper_id ?? null,
+                helperAvatarUrl: helperUser?.avatar_url ?? null,
             };
         });
         // Declined entries stay listed (marked as declined) but don't count.

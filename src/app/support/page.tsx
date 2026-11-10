@@ -198,11 +198,13 @@ export default function SupportPage() {
     try {
       const accepted = await confirmTimeEntries.mutateAsync({ ticketId: ticketId, declines })
       toast.success(
-        declines.length > 0
-          ? `Logged time confirmed. ${declines.length === 1 ? "1 entry was" : `${declines.length} entries were`} declined and the helper has been told why.`
-          : accepted > 0
-            ? "Logged time confirmed. The helper can now end the session."
-            : "Nothing was left to confirm.",
+        accepted === 0 && declines.length > 0
+          ? "Logged time rejected. Your explanation has been shared with the helper in the chat."
+          : declines.length > 0
+            ? `Logged time confirmed. ${declines.length === 1 ? "1 entry was" : `${declines.length} entries were`} declined and the helper has been told why.`
+            : accepted > 0
+              ? "Logged time confirmed. The helper can now end the session."
+              : "Nothing was left to confirm.",
       )
     } catch (error) {
       console.error("Failed to confirm time entries:", error)

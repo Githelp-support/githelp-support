@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { DrawerPanel } from "@/components/ui/drawer-panel"
 import { Icon } from "@/components/ui/icon"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useState } from "react"
 import type { TimeEntry } from "./log-time-drawer"
 import { TimeEntriesReviewStatus } from "@/components/ticket-chat/time-entry-review"
@@ -131,12 +132,28 @@ export function EndTicketDrawer({
         </div>
       }
     >
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
+      <div className="flex-1 p-6 space-y-6.5 overflow-auto">
         {userRequestedEnd && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-foreground">
             <p className="font-medium">The user has asked to end this session.</p>
             <p className="text-muted-foreground mt-1">
-              Make sure all your time is logged below before ending — ending finalises the ticket and the charge.
+              Make sure all your time is logged below before ending the ticket{" "}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="More information"
+                    className="inline-flex cursor-help items-center justify-center rounded-sm align-text-bottom text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                  >
+                    <Icon name="fi-rr-info" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  The user either confirms the total logged time or declines it with an explanation. If they decline the
+                  logged time, agree on the final time together in the chat. If the user doesn&apos;t respond within 24
+                  hours, the time is confirmed automatically. You can end the ticket once it&apos;s confirmed.
+                </TooltipContent>
+              </Tooltip>
             </p>
           </div>
         )}
@@ -180,10 +197,22 @@ export function EndTicketDrawer({
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="not-able-to-help" id="not-able-to-help" />
-              <Label htmlFor="not-able-to-help" className="text-sm font-normal text-muted-foreground flex items-center gap-2">
+              <Label htmlFor="not-able-to-help" className="text-sm font-normal text-muted-foreground">
                 Was not able to help
-                <Icon name="fi-rr-info" className="text-muted-foreground" />
               </Label>
+              {/* Sibling of the Label, not a child: hovering or clicking it must not toggle the radio. */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="More information"
+                    className="inline-flex cursor-help items-center justify-center rounded-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                  >
+                    <Icon name="fi-rr-info" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Consider not logging any time, if you weren&apos;t able to help the user.</TooltipContent>
+              </Tooltip>
             </div>
           </RadioGroup>
         </div>
@@ -198,12 +227,13 @@ export function EndTicketDrawer({
                   <div key={entry.id} className="py-2">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-3">
-                        {/* Same 32px avatar as the people list, so the helper's colour matches everywhere */}
                         <ProfileAvatar
                           id={entry.helperUser?.id ?? entry.helperId}
                           name={entry.helperUser?.name}
                           avatarUrl={entry.helperUser?.avatarUrl ?? null}
-                          size="md"
+                          size="sm"
+                          radius="8.25px"
+                          className="w-6 h-6"
                         />
                         <div>
                           <p className="text-sm font-medium text-foreground">{formatted.type}</p>
@@ -219,9 +249,9 @@ export function EndTicketDrawer({
                         {formatted.hours}
                       </span>
                     </div>
-                    {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-11">{entry.note}</p>}
+                    {entry.note && <p className="text-xs text-muted-foreground mt-1 ml-9">{entry.note}</p>}
                     {entry.reviewStatus === "declined" && (
-                      <p className="text-xs text-muted-foreground mt-1 ml-11 italic">
+                      <p className="text-xs text-muted-foreground mt-1 ml-9 italic">
                         Declined{entry.declineReason ? `: ${entry.declineReason}` : ""}
                       </p>
                     )}
@@ -229,13 +259,13 @@ export function EndTicketDrawer({
                 )
               })}
               <div className="border-t border-border pt-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">Total time (excl. declined)</span>
+                <span className="text-sm font-medium text-foreground">Total time</span>
                 <span className="text-sm font-medium text-foreground">{getTotalTime()}</span>
               </div>
               <TimeEntriesReviewStatus entries={timeEntries} />
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">No time logged yet</p>
+            <p className="text-sm text-muted-foreground py-4">No time logged yet</p>
           )}
         </div>
 
