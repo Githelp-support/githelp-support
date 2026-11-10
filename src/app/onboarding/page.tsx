@@ -794,7 +794,9 @@ export default function OnboardingPage() {
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
-                                <Icon name="fi-rr-add-folder" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                <span className="flex h-7 shrink-0 items-center">
+                                    <Icon name="fi-rr-add-folder" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                </span>
                                 <div>
                                     <div className="font-subtitle text-lg text-foreground">Create from scratch</div>
                                     <div className="text-sm font-normal text-muted-foreground mt-1">
@@ -810,7 +812,9 @@ export default function OnboardingPage() {
                             variant="outline"
                         >
                             <div className="flex items-start gap-3">
-                                <Icon name="fi-brands-github" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                <span className="flex h-7 shrink-0 items-center">
+                                    <Icon name="fi-brands-github" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                </span>
                                 <div>
                                     <div className="font-subtitle text-lg text-foreground">Import from GitHub</div>
                                     <div className="text-sm font-normal text-muted-foreground mt-1">
@@ -828,7 +832,9 @@ export default function OnboardingPage() {
                                 variant="outline"
                             >
                                 <div className="flex items-start gap-3 w-full">
-                                    <Icon name="fi-rr-flask" className="[--icon-size:1.2rem] shrink-0 mt-0.5 text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                    <span className="flex h-7 shrink-0 items-center">
+                                        <Icon name="fi-rr-flask" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                    </span>
                                     <div className="flex-1">
                                         <div className="font-subtitle text-lg text-foreground">Try a sandbox</div>
                                         <div className="text-sm text-muted-foreground mt-1">
