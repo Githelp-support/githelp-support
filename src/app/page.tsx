@@ -8,6 +8,7 @@ import { useUser } from "@/contexts/user-context"
 import { Icon } from "@/components/ui/icon"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
+import { OnboardingChecklist } from "@/components/onboarding/onboarding-checklist"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TabSelector } from "@/components/ui/tab-selector"
 import Link from "next/link"
@@ -183,6 +184,9 @@ export default function Dashboard() {
       <Header title="Overview" subtitle="Stats and insight" />
 
       <main className="flex-1 px-8 py-6 space-y-16 overflow-y-auto">
+        {/* Next steps for a project that is not fully set up yet; renders nothing otherwise */}
+        {projectId && <OnboardingChecklist projectId={projectId} />}
+
         {/* Filters */}
         <div className="flex gap-2">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
