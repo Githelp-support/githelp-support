@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -20,11 +20,16 @@ import {
   useGetProjectRepo,
   type RepoContributor,
 } from "@/hooks/useProject"
+import { getAvailableContributors } from "@/lib/helper-contributors"
+
+const NO_EXCLUDED_LOGINS: ReadonlySet<string> = new Set()
 
 interface AddHelperDrawerProps {
   isOpen: boolean
   onClose: () => void
   projectId?: string
+  /** Lower-cased GitHub logins that are already invited or added as helpers. */
+  excludedGithubLogins?: ReadonlySet<string>
   onSubmit: (helper: {
     category: string
     email?: string
@@ -35,7 +40,13 @@ interface AddHelperDrawerProps {
   }) => Promise<{ invite_url?: string; invite_urls?: Record<string, string>; email_sent?: boolean }>
 }
 
-export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHelperDrawerProps) {
+export function AddHelperDrawer({
+  isOpen,
+  onClose,
+  projectId,
+  excludedGithubLogins = NO_EXCLUDED_LOGINS,
+  onSubmit,
+}: AddHelperDrawerProps) {
   const [formData, setFormData] = useState({
     category: "",
     email: "",
@@ -55,6 +66,10 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
   const { data: contributors = [], isLoading: contributorsLoading } = useListRepoContributors(
     githubToken,
     repoFullName ?? null
+  )
+  const availableContributors = useMemo(
+    () => getAvailableContributors(contributors, excludedGithubLogins),
+    [contributors, excludedGithubLogins]
   )
 
   useEffect(() => {
@@ -78,10 +93,10 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
   }
 
   const selectAllContributors = () => {
-    if (selectedContributors.size === contributors.length) {
+    if (selectedContributors.size === availableContributors.length) {
       setSelectedContributors(new Set())
     } else {
-      setSelectedContributors(new Set(contributors.map((c) => c.login)))
+      setSelectedContributors(new Set(availableContributors.map((c) => c.login)))
     }
   }
 
@@ -342,13 +357,26 @@ export function AddHelperDrawer({ isOpen, onClose, projectId, onSubmit }: AddHel
                   </div>
                 ) : contributors.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2">No contributors found for this repository.</p>
+                ) : availableContributors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">
+                    All contributors have already been invited or added as helpers.
+                  </p>
                 ) : (
-                  <div className="space-y-2.5 max-h-48 overflow-y-auto border border-border/60 rounded-xl bg-muted/30 p-3">
-                    <Button type="button" variant="outline" size="sm" onClick={selectAllContributors}>
-                      {selectedContributors.size === contributors.length ? "Deselect all" : "Select all"}
-                    </Button>
-                    <div className="space-y-1.5">
-                      {contributors.map((c: RepoContributor) => (
+                  <div className="border border-border/60 rounded-xl bg-muted/30">
+                    {/* Non-scrolling header: "Select all" stays visible while the list below scrolls. */}
+                    <div className="px-3 pt-3 pb-2.5">
+                      <Button type="button" variant="outline" size="sm" onClick={selectAllContributors}>
+                        {selectedContributors.size === availableContributors.length ? "Deselect all" : "Select all"}
+                      </Button>
+                    </div>
+                    {/*
+                      Scroll container sized for exactly five rows:
+                      row = py-2 (1rem) + 28px avatar (1.75rem) + 1px border top/bottom (0.125rem) = 2.875rem,
+                      gap = space-y-1.5 = 0.375rem, bottom padding = pb-3 = 0.75rem
+                      → 5 * 2.875rem + 4 * 0.375rem + 0.75rem = 16.625rem
+                    */}
+                    <div className="max-h-[16.625rem] overflow-y-auto px-3 pb-3 space-y-1.5">
+                      {availableContributors.map((c: RepoContributor) => (
                         <div
                           key={c.login}
                           className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
