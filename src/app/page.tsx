@@ -184,25 +184,27 @@ export default function Dashboard() {
       <Header title="Overview" subtitle="Stats and insight" />
 
       <main className="flex-1 px-8 py-6 space-y-16 overflow-y-auto">
-        {/* Next steps for a project that is not fully set up yet; renders nothing otherwise */}
-        {projectId && <OnboardingChecklist projectId={projectId} />}
+        <div className="space-y-6">
+          {/* Next steps for a project that is not fully set up yet; renders nothing otherwise */}
+          {projectId && <OnboardingChecklist projectId={projectId} />}
 
-        {/* Filters */}
-        <div className="flex gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger variant={selectedPeriod !== "all" ? "neutral" : "outline"} className="w-44">
-              <SelectValue placeholder="Choose period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="current">Current month</SelectItem>
-              {months.map((month) => (
-                <SelectItem key={month} value={month}>
-                  {month}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Filters */}
+          <div className="flex gap-2">
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger variant={selectedPeriod !== "all" ? "neutral" : "outline"} className="w-44">
+                <SelectValue placeholder="Choose period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="current">Current month</SelectItem>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Key Stats */}
