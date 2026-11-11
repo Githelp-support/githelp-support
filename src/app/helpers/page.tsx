@@ -37,6 +37,7 @@ import Link from "next/link"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
+import { getExcludedGithubLogins } from "@/lib/helper-contributors"
 
 function isPendingInvite(invite: {
   is_active: boolean
@@ -143,6 +144,15 @@ export default function HelpersPage() {
   )
   const isAdmin = user.role === "admin"
   const showAddSelfAsHelper = isAdmin && !isCurrentUserHelper && !!user?.id && !!projectId
+
+  // GitHub logins that already have a pending or accepted helper invite, or
+  // are already helpers; the add-helper drawer hides them from the
+  // "From contributors" list. Revoked, never-used invites are not excluded so
+  // the contributor can be re-invited.
+  const excludedGithubLogins = useMemo(
+    () => getExcludedGithubLogins(helperInvitesData, helpersData, isPendingInvite),
+    [helperInvitesData, helpersData]
+  )
 
   // Transform helpers data to match UI format
   const helpers = useMemo(() => {
@@ -880,6 +890,7 @@ export default function HelpersPage() {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         projectId={projectId}
+        excludedGithubLogins={excludedGithubLogins}
         onSubmit={handleAddHelper}
       />
       <AcceptRequestDrawer
