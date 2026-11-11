@@ -150,11 +150,11 @@ describe("InviteContributorsPage", () => {
 
   it("tells admins they can also invite from the Helpers page", async () => {
     await renderPage()
-    const link = screen.getByRole("link", { name: "Helpers page" })
-    expect(link).toHaveAttribute("href", "/helpers")
-    expect(link.closest("p")).toHaveTextContent(
-      "From the Helpers page you can also invite helpers using email or invite link."
-    )
+    expect(
+      screen.getByText("From the Helpers page you can also invite helpers using email or invite link.")
+    ).toBeInTheDocument()
+    // Plain text only: no link that would navigate away from the onboarding flow.
+    expect(screen.queryByRole("link", { name: "Helpers page" })).not.toBeInTheDocument()
     // The original description is untouched.
     expect(
       screen.getByText(/Select top contributors from org\/repo to invite as helpers/)

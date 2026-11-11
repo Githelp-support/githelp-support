@@ -76,11 +76,7 @@ export function ContributorsStep({
                     They&apos;ll receive a unique link. If they sign in with GitHub, we&apos;ll match them automatically.
                 </CardDescription>
                 <p className="text-ui text-text-muted">
-                    From the{" "}
-                    <Link href="/helpers" className="text-brand-primary hover:underline">
-                        Helpers page
-                    </Link>{" "}
-                    you can also invite helpers using email or invite link.
+                    From the Helpers page you can also invite helpers using email or invite link.
                 </p>
             </CardHeader>
             <CardContent className="space-y-6">
