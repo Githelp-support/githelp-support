@@ -705,7 +705,7 @@ export default function HelpersPage() {
                               <DropdownMenuContent align="end" className="w-44">
                                 <DropdownMenuItem onSelect={() => void handleCopyInviteLink(invite.invite_url)}>
                                   <Icon name="fi-rr-copy" />
-                                  Copy link
+                                  Copy invitation link
                                 </DropdownMenuItem>
                                 {invite.is_active && (
                                   <DropdownMenuItem variant="destructive" onSelect={() => void handleRevokeInvite(invite.id)}>

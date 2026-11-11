@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -9,34 +9,48 @@ import {
     useListRepoContributors,
     useGetProjectRepo,
     useCreateProjectInvite,
-    type RepoContributor,
 } from "@/hooks/useProject"
 import { useProjectRole } from "@/hooks/useProjectRole"
+import { useCurrentHelper } from "@/hooks/useCurrentHelper"
+import { useAddSelfAsHelper } from "@/hooks/useHelpers"
+import { useUser } from "@/contexts/user-context"
 import { supabase } from "@/lib/supabase/client"
 import { getFunctionErrorMessage } from "@/lib/functions-error"
 import { Loader2 } from "lucide-react"
 import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
-import Image from "next/image"
 import Link from "next/link"
+import { ContributorsStep } from "./contributors-step"
+import { InviteLinksStep } from "./invite-links-step"
 
 const baseUrl =
     (typeof window !== "undefined" && window.location?.origin) ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://app.githelp.app"
 
+const STEP_PARAM = "step"
+const LINKS_STEP = "links"
+
 export default function InviteContributorsPage() {
     const params = useParams()
     const router = useRouter()
+    const pathname = usePathname()
     const searchParams = useSearchParams()
     const projectId = params.id as string
     const repoFromQuery = searchParams.get("repo")
 
+    // All invite state lives here (not in the step components) so that moving
+    // between steps with the `step` search param keeps links, invited logins
+    // and the current selection intact; the page stays mounted across pushes.
     const [githubToken, setGithubToken] = useState<string | null>(null)
+    // The signed-in user's GitHub login, so their own row in the contributor
+    // list can be added as a helper directly instead of producing an invite.
+    const [selfLogin, setSelfLogin] = useState<string | null>(null)
     const [selectedContributors, setSelectedContributors] = useState<Set<string>>(new Set())
     const [invitedLogins, setInvitedLogins] = useState<Set<string>>(new Set())
     const [inviteLinks, setInviteLinks] = useState<Map<string, string>>(new Map())
-    const [copiedToken, setCopiedToken] = useState<string | null>(null)
+    const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
+    const [search, setSearch] = useState("")
 
     const { data: project, isLoading: projectLoading } = useProject(projectId)
     // Inviting helpers is an admin action (create-project-invite returns 403
@@ -52,6 +66,34 @@ export default function InviteContributorsPage() {
     )
 
     const createInvite = useCreateProjectInvite()
+    const addSelfAsHelper = useAddSelfAsHelper()
+    const { user } = useUser()
+    const { data: currentHelperId } = useCurrentHelper(isProjectAdmin ? projectId : undefined)
+    const selfIsHelper = !!currentHelperId
+
+    const isSelfLogin = useCallback(
+        (login: string) => !!selfLogin && login.toLowerCase() === selfLogin.toLowerCase(),
+        [selfLogin]
+    )
+
+    // The links step is only meaningful once there is something to show; a
+    // fresh load of `?step=links` (state is gone) falls back to step 1.
+    const hasLinks = inviteLinks.size > 0
+    const step = searchParams.get(STEP_PARAM) === LINKS_STEP && hasLinks ? "links" : "contributors"
+
+    const goToStep = useCallback(
+        (target: "contributors" | "links") => {
+            const next = new URLSearchParams(searchParams.toString())
+            if (target === "links") {
+                next.set(STEP_PARAM, LINKS_STEP)
+            } else {
+                next.delete(STEP_PARAM)
+            }
+            const query = next.toString()
+            router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
+        },
+        [pathname, router, searchParams]
+    )
 
     useEffect(() => {
         const checkGithubSession = async () => {
@@ -60,6 +102,21 @@ export default function InviteContributorsPage() {
             const hasGithub = providers?.includes("github")
             const token = hasGithub && session?.provider_token ? session.provider_token : null
             setGithubToken(token)
+
+            if (!session?.user || !hasGithub) {
+                setSelfLogin(null)
+                return
+            }
+            const githubIdentity = session.user.identities?.find(
+                (identity) => identity.provider === "github"
+            )
+            const idData = githubIdentity?.identity_data as Record<string, unknown> | undefined
+            const fromIdentity =
+                (typeof idData?.user_name === "string" ? idData.user_name : undefined) ??
+                (typeof idData?.preferred_username === "string" ? idData.preferred_username : undefined)
+            setSelfLogin(
+                fromIdentity ?? (session.user.user_metadata?.user_name as string | undefined) ?? null
+            )
         }
         checkGithubSession()
     }, [])
@@ -76,12 +133,41 @@ export default function InviteContributorsPage() {
         })
     }
 
+    // Search filters the rendered list by login; "Select all" only acts on
+    // what is visible so a narrowed list never selects hidden rows.
+    const normalizedSearch = search.trim().toLowerCase()
+    const visibleContributors = useMemo(
+        () =>
+            normalizedSearch
+                ? contributors.filter((c) => c.login.toLowerCase().includes(normalizedSearch))
+                : contributors,
+        [contributors, normalizedSearch]
+    )
+
+    // Invited rows and the current user (once they already are a helper)
+    // cannot be selected.
+    const selectableVisible = useMemo(
+        () =>
+            visibleContributors.filter(
+                (c) => !invitedLogins.has(c.login) && !(selfIsHelper && isSelfLogin(c.login))
+            ),
+        [visibleContributors, invitedLogins, selfIsHelper, isSelfLogin]
+    )
+    const allVisibleSelected =
+        selectableVisible.length > 0 && selectableVisible.every((c) => selectedContributors.has(c.login))
+
     const selectAll = () => {
-        if (selectedContributors.size === contributors.length) {
-            setSelectedContributors(new Set())
-        } else {
-            setSelectedContributors(new Set(contributors.map((c) => c.login)))
-        }
+        setSelectedContributors((prev) => {
+            const next = new Set(prev)
+            for (const c of selectableVisible) {
+                if (allVisibleSelected) {
+                    next.delete(c.login)
+                } else {
+                    next.add(c.login)
+                }
+            }
+            return next
+        })
     }
 
     const handleInviteSelected = async () => {
@@ -90,18 +176,37 @@ export default function InviteContributorsPage() {
         const toInvite = contributors.filter((c) => selectedContributors.has(c.login))
         const errors: string[] = []
         let lastErrorMessage: string | null = null
+        let created = 0
+        let addedSelf = false
+        let invited = 0
 
         for (const contributor of toInvite) {
+            const isSelf = isSelfLogin(contributor.login)
             try {
-                const result = await createInvite.mutateAsync({
-                    project_id: projectId,
-                    invite_type: "helper",
-                    category: "core",
-                    github_username: contributor.login,
-                })
-                const invite = result as { token: string; invite_url?: string }
-                const url = invite.invite_url ?? `${baseUrl}/invite/${invite.token}`
-                setInviteLinks((prev) => new Map(prev).set(contributor.login, url))
+                if (isSelf) {
+                    // Selecting yourself adds you as a helper directly (same as
+                    // "Add myself as helper" on the Helpers page); no invite
+                    // link is produced.
+                    if (!user.id) throw new Error("You must be signed in to add yourself as a helper")
+                    await addSelfAsHelper.mutateAsync({
+                        project_id: projectId,
+                        user_id: user.id,
+                        category: "core",
+                    })
+                    addedSelf = true
+                } else {
+                    const result = await createInvite.mutateAsync({
+                        project_id: projectId,
+                        invite_type: "helper",
+                        category: "core",
+                        github_username: contributor.login,
+                    })
+                    const invite = result as { token: string; invite_url?: string }
+                    const url = invite.invite_url ?? `${baseUrl}/invite/${invite.token}`
+                    setInviteLinks((prev) => new Map(prev).set(contributor.login, url))
+                    created++
+                    invited++
+                }
                 setInvitedLogins((prev) => new Set([...prev, contributor.login]))
                 setSelectedContributors((prev) => {
                     const next = new Set(prev)
@@ -109,8 +214,11 @@ export default function InviteContributorsPage() {
                     return next
                 })
             } catch (err) {
-                errors.push(contributor.login)
-                lastErrorMessage = await getFunctionErrorMessage(err, "Failed to create invite")
+                errors.push(isSelf ? "you" : contributor.login)
+                lastErrorMessage = await getFunctionErrorMessage(
+                    err,
+                    isSelf ? "Failed to add you as a helper" : "Failed to create invite"
+                )
             }
         }
 
@@ -118,16 +226,23 @@ export default function InviteContributorsPage() {
             toast.error(`Failed to invite: ${errors.join(", ")}`, {
                 description: lastErrorMessage ?? undefined,
             })
+        } else if (addedSelf && invited === 0) {
+            toast.success("You were added as a helper")
+        } else if (addedSelf) {
+            toast.success(`You were added as a helper and ${invited} contributor(s) invited as helpers`)
         } else {
-            toast.success(`Invited ${toInvite.length} contributor(s) as helpers!`)
+            toast.success(`Invited ${invited} contributor(s) as helpers`)
         }
+
+        // Show the links for whatever was created, even if some invites failed.
+        if (created > 0) goToStep("links")
     }
 
     const copyInviteUrl = (url: string) => {
         navigator.clipboard.writeText(url)
-        setCopiedToken(url)
+        setCopiedUrl(url)
         toast.success("Invite link copied!")
-        setTimeout(() => setCopiedToken(null), 2000)
+        setTimeout(() => setCopiedUrl(null), 2000)
     }
 
     const hasInvited = invitedLogins.size > 0
@@ -146,7 +261,7 @@ export default function InviteContributorsPage() {
                 <Card className="my-auto w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
-                            <Icon name="fi-rr-shield-exclamation" size={6} className="text-amber-600" />
+                            <Icon name="fi-rr-shield-exclamation" size={6} className="text-status-warning-text" />
                             <CardTitle>{project ? "Not authorized" : "Project not found"}</CardTitle>
                         </div>
                         <CardDescription>
@@ -173,149 +288,61 @@ export default function InviteContributorsPage() {
     return (
         <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8">
             <Card className="my-auto w-full max-w-2xl">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-medium">
-                        Invite contributors as helpers
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                        Select top contributors from {fullName || "your repository"} to invite as helpers.
-                        They&apos;ll receive a unique link. If they sign in with GitHub, we&apos;ll match them automatically.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {!githubToken ? (
-                        <p className="text-sm text-muted-foreground">
-                            Connect with GitHub to see contributors.{" "}
-                            <Link href="/" className="text-brand-primary hover:underline">
-                                Go to dashboard
-                            </Link>
-                        </p>
-                    ) : !fullName ? (
-                        <p className="text-sm text-muted-foreground">
-                            This project is not linked to a GitHub repository. Contributors can only be invited from imported repos.
-                        </p>
-                    ) : contributorsLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : contributors.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-4">
-                            No contributors found for this repository.
-                        </p>
-                    ) : (
+                {step === "links" ? (
+                    <InviteLinksStep
+                        inviteLinks={inviteLinks}
+                        contributors={contributors}
+                        copiedUrl={copiedUrl}
+                        onCopy={copyInviteUrl}
+                    />
+                ) : (
+                    <ContributorsStep
+                        fullName={fullName}
+                        githubToken={githubToken}
+                        contributors={contributors}
+                        visibleContributors={visibleContributors}
+                        search={search}
+                        onSearchChange={setSearch}
+                        allVisibleSelected={allVisibleSelected}
+                        hasSelectableVisible={selectableVisible.length > 0}
+                        contributorsLoading={contributorsLoading}
+                        selectedContributors={selectedContributors}
+                        invitedLogins={invitedLogins}
+                        selfLogin={selfLogin}
+                        selfIsHelper={selfIsHelper}
+                        isInviting={createInvite.isPending || addSelfAsHelper.isPending}
+                        onToggle={toggleContributor}
+                        onSelectAll={selectAll}
+                        onInvite={handleInviteSelected}
+                    />
+                )}
+
+                <CardContent className="flex flex-wrap items-center gap-3 pt-2.5">
+                    {step === "links" ? (
                         <>
-                            <div className="flex items-center justify-between">
-                                <Button variant="outline" size="sm" onClick={selectAll}>
-                                    {selectedContributors.size === contributors.length
-                                        ? "Deselect all"
-                                        : "Select all"}
-                                </Button>
-                                <span className="text-sm text-muted-foreground">
-                                    {selectedContributors.size} selected
-                                </span>
-                            </div>
-
-                            <div className="space-y-2 max-h-80 overflow-y-auto">
-                                {contributors.map((c) => (
-                                    <div
-                                        key={c.login}
-                                        className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                                            selectedContributors.has(c.login)
-                                                ? "border-brand-primary bg-brand-primary/5"
-                                                : "border-border hover:bg-muted/50"
-                                        } ${invitedLogins.has(c.login) ? "opacity-60" : ""}`}
-                                    >
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            <button
-                                                type="button"
-                                                onClick={() => !invitedLogins.has(c.login) && toggleContributor(c.login)}
-                                                disabled={invitedLogins.has(c.login)}
-                                                className="flex items-center gap-3 flex-1 text-left"
-                                            >
-                                                <Image
-                                                    src={c.avatar_url}
-                                                    alt={c.login}
-                                                    width={32}
-                                                    height={32}
-                                                    className="rounded-full"
-                                                />
-                                                <div className="min-w-0">
-                                                    <div className="text-sm font-medium truncate">{c.login}</div>
-                                                    <div className="text-sm text-muted-foreground">
-                                                        {c.contributions} contributions
-                                                    </div>
-                                                </div>
-                                            </button>
-                                            {invitedLogins.has(c.login) && (
-                                                <Icon name="fi-rr-check" size={5} className="text-green-600 flex-shrink-0" />
-                                            )}
-                                            {selectedContributors.has(c.login) && !invitedLogins.has(c.login) && (
-                                                <div className="w-5 h-5 rounded border-2 border-brand-primary bg-brand-primary flex-shrink-0 flex items-center justify-center">
-                                                    <Icon name="fi-rr-check" size={3} className="text-white" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <Button
-                                onClick={handleInviteSelected}
-                                disabled={selectedContributors.size === 0 || createInvite.isPending}
-                                className="w-full"
-                            >
-                                {createInvite.isPending ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Inviting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Icon name="fi-rr-user-add" />
-                                        Invite {selectedContributors.size} as helpers
-                                    </>
-                                )}
+                            <Button variant="outline" onClick={() => goToStep("contributors")}>
+                                <Icon name="fi-rr-arrow-left" />
+                                Back to list of contributors
                             </Button>
-
-                            {hasInvited && inviteLinks.size > 0 && (
-                                <div className="pt-4 border-t space-y-2">
-                                    <p className="text-sm font-medium">Invite links (share with each contributor)</p>
-                                    {Array.from(inviteLinks.entries()).map(([login, url]) => (
-                                        <div
-                                            key={login}
-                                            className="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm"
-                                        >
-                                            <span className="font-medium w-24 truncate">{login}</span>
-                                            <span className="flex-1 truncate text-muted-foreground">{url}</span>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => copyInviteUrl(url)}
-                                            >
-                                                {copiedToken === url ? (
-                                                    <Icon name="fi-rr-check" />
-                                                ) : (
-                                                    <Icon name="fi-rr-copy" />
-                                                )}
-                                            </Button>
-                                        </div>
-                                    ))}
-                                    <p className="text-sm text-muted-foreground">
-                                        Or they can sign in with GitHub to be matched automatically.
-                                    </p>
-                                    <Button variant="outline" asChild className="mt-2">
-                                        <Link href="/helpers">Go to Helpers</Link>
-                                    </Button>
-                                </div>
-                            )}
+                            <Button variant="brand" asChild className="ml-auto">
+                                <Link href="/">Go to project dashboard</Link>
+                            </Button>
                         </>
-                    )}
-
-                    <div className="pt-2.5">
-                        <Button asChild>
+                    ) : hasLinks ? (
+                        <>
+                            <Button variant="outline" asChild>
+                                <Link href="/">Go to project dashboard</Link>
+                            </Button>
+                            <Button variant="brand" className="ml-auto" onClick={() => goToStep("links")}>
+                                See invited helpers
+                                <Icon name="fi-rr-arrow-right" />
+                            </Button>
+                        </>
+                    ) : (
+                        <Button variant="brand" asChild className="ml-auto">
                             <Link href="/">{hasInvited ? "Go to project dashboard" : "Add helpers later"}</Link>
                         </Button>
-                    </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
