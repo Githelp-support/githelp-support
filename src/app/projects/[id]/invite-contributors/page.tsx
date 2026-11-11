@@ -314,21 +314,30 @@ export default function InviteContributorsPage() {
 
                 <CardContent className="flex flex-wrap items-center gap-3 pt-2.5">
                     {step === "links" ? (
-                        <Button variant="outline" onClick={() => goToStep("contributors")}>
-                            <Icon name="fi-rr-arrow-left" />
-                            Back to contributors
-                        </Button>
-                    ) : (
-                        hasLinks && (
-                            <Button variant="outline" onClick={() => goToStep("links")}>
-                                <Icon name="fi-rr-link" />
-                                View invite links ({inviteLinks.size})
+                        <>
+                            <Button variant="outline" onClick={() => goToStep("contributors")}>
+                                <Icon name="fi-rr-arrow-left" />
+                                Back to list of contributors
                             </Button>
-                        )
+                            <Button variant="brand" asChild className="ml-auto">
+                                <Link href="/">Go to project dashboard</Link>
+                            </Button>
+                        </>
+                    ) : hasLinks ? (
+                        <>
+                            <Button variant="outline" asChild>
+                                <Link href="/">Go to project dashboard</Link>
+                            </Button>
+                            <Button variant="brand" className="ml-auto" onClick={() => goToStep("links")}>
+                                See invited helpers
+                                <Icon name="fi-rr-arrow-right" />
+                            </Button>
+                        </>
+                    ) : (
+                        <Button variant="brand" asChild className="ml-auto">
+                            <Link href="/">{hasInvited ? "Go to project dashboard" : "Add helpers later"}</Link>
+                        </Button>
                     )}
-                    <Button variant="brand" asChild className="ml-auto">
-                        <Link href="/">{hasInvited ? "Go to project dashboard" : "Add helpers later"}</Link>
-                    </Button>
                 </CardContent>
             </Card>
         </div>

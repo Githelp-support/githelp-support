@@ -224,12 +224,12 @@ describe("InviteContributorsPage", () => {
     })
     expect(screen.getByText("https://app.test/invite/tok-alice")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Back to contributors" }))
+    fireEvent.click(screen.getByRole("button", { name: "Back to list of contributors" }))
     expect(nav.push).toHaveBeenLastCalledWith("/projects/proj-1/invite-contributors", { scroll: false })
     expect(screen.getByText("Invite contributors as helpers")).toBeInTheDocument()
     expect(screen.queryByText("https://app.test/invite/tok-alice")).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "View invite links (1)" }))
+    fireEvent.click(screen.getByRole("button", { name: "See invited helpers" }))
     expect(screen.getByText("Invite links")).toBeInTheDocument()
     expect(screen.getByText("alice")).toBeInTheDocument()
     expect(screen.getByText("https://app.test/invite/tok-alice")).toBeInTheDocument()

@@ -21,7 +21,8 @@ export function InviteLinksStep({ inviteLinks, copiedUrl, onCopy }: InviteLinksS
             <CardHeader>
                 <CardTitle className="text-2xl font-medium">Invite links</CardTitle>
                 <CardDescription className="mt-1">
-                    Share each link with its contributor. Links are unique per person.
+                    Share each link with the contributor. Or they can sign in with GitHub to be matched
+                    with the project automatically. Links are unique per person.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -48,9 +49,6 @@ export function InviteLinksStep({ inviteLinks, copiedUrl, onCopy }: InviteLinksS
                         </div>
                     ))}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                    Or they can sign in with GitHub to be matched automatically.
-                </p>
             </CardContent>
         </>
     )
