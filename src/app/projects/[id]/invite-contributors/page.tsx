@@ -134,16 +134,16 @@ export default function InviteContributorsPage() {
 
     if (projectLoading || roleLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8">
+                <Loader2 className="my-auto w-8 h-8 animate-spin text-muted-foreground" />
             </div>
         )
     }
 
     if (!project || !isProjectAdmin) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-                <Card className="w-full max-w-md">
+            <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8">
+                <Card className="my-auto w-full max-w-md">
                     <CardHeader>
                         <div className="flex items-center gap-3 mb-2">
                             <Icon name="fi-rr-shield-exclamation" size={6} className="text-amber-600" />
@@ -171,8 +171,8 @@ export default function InviteContributorsPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-            <Card className="w-full max-w-2xl">
+        <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8">
+            <Card className="my-auto w-full max-w-2xl">
                 <CardHeader>
                     <CardTitle className="text-2xl font-medium">
                         Invite contributors as helpers
