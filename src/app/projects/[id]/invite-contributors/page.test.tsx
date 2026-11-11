@@ -235,6 +235,17 @@ describe("InviteContributorsPage", () => {
     expect(screen.getByText("https://app.test/invite/tok-alice")).toBeInTheDocument()
   })
 
+  it("shows the invited count and each contributor's avatar next to their invite link", async () => {
+    await renderPage()
+    fireEvent.click(rowButton("alice"))
+    fireEvent.click(screen.getByRole("button", { name: "Invite 1 as helpers" }))
+    await screen.findByText("Invite links")
+
+    expect(screen.getByText("1 invited")).toBeInTheDocument()
+    const row = screen.getByText("https://app.test/invite/tok-alice").closest("div")!
+    expect(row.querySelector("img")).toHaveAttribute("src", "https://avatars.githubusercontent.com/u/42")
+  })
+
   it("offers the project dashboard, not the Helpers page, once someone was invited", async () => {
     await renderPage()
     expect(screen.getByRole("link", { name: "Add helpers later" })).toHaveAttribute("href", "/")

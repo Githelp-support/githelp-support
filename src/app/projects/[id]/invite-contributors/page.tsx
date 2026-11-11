@@ -289,7 +289,12 @@ export default function InviteContributorsPage() {
         <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8">
             <Card className="my-auto w-full max-w-2xl">
                 {step === "links" ? (
-                    <InviteLinksStep inviteLinks={inviteLinks} copiedUrl={copiedUrl} onCopy={copyInviteUrl} />
+                    <InviteLinksStep
+                        inviteLinks={inviteLinks}
+                        contributors={contributors}
+                        copiedUrl={copiedUrl}
+                        onCopy={copyInviteUrl}
+                    />
                 ) : (
                     <ContributorsStep
                         fullName={fullName}
