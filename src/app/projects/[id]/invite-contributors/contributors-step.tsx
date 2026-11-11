@@ -75,9 +75,9 @@ export function ContributorsStep({
                     Select top contributors from {fullName || "your repository"} to invite as helpers.
                     They&apos;ll receive a unique link. If they sign in with GitHub, we&apos;ll match them automatically.
                 </CardDescription>
-                <p className="text-ui text-text-muted">
+                <CardDescription>
                     From the Helpers page you can also invite helpers using email or invite link.
-                </p>
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 {!githubToken ? (
