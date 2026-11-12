@@ -61,7 +61,7 @@ function StepRow({
   return (
     <li
       className={cn(
-        "relative flex min-h-9 items-center gap-2 rounded-md px-2",
+        "relative flex min-h-8 items-center gap-2 rounded-md px-2",
         isLink &&
           "transition-colors duration-fast ease-out hover:bg-brand-primary/10 has-[a:focus-visible]:bg-brand-primary/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-brand-primary/40",
       )}
@@ -69,11 +69,11 @@ function StepRow({
       <span
         aria-hidden="true"
         className={cn(
-          "flex size-5 shrink-0 items-center justify-center rounded-full",
+          "flex size-4 shrink-0 items-center justify-center rounded-full",
           step.done ? "bg-brand-primary text-brand-foreground" : "border border-brand-primary/40 bg-card",
         )}
       >
-        {step.done && <Icon name="fi-rr-check" size={3} />}
+        {step.done && <Icon name="fi-rr-check" className="[--icon-size:0.625rem]" />}
       </span>
 
       {isLink ? (
@@ -130,8 +130,8 @@ interface OnboardingChecklistCardProps {
 
 /**
  * The checklist itself, without data fetching. A lavender panel with a brand
- * border so it stands out from the white cards below it; the steps flow into
- * up to three columns to keep it short.
+ * border so it stands out from the white cards below it, with one short row
+ * per step.
  */
 export function OnboardingChecklistCard({ checklist, onStepOpen, onStepDismiss }: OnboardingChecklistCardProps) {
   const titleId = useId()
@@ -164,7 +164,7 @@ export function OnboardingChecklistCard({ checklist, onStepOpen, onStepDismiss }
           </div>
         </div>
       </div>
-      <ol className="mt-2 grid gap-x-6 gap-y-0.5 sm:grid-cols-2 xl:grid-cols-3">
+      <ol className="mt-2">
         {steps.map((step) => (
           <StepRow key={step.id} step={step} onOpen={onStepOpen} onDismiss={onStepDismiss} />
         ))}
