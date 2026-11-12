@@ -206,9 +206,9 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
           )}
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
+              <div className="text-sm font-medium text-sidebar-foreground truncate leading-tight">{user.name}</div>
               {isAuthenticated && (
-                <div className="text-xs font-medium text-muted-foreground truncate">
+                <div className="text-xs font-normal text-muted-foreground truncate">
                   Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                 </div>
               )}
