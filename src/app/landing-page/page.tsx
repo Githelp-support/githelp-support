@@ -2,8 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Header } from "@/components/layout/header"
+import { useMarkLandingPageViewed } from "@/hooks/useOnboardingChecklist"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FormField } from "@/components/ui/form-field"
@@ -35,6 +36,12 @@ export default function LandingPageSettings() {
   const { selectedProjectId: projectId } = useProjectSelection()
   const { data: userProjects = [] } = useUserProjects()
   const project = userProjects.find((p) => p.project_id === projectId) || userProjects[0]
+
+  // Opening this page is the "See your support landing page" onboarding step.
+  const markLandingPageViewed = useMarkLandingPageViewed(projectId || "")
+  useEffect(() => {
+    markLandingPageViewed()
+  }, [markLandingPageViewed])
 
   // Fetch resources from database
   const { data: resourcesData, isLoading: resourcesLoading } = useProjectResources(projectId || "")

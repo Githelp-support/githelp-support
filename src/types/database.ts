@@ -511,6 +511,29 @@ export type Database = {
                     logo_url: string | null;
                 }>;
             };
+            projects_onboarding: {
+                Row: {
+                    project_id: string;
+                    created_at: string;
+                    updated_at: string;
+                    dismissed_steps: string[];
+                    landing_page_viewed_at: string | null;
+                };
+                Insert: Partial<{
+                    project_id: string;
+                    created_at: string;
+                    updated_at: string;
+                    dismissed_steps: string[];
+                    landing_page_viewed_at: string | null;
+                }>;
+                Update: Partial<{
+                    project_id: string;
+                    created_at: string;
+                    updated_at: string;
+                    dismissed_steps: string[];
+                    landing_page_viewed_at: string | null;
+                }>;
+            };
             projects_payment_settings: {
                 Row: {
                     project_id: string;
