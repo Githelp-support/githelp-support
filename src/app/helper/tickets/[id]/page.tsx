@@ -1329,7 +1329,6 @@ export default function TicketDetailPage() {
                     isGuest={isGuestTicket}
                     pending={claimTicket.isPending}
                     onClaim={() => void handleClaimTicket()}
-                    showExplanation={false}
                   />
                 ) : isClaimed && !isTicketEnded && canManageTicket ? (
                   <Button
