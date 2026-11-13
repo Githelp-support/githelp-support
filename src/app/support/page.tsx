@@ -163,7 +163,10 @@ export default function SupportPage() {
   const { data: liveTicket } = useTicket(ticketId)
   // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
   const ticketPricingSnapshot = (liveTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
-  const effectivePricing = ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings
+  const effectivePricing = useMemo(
+    () => (ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings),
+    [paymentSettings, ticketPricingSnapshot],
+  )
   // Format payment values (convert cents to dollars); null until the project
   // has payment settings — no placeholder prices. An open ticket shows its snapshot.
   const rates = formatTicketRates(effectivePricing)
@@ -309,6 +312,7 @@ export default function SupportPage() {
       fallbackDescription: liveTicket?.description ?? null,
       fallbackTimestamp: liveTicket?.created_at ?? null,
       ticketStatus: liveTicket?.status ?? null,
+      isFree: isFreeSupport(effectivePricing),
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
       avgResponseSeconds,
     })
@@ -341,6 +345,7 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    effectivePricing,
     slaId,
     avgResponseSeconds,
     ticketEnded,

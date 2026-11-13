@@ -13,6 +13,9 @@ import { formatDuration } from "@/lib/format";
 export const TICKET_DISCLAIMER =
     "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm.";
 
+/** Welcome bubble for projects that offer support for free: no mention of charging or confirming. */
+export const TICKET_DISCLAIMER_FREE = "Feel free to chat and clarify details before you get a response.";
+
 /**
  * Synthetic auto-reply shown right after the customer's first message.
  * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
@@ -112,6 +115,11 @@ export interface CustomerThreadOptions {
      * ticket reopened by adoption hides it.
      */
     ticketStatus?: string | null;
+    /**
+     * The project offers support for free (see isFreeSupport in
+     * lib/ticket-pricing): the welcome bubble must not mention charging.
+     */
+    isFree?: boolean;
 }
 
 /**
@@ -131,6 +139,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         currentUser,
         avgResponseSeconds,
         ticketStatus,
+        isFree,
     } = opts;
 
     const userName = currentUser.name || "You";
@@ -140,7 +149,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         {
             id: "welcome",
             senderType: "system",
-            content: TICKET_DISCLAIMER,
+            content: isFree ? TICKET_DISCLAIMER_FREE : TICKET_DISCLAIMER,
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
             timestamp: nowFormatted,
