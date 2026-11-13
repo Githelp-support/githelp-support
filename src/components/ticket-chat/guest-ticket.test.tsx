@@ -56,7 +56,7 @@ describe("ClaimTicketButton", () => {
 describe("guest ticket labels", () => {
   it("renders the guest badge", () => {
     render(<GuestTicketBadge />)
-    expect(screen.getByText("Guest — not signed in")).toBeInTheDocument()
+    expect(screen.getByText("Not signed in")).toBeInTheDocument()
   })
 
   it("shows guests as Guest", () => {

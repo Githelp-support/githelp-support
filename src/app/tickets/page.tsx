@@ -677,10 +677,12 @@ export default function TicketsPage() {
                             {ticket.user.avatar}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-foreground truncate">
-                              {ticket.user.name}
-                            </h4>
-                            {ticket.guest && <GuestTicketBadge className="mt-1" />}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h4 className="text-sm font-medium text-foreground truncate">
+                                {ticket.user.name}
+                              </h4>
+                              {ticket.guest && <GuestTicketBadge className="shrink-0" />}
+                            </div>
                             <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                             <div className="flex items-center gap-1 mt-1">
                               <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
@@ -774,12 +776,14 @@ export default function TicketsPage() {
                       {ticket.user.avatar}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <Link href={`/helper/tickets/${ticket.id}`}>
-                        <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                          {ticket.user.name}
-                        </h4>
-                      </Link>
-                      {ticket.guest && <GuestTicketBadge className="mt-1" />}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Link href={`/helper/tickets/${ticket.id}`} className="min-w-0">
+                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                            {ticket.user.name}
+                          </h4>
+                        </Link>
+                        {ticket.guest && <GuestTicketBadge className="shrink-0" />}
+                      </div>
                       <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
