@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   ClaimTicketButton,
   GUEST_CLAIM_BLOCKED_COPY,
@@ -18,37 +19,62 @@ import {
 } from "@/lib/customer-chat-messages"
 
 describe("ClaimTicketButton", () => {
-  it("is disabled with an explanation on a guest ticket", () => {
+  it("is disabled on a guest ticket and explains why in a tooltip", async () => {
     const onClaim = vi.fn()
-    render(<ClaimTicketButton isGuest onClaim={onClaim} />)
+    render(
+      <TooltipProvider delayDuration={0}>
+        <ClaimTicketButton isGuest onClaim={onClaim} />
+      </TooltipProvider>,
+    )
     const button = screen.getByRole("button", { name: "Claim ticket" })
     expect(button).toBeDisabled()
-    expect(screen.getByText(GUEST_CLAIM_BLOCKED_COPY)).toBeInTheDocument()
+    expect(button).not.toHaveAttribute("title")
     fireEvent.click(button)
     expect(onClaim).not.toHaveBeenCalled()
-  })
 
-  it("keeps the explanation as a tooltip in compact mode", () => {
-    render(<ClaimTicketButton isGuest showExplanation={false} onClaim={vi.fn()} />)
-    const button = screen.getByRole("button", { name: "Claim ticket" })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAttribute("title", GUEST_CLAIM_BLOCKED_COPY)
+    // The copy only appears once the trigger is hovered or focused.
     expect(screen.queryByText(GUEST_CLAIM_BLOCKED_COPY)).not.toBeInTheDocument()
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
+
+    // The wrapper is the focusable tooltip trigger, so keyboard users get the reason too.
+    const trigger = button.parentElement as HTMLElement
+    expect(trigger).toHaveAttribute("tabindex", "0")
+    fireEvent.pointerMove(trigger)
+    fireEvent.focus(trigger)
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent(GUEST_CLAIM_BLOCKED_COPY)
+    expect((await screen.findAllByText(GUEST_CLAIM_BLOCKED_COPY)).length).toBeGreaterThanOrEqual(1)
   })
 
   it("becomes available once the ticket is no longer a guest ticket", () => {
     const onClaim = vi.fn()
-    const { rerender } = render(<ClaimTicketButton isGuest onClaim={onClaim} />)
-    rerender(<ClaimTicketButton isGuest={false} onClaim={onClaim} />)
+    const { rerender } = render(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest onClaim={onClaim} />
+      </TooltipProvider>,
+    )
+    rerender(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest={false} onClaim={onClaim} />
+      </TooltipProvider>,
+    )
     const button = screen.getByRole("button", { name: "Claim ticket" })
     expect(button).toBeEnabled()
+    // No tooltip trigger wraps the enabled button, and the copy is gone.
+    expect(button.parentElement).not.toHaveAttribute("tabindex")
+    expect(button.parentElement).not.toHaveAttribute("data-state")
     expect(screen.queryByText(GUEST_CLAIM_BLOCKED_COPY)).not.toBeInTheDocument()
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
     fireEvent.click(button)
     expect(onClaim).toHaveBeenCalledTimes(1)
   })
 
   it("shows the pending label", () => {
-    render(<ClaimTicketButton isGuest={false} pending onClaim={vi.fn()} />)
+    render(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest={false} pending onClaim={vi.fn()} />
+      </TooltipProvider>,
+    )
     expect(screen.getByRole("button", { name: "Claiming…" })).toBeDisabled()
   })
 })
