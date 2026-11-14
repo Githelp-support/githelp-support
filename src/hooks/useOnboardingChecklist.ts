@@ -96,7 +96,7 @@ function useSaveOnboardingState(projectId: string) {
 
 /**
  * Records that an admin opened the support landing page section, which ticks
- * off the "See your support landing page" step. Safe to call repeatedly: it
+ * off the "Share your support landing page" step. Safe to call repeatedly: it
  * writes once per project and never surfaces an error (the step just stays
  * open).
  */

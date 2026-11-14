@@ -175,7 +175,7 @@ export function OnboardingChecklistCard({ checklist, onStepOpen, onStepDismiss }
 
 /**
  * Onboarding checklist for the admin Overview page. Renders nothing while
- * loading, for a sandbox project, and once every required step is done.
+ * loading, for a sandbox project, and once every step is done or dismissed.
  */
 export function OnboardingChecklist({ projectId }: { projectId: string }) {
   const { checklist, setStepDismissed } = useOnboardingChecklist(projectId)
