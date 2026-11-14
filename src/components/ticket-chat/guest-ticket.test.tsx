@@ -23,7 +23,7 @@ describe("ClaimTicketButton", () => {
     const onClaim = vi.fn()
     render(
       <TooltipProvider delayDuration={0}>
-        <ClaimTicketButton isGuest onClaim={onClaim} />
+        <ClaimTicketButton isGuest showExplanation={false} onClaim={onClaim} />
       </TooltipProvider>,
     )
     const button = screen.getByRole("button", { name: "Claim ticket" })
@@ -44,6 +44,16 @@ describe("ClaimTicketButton", () => {
     const tooltip = await screen.findByRole("tooltip")
     expect(tooltip).toHaveTextContent(GUEST_CLAIM_BLOCKED_COPY)
     expect((await screen.findAllByText(GUEST_CLAIM_BLOCKED_COPY)).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("also shows the explanation under the button by default", () => {
+    render(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest onClaim={vi.fn()} />
+      </TooltipProvider>,
+    )
+    expect(screen.getByRole("button", { name: "Claim ticket" })).toBeDisabled()
+    expect(screen.getByText(GUEST_CLAIM_BLOCKED_COPY)).toBeInTheDocument()
   })
 
   it("becomes available once the ticket is no longer a guest ticket", () => {

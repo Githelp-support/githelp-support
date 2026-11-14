@@ -43,16 +43,19 @@ interface ClaimTicketButtonProps {
   isGuest: boolean
   pending?: boolean
   onClaim: () => void
+  /** Also show the explanation under the button (detail panel); the toolbar keeps the tooltip only. */
+  showExplanation?: boolean
   className?: string
 }
 
 /**
- * "Claim ticket", disabled while the ticket is a guest ticket. The reason is a
+ * "Claim ticket", disabled while the ticket is a guest ticket. The reason is
+ * shown under the button (unless `showExplanation` is false) and as a
  * tooltip: the Button primitive sets `disabled:pointer-events-none`, so a
  * disabled button never sees hover; a focusable wrapper is the trigger instead,
  * which also lets keyboard users reach the explanation.
  */
-export function ClaimTicketButton({ isGuest, pending, onClaim, className }: ClaimTicketButtonProps) {
+export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation = true, className }: ClaimTicketButtonProps) {
   const label = pending ? "Claiming…" : "Claim ticket"
 
   if (!isGuest) {
@@ -63,10 +66,17 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, className }: Clai
     )
   }
 
-  return (
+  const button = (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span tabIndex={0} className={cn("inline-flex w-fit rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40", className)}>
+        <span
+          tabIndex={0}
+          aria-describedby={showExplanation ? "guest-claim-explanation" : undefined}
+          className={cn(
+            "inline-flex w-fit rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
+            !showExplanation && className,
+          )}
+        >
           <Button disabled variant="lavender" className="w-fit">
             {label}
           </Button>
@@ -74,6 +84,17 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, className }: Clai
       </TooltipTrigger>
       <TooltipContent>{GUEST_CLAIM_BLOCKED_COPY}</TooltipContent>
     </Tooltip>
+  )
+
+  if (!showExplanation) return button
+
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      {button}
+      <p id="guest-claim-explanation" className="text-ui text-muted-foreground">
+        {GUEST_CLAIM_BLOCKED_COPY}
+      </p>
+    </div>
   )
 }
 
