@@ -21,8 +21,8 @@ describe("buildOnboardingChecklist", () => {
       ["create_project", true, false],
       ["add_helpers", false, false],
       ["modify_rates", false, true],
-      ["view_landing_page", false, false],
       ["set_branding", false, true],
+      ["view_landing_page", false, false],
     ])
     expect(checklist.doneCount).toBe(1)
     expect(checklist.totalCount).toBe(5)
@@ -41,32 +41,40 @@ describe("buildOnboardingChecklist", () => {
     })
   })
 
-  it("shows 'Set up payouts' last, and only once a paid ticket needs it", () => {
+  it("shows 'Set up payouts' only once a paid ticket needs it, and keeps the landing page step last", () => {
     expect(ids()).not.toContain("setup_payouts")
-    expect(ids({ payoutsNeeded: true }).at(-1)).toBe("setup_payouts")
+    expect(ids().at(-1)).toBe("view_landing_page")
+    expect(ids({ payoutsNeeded: true }).slice(-2)).toEqual(["setup_payouts", "view_landing_page"])
   })
 
   it("leaves a dismissed step out and ignores unknown ids", () => {
     expect(ids({ dismissedSteps: ["modify_rates", "something_old"] })).toEqual([
       "create_project",
       "add_helpers",
-      "view_landing_page",
       "set_branding",
+      "view_landing_page",
     ])
   })
 
-  it("hides the section once the required steps are done, even with optional ones open", () => {
+  it("keeps the section while an optional step is open, even with the required ones done", () => {
     const checklist = build({ helperCount: 1, landingPageViewed: true })
     expect(checklist.steps.filter((step) => !step.done).map((step) => step.id)).toEqual(["modify_rates", "set_branding"])
-    expect(checklist.visible).toBe(false)
+    expect(checklist.visible).toBe(true)
+    expect(build({ helperCount: 1, landingPageViewed: true, dismissedSteps: ["modify_rates"] }).visible).toBe(true)
   })
 
-  it("hides the section when the remaining required steps are dismissed", () => {
-    expect(build({ dismissedSteps: ["add_helpers", "view_landing_page"] }).visible).toBe(false)
+  it("hides the section once every step is done or dismissed", () => {
+    const required = { helperCount: 1, landingPageViewed: true }
+    expect(build({ ...required, ratesModified: true, brandingSet: true }).visible).toBe(false)
+    expect(build({ ...required, dismissedSteps: ["modify_rates", "set_branding"] }).visible).toBe(false)
+    expect(build({ ...required, ratesModified: true, dismissedSteps: ["set_branding"] }).visible).toBe(false)
+    expect(
+      build({ dismissedSteps: ["add_helpers", "modify_rates", "set_branding", "view_landing_page"] }).visible,
+    ).toBe(false)
   })
 
   it("comes back for payouts after the first paid ticket, and goes away once payouts are enabled", () => {
-    const done = { helperCount: 2, landingPageViewed: true }
+    const done = { helperCount: 2, landingPageViewed: true, ratesModified: true, brandingSet: true }
     expect(build({ ...done, payoutsNeeded: true }).visible).toBe(true)
     expect(build({ ...done, payoutsNeeded: true, payoutsEnabled: true }).visible).toBe(false)
     expect(build({ ...done, payoutsNeeded: true, dismissedSteps: ["setup_payouts"] }).visible).toBe(false)

@@ -54,7 +54,7 @@ describe("OnboardingChecklistCard", () => {
 
     expect(screen.getByRole("link", { name: "Add helpers" })).toHaveAttribute("href", "/helpers")
     expect(screen.getByRole("link", { name: "Modify rates" })).toHaveAttribute("href", "/settings/payment")
-    expect(screen.getByRole("link", { name: "See your support landing page" })).toHaveAttribute("href", "/landing-page")
+    expect(screen.getByRole("link", { name: "Share your support landing page" })).toHaveAttribute("href", "/landing-page")
     expect(screen.getByRole("link", { name: "Set your branding" })).toHaveAttribute("href", "/settings/branding")
     expect(screen.getByRole("link", { name: "Set up payouts" })).toHaveAttribute("href", "/settings/payment")
 
@@ -103,13 +103,19 @@ describe("OnboardingChecklist", () => {
     mocks.toast.error.mockReset()
   })
 
-  it("renders nothing while loading and once every required step is done", () => {
+  it("renders nothing while loading and once every step is done or dismissed", () => {
     mocks.useOnboardingChecklist.mockReturnValue({ checklist: null, setStepDismissed })
     const { container, rerender } = wrap(<OnboardingChecklist projectId="p1" />)
     expect(container).toBeEmptyDOMElement()
 
     mocks.useOnboardingChecklist.mockReturnValue({
-      checklist: buildOnboardingChecklist({ ...input, helperCount: 1, landingPageViewed: true }),
+      checklist: buildOnboardingChecklist({
+        ...input,
+        helperCount: 1,
+        landingPageViewed: true,
+        ratesModified: true,
+        dismissedSteps: ["set_branding"],
+      }),
       setStepDismissed,
     })
     rerender(<TooltipProvider><OnboardingChecklist projectId="p1" /></TooltipProvider>)
@@ -146,7 +152,7 @@ describe("OnboardingChecklist", () => {
 
     fireEvent.click(screen.getByRole("link", { name: "Add helpers" }))
     expect(mocks.markLandingPageViewed).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole("link", { name: "See your support landing page" }))
+    fireEvent.click(screen.getByRole("link", { name: "Share your support landing page" }))
     expect(mocks.markLandingPageViewed).toHaveBeenCalledTimes(1)
   })
 })

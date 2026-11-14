@@ -10,8 +10,9 @@
  *   `projects_onboarding.dismissed_steps`).
  * - "Set up payouts" only exists once a completed, paid ticket has a share
  *   for the project, i.e. once there is money to receive.
- * - The section is shown while a required step is still open. Optional
- *   steps are listed alongside but never keep it on screen by themselves.
+ * - "Share your support landing page" is always the last step.
+ * - The section is shown while any listed step is still open, optional or
+ *   not: an optional step goes away by doing it or dismissing it.
  */
 
 export type OnboardingStepId =
@@ -53,7 +54,7 @@ export interface OnboardingChecklist {
   steps: OnboardingStep[]
   doneCount: number
   totalCount: number
-  /** False once no required step is left open. */
+  /** False once every step is done or dismissed. */
   visible: boolean
 }
 
@@ -86,14 +87,6 @@ export function buildOnboardingChecklist(input: OnboardingChecklistInput): Onboa
       done: input.ratesModified,
     },
     {
-      id: "view_landing_page",
-      label: "See your support landing page",
-      details: "This is the page your users open to ask for help. Open it and copy the link to share.",
-      href: "/landing-page",
-      optional: false,
-      done: input.landingPageViewed,
-    },
-    {
       id: "set_branding",
       label: "Set your branding",
       details: "Add your logo and colour so the support page looks like your project.",
@@ -115,6 +108,18 @@ export function buildOnboardingChecklist(input: OnboardingChecklistInput): Onboa
     })
   }
 
+  // Last on purpose: sharing the page is the step that brings in tickets, so
+  // it comes after everything that prepares the project for them.
+  all.push({
+    id: "view_landing_page",
+    label: "Share your support landing page",
+    details:
+      "See your landing page, copy the link and share it in the channels where your users are (e.g. GitHub, website, Discord).",
+    href: "/landing-page",
+    optional: false,
+    done: input.landingPageViewed,
+  })
+
   const dismissed = new Set(input.dismissedSteps)
   // A done step stays listed (struck through) even if it was dismissed earlier.
   const steps = all.filter((step) => step.done || !dismissed.has(step.id))
@@ -123,6 +128,6 @@ export function buildOnboardingChecklist(input: OnboardingChecklistInput): Onboa
     steps,
     doneCount: steps.filter((step) => step.done).length,
     totalCount: steps.length,
-    visible: steps.some((step) => !step.optional && !step.done),
+    visible: steps.some((step) => !step.done),
   }
 }

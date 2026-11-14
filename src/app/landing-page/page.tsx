@@ -37,7 +37,7 @@ export default function LandingPageSettings() {
   const { data: userProjects = [] } = useUserProjects()
   const project = userProjects.find((p) => p.project_id === projectId) || userProjects[0]
 
-  // Opening this page is the "See your support landing page" onboarding step.
+  // Opening this page is the "Share your support landing page" onboarding step.
   const markLandingPageViewed = useMarkLandingPageViewed(projectId || "")
   useEffect(() => {
     markLandingPageViewed()
