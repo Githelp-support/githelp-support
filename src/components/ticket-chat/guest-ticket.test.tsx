@@ -53,7 +53,11 @@ describe("ClaimTicketButton", () => {
       </TooltipProvider>,
     )
     expect(screen.getByRole("button", { name: "Claim ticket" })).toBeDisabled()
-    expect(screen.getByText(GUEST_CLAIM_BLOCKED_COPY)).toBeInTheDocument()
+    // The notice sits in its own tinted box, with the exact copy.
+    const notice = screen.getByText(GUEST_CLAIM_BLOCKED_COPY)
+    expect(notice).toHaveAttribute("data-slot", "guest-claim-explanation")
+    expect(notice).toHaveClass("bg-bg-subtle", "rounded-md")
+    expect(notice).toHaveTextContent("The visitor needs to sign in before this ticket can be claimed. You can still reply.")
   })
 
   it("becomes available once the ticket is no longer a guest ticket", () => {

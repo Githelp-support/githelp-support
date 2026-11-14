@@ -91,7 +91,7 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation =
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       {button}
-      <p id="guest-claim-explanation" className="text-ui text-muted-foreground">
+      <p id="guest-claim-explanation" data-slot="guest-claim-explanation" className="w-fit rounded-md bg-bg-subtle px-3 py-2 text-ui text-text-muted">
         {GUEST_CLAIM_BLOCKED_COPY}
       </p>
     </div>
