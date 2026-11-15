@@ -8,6 +8,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import { supabase } from "@/lib/supabase/client";
+import { ABANDONED_GUEST_TICKET_EXCLUSION } from "@/lib/abandoned-guest-tickets";
 import { useHelperRecentTicketInteractions } from "./useHelperRecentTicketInteractions";
 
 /** The helper's AUTH user id (what the hook receives). */
@@ -36,6 +37,7 @@ function ticket(id: string, overrides: Record<string, unknown> = {}) {
         title: `Ticket ${id}`,
         project_id: "proj-1",
         status: "available",
+        guest: false,
         created_at: "2026-01-01T00:00:00.000Z",
         created_by: CUSTOMER,
         completed_at: null,
@@ -98,6 +100,13 @@ function setupSupabase(fx: Fixture) {
                     if (f.op === "eq") return value === f.val;
                     if (f.op === "is") return value === f.val || (f.val === null && value === undefined);
                     if (f.op === "in") return (f.val as unknown[]).includes(value);
+                    if (f.op === "or") {
+                        // Only the abandoned-guest-ticket exclusion is supported.
+                        if (f.col !== ABANDONED_GUEST_TICKET_EXCLUSION) {
+                            throw new Error(`Unsupported or() filter: ${f.col}`);
+                        }
+                        return row.guest === false || row.status !== "cancelled";
+                    }
                     return true;
                 })
             );
@@ -119,6 +128,7 @@ function setupSupabase(fx: Fixture) {
         builder.eq = chain("eq");
         builder.is = chain("is");
         builder.in = chain("in");
+        builder.or = chain("or");
         builder.order = (col: string, opts?: { ascending?: boolean }) => {
             order = { col, ascending: opts?.ascending !== false };
             return builder;
@@ -328,6 +338,34 @@ describe("useHelperRecentTicketInteractions", () => {
 
         const data = await renderRecent();
         expect(data.map((d) => d.id)).toEqual(["t-live"]);
+    });
+
+    it("drops abandoned guest tickets (guest + cancelled)", async () => {
+        setupSupabase({
+            tickets: [
+                ticket("t-live"),
+                // visitor left: the helper replied, then the cron cancelled it
+                ticket("t-abandoned", {
+                    guest: true,
+                    status: "cancelled",
+                    cancelled_at: "2026-01-10T00:00:00.000Z",
+                }),
+                // guest ticket that is still open stays
+                ticket("t-guest-open", { guest: true }),
+                // cancelled ticket from a signed-in customer stays
+                ticket("t-cancelled", { status: "cancelled", cancelled_at: "2026-01-03T00:00:00.000Z" }),
+            ],
+            messages: [
+                message("m1", "t-live", "2026-01-01T00:00:00.000Z", { sender_id: HELPER_USER }),
+                message("m2", "t-abandoned", "2026-01-09T00:00:00.000Z", { sender_id: HELPER_USER }),
+                message("m3", "t-guest-open", "2026-01-02T00:00:00.000Z", { sender_id: HELPER_USER }),
+                message("m4", "t-cancelled", "2026-01-03T00:00:00.000Z", { sender_id: HELPER_USER }),
+            ],
+            participants: [participant("t-abandoned")],
+        });
+
+        const data = await renderRecent();
+        expect(data.map((d) => d.id)).toEqual(["t-cancelled", "t-guest-open", "t-live"]);
     });
 
     it("derives status, creator, project details and message_count", async () => {

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ABANDONED_GUEST_TICKET_EXCLUSION } from "@/lib/abandoned-guest-tickets";
 import { supabase } from "@/lib/supabase/client";
 import { useCurrentHelper } from "./useCurrentHelper";
 import {
@@ -83,12 +84,13 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                 .eq("helper_id", effectiveHelperId)
                 .single();
 
-            // All (non-deleted) tickets for the project.
+            // All (non-deleted) tickets for the project, without abandoned guest tickets.
             const { data: tickets } = await supabase
                 .from("tickets")
                 .select("id, title, status, priority, created_at, completed_at")
                 .eq("project_id", projectId)
                 .is("deleted_at", null)
+                .or(ABANDONED_GUEST_TICKET_EXCLUSION)
                 .order("created_at", { ascending: false });
 
             // Help categories for the project.

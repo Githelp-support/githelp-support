@@ -80,3 +80,17 @@ export function VisitorLeftAction({ onStartNewConversation }: { onStartNewConver
     </div>
   )
 }
+
+/**
+ * Helper-side action on the `guest_abandoned` system message: formally end a
+ * ticket the guest walked away from, so the support given stays on record.
+ */
+export function GuestAbandonedAction({ onEndTicket, pending }: { onEndTicket: () => void; pending?: boolean }) {
+  return (
+    <div className="mt-2">
+      <Button type="button" variant="outline" size="sm" className="cursor-pointer" onClick={onEndTicket} loading={pending}>
+        End ticket
+      </Button>
+    </div>
+  )
+}

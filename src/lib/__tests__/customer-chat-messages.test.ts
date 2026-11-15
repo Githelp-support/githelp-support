@@ -28,6 +28,22 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         ...overrides,
     });
 
+    it("leaves the helper-only abandonment notices out of the customer thread", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({
+                messagesData: [
+                    persistedUserMessage(),
+                    persistedUserMessage({ id: "abandoned", sender_type: "system", metadata: { kind: "guest_abandoned" } }),
+                    persistedUserMessage({ id: "returned", sender_type: "system", metadata: { kind: "guest_returned" } }),
+                ],
+            }),
+        );
+        const ids = list.map((m) => m.id);
+        expect(ids).toContain("msg-1");
+        expect(ids).not.toContain("abandoned");
+        expect(ids).not.toContain("returned");
+    });
+
     it("appears directly after the pending first message when nothing is persisted yet", () => {
         const list = buildCustomerThreadMessages(
             baseOpts({ pendingFirstMessage: "My build is broken" }),

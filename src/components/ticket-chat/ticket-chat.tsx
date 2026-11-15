@@ -69,6 +69,11 @@ export type SystemMessageKind =
   // because the visitor left / the visitor signed in (adopt-guest-tickets).
   | "visitor_left"
   | "guest_signed_in"
+  // Guest ticket abandonment (migration 20261115130000_guest_ticket_abandonment):
+  // the visitor left a ticket a helper had answered / came back within 30 min.
+  // Helper-side notices; the customer thread leaves them out.
+  | "guest_abandoned"
+  | "guest_returned"
 
 export type TicketChatMessage = {
   id: string
