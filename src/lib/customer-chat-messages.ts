@@ -41,6 +41,26 @@ export function guestSystemMessageCopy(kind: unknown, audience: "customer" | "he
     return null;
 }
 
+/**
+ * The stored `payment_authorized` / `payment_required` texts are worded for
+ * the customer ("Your helper has claimed this ticket…"); the helper thread
+ * substitutes its own wording.
+ */
+export const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "The ticket is claimed. You can now start tracking time.";
+export const HELPER_PAYMENT_REQUIRED_MESSAGE =
+    "You've claimed the ticket. The user has now been asked to add a payment method. You can start tracking time once the payment is authorized.";
+
+/**
+ * Helper-side copy for a system message kind, or null when the stored text
+ * should be shown as is. Covers the payment kinds above and the guest kinds
+ * from `guestSystemMessageCopy(kind, "helper")`.
+ */
+export function helperSystemMessageCopy(kind: unknown): string | null {
+    if (kind === "payment_authorized") return HELPER_PAYMENT_AUTHORIZED_MESSAGE;
+    if (kind === "payment_required") return HELPER_PAYMENT_REQUIRED_MESSAGE;
+    return guestSystemMessageCopy(kind, "helper");
+}
+
 type KindMessage = { id?: string; sender_type: string; metadata?: Record<string, unknown> | null };
 
 /**

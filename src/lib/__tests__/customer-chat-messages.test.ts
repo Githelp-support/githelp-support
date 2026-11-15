@@ -4,7 +4,11 @@ import {
     buildCustomerThreadMessages,
     describeChargedLine,
     findPendingSca,
+    helperSystemMessageCopy,
     isPaymentFailedCtaLive,
+    GUEST_SIGNED_IN_HELPER_COPY,
+    HELPER_PAYMENT_AUTHORIZED_MESSAGE,
+    HELPER_PAYMENT_REQUIRED_MESSAGE,
     type CustomerThreadOptions,
     type PersistedTicketMessage,
 } from "../customer-chat-messages";
@@ -209,5 +213,29 @@ describe("isPaymentFailedCtaLive", () => {
 
     it("is false for anything but a payment_failed system message", () => {
         expect(isPaymentFailedCtaLive([msg("m1", "payment_required")], 0)).toBe(false);
+    });
+});
+
+describe("helperSystemMessageCopy", () => {
+    it("replaces the customer-worded payment_required text with the helper copy", () => {
+        expect(helperSystemMessageCopy("payment_required")).toBe(HELPER_PAYMENT_REQUIRED_MESSAGE);
+        expect(HELPER_PAYMENT_REQUIRED_MESSAGE).not.toContain("Your helper has claimed this ticket");
+        expect(HELPER_PAYMENT_REQUIRED_MESSAGE).toBe(
+            "You've claimed the ticket. The user has now been asked to add a payment method. You can start tracking time once the payment is authorized.",
+        );
+    });
+
+    it("replaces the customer-worded payment_authorized text with the helper copy", () => {
+        expect(helperSystemMessageCopy("payment_authorized")).toBe(HELPER_PAYMENT_AUTHORIZED_MESSAGE);
+        expect(HELPER_PAYMENT_AUTHORIZED_MESSAGE).toBe("The ticket is claimed. You can now start tracking time.");
+    });
+
+    it("falls back to the helper-side guest copy", () => {
+        expect(helperSystemMessageCopy("guest_signed_in")).toBe(GUEST_SIGNED_IN_HELPER_COPY);
+    });
+
+    it("returns null for any other kind so the stored text is shown", () => {
+        expect(helperSystemMessageCopy("payment_completed")).toBeNull();
+        expect(helperSystemMessageCopy(undefined)).toBeNull();
     });
 });
