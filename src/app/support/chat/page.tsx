@@ -914,7 +914,7 @@ export default function UserSupportChatPage() {
         headerTitle={`Ticket with ${projectName}`}
         headerTitleClassName="text-xl"
         headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
-        showBackButton={false}
+        showBackButton={true}
         intro={
           <CustomerChatIntro
             projectId={effectiveProjectId}
