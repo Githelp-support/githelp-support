@@ -5,7 +5,8 @@
  * (`guest === true`) and is now `status === 'cancelled'`.
  *
  * The `close_abandoned_guest_tickets` cron cancels guest tickets that have
- * been unseen for 15 minutes and posts a `visitor_left` system message in the
+ * been unseen for 15 minutes, or whose visitor closed the window about two
+ * minutes ago (`leave_guest_ticket`, see `useGuestPresence`), and posts a `visitor_left` system message in the
  * chat. These tickets are noise for the team and must not appear in any
  * Helper/Admin list, table or overview.
  *

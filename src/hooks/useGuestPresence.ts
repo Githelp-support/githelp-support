@@ -23,6 +23,38 @@ function touchGuestTickets(ticketId?: string) {
 }
 
 /**
+ * `leave_guest_ticket`: the guest closed the window. Marks the caller's own
+ * open guest ticket (or, without an id, all of them) as left, so the server
+ * closes it after a short grace period instead of the 15 minute idle
+ * timeout; a closed guest ticket is hidden from every Helper/Admin list (see
+ * `lib/abandoned-guest-tickets`). The next `touch_guest_ticket` (a reload,
+ * another tab that is still open) clears the mark, so only a visitor who is
+ * really gone loses the conversation.
+ *
+ * Sent with `keepalive` so the request survives the page being torn down;
+ * `supabase.rpc` would be aborted with it. Never throws.
+ */
+function leaveGuestTickets(accessToken: string | null, ticketId?: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!accessToken || !url || !anonKey) return
+  try {
+    void fetch(`${url}/rest/v1/rpc/leave_guest_ticket`, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(ticketId ? { p_ticket_id: ticketId } : {}),
+    }).catch(() => {})
+  } catch {
+    // Presence is best effort.
+  }
+}
+
+/**
  * Presence heartbeat for a guest's open ticket (or, without an id, all of
  * their open guest tickets — used by the support layout on every /support
  * page). A cron job closes guest
@@ -30,24 +62,54 @@ function touchGuestTickets(ticketId?: string) {
  * ticket is on screen we call `touch_guest_ticket`: on mount, every 30 s —
  * also while the tab is hidden (visitors switch tabs to try a fix; browsers
  * throttle background timers to about once a minute, which is enough) — and
- * right away when the tab becomes visible again.
+ * right away when the tab becomes visible again. When the window is closed
+ * (`pagehide`) the tickets are reported as left (`leaveGuestTickets`).
  */
 export function useGuestPresence(ticketId: string | null | undefined, enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
 
     // No id: all of the caller's open guest tickets (a no-op without any).
-    const touch = () => touchGuestTickets(ticketId ?? undefined)
+    // The access token is kept at hand because `pagehide` can't wait for it.
+    let accessToken: string | null = null
+    let active = true
+    const rememberToken = () => {
+      try {
+        Promise.resolve(supabase.auth.getSession())
+          .then((result) => {
+            if (active) accessToken = result?.data?.session?.access_token ?? null
+          })
+          .catch(() => {})
+      } catch {
+        // Presence is best effort.
+      }
+    }
+    const touch = () => {
+      rememberToken()
+      touchGuestTickets(ticketId ?? undefined)
+    }
     touch()
     const interval = setInterval(touch, GUEST_PRESENCE_INTERVAL_MS)
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") touch()
     }
     document.addEventListener("visibilitychange", onVisibilityChange)
+    // Window or tab closed (also a reload or leaving the site: the next
+    // touch, if there is one, takes the mark back).
+    const onPageHide = () => leaveGuestTickets(accessToken, ticketId ?? undefined)
+    // Restored from the back/forward cache: still here after all.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) touch()
+    }
+    window.addEventListener("pagehide", onPageHide)
+    window.addEventListener("pageshow", onPageShow)
 
     return () => {
+      active = false
       clearInterval(interval)
       document.removeEventListener("visibilitychange", onVisibilityChange)
+      window.removeEventListener("pagehide", onPageHide)
+      window.removeEventListener("pageshow", onPageShow)
     }
   }, [ticketId, enabled])
 }

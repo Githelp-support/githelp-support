@@ -104,6 +104,73 @@ describe("useGuestPresence", () => {
     expect(supabase.rpc).toHaveBeenCalledTimes(1)
   })
 
+  describe("when the window is closed", () => {
+    const fetchMock = vi.fn()
+
+    beforeEach(() => {
+      fetchMock.mockReset()
+      fetchMock.mockResolvedValue({ ok: true })
+      vi.stubGlobal("fetch", fetchMock)
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co")
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-key")
+      getSession.mockResolvedValue({ data: { session: { access_token: "guest-token" } } })
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+      vi.unstubAllEnvs()
+      getSession.mockReset()
+    })
+
+    it("reports the guest's tickets as left with a keepalive request", async () => {
+      renderHook(() => useGuestPresence(null, true))
+      await vi.advanceTimersByTimeAsync(0)
+
+      window.dispatchEvent(new Event("pagehide"))
+
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe("https://example.supabase.co/rest/v1/rpc/leave_guest_ticket")
+      expect(init).toMatchObject({
+        method: "POST",
+        keepalive: true,
+        body: "{}",
+        headers: { apikey: "anon-key", Authorization: "Bearer guest-token" },
+      })
+    })
+
+    it("reports only the given ticket when there is an id", async () => {
+      renderHook(() => useGuestPresence("t1", true))
+      await vi.advanceTimersByTimeAsync(0)
+      window.dispatchEvent(new Event("pagehide"))
+      expect(fetchMock.mock.calls[0][1].body).toBe(JSON.stringify({ p_ticket_id: "t1" }))
+    })
+
+    it("does nothing when disabled, after unmount or without a session", async () => {
+      renderHook(() => useGuestPresence("t1", false))
+      const { unmount } = renderHook(() => useGuestPresence("t1", true))
+      await vi.advanceTimersByTimeAsync(0)
+      unmount()
+      window.dispatchEvent(new Event("pagehide"))
+      expect(fetchMock).not.toHaveBeenCalled()
+
+      getSession.mockResolvedValue({ data: { session: null } })
+      renderHook(() => useGuestPresence("t1", true))
+      await vi.advanceTimersByTimeAsync(0)
+      window.dispatchEvent(new Event("pagehide"))
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it("touches again when the page comes back from the back/forward cache", async () => {
+      renderHook(() => useGuestPresence("t1", true))
+      expect(supabase.rpc).toHaveBeenCalledTimes(1)
+      const pageShow = new Event("pageshow")
+      Object.defineProperty(pageShow, "persisted", { value: true })
+      window.dispatchEvent(pageShow)
+      expect(supabase.rpc).toHaveBeenCalledTimes(2)
+    })
+  })
+
   it("never throws when the RPC fails", async () => {
     vi.mocked(supabase.rpc).mockReturnValue(Promise.resolve({ error: { message: "nope" } }) as never)
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
