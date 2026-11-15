@@ -38,7 +38,7 @@ vi.mock("next/navigation", () => ({ useParams: mocks.useParams, useRouter: () =>
 vi.mock("@/contexts/user-context", () => ({ useUser: mocks.useUser }))
 vi.mock("@/lib/supabase/client", () => ({ supabase: {} }))
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
-vi.mock("@/hooks/useTickets", () => ({ useTicket: mocks.useTicket, useUpdateTicket: mutation }))
+vi.mock("@/hooks/useTickets", () => ({ useTicket: mocks.useTicket, useUpdateTicket: mutation, useEndAbandonedGuestTicket: mutation }))
 vi.mock("@/hooks/useTicketsWithDetails", () => ({ useTicketWithDetails: mocks.useTicketWithDetails }))
 vi.mock("@/hooks/useTicketPaymentStatus", () => ({ useTicketPaymentStatus: mocks.useTicketPaymentStatus }))
 vi.mock("@/hooks/useCaptureTicket", () => ({ useCaptureTicket: mutation }))
@@ -162,5 +162,28 @@ describe("helper ticket page frame", () => {
     render(<TicketDetailPage />)
     const scroller = screen.getByText(/people in this chat/i).closest(".overflow-y-auto") as HTMLElement
     expect(scroller.className).toMatch(/max-lg:pt-4/)
+  })
+
+  it("offers End ticket on the guest-abandoned notice, and only while the guest is away", () => {
+    const abandoned = {
+      id: "m1",
+      sender_type: "system",
+      content: "The guest user has closed the chat window. You can decide to end the ticket, if you would like.",
+      created_at: "2026-08-25T10:05:00Z",
+      metadata: { kind: "guest_abandoned" },
+    }
+    const guestTicket = { ...mocks.useTicket().data, status: "available", claimed_by: null, guest: true }
+    mocks.useTicket.mockReturnValue({ data: guestTicket, isLoading: false, isError: false })
+    mocks.useTicketMessages.mockReturnValue({ data: [abandoned], isLoading: false })
+    const { unmount } = render(<TicketDetailPage />)
+    const notice = screen.getByText(/the guest user has closed the chat window/i)
+    expect(notice.closest(".bg-muted")?.querySelector("button")).toHaveTextContent("End ticket")
+    unmount()
+
+    const returned = { ...abandoned, id: "m2", content: "The guest user has returned to the chat.", metadata: { kind: "guest_returned" } }
+    mocks.useTicketMessages.mockReturnValue({ data: [abandoned, returned], isLoading: false })
+    render(<TicketDetailPage />)
+    const stale = screen.getByText(/the guest user has closed the chat window/i)
+    expect(stale.closest(".bg-muted")?.querySelector("button")).toBeNull()
   })
 })

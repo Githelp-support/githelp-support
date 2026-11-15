@@ -41,6 +41,12 @@ export function guestSystemMessageCopy(kind: unknown, audience: "customer" | "he
     return null;
 }
 
+/**
+ * Abandonment notices for the helper (migration
+ * 20261115130000_guest_ticket_abandonment); never shown to the customer.
+ */
+const HELPER_ONLY_GUEST_KINDS = new Set(["guest_abandoned", "guest_returned"]);
+
 type KindMessage = { id?: string; sender_type: string; metadata?: Record<string, unknown> | null };
 
 /**
@@ -182,6 +188,8 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     const visitorLeftNow = activeVisitorLeft(messagesData, ticketStatus);
     messagesData?.forEach((msg) => {
         if (msg.sender_type === "system" && msg.metadata?.kind === "visitor_left" && msg !== visitorLeftNow) return;
+        // Written for the helper ("The guest user has closed the chat window…").
+        if (msg.sender_type === "system" && HELPER_ONLY_GUEST_KINDS.has(String(msg.metadata?.kind ?? ""))) return;
         const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";
         list.push({

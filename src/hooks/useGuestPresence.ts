@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { isAnonymousUser } from "@/lib/supabase/auth-state"
 import { isOwnGuestId } from "@/lib/guest-adoption-storage"
@@ -9,17 +9,20 @@ export const GUEST_PRESENCE_INTERVAL_MS = 30_000
 /**
  * `touch_guest_ticket`: with an id, the caller's own open guest ticket;
  * without, all of the caller's open guest tickets. A no-op for anything
- * else. Never throws.
+ * else. It is also how a guest re-enters a ticket they left less than 30
+ * minutes ago: the server reopens it. Never throws; resolves to whether the
+ * call went through.
  */
-function touchGuestTickets(ticketId?: string) {
+function touchGuestTickets(ticketId?: string): Promise<boolean> {
   const call = ticketId
     ? supabase.rpc("touch_guest_ticket", { p_ticket_id: ticketId })
     : supabase.rpc("touch_guest_ticket")
-  Promise.resolve(call)
+  return Promise.resolve(call)
     .then(({ error }: { error: { message?: string } | null }) => {
       if (error) console.warn("touch_guest_ticket failed:", error.message)
+      return !error
     })
-    .catch(() => {})
+    .catch(() => false)
 }
 
 /**
@@ -64,8 +67,18 @@ function leaveGuestTickets(accessToken: string | null, ticketId?: string) {
  * throttle background timers to about once a minute, which is enough) — and
  * right away when the tab becomes visible again. When the window is closed
  * (`pagehide`) the tickets are reported as left (`leaveGuestTickets`).
+ *
+ * A guest who closed the window can come back for 30 minutes: the first touch
+ * after mount reopens the ticket on the server. `onReentered` runs once that
+ * touch has gone through, so the caller can refetch what it loaded in the
+ * meantime (the ticket may have been read while still closed).
  */
-export function useGuestPresence(ticketId: string | null | undefined, enabled: boolean) {
+export function useGuestPresence(ticketId: string | null | undefined, enabled: boolean, onReentered?: () => void) {
+  const onReenteredRef = useRef(onReentered)
+  useEffect(() => {
+    onReenteredRef.current = onReentered
+  }, [onReentered])
+
   useEffect(() => {
     if (!enabled) return
 
@@ -86,12 +99,14 @@ export function useGuestPresence(ticketId: string | null | undefined, enabled: b
     }
     const touch = () => {
       rememberToken()
-      touchGuestTickets(ticketId ?? undefined)
+      return touchGuestTickets(ticketId ?? undefined)
     }
-    touch()
-    const interval = setInterval(touch, GUEST_PRESENCE_INTERVAL_MS)
+    void touch().then((ok) => {
+      if (ok && active) onReenteredRef.current?.()
+    })
+    const interval = setInterval(() => void touch(), GUEST_PRESENCE_INTERVAL_MS)
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") touch()
+      if (document.visibilityState === "visible") void touch()
     }
     document.addEventListener("visibilitychange", onVisibilityChange)
     // Window or tab closed (also a reload or leaving the site: the next
@@ -99,7 +114,7 @@ export function useGuestPresence(ticketId: string | null | undefined, enabled: b
     const onPageHide = () => leaveGuestTickets(accessToken, ticketId ?? undefined)
     // Restored from the back/forward cache: still here after all.
     const onPageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) touch()
+      if (event.persisted) void touch()
     }
     window.addEventListener("pagehide", onPageHide)
     window.addEventListener("pageshow", onPageShow)
@@ -129,7 +144,7 @@ export function useGuestSignInPresence() {
           data: { session },
         } = await supabase.auth.getSession()
         // Only this browser's own guest (never a foreign anonymous session).
-        if (!cancelled && isAnonymousUser(session?.user) && isOwnGuestId(session?.user?.id)) touchGuestTickets()
+        if (!cancelled && isAnonymousUser(session?.user) && isOwnGuestId(session?.user?.id)) void touchGuestTickets()
       } catch {
         // Presence is best effort.
       }

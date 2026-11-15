@@ -174,3 +174,29 @@ export function useRequestEndSession() {
         },
     });
 }
+
+/**
+ * A helper or project admin formally ends a guest ticket the visitor has
+ * abandoned (`end_abandoned_guest_ticket`): the ticket becomes "completed"
+ * and is kept, instead of being deleted 24 hours after the "Ticket
+ * abandoned" notification. Fails with hint `guest_ticket_not_abandoned` when
+ * the visitor is back in the chat.
+ */
+export function useEndAbandonedGuestTicket() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (ticketId: string) => {
+            const { error } = await supabase.rpc("end_abandoned_guest_ticket", { p_ticket_id: ticketId });
+            if (error) throw error;
+            return ticketId;
+        },
+        onSuccess: (ticketId) => {
+            queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] });
+            queryClient.invalidateQueries({ queryKey: ["ticket-with-details", ticketId] });
+            queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] });
+            queryClient.invalidateQueries({ queryKey: ["tickets"] });
+            queryClient.invalidateQueries({ queryKey: ["tickets-with-details"] });
+        },
+    });
+}

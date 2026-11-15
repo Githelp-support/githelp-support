@@ -29,6 +29,28 @@ describe("useGuestPresence", () => {
     vi.useRealTimers()
   })
 
+  it("calls onReentered once, after the first touch went through", async () => {
+    const onReentered = vi.fn()
+    renderHook(() => useGuestPresence(null, true, onReentered))
+    expect(onReentered).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(onReentered).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(GUEST_PRESENCE_INTERVAL_MS)
+    expect(supabase.rpc).toHaveBeenCalledTimes(2)
+    expect(onReentered).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not call onReentered when the first touch fails", async () => {
+    vi.mocked(supabase.rpc).mockReturnValue(Promise.resolve({ error: { message: "nope" } }) as never)
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const onReentered = vi.fn()
+    renderHook(() => useGuestPresence(null, true, onReentered))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(onReentered).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it("touches the ticket on mount and every 30 s while visible", () => {
     renderHook(() => useGuestPresence("t1", true))
     expect(supabase.rpc).toHaveBeenCalledTimes(1)

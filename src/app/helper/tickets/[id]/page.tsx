@@ -41,9 +41,10 @@ import { Icon } from "@/components/ui/icon"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
 import { useParams } from "next/navigation"
-import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
+import { useEndAbandonedGuestTicket, useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
-import { ClaimTicketButton, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { ClaimTicketButton, GuestAbandonedAction, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { activeGuestAbandonedMessageId } from "@/lib/abandoned-guest-tickets"
 import { guestSystemMessageCopy } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
@@ -157,6 +158,30 @@ export default function TicketDetailPage() {
   const { data: messagesData, isLoading: messagesLoading } = useTicketMessages(ticketId)
   const sendMessage = useSendMessage()
   const updateTicket = useUpdateTicket()
+  // The guest closed the chat window after a helper had replied: the
+  // `guest_abandoned` notice in the thread offers to formally end the ticket.
+  const endAbandonedGuestTicket = useEndAbandonedGuestTicket()
+  const guestAbandonedMessageId = useMemo(
+    () => activeGuestAbandonedMessageId(messagesData, ticket as { guest?: boolean; status?: string } | null | undefined),
+    [messagesData, ticket],
+  )
+  const handleEndAbandonedTicket = () => {
+    if (!ticketId || endAbandonedGuestTicket.isPending) return
+    endAbandonedGuestTicket.mutate(ticketId, {
+      onSuccess: () => toast.success("Ticket ended."),
+      onError: (error) => {
+        const hint = (error as { hint?: string } | null)?.hint
+        toast.error("Couldn't end the ticket. It is still open.", {
+          description:
+            hint === "guest_ticket_not_abandoned"
+              ? "The guest is back in the chat."
+              : hint === "ticket_closed"
+                ? "This ticket is already closed."
+                : "Please try again.",
+        })
+      },
+    })
+  }
   const captureTicket = useCaptureTicket()
   const { user: currentUser } = useUser()
 
@@ -1147,6 +1172,12 @@ export default function TicketDetailPage() {
                                 <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
                               ) : (
                                 <MarkdownContent content={msg.content} />
+                              )}
+                              {msg.sender === "system" && msg.id === guestAbandonedMessageId && (
+                                <GuestAbandonedAction
+                                  onEndTicket={handleEndAbandonedTicket}
+                                  pending={endAbandonedGuestTicket.isPending}
+                                />
                               )}
                             </div>
                           </div>

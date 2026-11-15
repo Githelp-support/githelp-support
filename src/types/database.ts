@@ -593,6 +593,11 @@ export type Database = {
                 Args: { p_ticket_id?: string | null };
                 Returns: undefined;
             };
+            /** A helper or admin of the project formally ends a guest ticket the visitor has abandoned: it becomes 'completed' and is kept. */
+            end_abandoned_guest_ticket: {
+                Args: { p_ticket_id: string };
+                Returns: undefined;
+            };
         };
     };
 };
