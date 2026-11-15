@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 const usePathname = vi.fn()
 const useSearchParams = vi.fn()
@@ -24,6 +25,19 @@ vi.mock("next/link", () => ({
     <a href={href} {...props}>
       {children}
     </a>
+  ),
+}))
+
+// The role / project controls have their own data dependencies (queries,
+// project selection); the sidebar tests only assert where they are rendered.
+const signOut = vi.fn()
+vi.mock("@/hooks/useWorkspaceSwitcher", () => ({
+  useWorkspaceSwitcher: () => ({ signOut }),
+}))
+vi.mock("@/components/layout/workspace-switchers", () => ({
+  RoleSwitcher: () => <div data-testid="role-switcher" />,
+  ProjectSwitcher: ({ collapsed }: { collapsed?: boolean }) => (
+    <div data-testid="project-switcher" data-collapsed={String(!!collapsed)} />
   ),
 }))
 
@@ -199,5 +213,111 @@ describe("Sidebar — expansion follows client-side navigation", () => {
     rerender(<Sidebar />)
     expect(screen.getByText("Branding").closest("[data-state]")).toHaveAttribute("data-state", "open")
     expect(screen.getByText("Branding").closest("a")).toHaveAttribute("href", "/settings/branding")
+  })
+})
+
+describe("Sidebar — header, project row and profile block", () => {
+  // Collapsed rows are wrapped in tooltips, which need the root layout's provider.
+  const renderSidebar = (props: React.ComponentProps<typeof Sidebar> = {}) =>
+    render(
+      <TooltipProvider>
+        <Sidebar {...props} />
+      </TooltipProvider>,
+    )
+
+  it("expanded: shows the role and project controls and a collapse button, no role line", () => {
+    renderSidebar()
+
+    expect(screen.getByTestId("role-switcher")).toBeInTheDocument()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "false")
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Role:/)).not.toBeInTheDocument()
+    // The logo sits in the header row, next to the role control; expanded it is not a button.
+    const header = screen.getByTestId("role-switcher").parentElement!
+    expect(header.querySelector(":scope > svg")).not.toBeNull()
+    expect(header).toContainElement(screen.getByRole("button", { name: "Collapse sidebar" }))
+  })
+
+  it("starts collapsed from localStorage: the logo is the only expand control", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+
+    // No chevron button in either direction: the logo expands the sidebar.
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
+    expect(document.querySelector(".fi-rr-angle-double-small-left")).toBeNull()
+    expect(document.querySelector(".fi-rr-angle-double-small-right")).toBeNull()
+    const expand = screen.getByRole("button", { name: "Expand sidebar" })
+    expect(expand.querySelector("svg")).not.toBeNull()
+
+    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
+
+    fireEvent.click(expand)
+    expect(window.localStorage.getItem("sidebar:collapsed")).toBe("false")
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
+    expect(screen.getByTestId("role-switcher")).toBeInTheDocument()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "false")
+  })
+
+  it("collapses to the logo button and expands again, persisting the state", () => {
+    renderSidebar()
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }))
+    expect(window.localStorage.getItem("sidebar:collapsed")).toBe("true")
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
+    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
+    expect(screen.queryByText("Test User")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }))
+    expect(window.localStorage.getItem("sidebar:collapsed")).toBe("false")
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
+  })
+
+  it("centres the 'Open project page' link when collapsed", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar({ projectPageHref: "/support/acme" })
+
+    const link = document.querySelector('a[href="/support/acme"]')
+    expect(link?.className).toContain("justify-center")
+    expect(link?.className).not.toContain("gap-3")
+  })
+
+  it("forceExpanded (mobile sheet): no collapse button, even when the stored state is collapsed", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar({ forceExpanded: true })
+
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument()
+    expect(screen.getByTestId("role-switcher")).toBeInTheDocument()
+  })
+
+  it("signs out through the account menu", () => {
+    renderSidebar()
+
+    const trigger = screen.getByRole("button", { name: "Account menu" })
+    fireEvent.keyDown(trigger, { key: "Enter" })
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }))
+    expect(signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps Sign out reachable from the avatar when collapsed", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Account menu" }), { key: "Enter" })
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }))
+    expect(signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it("guests: name only, no role, project or account controls", () => {
+    useUser.mockReturnValue({ user: { ...anonymousUser, guestId: "g1" }, setProjectRole: vi.fn() })
+    renderSidebar()
+
+    expect(screen.getByText("Incognito")).toBeInTheDocument()
+    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("project-switcher")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Account menu" })).not.toBeInTheDocument()
   })
 })

@@ -86,6 +86,37 @@ describe("TopBar", () => {
     expect(screen.getByText("User")).toBeInTheDocument()
   })
 
+  it("keeps the bar but drops the switchers and Sign out in the shell variant", () => {
+    usePathname.mockReturnValue("/tickets")
+    const { container } = render(<TopBar variant="shell" />)
+    expect(container.firstChild).not.toBeNull()
+    // The bell stays.
+    expect(container.querySelector("button .fi-rr-bell")).not.toBeNull()
+    expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument()
+    // No role dropdown and no Private context dropdown.
+    expect(screen.queryByText("User")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /private/i })).not.toBeInTheDocument()
+  })
+
+  it("renders the bell in the default variant too", () => {
+    usePathname.mockReturnValue("/tickets")
+    const { container } = render(<TopBar />)
+    expect(container.querySelector("button .fi-rr-bell")).not.toBeNull()
+  })
+
+  it("shows no project dropdown in the shell variant when acting as Admin in a project", () => {
+    usePathname.mockReturnValue("/tickets")
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "admin" as const }, switchRole: vi.fn() })
+    useUserRoles.mockReturnValue({ data: ["admin"], isSuccess: true })
+    useUserProjects.mockReturnValue({
+      data: [{ project_id: "p1", name: "Alpha", slug: "alpha", logo_url: null }],
+      isLoading: false,
+    })
+    render(<TopBar variant="shell" />)
+    expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument()
+  })
+
   it("shows the Private context dropdown for a user-only account", () => {
     usePathname.mockReturnValue("/support/chat")
     useUserRoles.mockReturnValue({ data: ["user"], isSuccess: true })

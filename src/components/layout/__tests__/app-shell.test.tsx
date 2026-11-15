@@ -22,6 +22,21 @@ vi.mock("next/link", () => ({
   ),
 }))
 
+// The TopBar has its own tests; here only its placement and variant matter.
+vi.mock("@/components/layout/top-bar", () => ({
+  TopBar: ({ variant = "default" }: { variant?: string }) => <div data-testid="top-bar" data-variant={variant} />,
+}))
+
+// The Sidebar's role / project controls and sign-out need the query and
+// project providers; they are covered by the sidebar tests.
+vi.mock("@/hooks/useWorkspaceSwitcher", () => ({
+  useWorkspaceSwitcher: () => ({ signOut: vi.fn() }),
+}))
+vi.mock("@/components/layout/workspace-switchers", () => ({
+  RoleSwitcher: () => <div data-testid="role-switcher" />,
+  ProjectSwitcher: () => <div data-testid="project-switcher" />,
+}))
+
 import { AppShell, isShellRoute, useSetProjectPageHref } from "../app-shell"
 
 beforeEach(() => {
@@ -87,9 +102,20 @@ describe("AppShell", () => {
     )
     expect(screen.getByText("Page body")).toBeInTheDocument()
     expect(screen.getByRole("navigation")).toBeInTheDocument()
+    // The shell TopBar sits in the content column, directly above the page.
+    const topBar = screen.getByTestId("top-bar")
+    expect(topBar).toHaveAttribute("data-variant", "shell")
+    const column = topBar.parentElement!
+    expect(column).toBe(screen.getByText("Page body").parentElement)
+    expect(topBar.nextElementSibling).toBe(screen.getByText("Page body"))
+    // The Sidebar is a sibling of that column in the shell row, not above or inside it.
+    const nav = screen.getByRole("navigation")
+    expect(column).not.toContainElement(nav)
+    expect(column.parentElement).toContainElement(nav)
+    expect(nav.compareDocumentPosition(column) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it("renders only the page on routes without the shell", () => {
+  it("renders the default TopBar and the page, without a sidebar, on routes without the shell", () => {
     usePathname.mockReturnValue("/auth/signin")
     render(
       <AppShell>
@@ -98,6 +124,10 @@ describe("AppShell", () => {
     )
     expect(screen.getByText("Sign in body")).toBeInTheDocument()
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument()
+    const topBar = screen.getByTestId("top-bar")
+    expect(topBar).toHaveAttribute("data-variant", "default")
+    // Full-width bar directly above the page.
+    expect(topBar.nextElementSibling).toBe(screen.getByText("Sign in body"))
   })
 
   it("lets a support page provide the sidebar's project page link through context", () => {

@@ -17,6 +17,10 @@ import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { isSupportRoute } from "@/lib/sign-in-href"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Logo } from "@/components/brand/logo"
+import { RoleSwitcher, ProjectSwitcher } from "@/components/layout/workspace-switchers"
+import { useWorkspaceSwitcher } from "@/hooks/useWorkspaceSwitcher"
+import { cn } from "@/lib/utils"
 import { Fragment, type ReactElement } from "react"
 
 interface SidebarProps {
@@ -94,6 +98,19 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   const isCollapsed = forceExpanded ? false : storedCollapsed
   const { user } = useUser()
   const isAuthenticated = !!user?.id
+  // Guarded sign-out (prompts on unsaved changes), shared with the TopBar.
+  const { signOut } = useWorkspaceSwitcher()
+
+  const setCollapsed = (next: boolean) => {
+    setIsCollapsed(next)
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("sidebar:collapsed", String(next))
+      } catch {
+        // Ignore localStorage write errors.
+      }
+    }
+  }
 
   // Collapsed rows have no visible label: show it in a tooltip to the right.
   const withTooltip = (label: string, node: ReactElement) =>
@@ -262,54 +279,75 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   // sub-pages); compare against the path portion only.
   const isSubItemActive = (href: string) => pathname === href.split("?")[0]
 
+  const profileAvatar = (
+    <ProfileAvatar id={user.id} name={user.name} avatarUrl={user.avatarUrl} size="sm" />
+  )
+
+  const signOutItem = (
+    <DropdownMenuItem className="cursor-pointer" onSelect={() => signOut()}>
+      <Icon name="fi-rr-sign-out-alt" />
+      Sign out
+    </DropdownMenuItem>
+  )
+
   return (
     <div
       suppressHydrationWarning
       // `self-stretch` (not `h-full`) sizes the sidebar from the AppShell row's
       // laid-out height (a `flex-1 min-h-0` chain, where percentage heights don't
-      // resolve), so it always fills the area below the TopBar and the profile
-      // block stays pinned to the bottom.
+      // resolve). The row fills the whole screen (the TopBar sits in the content
+      // column beside the sidebar, not above it), so the sidebar spans from the
+      // very top to the bottom and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
-        {!isCollapsed ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            onClick={() => {
-              setIsCollapsed(true)
-              if (typeof window !== "undefined") {
-                try {
-                  window.localStorage.setItem("sidebar:collapsed", "true")
-                } catch {
-                  // Ignore localStorage write errors.
-                }
-              }
-            }}
-          >
-            <Icon name="fi-rr-angle-double-small-left" size={5} />
-          </Button>
+      {/* Header row: same height as the TopBar so the two line up. */}
+      <div
+        className={cn(
+          "flex h-15 shrink-0 items-center px-4",
+          isCollapsed ? "justify-center" : "gap-2",
+          // Mobile sheet: keep the role dropdown clear of the sheet's Close button.
+          forceExpanded && "pr-12",
+        )}
+      >
+        {isCollapsed ? (
+          withTooltip(
+            "Expand sidebar",
+            <button
+              type="button"
+              aria-label="Expand sidebar"
+              onClick={() => setCollapsed(false)}
+              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+            >
+              <Logo />
+            </button>,
+          )
         ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            onClick={() => {
-              setIsCollapsed(false)
-              if (typeof window !== "undefined") {
-                try {
-                  window.localStorage.setItem("sidebar:collapsed", "false")
-                } catch {
-                  // Ignore localStorage write errors.
-                }
-              }
-            }}
-          >
-            <Icon name="fi-rr-angle-small-right" size={5} />
-          </Button>
+          <>
+            <Logo />
+            {isAuthenticated && <RoleSwitcher />}
+            {!forceExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Collapse sidebar"
+                className="ml-auto h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                onClick={() => setCollapsed(true)}
+              >
+                <Icon name="fi-rr-angle-double-small-left" size={5} />
+              </Button>
+            )}
+          </>
         )}
       </div>
+
+      {/* Project row. Guests have no role or project. `empty:hidden` drops the
+          padding when the switcher renders nothing (no projects). */}
+      {isAuthenticated && (
+        <div className="px-3 pb-3 shrink-0 empty:hidden">
+          {/* Collapsed, the switcher centres its own logo-only trigger. */}
+          <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
+        </div>
+      )}
 
       {!isCollapsed && !isAuthenticated && (
         <div className="px-3 pb-3 shrink-0">
@@ -505,7 +543,10 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             href={projectPageHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+            className={cn(
+              "flex items-center h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground",
+              isCollapsed ? "justify-center" : "gap-3",
+            )}
           >
             <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
               <FlaticonIcon iconClass="fi-rr-browser" />
@@ -538,22 +579,51 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       </div>
 
       <div className="px-3 py-2.5 border-t border-sidebar-border shrink-0">
-        <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
-          <ProfileAvatar
-            id={user.id}
-            name={user.name}
-            avatarUrl={user.avatarUrl}
-            size="sm"
-          />
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
-              <div className="text-xs font-medium text-muted-foreground truncate">
-                Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </div>
-            </div>
-          )}
-        </div>
+        {isCollapsed ? (
+          <div className="flex items-center justify-center px-2 py-1.5">
+            {isAuthenticated ? (
+              // Collapsed: the avatar opens the account menu so Sign out stays reachable.
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Account menu"
+                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                  >
+                    {profileAvatar}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end" sideOffset={8} className="w-40">
+                  {signOutItem}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              profileAvatar
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 px-2 py-1.5 rounded-md">
+            {profileAvatar}
+            <div className="flex-1 min-w-0 text-sm font-semibold text-sidebar-foreground truncate">{user.name}</div>
+            {isAuthenticated && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Account menu"
+                    className="h-7 w-7 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                  >
+                    <Icon name="fi-rr-angle-small-down" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="end" className="w-40">
+                  {signOutItem}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
