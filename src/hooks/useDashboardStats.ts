@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ABANDONED_GUEST_TICKET_EXCLUSION } from "@/lib/abandoned-guest-tickets";
 import { supabase } from "@/lib/supabase/client";
 import {
     computeDashboardStats,
@@ -64,12 +65,13 @@ export function useDashboardStats(
 
             if (!project) return EMPTY_RAW_DATA;
 
-            // Get all (non-deleted) tickets for the project
+            // Get all (non-deleted) tickets for the project, without abandoned guest tickets
             const { data: tickets } = await supabase
                 .from("tickets")
                 .select("id, status, created_at, completed_at, cancelled_at")
                 .eq("project_id", projectId)
-                .is("deleted_at", null);
+                .is("deleted_at", null)
+                .or(ABANDONED_GUEST_TICKET_EXCLUSION);
 
             // Get help categories (project_id in help_categories is bigint referencing projects.id)
             const { data: helpCategories } = await supabase

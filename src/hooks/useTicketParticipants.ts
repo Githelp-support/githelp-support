@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ABANDONED_GUEST_TICKET_EXCLUSION } from "@/lib/abandoned-guest-tickets";
 import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { getFunctionErrorMessage } from "@/lib/functions-error";
@@ -101,7 +102,8 @@ export function useMyParticipatingTicketIds(projectId?: string) {
                 .from("tickets")
                 .select("id")
                 .eq("project_id", projectId)
-                .is("deleted_at", null);
+                .is("deleted_at", null)
+                .or(ABANDONED_GUEST_TICKET_EXCLUSION);
 
             const ids = (ticketIds || []).map((t: { id: string }) => t.id);
             if (ids.length === 0) return new Set<string>();
@@ -142,7 +144,8 @@ export function useOtherHelperParticipatingTicketIds(projectId?: string) {
                 .from("tickets")
                 .select("id, created_by")
                 .eq("project_id", projectId)
-                .is("deleted_at", null);
+                .is("deleted_at", null)
+                .or(ABANDONED_GUEST_TICKET_EXCLUSION);
 
             const ids = (ticketRows || []).map((t: { id: string }) => t.id);
             if (ids.length === 0) return new Set<string>();

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ABANDONED_GUEST_TICKET_EXCLUSION } from "@/lib/abandoned-guest-tickets";
 import { supabase } from "@/lib/supabase/client";
 
 export type HelperRecentTicketStatus = "Completed" | "Claimed" | "Unclaimed";
@@ -118,7 +119,8 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                     .from("tickets")
                     .select(TICKET_COLUMNS)
                     .in("id", missingIds)
-                    .is("deleted_at", null);
+                    .is("deleted_at", null)
+                    .or(ABANDONED_GUEST_TICKET_EXCLUSION);
                 if (ticketsError) throw ticketsError;
                 ((ticketRows || []) as unknown as TicketRow[]).forEach((t) => ticketsById.set(t.id, t));
             }
@@ -138,7 +140,7 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
             });
 
             const topTickets = [...lastInteraction.entries()]
-                .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible tickets
+                .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible / abandoned guest tickets
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, limit)
                 .map(([id, ms]) => ({ ticket: ticketsById.get(id)!, ms }));

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement } from "react";
+import { ABANDONED_GUEST_TICKET_EXCLUSION } from "@/lib/abandoned-guest-tickets";
 import { useTickets } from "../useTickets";
 
 // Mock Supabase client before any imports resolve it
@@ -28,6 +29,7 @@ function mockChain(resolveWith: { data: unknown; error: unknown }) {
     const chain = {
         select: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         then: undefined as unknown,
@@ -93,6 +95,24 @@ describe("useTickets", () => {
         await waitFor(() => expect(result.current.isError).toBe(true));
 
         expect(result.current.error).toBe(dbError);
+    });
+
+    it("excludes abandoned guest tickets from the project list", async () => {
+        const chain = mockChain({ data: [], error: null });
+        vi.mocked(supabase.from).mockReturnValue(
+            chain as unknown as ReturnType<typeof supabase.from>,
+        );
+
+        const { result } = renderHook(() => useTickets("proj-guest"), {
+            wrapper: makeWrapper(),
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+        expect(chain.is).toHaveBeenCalledWith("deleted_at", null);
+        expect(chain.or).toHaveBeenCalledTimes(1);
+        expect(chain.or).toHaveBeenCalledWith(ABANDONED_GUEST_TICKET_EXCLUSION);
+        expect(chain.eq).toHaveBeenCalledWith("project_id", "proj-guest");
     });
 
     it("returns an array of tickets on success", async () => {
