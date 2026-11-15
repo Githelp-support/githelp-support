@@ -194,7 +194,10 @@ export default function UserSupportChatPage() {
   const { data: paymentSettings, isLoading: paymentSettingsLoading } = useProjectPaymentSettings(effectiveProjectId)
   // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
   const ticketPricingSnapshot = (existingTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
-  const effectivePricing = ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings
+  const effectivePricing = useMemo(
+    () => (ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings),
+    [paymentSettings, ticketPricingSnapshot],
+  )
   const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, {
     slaId,
     isFree: isFreeSupport(effectivePricing),
@@ -471,6 +474,7 @@ export default function UserSupportChatPage() {
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
       ticketStatus: existingTicket?.status ?? null,
+      isFree: isFreeSupport(effectivePricing),
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
       avgResponseSeconds,
     })
@@ -503,6 +507,7 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
+    effectivePricing,
     avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,

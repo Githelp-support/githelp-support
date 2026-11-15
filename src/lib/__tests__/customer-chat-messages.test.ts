@@ -6,6 +6,8 @@ import {
     findPendingSca,
     helperSystemMessageCopy,
     isPaymentFailedCtaLive,
+    TICKET_DISCLAIMER,
+    TICKET_DISCLAIMER_FREE,
     GUEST_SIGNED_IN_HELPER_COPY,
     HELPER_PAYMENT_AUTHORIZED_MESSAGE,
     HELPER_PAYMENT_REQUIRED_MESSAGE,
@@ -80,6 +82,30 @@ describe("buildCustomerThreadMessages auto-reply", () => {
     it("shows ~ while the project has no average response time yet", () => {
         expect(buildAutoReply(null)).toContain("**~**");
         expect(buildAutoReply(undefined)).toContain("**~**");
+    });
+});
+
+describe("buildCustomerThreadMessages welcome disclaimer", () => {
+    const baseOpts = (overrides: Partial<CustomerThreadOptions> = {}): CustomerThreadOptions => ({
+        projectName: "Acme",
+        projectLogo: null,
+        nowFormatted: "01/01/2026, 12:00",
+        messagesData: undefined,
+        currentUser: { id: "user-1", name: "Ada" },
+        ...overrides,
+    });
+
+    it("uses the paid copy by default", () => {
+        const welcome = buildCustomerThreadMessages(baseOpts()).find((m) => m.id === "welcome");
+        expect(welcome?.content).toBe(TICKET_DISCLAIMER);
+        expect(welcome?.content).toContain("not charged");
+    });
+
+    it("does not mention charging or confirming when the project offers free support", () => {
+        const welcome = buildCustomerThreadMessages(baseOpts({ isFree: true })).find((m) => m.id === "welcome");
+        expect(welcome?.content).toBe(TICKET_DISCLAIMER_FREE);
+        expect(welcome?.content).not.toContain("charged");
+        expect(welcome?.content).not.toContain("confirm");
     });
 });
 
