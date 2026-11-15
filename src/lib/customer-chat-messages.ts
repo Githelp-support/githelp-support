@@ -46,9 +46,9 @@ export function guestSystemMessageCopy(kind: unknown, audience: "customer" | "he
  * the customer ("Your helper has claimed this ticket…"); the helper thread
  * substitutes its own wording.
  */
-export const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time.";
+export const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "The ticket is claimed. You can now start tracking time.";
 export const HELPER_PAYMENT_REQUIRED_MESSAGE =
-    "You've claimed this ticket. The customer has been asked to add a payment method - you can start tracking time once payment is authorized.";
+    "You've claimed the ticket. The user has now been asked to add a payment method. You can start tracking time once the payment is authorized.";
 
 /**
  * Helper-side copy for a system message kind, or null when the stored text
