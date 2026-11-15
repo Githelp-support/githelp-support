@@ -44,7 +44,7 @@ import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { ClaimTicketButton, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
-import { guestSystemMessageCopy } from "@/lib/customer-chat-messages"
+import { helperSystemMessageCopy } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
@@ -93,8 +93,6 @@ interface Message {
   /** Raw `metadata` of the persisted message (read by `TimeReviewSystemMessage`). */
   metadata?: TimeReviewMessageMetadata
 }
-
-const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
 
 /** Toast for a failed capture: only card problems mention updating the card. */
 function notifyCaptureError(error: Error, cardHint: string) {
@@ -411,13 +409,11 @@ export default function TicketDetailPage() {
       messagesData.map((msg): Message => ({
         id: msg.id,
         sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
-        // The stored payment_authorized text is worded for the customer; helpers/admins get their own.
+        // The stored payment_authorized / payment_required texts are worded for the customer; helpers/admins get their own.
         content:
-          msg.sender_type === "system" && (msg.metadata as { kind?: string } | null | undefined)?.kind === "payment_authorized"
-            ? HELPER_PAYMENT_AUTHORIZED_MESSAGE
-            : (msg.sender_type === "system"
-                ? guestSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind, "helper")
-                : null) ?? msg.content,
+          (msg.sender_type === "system"
+            ? helperSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind)
+            : null) ?? msg.content,
         timestamp: formatDateTime(msg.created_at),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
         senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
