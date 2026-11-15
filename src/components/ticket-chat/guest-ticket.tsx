@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
  */
 
 export const GUEST_CLAIM_BLOCKED_COPY =
-  "The visitor needs to sign in before this ticket can be claimed. You can still reply."
+  "The user needs to sign in before this ticket can be claimed. You can still reply."
 
 /** Display name for a ticket creator: guests show as "Guest". */
 export function ticketCreatorDisplayName(name: string | null | undefined, isGuest: boolean, fallback = "User"): string {

@@ -57,7 +57,7 @@ describe("ClaimTicketButton", () => {
     const notice = screen.getByText(GUEST_CLAIM_BLOCKED_COPY)
     expect(notice).toHaveAttribute("data-slot", "guest-claim-explanation")
     expect(notice).toHaveClass("bg-bg-subtle", "rounded-md")
-    expect(notice).toHaveTextContent("The visitor needs to sign in before this ticket can be claimed. You can still reply.")
+    expect(notice).toHaveTextContent("The user needs to sign in before this ticket can be claimed. You can still reply.")
   })
 
   it("becomes available once the ticket is no longer a guest ticket", () => {
