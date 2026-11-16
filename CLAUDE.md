@@ -16,7 +16,7 @@ Next.js 16 (App Router) with React 19, Supabase backend at `../backend`.
 | Data Fetching   | Supabase client + `supabase.functions.invoke()` for Edge Functions |
 | Realtime        | Supabase subscriptions (tickets, messages)     |
 | Testing         | Vitest + React Testing Library                |
-| Icons           | Flaticon UIcons via `Icon` (`src/components/ui/icon.tsx`); Lucide only for the `Loader2` spinner, radio dots and the table `SortIcon` chevrons |
+| Icons           | Flaticon UIcons via `Icon` (`src/components/ui/icon.tsx`); Lucide only for the `Loader2` spinner, radio dots and the table `SortIcon` chevrons. Sidebar menu icons are one step lighter than their label at rest (`text-tertiary` beside the `text-muted` label) and take the label colour on hover and when active |
 | Fonts           | By size: Inter (`font-sans`) for text at 15px and below, Nudica (`font-display`, self-hosted from `src/fonts/nudica`) for 16px and above; the size utilities set the family (rules in `globals.css`). Geist Mono (mono), Outfit (avatar initials) |
 
 ## Design tokens

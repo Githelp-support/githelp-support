@@ -55,6 +55,16 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
+// Menu icons sit one step lighter than their label at rest (`text-tertiary`
+// against the `text-muted` label, still above 4.5:1 on the sidebar surface), so
+// the label carries the hierarchy. The row sets `--nav-icon`; on hover it
+// resolves to `currentColor`, and active rows never set it, so the icon then
+// follows the label colour (foreground on hover, brand purple when active).
+const NAV_ICON_REST = "[--nav-icon:var(--text-tertiary)] hover:[--nav-icon:currentColor]"
+const NAV_ROW_REST = `font-book text-text-muted hover:bg-surface-hover hover:text-foreground ${NAV_ICON_REST}`
+const NAV_ICON_CLASS =
+  "flex h-4 w-4 shrink-0 items-center justify-center text-base text-[color:var(--nav-icon,currentColor)] transition-colors duration-fast ease-out"
+
 // Sub-pages of the user-role "Support" parent item. Exact paths only —
 // /support/tickets belongs to the top-level "Tickets" item and must NOT
 // expand "Support".
@@ -410,10 +420,10 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     "flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
                     pathname === "/notifications"
                       ? "bg-brand-primary/[0.08] font-medium text-brand-primary"
-                      : "font-book text-text-muted hover:bg-surface-hover hover:text-foreground",
+                      : NAV_ROW_REST,
                   )}
                 >
-                  <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                  <span className={NAV_ICON_CLASS}>
                     <FlaticonIcon iconClass="fi-rr-inbox" />
                   </span>
                   <span className="flex-1">Inbox</span>
@@ -437,11 +447,11 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     aria-expanded={isInboxOpen}
                     onClick={() => setIsInboxOpen((prev) => !prev)}
                     className={cn(
-                      "relative w-full flex items-center h-8 px-2.5 rounded-md text-ui cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground",
+                      "relative w-full flex items-center h-8 px-2.5 rounded-md text-ui cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
                       isCollapsed ? "justify-center" : "gap-3",
                     )}
                   >
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                    <span className={NAV_ICON_CLASS}>
                       <FlaticonIcon iconClass="fi-rr-inbox" />
                     </span>
                     {!isCollapsed && <span className="flex-1 text-left">Inbox</span>}
@@ -468,7 +478,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
             const activeClasses = "bg-brand-primary/[0.08] font-medium text-brand-primary"
-            const inactiveClasses = "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+            const inactiveClasses = NAV_ROW_REST
             // Whether any sub-item under this parent matches the current path —
             // used in collapsed mode to highlight the parent icon since the
             // sub-items themselves are hidden behind a dropdown.
@@ -491,7 +501,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                             hasActiveSubItem ? activeClasses : inactiveClasses
                           }`}
                         >
-                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                          <span className={NAV_ICON_CLASS}>
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                         </button>
@@ -546,7 +556,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                           }}
                           className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
                         >
-                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                          <span className={NAV_ICON_CLASS}>
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                           <span>{item.name}</span>
@@ -586,7 +596,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                               <Link key={subItem.name} href={subItem.href} className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
                                 <div
                                   className={`relative flex items-center h-8 pl-9 pr-2.5 rounded-md text-ui transition-colors duration-fast ease-out ${
-                                    isSubActive ? activeClasses : "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+                                    isSubActive ? activeClasses : NAV_ROW_REST
                                   }`}
                                 >
                                   {/* Sub-category marker, centered on the vertical line */}
@@ -615,7 +625,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                         isActive ? activeClasses : inactiveClasses
                       }`}
                     >
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                      <span className={NAV_ICON_CLASS}>
                         <FlaticonIcon iconClass={item.icon} />
                       </span>
                       {!isCollapsed && item.name}
@@ -640,11 +650,11 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              "flex items-center h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground",
+              "flex items-center h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
               isCollapsed ? "justify-center" : "gap-3",
             )}
           >
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+            <span className={NAV_ICON_CLASS}>
               <FlaticonIcon iconClass="fi-rr-browser" />
             </span>
             {!isCollapsed && "Open project page"}
@@ -653,7 +663,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         {bottomItems.map((item) => {
           const isActive = pathname === item.href
           const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
-            isActive ? "bg-brand-primary/[0.08] font-medium text-brand-primary" : "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+            isActive ? "bg-brand-primary/[0.08] font-medium text-brand-primary" : NAV_ROW_REST
           }`
           return (
             <Fragment key={item.name}>
@@ -663,7 +673,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               href={item.href}
               className={className}
             >
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+              <span className={NAV_ICON_CLASS}>
                 <FlaticonIcon iconClass={item.icon} />
               </span>
               {!isCollapsed && item.name}
