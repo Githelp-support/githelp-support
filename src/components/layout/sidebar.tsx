@@ -375,7 +375,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
           </div>
           {/* Inset by the sidebar's horizontal padding, like the line above Help. */}
-          <div aria-hidden="true" className="mx-3 mb-3 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
+          {/* 17px above (with the switcher's pb-3) and below: 5px more than the 12px rhythm. */}
+          <div aria-hidden="true" className="mx-3 mt-1.25 mb-4.25 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
         </>
       )}
 
