@@ -371,7 +371,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               Projects
             </SidebarSectionHeading>
           )}
-          <div className="px-4 pb-5 shrink-0 empty:hidden">
+          <div className="px-4 pb-6.5 shrink-0 empty:hidden">
             {/* Collapsed, the switcher centres its own logo-only trigger. */}
             <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
           </div>
