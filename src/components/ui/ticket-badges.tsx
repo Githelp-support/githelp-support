@@ -52,18 +52,18 @@ function TicketPriority({
   )
 }
 
-/** Helper category badge: outlined, with the tier dot before the label. */
+/** Helper category badge: outlined, with the tier dot before the label (no dot for unknown categories). */
 function CategoryBadge({
   category,
   label,
   ...props
 }: BadgeProps & { category: string; label: React.ReactNode }) {
+  const dotClass = getCategoryDotClass(category)
   return (
     <Badge variant="category" {...props}>
-      <span
-        aria-hidden="true"
-        className={cn("size-2 rounded-full shrink-0", getCategoryDotClass(category))}
-      />
+      {dotClass && (
+        <span aria-hidden="true" className={cn("size-2 rounded-full shrink-0", dotClass)} />
+      )}
       {label}
     </Badge>
   )

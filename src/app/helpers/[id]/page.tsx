@@ -7,7 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CategoryBadge } from "@/components/ui/ticket-badges"
+import { CategoryBadge, TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -588,7 +588,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                           {ticket.amountRaw === null ? "—" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
                         </div>
                         <div className="min-w-0">
-                          <Badge className={statusBadgeClass(ticket.status)}>{ticket.status}</Badge>
+                          <TicketStatusBadge status={ticket.status} />
                         </div>
                         <div className="flex items-center justify-end">
                           <DropdownMenu>

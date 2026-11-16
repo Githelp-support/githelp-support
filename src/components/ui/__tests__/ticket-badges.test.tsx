@@ -156,4 +156,9 @@ describe("CategoryBadge", () => {
     expect(dot).toHaveAttribute("aria-hidden", "true")
     expect(dot).toHaveClass("size-2", "rounded-full", "shrink-0", "bg-badge-dot-core")
   })
+
+  it("renders no dot for an unknown category", () => {
+    render(<CategoryBadge category="mystery" label="Mystery" />)
+    expect(screen.getByText("Mystery").firstElementChild).toBeNull()
+  })
 })
