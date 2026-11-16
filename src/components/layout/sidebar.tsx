@@ -418,11 +418,15 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     <FlaticonIcon iconClass="fi-rr-inbox" />
                   </span>
                   <span className="flex-1">Inbox</span>
-                  {unreadCount > 0 && (
-                    <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-2xs font-medium text-white">
-                      {unreadLabel}
-                    </span>
-                  )}
+                  <span
+                    data-slot="inbox-count"
+                    className={cn(
+                      "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs font-medium tabular-nums",
+                      unreadCount > 0 ? "bg-destructive text-white" : "text-text-tertiary",
+                    )}
+                  >
+                    {unreadLabel}
+                  </span>
                 </Link>
               ) : (
                 withTooltip(
@@ -442,10 +446,14 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                       <FlaticonIcon iconClass="fi-rr-inbox" />
                     </span>
                     {!isCollapsed && <span className="flex-1 text-left">Inbox</span>}
-                    {unreadCount > 0 && (
+                    {/* Expanded: the unread count always sits at the far right
+                        (muted at zero). Collapsed: only a badge when unread. */}
+                    {(unreadCount > 0 || !isCollapsed) && (
                       <span
+                        data-slot="inbox-count"
                         className={cn(
-                          "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-2xs font-medium text-white",
+                          "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs font-medium tabular-nums",
+                          unreadCount > 0 ? "bg-destructive text-white" : "text-text-tertiary",
                           isCollapsed && "absolute right-1 top-0",
                         )}
                       >

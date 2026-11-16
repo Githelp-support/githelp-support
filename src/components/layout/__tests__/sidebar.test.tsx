@@ -148,7 +148,7 @@ describe("Sidebar — user-role menu order", () => {
       (el) => el.querySelector("a, button, [role='button']")?.textContent?.trim(),
     )
     expect(topLevelLabels).toEqual([
-      "Inbox",
+      "Inbox0", // label + the unread count at the far right
       "Overview",
       "Support",
       "Tickets",
@@ -342,12 +342,39 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
   })
 
+  it("shows the unread count at the far right of the Inbox item, also when it is zero", () => {
+    useNotifications.mockReturnValue({
+      data: [{ id: "n1", is_read: true, content: "Old ticket", created_at: new Date().toISOString(), route: null }],
+    })
+    const { rerender } = renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox" })
+    const count = inbox.querySelector('[data-slot="inbox-count"]')
+    expect(count).toHaveTextContent("0")
+    expect(inbox.lastElementChild).toBe(count)
+
+    useNotifications.mockReturnValue({
+      data: Array.from({ length: 3 }, (_, i) => ({
+        id: `n${i}`,
+        is_read: false,
+        content: "New ticket",
+        created_at: new Date().toISOString(),
+        route: null,
+      })),
+    })
+    rerender(<Sidebar />)
+    expect(
+      screen.getByRole("button", { name: "Inbox, 3 unread" }).querySelector('[data-slot="inbox-count"]'),
+    ).toHaveTextContent("3")
+  })
+
   it("collapsed: the Inbox is icon-only and still opens the panel", () => {
     window.localStorage.setItem("sidebar:collapsed", "true")
     renderSidebar()
 
     const inbox = screen.getByRole("button", { name: "Inbox" })
     expect(inbox).not.toHaveTextContent("Inbox")
+    expect(inbox.querySelector('[data-slot="inbox-count"]')).toBeNull()
     fireEvent.click(inbox)
     expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
   })
