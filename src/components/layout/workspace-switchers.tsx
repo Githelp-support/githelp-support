@@ -92,7 +92,7 @@ function ProjectLogoWithBranding({
         primaryColor={branding?.primary_color}
       />
       <span
-        className={`font-sans truncate text-sm ${
+        className={`font-sans truncate text-ui ${
           isSelected
             ? "font-book"
             : "font-book text-text-muted group-focus:text-sidebar-foreground"
@@ -111,7 +111,7 @@ export function RoleSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
-        <span className="font-sans text-sm text-muted-foreground">{getRoleDisplayName(user.role)}</span>
+        <span className="font-sans text-ui text-muted-foreground">{getRoleDisplayName(user.role)}</span>
         <Icon name="fi-rr-angle-small-down" className="text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-40">
@@ -123,7 +123,7 @@ export function RoleSwitcher() {
                 <DropdownMenuItem
                   key={role}
                   onClick={() => handleSwitchRole(role)}
-                  className="cursor-pointer flex items-center justify-between"
+                  className="cursor-pointer text-ui flex items-center justify-between"
                 >
                   <span>{getRoleDisplayName(role)}</span>
                   {isCurrent && <Icon name="fi-rr-check" className="text-muted-foreground" />}
@@ -136,7 +136,7 @@ export function RoleSwitcher() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="cursor-pointer font-sans text-sm text-brand-primary"
+              className="cursor-pointer font-sans text-ui text-brand-primary"
               onClick={goToAddRole}
             >
               <Icon name="fi-rr-plus" />
@@ -202,7 +202,7 @@ function SwitcherTrigger({
           {logo("w-[22px] h-[22px]")}
           <span
             className={cn(
-              "font-sans text-sm font-medium text-sidebar-foreground truncate",
+              "font-sans text-ui font-medium text-sidebar-foreground truncate",
               !fullWidth && "max-w-[32vw] md:max-w-[16rem]",
             )}
           >
@@ -259,13 +259,13 @@ export function ProjectSwitcher({
         >
           <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
             <PrivateContextIcon size="w-5 h-5" />
-            <span className="font-sans truncate text-sm font-book">Private</span>
+            <span className="font-sans truncate text-ui font-book">Private</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <Tooltip open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
             <TooltipTrigger asChild>
               <DropdownMenuItem
-                className="font-sans text-sm text-brand-primary"
+                className="font-sans text-ui text-brand-primary"
                 // Keep the menu open and show the explanation on tap as
                 // well as on hover.
                 onSelect={(e) => {
@@ -298,7 +298,7 @@ export function ProjectSwitcher({
           className,
         )}
       >
-        <div className="font-sans text-sm text-muted-foreground">Loading projects...</div>
+        <div className="font-sans text-ui text-muted-foreground">Loading projects...</div>
       </div>
     )
   }
@@ -341,7 +341,7 @@ export function ProjectSwitcher({
           })}
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="font-sans text-sm text-brand-primary" onClick={goToAddRole}>
+        <DropdownMenuItem className="font-sans text-ui text-brand-primary" onClick={goToAddRole}>
           <Icon name="fi-rr-plus" />
           Add new
         </DropdownMenuItem>
