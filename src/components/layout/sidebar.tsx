@@ -1,6 +1,7 @@
 "use client"
 
 import { Icon } from "@/components/ui/icon"
+import { SidebarToggleIcon } from "@/components/ui/sidebar-toggle-icon"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -288,7 +289,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               }
             }}
           >
-            <Icon name="fi-rr-angle-double-small-left" size={5} />
+            <SidebarToggleIcon />
           </Button>
         ) : (
           <Button
@@ -306,7 +307,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               }
             }}
           >
-            <Icon name="fi-rr-angle-small-right" size={5} />
+            <SidebarToggleIcon />
           </Button>
         )}
       </div>
