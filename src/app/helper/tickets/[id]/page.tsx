@@ -1006,7 +1006,7 @@ export default function TicketDetailPage() {
                         <h4 className="font-medium text-foreground mb-2">Type of help</h4>
                         <div className="flex gap-2 flex-wrap">
                           {ticketDetails.help_categories.map((c) => (
-                            <Badge key={`${c.value}-${c.type}`} variant="secondary" className="bg-muted text-muted-foreground capitalize">
+                            <Badge key={`${c.value}-${c.type}`} variant="type" className="capitalize">
                               {c.type !== "default" ? c.type : c.value}
                             </Badge>
                           ))}

@@ -17,7 +17,7 @@ import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } from "@/hooks/useTicketParticipants"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
-import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
+import { TicketPriority, TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -250,10 +250,6 @@ export default function TicketsPage() {
   const visibleTicketCount =
     showAvailablePreviewCards ? sortedPreviewCards.length : filteredTickets.length
 
-  const getStatusColor = (status: string) =>
-    getTicketStatusBadgeClass(status)
-  const getPriorityColor = (priority: string) =>
-    getPriorityBadgeClass(priority)
   // Map the underlying status value to its display label: "available" reads as
   // "Unclaimed", and "claimed"/"in-progress" are merged into "In Progress".
   const getStatusLabel = (status: string) =>
@@ -520,7 +516,7 @@ export default function TicketsPage() {
                               <div>
                                 <h4 className="text-ui font-semibold text-foreground mb-2">Type of help</h4>
                                 <div className="flex gap-2 flex-wrap">
-                                  <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
+                                  <Badge variant="type" className="capitalize">
                                     {card.helpType}
                                   </Badge>
                                 </div>
@@ -690,19 +686,15 @@ export default function TicketsPage() {
                         </div>
                       </div>
                       <div className="col-span-2">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                        <Badge variant="type">
                           {ticket.type}
                         </Badge>
                       </div>
                       <div className="col-span-2">
-                        <Badge className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                        </Badge>
+                        <TicketPriority priority={ticket.priority} />
                       </div>
                       <div className="col-span-2">
-                        <Badge className={getStatusColor(ticket.status)}>
-                          {getStatusLabel(ticket.status)}
-                        </Badge>
+                        <TicketStatusBadge status={ticket.status} label={getStatusLabel(ticket.status)} />
                       </div>
                       <div className="col-span-2 flex items-start justify-between gap-2">
                         <div className="text-sm text-muted-foreground">
@@ -789,20 +781,16 @@ export default function TicketsPage() {
                   </div>
                 </div>
                 <div className="col-span-2">
-                  <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                  <Badge variant="type">
                     {ticket.type}
                   </Badge>
                 </div>
                 <div className="col-span-2">
-                  <Badge className={getPriorityColor(ticket.priority)}>
-                    {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                  </Badge>
+                  <TicketPriority priority={ticket.priority} />
                 </div>
                 <div className="col-span-2">
                   <div className="flex items-start gap-2">
-                    <Badge className={getStatusColor(ticket.status)}>
-                      {getStatusLabel(ticket.status)}
-                    </Badge>
+                    <TicketStatusBadge status={ticket.status} label={getStatusLabel(ticket.status)} />
                     {ticket.helper && (
                       <div className={`w-5 h-5 ${SQUIRCLE_RADIUS[20]} flex items-center justify-center bg-brand-primary text-brand-foreground text-xs font-medium shrink-0`}>
                         {ticket.helper.avatar}
