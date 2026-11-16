@@ -1370,7 +1370,7 @@ export default function TicketDetailPage() {
         <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
         {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto px-3 pb-6 max-lg:pt-4">
+        <div className="flex-1 overflow-y-auto px-4 pb-6 max-lg:pt-4">
           {/* People in Chat */}
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
@@ -1521,9 +1521,9 @@ export default function TicketDetailPage() {
           {/* Active Tickets — 3 latest claimed by this helper */}
           <div>
             <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-            <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+            <div className={`-mx-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
               {activeTicketsSidebar.length === 0 ? (
-                <p className="text-ui text-muted-foreground px-3">No active tickets</p>
+                <p className="text-ui text-muted-foreground px-4">No active tickets</p>
               ) : (
                 activeTicketsSidebar.map((item) => (
                   <NextLink
@@ -1535,7 +1535,7 @@ export default function TicketDetailPage() {
                         : "bg-background border-border hover:bg-muted"
                     }`}
                   >
-                    <div className="p-3">
+                    <div className="px-4 py-3">
                       <div className="flex items-start gap-3">
                         <ProfileAvatar
                           id={item.creatorId}

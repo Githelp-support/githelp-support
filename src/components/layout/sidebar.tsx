@@ -366,22 +366,22 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         // and `[div:empty+&]` hide them when it renders nothing.
         <>
           {!isCollapsed && (
-            <SidebarSectionHeading className="mb-2 shrink-0 px-5.5 has-[+_div:empty]:hidden">
+            <SidebarSectionHeading className="mb-2 shrink-0 px-6.5 has-[+_div:empty]:hidden">
               Projects
             </SidebarSectionHeading>
           )}
-          <div className="px-3 pb-3 shrink-0 empty:hidden">
+          <div className="px-4 pb-3 shrink-0 empty:hidden">
             {/* Collapsed, the switcher centres its own logo-only trigger. */}
             <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
           </div>
           {/* Inset by the sidebar's horizontal padding, like the line above Help. */}
           {/* 17px above (with the switcher's pb-3) and below: 5px more than the 12px rhythm. */}
-          <div aria-hidden="true" className="mx-3 mt-1.25 mb-4.25 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
+          <div aria-hidden="true" className="mx-4 mt-1.25 mb-4.25 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
         </>
       )}
 
       {!isCollapsed && !isAuthenticated && (
-        <div className="px-3 pb-3 shrink-0">
+        <div className="px-4 pb-3 shrink-0">
           <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
             <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
               <SignInLink
@@ -399,7 +399,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         </div>
       )}
 
-      <nav aria-label="Main" className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
+      <nav aria-label="Main" className="flex-1 px-4 pb-3 overflow-hidden min-h-0">
         <div className="space-y-1">
           {isAuthenticated && (
             <div>
@@ -632,8 +632,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       </nav>
 
       {/* Inset line, the same width as the one below the project dropdown. */}
-      <div aria-hidden="true" className="mx-3 h-px shrink-0 bg-sidebar-border" />
-      <div className="px-3 py-2.5 space-y-1 shrink-0">
+      <div aria-hidden="true" className="mx-4 h-px shrink-0 bg-sidebar-border" />
+      <div className="px-4 py-2.5 space-y-1 shrink-0">
         {projectPageHref &&
           withTooltip(
             "Open project page",
@@ -676,7 +676,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         })}
       </div>
 
-      <div className="px-3 py-2.5 border-t border-sidebar-border shrink-0">
+      <div className="px-4 py-2.5 border-t border-sidebar-border shrink-0">
         {isCollapsed ? (
           <div className="flex items-center justify-center px-2 py-1.5">
             {isAuthenticated ? (
