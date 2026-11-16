@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import {
   useProjectKeywords,
@@ -23,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
 import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ProfileAvatarEditor } from "@/components/settings/profile-avatar-editor"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -204,7 +204,6 @@ export default function HelperProfilePage() {
   }
 
   const displayName = helperData.user?.name || "Unknown"
-  const displayAvatar = (displayName || "U")[0].toUpperCase()
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -214,12 +213,13 @@ export default function HelperProfilePage() {
         <div className="max-w-3xl">
           {/* Profile header */}
           <div className="flex items-center gap-4 mb-8">
-            <div
-              className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
-              style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
-            >
-              {displayAvatar}
-            </div>
+            {user.id && (
+              <ProfileAvatarEditor
+                userId={user.id}
+                name={displayName}
+                avatarUrl={helperData.user?.avatar_url ?? user.avatarUrl ?? null}
+              />
+            )}
             <div className="flex items-center gap-4">
               <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
               <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
