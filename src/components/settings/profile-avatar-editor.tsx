@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "sonner"
 
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { Button } from "@/components/ui/button"
@@ -9,7 +8,11 @@ import { Icon } from "@/components/ui/icon"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { useUser } from "@/contexts/user-context"
 import { useUpdateUserProfile } from "@/hooks/useHelpers"
+import { supabase } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+
+/** Public bucket, one object per user at `{userId}/avatar` (backend migration 20261116120000_users_public_avatar_bucket). */
+const AVATAR_BUCKET = "users_public"
 
 export interface ProfileAvatarEditorProps {
   userId: string
@@ -29,18 +32,22 @@ export function ProfileAvatarEditor({ userId, name, avatarUrl, className }: Prof
 
   const hasAvatar = typeof avatarUrl === "string" && avatarUrl.length > 0
 
-  const handleUploadComplete = async (url: string) => {
-    // The upload upserts to the same path, so the public URL is unchanged:
-    // bust the cache or the old image keeps showing.
-    const bustedUrl = `${url}?v=${Date.now()}`
+  // Custom uploader: the modal awaits it, so a failed upload or a failed
+  // profile update gives one error toast and no success toast. The path has
+  // no extension, so a PNG replaced by a JPEG overwrites the same object.
+  const uploadAvatar = async (file: File) => {
+    const path = `${userId}/avatar`
+    const { error } = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .upload(path, file, { upsert: true, contentType: file.type, cacheControl: "3600" })
+    if (error) throw error
 
-    try {
-      await updateProfile.mutateAsync({ userId, updates: { avatar_url: bustedUrl } })
-      setUser({ ...user, avatarUrl: bustedUrl })
-    } catch (error) {
-      console.error("Failed to update profile photo:", error)
-      toast.error("Failed to update profile photo. Please try again.")
-    }
+    // The public URL never changes: bust the cache or the old image keeps showing.
+    const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path)
+    const bustedUrl = `${data.publicUrl}?v=${Date.now()}`
+
+    await updateProfile.mutateAsync({ userId, updates: { avatar_url: bustedUrl } })
+    return bustedUrl
   }
 
   return (
@@ -54,8 +61,8 @@ export function ProfileAvatarEditor({ userId, name, avatarUrl, className }: Prof
       <ImageUploadModal
         open={isUploadModalOpen}
         onOpenChange={setIsUploadModalOpen}
-        storagePath={`users_public/${userId}/avatar`}
-        onUploadComplete={handleUploadComplete}
+        uploadFile={uploadAvatar}
+        onUploadComplete={(url) => setUser({ ...user, avatarUrl: url })}
         title="Upload profile photo"
         description="Upload a photo for your profile. It is shown next to your name across the app."
         maxFileSizeMB={6}
