@@ -26,11 +26,12 @@ import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications"
 interface TopBarProps {
   /**
    * `default`: the full bar (logo, role, project, Sign out, bell, avatar) for
-   * routes outside the app shell. `shell`: the bar at the top of the shell's
-   * content column, beside the full-height sidebar. It omits the role and
-   * project switchers and Sign out, keeping the bell and avatar, plus the menu
-   * button and logo below `lg`, where the sidebar is an off-canvas sheet (on
-   * desktop the logo belongs to the sidebar).
+   * routes outside the app shell. `shell`: on desktop there is no bar at all
+   * (the sidebar holds the logo, the switchers, the Inbox and the profile
+   * menu, and the page starts at the top of the screen). Below `lg`, where the
+   * sidebar is an off-canvas sheet, it is a slim bar with the menu button and
+   * the logo. It stays mounted either way: it owns the realtime notification
+   * subscription and the role effects below.
    */
   variant?: "default" | "shell"
 }
@@ -137,13 +138,13 @@ export function TopBar({ variant = "default" }: TopBarProps) {
       <div
         className={cn(
           "sticky top-0 z-40 w-full min-h-[60px] bg-sidebar border-b border-border px-4 md:px-8 py-3 flex items-center justify-between gap-2",
-          // In the shell the left cluster is hidden on desktop, so the right one is pushed to the end.
-          isShell && "lg:justify-end",
+          // In the shell the bar only exists below lg (menu button + logo).
+          isShell && "lg:hidden",
         )}
       >
         {isShell ? (
-          // Left cluster (below lg only): menu, Logo. On desktop the logo lives in the sidebar.
-          <div className="flex min-w-0 items-center gap-2 md:gap-4 lg:hidden">
+          // Menu and Logo. The Inbox and the profile menu live in the sidebar sheet.
+          <div className="flex min-w-0 items-center gap-2 md:gap-4">
             <MobileNavToggle />
             <Logo />
           </div>
@@ -158,17 +159,16 @@ export function TopBar({ variant = "default" }: TopBarProps) {
           </div>
         )}
 
-        {/* Right cluster: Sign in/out (default variant only), Bell, Avatar */}
+        {/* Right cluster (default variant only): Sign in/out, Bell, Avatar */}
+        {!isShell && (
         <div className="flex shrink-0 items-center gap-2 md:gap-5">
-          {!isShell && (
-            <button
-              type="button"
-              onClick={handleAuthClick}
-              className="font-sans text-ui text-muted-foreground hover:bg-surface-hover rounded-md px-2 py-1 transition-colors duration-fast ease-out cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            >
-              {isSignedIn ? "Sign out" : "Sign in"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleAuthClick}
+            className="font-sans text-ui text-muted-foreground hover:bg-surface-hover rounded-md px-2 py-1 transition-colors duration-fast ease-out cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+          >
+            {isSignedIn ? "Sign out" : "Sign in"}
+          </button>
           <button
             ref={bellButtonRef}
             onClick={() => setIsNotificationsOpen((prev) => !prev)}
@@ -188,8 +188,10 @@ export function TopBar({ variant = "default" }: TopBarProps) {
             size="sm"
           />
         </div>
+        )}
       </div>
 
+      {!isShell && (
       <NotificationsPanel
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
@@ -198,6 +200,7 @@ export function TopBar({ variant = "default" }: TopBarProps) {
         onNotificationClick={handleNotificationClick}
         anchorRef={bellButtonRef}
       />
+      )}
     </>
   )
 }

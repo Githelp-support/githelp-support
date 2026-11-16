@@ -7,6 +7,7 @@ const useSearchParams = vi.fn()
 vi.mock("next/navigation", () => ({
   usePathname: () => usePathname(),
   useSearchParams: () => useSearchParams(),
+  useRouter: () => ({ push: vi.fn() }),
 }))
 
 const useUser = vi.fn()
@@ -41,6 +42,14 @@ vi.mock("@/components/layout/workspace-switchers", () => ({
   ),
 }))
 
+const useNotifications = vi.fn()
+vi.mock("@/hooks/useNotifications", () => ({
+  useNotifications: () => useNotifications(),
+  useMarkNotificationRead: () => ({ mutateAsync: vi.fn() }),
+  useMarkAllNotificationsRead: () => ({ mutateAsync: vi.fn() }),
+  notificationType: () => "SUPPORT_TICKET",
+}))
+
 import { Sidebar } from "../sidebar"
 import { PublicSupportSidebar } from "../public-support-sidebar"
 
@@ -66,6 +75,7 @@ beforeEach(() => {
   usePathname.mockReturnValue("/support/tickets")
   useSearchParams.mockReturnValue(new URLSearchParams())
   useUser.mockReturnValue({ user: signedInUser, setProjectRole: vi.fn() })
+  useNotifications.mockReturnValue({ data: [] })
 })
 
 describe("Sidebar — project page link", () => {
@@ -135,9 +145,10 @@ describe("Sidebar — user-role menu order", () => {
     // Each item's own row is a link (leaf) or a role=button (parent); sub-menus
     // stay mounted below the row, so read the row rather than the whole item.
     const topLevelLabels = Array.from(nav!.firstElementChild!.children).map(
-      (el) => el.querySelector("a, [role='button']")?.textContent?.trim(),
+      (el) => el.querySelector("a, button, [role='button']")?.textContent?.trim(),
     )
     expect(topLevelLabels).toEqual([
+      "Inbox",
       "Overview",
       "Support",
       "Tickets",
@@ -311,6 +322,54 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(signOut).toHaveBeenCalledTimes(1)
   })
 
+  it("shows the Inbox at the top of the menu with the unread count, and opens the notifications panel", () => {
+    useNotifications.mockReturnValue({
+      data: [
+        { id: "n1", is_read: false, content: "New ticket", created_at: new Date().toISOString(), route: null },
+        { id: "n2", is_read: true, content: "Old ticket", created_at: new Date().toISOString(), route: null },
+      ],
+    })
+    const { container } = renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox, 1 unread" })
+    expect(inbox.querySelector(".fi-rr-inbox")).not.toBeNull()
+    expect(inbox).toHaveTextContent("Inbox")
+    expect(container.querySelector("nav")!.firstElementChild!.firstElementChild).toContainElement(inbox)
+    expect(document.querySelector(".fi-rr-bell")).toBeNull()
+
+    expect(screen.queryByRole("dialog", { name: "Notifications" })).not.toBeInTheDocument()
+    fireEvent.click(inbox)
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
+  })
+
+  it("collapsed: the Inbox is icon-only and still opens the panel", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox" })
+    expect(inbox).not.toHaveTextContent("Inbox")
+    fireEvent.click(inbox)
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
+  })
+
+  it("forceExpanded (mobile sheet): the Inbox links to the notifications page", () => {
+    renderSidebar({ forceExpanded: true })
+
+    expect(screen.getByText("Inbox").closest("a")).toHaveAttribute("href", "/notifications")
+  })
+
+  it("labels the project dropdown 'Projects' when expanded only", () => {
+    const { unmount } = renderSidebar()
+    const label = screen.getByText("Projects")
+    expect(label.className).toContain("uppercase")
+    expect(label.nextElementSibling).toContainElement(screen.getByTestId("project-switcher"))
+    unmount()
+
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+    expect(screen.queryByText("Projects")).not.toBeInTheDocument()
+  })
+
   it("guests: name only, no role, project or account controls", () => {
     useUser.mockReturnValue({ user: { ...anonymousUser, guestId: "g1" }, setProjectRole: vi.fn() })
     renderSidebar()
@@ -319,5 +378,7 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
     expect(screen.queryByTestId("project-switcher")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Account menu" })).not.toBeInTheDocument()
+    expect(screen.queryByText("Inbox")).not.toBeInTheDocument()
+    expect(screen.queryByText("Projects")).not.toBeInTheDocument()
   })
 })

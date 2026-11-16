@@ -5,6 +5,7 @@ const usePathname = vi.fn()
 vi.mock("next/navigation", () => ({
   usePathname: () => usePathname(),
   useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn() }),
 }))
 
 vi.mock("@/contexts/user-context", () => ({
@@ -35,6 +36,13 @@ vi.mock("@/hooks/useWorkspaceSwitcher", () => ({
 vi.mock("@/components/layout/workspace-switchers", () => ({
   RoleSwitcher: () => <div data-testid="role-switcher" />,
   ProjectSwitcher: () => <div data-testid="project-switcher" />,
+}))
+
+vi.mock("@/hooks/useNotifications", () => ({
+  useNotifications: () => ({ data: [] }),
+  useMarkNotificationRead: () => ({ mutateAsync: vi.fn() }),
+  useMarkAllNotificationsRead: () => ({ mutateAsync: vi.fn() }),
+  notificationType: () => "SUPPORT_TICKET",
 }))
 
 import { AppShell, isShellRoute, useSetProjectPageHref } from "../app-shell"

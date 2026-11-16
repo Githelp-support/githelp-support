@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useRef, useState } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { isSupportRoute } from "@/lib/sign-in-href"
@@ -20,6 +20,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Logo } from "@/components/brand/logo"
 import { RoleSwitcher, ProjectSwitcher } from "@/components/layout/workspace-switchers"
 import { useWorkspaceSwitcher } from "@/hooks/useWorkspaceSwitcher"
+import { SidebarSectionHeading } from "@/components/ticket-chat/sidebar-section"
+import { NotificationsPanel } from "@/components/layout/notifications-panel"
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  type Notification,
+} from "@/hooks/useNotifications"
 import { cn } from "@/lib/utils"
 import { Fragment, type ReactElement } from "react"
 
@@ -100,6 +108,17 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   const isAuthenticated = !!user?.id
   // Guarded sign-out (prompts on unsaved changes), shared with the TopBar.
   const { signOut } = useWorkspaceSwitcher()
+
+  // Inbox (notifications). The realtime subscription and its toasts stay in
+  // the TopBar, which is mounted once; the sidebar only reads the list.
+  const [isInboxOpen, setIsInboxOpen] = useState(false)
+  const inboxButtonRef = useRef<HTMLButtonElement>(null)
+  const { data: notificationsData } = useNotifications()
+  const markNotificationRead = useMarkNotificationRead()
+  const markAllRead = useMarkAllNotificationsRead()
+  const notifications: Notification[] = notificationsData || []
+  const unreadCount = notifications.filter((n) => !n.is_read).length
+  const unreadLabel = unreadCount > 9 ? "9+" : String(unreadCount)
 
   const setCollapsed = (next: boolean) => {
     setIsCollapsed(next)
@@ -300,7 +319,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       // very top to the bottom and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      {/* Header row: same height as the TopBar so the two line up. */}
+      {/* Header row: same height as the mobile TopBar. */}
       <div
         className={cn(
           "flex h-15 shrink-0 items-center px-4",
@@ -343,10 +362,21 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       {/* Project row. Guests have no role or project. `empty:hidden` drops the
           padding when the switcher renders nothing (no projects). */}
       {isAuthenticated && (
-        <div className="px-3 pb-3 shrink-0 empty:hidden">
-          {/* Collapsed, the switcher centres its own logo-only trigger. */}
-          <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
-        </div>
+        // The label and the line are tied to the switcher: `has-[+_div:empty]`
+        // and `[div:empty+&]` hide them when it renders nothing.
+        <>
+          {!isCollapsed && (
+            <SidebarSectionHeading className="mb-2 shrink-0 px-5.5 has-[+_div:empty]:hidden">
+              Projects
+            </SidebarSectionHeading>
+          )}
+          <div className="px-3 pb-3 shrink-0 empty:hidden">
+            {/* Collapsed, the switcher centres its own logo-only trigger. */}
+            <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
+          </div>
+          {/* Inset by the sidebar's horizontal padding, like the line above Help. */}
+          <div aria-hidden="true" className="mx-3 mb-3 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
+        </>
       )}
 
       {!isCollapsed && !isAuthenticated && (
@@ -370,6 +400,63 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
 
       <nav aria-label="Main" className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
         <div className="space-y-1">
+          {isAuthenticated && (
+            <div>
+              {forceExpanded ? (
+                // Mobile sheet: the sheet is modal, so the Inbox opens the full
+                // notifications page (the sheet closes on navigation).
+                <Link
+                  href="/notifications"
+                  className={cn(
+                    "flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
+                    pathname === "/notifications"
+                      ? "bg-brand-primary/[0.08] font-medium text-brand-primary"
+                      : "font-book text-text-muted hover:bg-surface-hover hover:text-foreground",
+                  )}
+                >
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                    <FlaticonIcon iconClass="fi-rr-inbox" />
+                  </span>
+                  <span className="flex-1">Inbox</span>
+                  {unreadCount > 0 && (
+                    <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-2xs font-medium text-white">
+                      {unreadLabel}
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                withTooltip(
+                  "Inbox",
+                  <button
+                    ref={inboxButtonRef}
+                    type="button"
+                    aria-label={unreadCount > 0 ? `Inbox, ${unreadLabel} unread` : "Inbox"}
+                    aria-expanded={isInboxOpen}
+                    onClick={() => setIsInboxOpen((prev) => !prev)}
+                    className={cn(
+                      "relative w-full flex items-center h-8 px-2.5 rounded-md text-ui cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground",
+                      isCollapsed ? "justify-center" : "gap-3",
+                    )}
+                  >
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                      <FlaticonIcon iconClass="fi-rr-inbox" />
+                    </span>
+                    {!isCollapsed && <span className="flex-1 text-left">Inbox</span>}
+                    {unreadCount > 0 && (
+                      <span
+                        className={cn(
+                          "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-2xs font-medium text-white",
+                          isCollapsed && "absolute right-1 top-0",
+                        )}
+                      >
+                        {unreadLabel}
+                      </span>
+                    )}
+                  </button>,
+                )
+              )}
+            </div>
+          )}
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
@@ -535,7 +622,9 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         </div>
       </nav>
 
-      <div className="px-3 py-2.5 border-t border-sidebar-border space-y-1 shrink-0">
+      {/* Inset line, the same width as the one below the project dropdown. */}
+      <div aria-hidden="true" className="mx-3 h-px shrink-0 bg-sidebar-border" />
+      <div className="px-3 py-2.5 space-y-1 shrink-0">
         {projectPageHref &&
           withTooltip(
             "Open project page",
@@ -625,6 +714,21 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           </div>
         )}
       </div>
+
+      {isAuthenticated && !forceExpanded && (
+        <NotificationsPanel
+          isOpen={isInboxOpen}
+          onClose={() => setIsInboxOpen(false)}
+          notifications={notifications}
+          onMarkAllAsRead={() => markAllRead.mutateAsync()}
+          // Navigation is handled inside the panel; this only marks the row read.
+          onNotificationClick={(notification) => {
+            if (!notification.is_read) void markNotificationRead.mutateAsync(notification.id)
+          }}
+          anchorRef={inboxButtonRef}
+          placement="right"
+        />
+      )}
     </div>
   )
 }

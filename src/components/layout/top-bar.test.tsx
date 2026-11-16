@@ -86,12 +86,16 @@ describe("TopBar", () => {
     expect(screen.getByText("User")).toBeInTheDocument()
   })
 
-  it("keeps the bar but drops the switchers and Sign out in the shell variant", () => {
+  it("shell variant: a mobile-only bar without the bell, avatar, switchers or Sign out", () => {
     usePathname.mockReturnValue("/tickets")
     const { container } = render(<TopBar variant="shell" />)
     expect(container.firstChild).not.toBeNull()
-    // The bell stays.
-    expect(container.querySelector("button .fi-rr-bell")).not.toBeNull()
+    // Hidden on desktop: the page uses the full height there.
+    expect((container.firstChild as HTMLElement).className).toContain("lg:hidden")
+    // The bell (now the sidebar's Inbox) and the avatar are gone.
+    expect(container.querySelector(".fi-rr-bell")).toBeNull()
+    expect(container.querySelector("[data-slot='avatar']")).toBeNull()
+    expect(screen.queryByText("T")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument()
     // No role dropdown and no Private context dropdown.
     expect(screen.queryByText("User")).not.toBeInTheDocument()
