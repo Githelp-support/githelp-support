@@ -480,7 +480,7 @@ export default function HelpersPage() {
         />
 
         {/* Content */}
-        <main className="flex-1 px-8 py-6 overflow-y-auto">
+        <main className="flex-1 px-14 py-6 overflow-y-auto">
           {/* Filter tabs and Add button */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex space-x-1">

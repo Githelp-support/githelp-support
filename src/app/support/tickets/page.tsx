@@ -180,7 +180,7 @@ export default function SupportTicketsPage() {
           subtitle="View and manage your support requests"
         />
 
-        <main className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-background">
+        <main className="flex-1 overflow-y-auto px-14 py-6 space-y-6 bg-background">
           <p className="text-sm text-muted-foreground">
             {isAuthenticated
               ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`

@@ -293,7 +293,7 @@ export default function TicketsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Tickets" subtitle="Manage and track support tickets" />
 
-      <main className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
+      <main className="flex-1 px-14 py-6 space-y-6 overflow-y-auto">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <button

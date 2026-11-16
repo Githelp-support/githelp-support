@@ -28,8 +28,10 @@ describe("Header", () => {
     expect(screen.getByRole("banner")).toContainElement(action)
   })
 
-  it("separates the header from the content with a hairline", () => {
+  it("has no hairline below and uses the 56px inset", () => {
     render(<Header title="Helpers" />)
-    expect(screen.getByRole("banner").className).toMatch(/border-b/)
+    const banner = screen.getByRole("banner")
+    expect(banner.className).not.toMatch(/border-b/)
+    expect(banner.className).toContain("px-14")
   })
 })

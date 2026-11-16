@@ -193,7 +193,7 @@ export default function UserPaymentSettingsPage() {
   const syncingCard = confirmingCard
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden [&>header]:pl-14">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Payment" subtitle="Manage how you pay for support" />
       <main className="flex-1 px-8 py-6 overflow-y-auto">
         <div className="max-w-3xl space-y-6">

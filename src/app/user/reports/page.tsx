@@ -336,7 +336,7 @@ export default function UserReportsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Reports and Payments" subtitle="Keep track of your support spending and payments." />
 
-      <main className="flex-1 overflow-auto px-8 py-6 space-y-6">
+      <main className="flex-1 overflow-auto px-14 py-6 space-y-6">
         {!isAuthenticated && !userLoading && (
           <Card>
             <CardContent className="p-6">
