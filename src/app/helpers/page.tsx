@@ -765,14 +765,12 @@ export default function HelpersPage() {
                           <span className="text-sm text-text-heading">{helper.githubAccount || "-"}</span>
                         </div>
                         <div className="col-span-2">
-                          <CategoryBadge
-                            category={helper.category}
-                            label={
-                              helper.category
-                                ? mapCategoryToLabel[helper.category as keyof typeof mapCategoryToLabel]
-                                : ""
-                            }
-                          />
+                          {helper.category && (
+                            <CategoryBadge
+                              category={helper.category}
+                              label={mapCategoryToLabel[helper.category as keyof typeof mapCategoryToLabel]}
+                            />
+                          )}
                         </div>
                         <div className="col-span-3 flex items-center justify-end space-x-2">
                           {helper.isRegistered ? (
