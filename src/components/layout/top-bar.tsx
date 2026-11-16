@@ -165,7 +165,7 @@ export function TopBar({ variant = "default" }: TopBarProps) {
           <button
             type="button"
             onClick={handleAuthClick}
-            className="font-sans text-ui text-muted-foreground hover:bg-surface-hover rounded-md px-2 py-1 transition-colors duration-fast ease-out cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+            className="font-sans text-sm text-muted-foreground hover:bg-surface-hover rounded-md px-2 py-1 transition-colors duration-fast ease-out cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
           >
             {isSignedIn ? "Sign out" : "Sign in"}
           </button>

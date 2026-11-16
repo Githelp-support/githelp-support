@@ -1,6 +1,7 @@
 "use client"
 
 import { Icon } from "@/components/ui/icon"
+import { SidebarToggleIcon } from "@/components/ui/sidebar-toggle-icon"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -362,7 +363,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                 className="ml-auto h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
                 onClick={() => setCollapsed(true)}
               >
-                <Icon name="fi-rr-angle-double-small-left" size={5} />
+                <SidebarToggleIcon />
               </Button>
             )}
           </>
@@ -710,7 +711,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         ) : (
           <div className="flex items-center gap-3 px-2 py-1.5 rounded-md">
             {profileAvatar}
-            <div className="flex-1 min-w-0 text-sm font-semibold text-sidebar-foreground truncate">{user.name}</div>
+            <div className="flex-1 min-w-0 text-sm font-medium text-sidebar-foreground truncate">{user.name}</div>
             {isAuthenticated && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
