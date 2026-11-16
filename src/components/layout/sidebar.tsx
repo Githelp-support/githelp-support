@@ -424,7 +424,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     data-slot="inbox-count"
                     className={cn(
                       "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs font-medium tabular-nums",
-                      unreadCount > 0 ? "bg-destructive text-white" : "text-text-tertiary",
+                      unreadCount > 0 ? "bg-brand-primary text-brand-foreground" : "text-text-tertiary",
                     )}
                   >
                     {unreadLabel}
@@ -455,7 +455,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                         data-slot="inbox-count"
                         className={cn(
                           "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs font-medium tabular-nums",
-                          unreadCount > 0 ? "bg-destructive text-white" : "text-text-tertiary",
+                          unreadCount > 0 ? "bg-brand-primary text-brand-foreground" : "text-text-tertiary",
                           isCollapsed && "absolute right-1 top-0",
                         )}
                       >
