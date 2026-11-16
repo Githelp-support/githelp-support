@@ -366,7 +366,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         // and `[div:empty+&]` hide them when it renders nothing.
         <>
           {!isCollapsed && (
-            <SidebarSectionHeading className="mb-2 shrink-0 px-6.5 has-[+_div:empty]:hidden">
+            // 3px more above the label, on top of the header row's 5px.
+            <SidebarSectionHeading className="mt-0.75 mb-2 shrink-0 px-6.5 has-[+_div:empty]:hidden">
               Projects
             </SidebarSectionHeading>
           )}
@@ -375,8 +376,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
           </div>
           {/* Inset by the sidebar's horizontal padding, like the line above Help. */}
-          {/* 17px above (with the switcher's pb-3) and below: 5px more than the 12px rhythm. */}
-          <div aria-hidden="true" className="mx-4 mt-1.25 mb-4.25 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
+          {/* 20px above (with the switcher's pb-3) and below: 8px more than the 12px rhythm. */}
+          <div aria-hidden="true" className="mx-4 mt-2 mb-5 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
         </>
       )}
 
