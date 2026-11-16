@@ -319,10 +319,10 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       // very top to the bottom and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      {/* Header row: same height as the mobile TopBar. */}
+      {/* Header row: same height as the mobile TopBar, with 5px extra space below it. */}
       <div
         className={cn(
-          "flex h-15 shrink-0 items-center px-4",
+          "mb-1.25 flex h-15 shrink-0 items-center px-4",
           isCollapsed ? "justify-center" : "gap-2",
           // Mobile sheet: keep the role dropdown clear of the sheet's Close button.
           forceExpanded && "pr-12",
