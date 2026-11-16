@@ -362,8 +362,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       {/* Project row. Guests have no role or project. `empty:hidden` drops the
           padding when the switcher renders nothing (no projects). */}
       {isAuthenticated && (
-        // The label and the line are tied to the switcher: `has-[+_div:empty]`
-        // and `[div:empty+&]` hide them when it renders nothing.
+        // The label is tied to the switcher: `has-[+_div:empty]` hides it when
+        // the switcher renders nothing.
         <>
           {!isCollapsed && (
             // 3px more above the label, on top of the header row's 5px.
@@ -375,9 +375,6 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             {/* Collapsed, the switcher centres its own logo-only trigger. */}
             <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
           </div>
-          {/* Inset by the sidebar's horizontal padding, like the line above Help. */}
-          {/* 20px above (with the switcher's pb-3) and below: 8px more than the 12px rhythm. */}
-          <div aria-hidden="true" className="mx-4 mt-2 mb-5 h-px shrink-0 bg-sidebar-border [div:empty+&]:hidden" />
         </>
       )}
 

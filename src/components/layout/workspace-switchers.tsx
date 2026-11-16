@@ -150,7 +150,7 @@ export function RoleSwitcher() {
 }
 
 const TRIGGER_CLASS =
-  "flex min-w-0 max-w-full items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-sidebar-border hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+  "flex min-w-0 max-w-full items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-border-subtle hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
 
 // Collapsed sidebar: logo only — no name, chevron, border or background.
 const COLLAPSED_TRIGGER_CLASS =
@@ -294,7 +294,7 @@ export function ProjectSwitcher({
     return (
       <div
         className={cn(
-          "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-sidebar-border rounded-lg",
+          "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
           className,
         )}
       >
