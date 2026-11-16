@@ -7,6 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { CategoryBadge } from "@/components/ui/ticket-badges"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -418,9 +419,10 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-base font-subtitle text-foreground">{helper.name}</h1>
-                <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                  {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
-                </Badge>
+                <CategoryBadge
+                  category={helper.category}
+                  label={helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
+                />
                 {helper.isRemoved && (
                   <Badge variant="secondary" className="bg-muted text-muted-foreground border-0 text-xs font-medium">
                     Removed
