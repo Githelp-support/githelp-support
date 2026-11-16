@@ -58,6 +58,67 @@ describe("Button", () => {
     }
   })
 
+  it("gives the solid variants the depth utility", () => {
+    for (const variant of ["default", "destructive", "secondary", "brand"] as const) {
+      const { unmount } = render(<Button variant={variant}>{variant}</Button>)
+      expect(screen.getByRole("button").className).toMatch(/(^|\s)btn-depth(-light)?(\s|$)/)
+      unmount()
+    }
+  })
+
+  it("uses the dark-surface depth on default, destructive and brand, the light one on secondary", () => {
+    const classesOf = (variant: "default" | "destructive" | "secondary" | "brand") => {
+      const { unmount } = render(<Button variant={variant}>{variant}</Button>)
+      const classes = screen.getByRole("button").className.split(/\s+/)
+      unmount()
+      return classes
+    }
+    expect(classesOf("default")).toEqual(expect.arrayContaining(["btn-depth", "dark:btn-depth-light"]))
+    expect(classesOf("secondary")).toEqual(expect.arrayContaining(["btn-depth-light", "dark:btn-depth"]))
+    for (const variant of ["destructive", "brand"] as const) {
+      const classes = classesOf(variant)
+      expect(classes).toContain("btn-depth")
+      expect(classes.join(" ")).not.toMatch(/btn-depth-light/)
+    }
+  })
+
+  it("replaces the old shadow on the solid variants and keeps their colours", () => {
+    const expected = {
+      default: ["bg-primary", "hover:bg-primary/90"],
+      destructive: ["bg-destructive", "hover:bg-destructive/90"],
+      secondary: ["bg-secondary", "hover:bg-secondary/80"],
+      brand: ["bg-brand-primary", "hover:bg-brand-primary-hover"],
+    } as const
+    for (const variant of ["default", "destructive", "secondary", "brand"] as const) {
+      const { unmount } = render(<Button variant={variant}>{variant}</Button>)
+      const classes = screen.getByRole("button").className.split(/\s+/)
+      expect(classes).toEqual(expect.arrayContaining([...expected[variant]]))
+      expect(classes).not.toContain("shadow-control")
+      expect(classes).not.toContain("shadow-xs")
+      unmount()
+    }
+  })
+
+  it("leaves outline, ghost, link, lavender and neutral flat", () => {
+    for (const variant of ["outline", "ghost", "link", "lavender", "neutral"] as const) {
+      const { unmount } = render(<Button variant={variant}>{variant}</Button>)
+      expect(screen.getByRole("button").className).not.toMatch(/btn-depth/)
+      unmount()
+    }
+  })
+
+  it("keeps the depth classes on asChild links and disables loading buttons", () => {
+    render(
+      <Button asChild variant="brand">
+        <a href="#support">Get support</a>
+      </Button>
+    )
+    expect(screen.getByRole("link").className.split(/\s+/)).toContain("btn-depth")
+
+    render(<Button loading>Save</Button>)
+    expect(screen.getByRole("button")).toBeDisabled()
+  })
+
   it("applies additional className prop", () => {
     render(<Button className="my-custom-class">Styled</Button>)
     expect(screen.getByRole("button").className).toMatch(/my-custom-class/)
