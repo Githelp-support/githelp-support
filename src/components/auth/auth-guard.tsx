@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { SandboxBanner } from "@/components/layout/sandbox-banner"
 import { hasSignedInSession } from "@/lib/supabase/auth-state"
@@ -90,8 +90,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
   if (isLoading || onboardingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-page-muted">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
+        <div className="text-center" role="status" aria-busy="true">
+          <Loader className="mx-auto mb-4" label="Checking authentication" />
           <p className="text-sm text-muted-foreground">Checking authentication...</p>
         </div>
       </div>
