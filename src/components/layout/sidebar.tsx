@@ -355,44 +355,39 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           )}
         </>
       ) : (
-        // Switcher rows: the role row (with the logo in its icon slot) and the
-        // project row, built like the nav rows below so the logo, the project
-        // avatar and the nav icons share one axis. The first row is centred on
-        // the mobile TopBar's height (14px + 32px + 14px). Both rows end before
-        // the collapse control, so their selector icons line up.
+        // Logo row with the collapse control, then the role row and the project
+        // row below it. The logo sits in the same 16px icon slot as the rows
+        // below, so the logo, the role tile, the project avatar and the nav
+        // icons share one axis. The logo row is centred on the mobile TopBar's
+        // height (14px + 32px + 14px); the sheet's Close button sits beside it.
         <div
           className={cn(
-            "flex shrink-0 items-start gap-1 px-4 pt-3.5",
+            "flex shrink-0 flex-col gap-1 px-4 pt-3.5",
             // Guests only get the logo: keep the old header height above the Sign in card.
             isAuthenticated ? "pb-3" : "mb-1.25 h-15",
-            // Mobile sheet: keep the rows clear of the sheet's Close button.
-            forceExpanded && "pr-12",
           )}
         >
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            {isAuthenticated ? (
-              <>
-                <RoleSwitcher variant="row" leading={<Logo />} />
-                <ProjectSwitcher variant="row" />
-              </>
-            ) : (
-              <div className="flex h-8 items-center px-2.5">
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                  <Logo />
-                </span>
-              </div>
+          <div className="flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5">
+            <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
+              <Logo />
+            </span>
+            {!forceExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Collapse sidebar"
+                className="h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                onClick={() => setCollapsed(true)}
+              >
+                <SidebarToggleIcon />
+              </Button>
             )}
           </div>
-          {!forceExpanded && (
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Collapse sidebar"
-              className="h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-              onClick={() => setCollapsed(true)}
-            >
-              <SidebarToggleIcon />
-            </Button>
+          {isAuthenticated && (
+            <>
+              <RoleSwitcher variant="row" />
+              <ProjectSwitcher variant="row" />
+            </>
           )}
         </div>
       )}

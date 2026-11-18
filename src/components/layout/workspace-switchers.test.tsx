@@ -179,10 +179,10 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     expect(trigger.querySelector(".fi-rr-angle-small-down")).toBeNull()
   })
 
-  it("row variant: borderless nav-style rows with the up-down selector icon", () => {
+  it("row variant: outlined nav-style rows with a single down arrow and a role tile", () => {
     renderWithTooltips(
       <>
-        <RoleSwitcher variant="row" leading={<svg data-testid="logo" />} />
+        <RoleSwitcher variant="row" />
         <ProjectSwitcher variant="row" />
       </>,
     )
@@ -191,18 +191,30 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     const project = screen.getByRole("button", { name: /alpha/i })
     for (const trigger of [role, project]) {
       expect(trigger.className).toContain("h-8")
-      expect(trigger.className).toContain("px-2.5")
       expect(trigger.className).toContain("hover:bg-surface-hover")
-      expect(trigger.className).not.toContain("border")
-      expect(trigger.querySelector(".fi-rr-angles-up-down")).not.toBeNull()
-      expect(trigger.querySelector(".fi-rr-angle-small-down")).toBeNull()
+      // Subtle stroke, filled with the sidebar surface around it.
+      expect(trigger.className).toContain("border-border-subtle")
+      expect(trigger.className).toContain("bg-sidebar")
+      expect(trigger.querySelector(".fi-rr-angles-up-down")).toBeNull()
+      expect(trigger.querySelectorAll(".fi-rr-angle-small-down")).toHaveLength(1)
       // Icon slot, label, selector: the selector is the last child (right-aligned).
       expect(trigger.children).toHaveLength(3)
       expect(trigger.children[0].className).toContain("w-4")
       expect(trigger.children[1].className).toContain("font-medium")
       expect(trigger.children[1].className).toContain("text-sidebar-foreground")
     }
-    expect(role).toContainElement(screen.getByTestId("logo"))
+    // The role tile: white squircle with the role's icon in the foreground colour.
+    const tile = role.querySelector('[data-slot="role-icon"]')!
+    expect(tile.className).toContain("bg-card")
+    expect(tile.className).toContain("text-foreground")
+    expect(tile.querySelector(".fi-rr-shield")).not.toBeNull()
+
+    // Each role in the menu gets its tile too.
+    fireEvent.keyDown(role, { key: "Enter" })
+    for (const item of screen.getAllByRole("menuitem")) {
+      expect(item.querySelector('[data-slot="role-icon"]')).not.toBeNull()
+    }
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" })
 
     // The dropdown still opens from the keyboard.
     fireEvent.keyDown(project, { key: "Enter" })

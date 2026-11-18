@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, type ReactElement, type ReactNode } from "react"
-import { Icon } from "@/components/ui/icon"
+import { useState, type ReactElement } from "react"
+import { Icon, type IconProps } from "@/components/ui/icon"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useProjectBranding } from "@/hooks/useProject"
 import { useWorkspaceSwitcher } from "@/hooks/useWorkspaceSwitcher"
+import type { UserRole } from "@/contexts/user-context"
 import type { Database } from "@/types/database"
 import { SQUIRCLE_RADIUS, squircleRadiusClass } from "@/lib/constants"
 
@@ -106,29 +107,46 @@ function ProjectLogoWithBranding({
 
 type SwitcherVariant = "control" | "row"
 
-// Sidebar switcher rows share the nav item geometry: 32px high, 10px side
-// padding, a 16px icon slot and a 12px gap, so the logo, the project avatar and
-// the nav icons sit on one vertical axis and every label starts at the same x.
-// The logo and avatar are wider than the slot and overflow it evenly on both
-// sides, which keeps them centred on that axis.
+// Sidebar switcher rows share the nav item geometry: 32px high, 10px from the
+// edge to the icon slot (9px padding inside the 1px stroke), a 16px icon slot
+// and a 12px gap, so the role tile, the project avatar and the nav icons sit on
+// one vertical axis and every label starts at the same x. The tile and avatar
+// are wider than the slot and overflow it evenly on both sides, which keeps
+// them centred on that axis. The row is a container with a subtle stroke,
+// filled with the sidebar surface around it.
 const ROW_TRIGGER_CLASS =
-  "flex h-8 w-full min-w-0 items-center gap-3 rounded-md px-2.5 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+  "flex h-8 w-full min-w-0 items-center gap-3 rounded-md border border-border-subtle bg-sidebar px-2.25 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
 const ROW_SLOT_CLASS = "flex h-4 w-4 shrink-0 items-center justify-center"
 const ROW_LABEL_CLASS =
   "min-w-0 flex-1 truncate text-left font-sans text-ui font-medium text-sidebar-foreground"
 
 const SelectorIcon = () => (
-  <Icon name="fi-rr-angles-up-down" size={3.5} className="shrink-0 text-text-tertiary" />
+  <Icon name="fi-rr-angle-small-down" className="shrink-0 text-text-tertiary" />
+)
+
+// Same icons as the role cards in onboarding (`RoleOptionCards`).
+const ROLE_ICONS: Record<UserRole, IconProps["name"]> = {
+  admin: "fi-rr-shield",
+  helper: "fi-rr-wrench-simple",
+  user: "fi-rr-life-ring",
+}
+
+// Role tile: the project avatar's squircle container, white with a dark glyph.
+// The hairline keeps the white tile readable on the near-white sidebar.
+const RoleIcon = ({ role, size = "w-[22px] h-[22px]" }: { role: UserRole; size?: string }) => (
+  <span
+    data-slot="role-icon"
+    className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center border border-border-avatar bg-card text-foreground`}
+  >
+    <Icon name={ROLE_ICONS[role] ?? "fi-rr-user"} size={3} />
+  </span>
 )
 
 export function RoleSwitcher({
   variant = "control",
-  leading,
 }: {
-  /** `row` is the borderless sidebar row; `control` is the compact TopBar trigger. */
+  /** `row` is the outlined sidebar row with a role tile; `control` is the compact TopBar trigger. */
   variant?: SwitcherVariant
-  /** Row variant only: shown in the row's icon slot (the sidebar passes the logo). */
-  leading?: ReactNode
 }) {
   const { user, visibleRoles, isPrivateContext, getRoleDisplayName, handleSwitchRole, goToAddRole } =
     useWorkspaceSwitcher()
@@ -137,7 +155,9 @@ export function RoleSwitcher({
     <DropdownMenu>
       {variant === "row" ? (
         <DropdownMenuTrigger className={ROW_TRIGGER_CLASS}>
-          {leading && <span className={ROW_SLOT_CLASS}>{leading}</span>}
+          <span className={ROW_SLOT_CLASS}>
+            <RoleIcon role={user.role} />
+          </span>
           <span className={ROW_LABEL_CLASS}>{getRoleDisplayName(user.role)}</span>
           <SelectorIcon />
         </DropdownMenuTrigger>
@@ -158,7 +178,10 @@ export function RoleSwitcher({
                   onClick={() => handleSwitchRole(role)}
                   className="cursor-pointer text-ui flex items-center justify-between"
                 >
-                  <span>{getRoleDisplayName(role)}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    {variant === "row" && <RoleIcon role={role} size="w-5 h-5" />}
+                    <span>{getRoleDisplayName(role)}</span>
+                  </span>
                   {isCurrent && <Icon name="fi-rr-check" className="text-muted-foreground" />}
                 </DropdownMenuItem>
               )
@@ -193,8 +216,8 @@ const COLLAPSED_SIZE = "w-6 h-6"
 
 /**
  * Dropdown trigger for the project/context control. Expanded it is the bordered
- * pill with logo, name and chevron (`control`, TopBar) or the borderless
- * sidebar row with an up-down selector (`row`); collapsed it is just the logo,
+ * pill with logo, name and chevron (`control`, TopBar) or the outlined
+ * sidebar row with a single down arrow (`row`); collapsed it is just the logo,
  * with the name in the shared Tooltip. Must be rendered inside a `DropdownMenu`.
  */
 function SwitcherTrigger({
@@ -270,7 +293,7 @@ export function ProjectSwitcher({
 }: {
   /** Logo-only trigger for the collapsed sidebar; the menu opens to the right. */
   collapsed?: boolean
-  /** `row` is the borderless sidebar row; `control` is the bordered TopBar pill. */
+  /** `row` is the outlined sidebar row; `control` is the bordered TopBar pill. */
   variant?: SwitcherVariant
   className?: string
 }) {
@@ -347,7 +370,7 @@ export function ProjectSwitcher({
       <div
         className={cn(
           variant === "row"
-            ? "flex h-8 items-center px-2.5"
+            ? "flex h-8 items-center rounded-md border border-border-subtle bg-sidebar px-2.25"
             : "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
           className,
         )}

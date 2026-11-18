@@ -36,10 +36,8 @@ vi.mock("@/hooks/useWorkspaceSwitcher", () => ({
   useWorkspaceSwitcher: () => ({ signOut }),
 }))
 vi.mock("@/components/layout/workspace-switchers", () => ({
-  RoleSwitcher: ({ variant, leading }: { variant?: string; leading?: React.ReactNode }) => (
-    <div data-testid="role-switcher" data-variant={variant}>
-      {leading}
-    </div>
+  RoleSwitcher: ({ variant }: { variant?: string }) => (
+    <div data-testid="role-switcher" data-variant={variant} />
   ),
   ProjectSwitcher: ({ collapsed, variant }: { collapsed?: boolean; variant?: string }) => (
     <div data-testid="project-switcher" data-collapsed={String(!!collapsed)} data-variant={variant} />
@@ -248,16 +246,16 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument()
     expect(screen.queryByText(/^Role:/)).not.toBeInTheDocument()
-    // Both switchers are sidebar rows; the logo is the role row's icon, not a button of its own.
+    // Both switchers are sidebar rows, below the logo row that holds the collapse button.
     const role = screen.getByTestId("role-switcher")
     expect(role).toHaveAttribute("data-variant", "row")
-    expect(role.querySelector("svg")).not.toBeNull()
+    expect(role.querySelector("svg")).toBeNull()
     expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-variant", "row")
-    // The project row sits directly below the role row, beside the collapse button.
+    const logoRow = role.previousElementSibling!
+    expect(logoRow.querySelector('[data-slot="sidebar-logo"] svg')).not.toBeNull()
+    expect(logoRow).toContainElement(screen.getByRole("button", { name: "Collapse sidebar" }))
+    // The project row sits directly below the role row.
     expect(role.nextElementSibling).toBe(screen.getByTestId("project-switcher"))
-    expect(role.parentElement!.parentElement).toContainElement(
-      screen.getByRole("button", { name: "Collapse sidebar" }),
-    )
   })
 
   it("starts collapsed from localStorage: the logo is the only expand control", () => {
