@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { CategoryBadge } from "@/components/ui/ticket-badges"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
@@ -222,9 +222,7 @@ export default function HelperProfilePage() {
             )}
             <div className="flex items-center gap-4">
               <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
-              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                {categoryLabel}
-              </Badge>
+              <CategoryBadge category={category} label={categoryLabel} />
             </div>
           </div>
 
@@ -298,9 +296,7 @@ export default function HelperProfilePage() {
               <h2 className="text-base font-subtitle text-foreground">Helper category</h2>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-sm font-medium">
-                {categoryLabel}
-              </Badge>
+              <CategoryBadge category={category} label={categoryLabel} />
               <p className="text-sm text-muted-foreground">
                 Your category decides your share of each ticket and is set by the project&apos;s admins. Ask them if it
                 should change.

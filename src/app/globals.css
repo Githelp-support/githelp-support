@@ -20,6 +20,22 @@
   --color-status-warning-text: var(--status-warning-text);
   --color-status-high-bg: var(--status-high-bg);
   --color-status-high-text: var(--status-high-text);
+  --color-badge-neutral-bg: var(--badge-neutral-bg);
+  --color-badge-neutral-text: var(--badge-neutral-text);
+  --color-badge-muted-text: var(--badge-muted-text);
+  --color-badge-outline-bg: var(--badge-outline-bg);
+  --color-badge-outline-border: var(--badge-outline-border);
+  --color-badge-outline-text: var(--badge-outline-text);
+  --color-badge-info-bg: var(--badge-info-bg);
+  --color-badge-info-text: var(--badge-info-text);
+  --color-badge-success-bg: var(--badge-success-bg);
+  --color-badge-success-text: var(--badge-success-text);
+  --color-badge-strong-bg: var(--badge-strong-bg);
+  --color-badge-strong-text: var(--badge-strong-text);
+  --color-badge-emphasis-text: var(--badge-emphasis-text);
+  --color-badge-dot-core: var(--badge-dot-core);
+  --color-badge-dot-community: var(--badge-dot-community);
+  --color-badge-dot-extended: var(--badge-dot-extended);
   --color-page-muted: var(--page-muted);
   --color-avatar-1: var(--avatar-1);
   --color-avatar-2: var(--avatar-2);
@@ -392,6 +408,23 @@
   --status-warning-text: #a1944a;
   --status-high-bg: #f4bccc;
   --status-high-text: #d63384;
+  /* Semantic badge colours (ticket type, category, status, priority, tier dots). Every text/background pair is 4.5:1 or better, including muted text on the neutral fill and on list rows */
+  --badge-neutral-bg: #f1f2f4;
+  --badge-neutral-text: #3f4450;
+  --badge-muted-text: #5c6370;
+  --badge-outline-bg: #ffffff;
+  --badge-outline-border: #e1e4e8;
+  --badge-outline-text: #2b2f38;
+  --badge-info-bg: #eaf1fe;
+  --badge-info-text: #1d4fb8;
+  --badge-success-bg: #e3f6ea;
+  --badge-success-text: #17693a;
+  --badge-strong-bg: #14161a;
+  --badge-strong-text: #ffffff;
+  --badge-emphasis-text: #14161a;
+  --badge-dot-core: #7650d9;
+  --badge-dot-community: #0e7f6e;
+  --badge-dot-extended: #c2570c;
   /* Page/panel background */
   --page-muted: #f7f9ff;
   /* Avatar/helper palette (indexed) */
@@ -460,6 +493,23 @@
   --status-warning-text: #c4b55e;
   --status-high-bg: #3d1a28;
   --status-high-text: #e86ba0;
+  /* Semantic badge colours – dark overrides (strong is inverted; emphasis text diverges from strong-bg here) */
+  --badge-neutral-bg: #2a2d33;
+  --badge-neutral-text: #c9cdd6;
+  --badge-muted-text: #a4abb8;
+  --badge-outline-bg: transparent;
+  --badge-outline-border: oklch(1 0 0 / 16%);
+  --badge-outline-text: #e4e6eb;
+  --badge-info-bg: #1b2a47;
+  --badge-info-text: #9dbdf9;
+  --badge-success-bg: #17352a;
+  --badge-success-text: #7fd6a2;
+  --badge-strong-bg: #f1f2f4;
+  --badge-strong-text: #14161a;
+  --badge-emphasis-text: #f1f2f4;
+  --badge-dot-core: #9b7deb;
+  --badge-dot-community: #2fb39e;
+  --badge-dot-extended: #e08a4a;
   /* Page/panel background – dark override */
   --page-muted: #161620;
   /* Avatar/helper palette – dark overrides (slightly muted for dark backgrounds) */

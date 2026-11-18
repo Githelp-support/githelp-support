@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/icon"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
@@ -626,15 +626,11 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               {ticketMs > 0 ? formatMs(ticketMs) : `${currency} 0.00`}
                             </td>
                             <td className="px-6 py-3">
-                              {(isCompleted || isCancelled) ? (
-                                <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
-                                  ✓ {isCompleted ? "Completed" : "Cancelled"}
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="border-0 capitalize">
-                                  {ticket.status}
-                                </Badge>
-                              )}
+                              <TicketStatusBadge
+                                status={ticket.status}
+                                label={isCompleted ? "Completed" : isCancelled ? "Cancelled" : undefined}
+                                className="capitalize"
+                              />
                             </td>
                             <td className="px-6 py-3">
                               <div className="flex gap-2">
