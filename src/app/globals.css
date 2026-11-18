@@ -347,6 +347,70 @@
   animation: sheet-out-right var(--duration-base) var(--ease-in-out) both;
 }
 
+/* Button depth: a sheen and shadow laid over whatever background-color the
+   variant already has (neither utility sets a colour). Values are the --btn-*
+   tokens in :root (dark-mode overrides in .dark).
+   The crisp top highlight carries the effect; the sheen is a barely visible
+   white fade to transparent, with no dark half that would grey out saturated
+   colours.
+   The shadows go through Tailwind's --tw-inset-shadow / --tw-shadow and the
+   composed box-shadow line, never a raw box-shadow, so the focus-visible ring
+   (--tw-ring-shadow) keeps rendering in every state. Do not combine with
+   another shadow-* class on the same element.
+   Hover brightens with filter; it is not in the Button's transition list, so
+   the step is instant. */
+@utility btn-depth {
+  --tw-inset-shadow: inset 0 1px 0 rgb(255 255 255 / var(--btn-highlight));
+  --tw-shadow: 0 1px 2px rgb(0 0 0 / var(--btn-drop));
+  background-image: linear-gradient(180deg, var(--btn-sheen-top), var(--btn-sheen-bottom));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+
+  @media (hover: hover) {
+    &:hover {
+      filter: brightness(var(--btn-hover-brightness));
+    }
+  }
+  &:active {
+    --tw-inset-shadow: inset 0 1px 2px rgb(0 0 0 / var(--btn-press));
+    --tw-shadow: 0 0 #0000;
+    background-image: none;
+  }
+  &:disabled,
+  &[aria-disabled="true"] {
+    --tw-inset-shadow: 0 0 #0000;
+    --tw-shadow: 0 0 #0000;
+    background-image: none;
+    filter: none;
+  }
+}
+/* White or very light solid backgrounds: no gradient, a faint bottom edge
+   instead of the white top highlight. background-image is reset explicitly so
+   `dark:btn-depth-light` / `dark:btn-depth` can swap the two per theme. */
+@utility btn-depth-light {
+  --tw-inset-shadow: inset 0 -1px 0 rgb(0 0 0 / var(--btn-light-edge));
+  --tw-shadow: 0 1px 2px rgb(0 0 0 / var(--btn-drop));
+  background-image: none;
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+
+  @media (hover: hover) {
+    &:hover {
+      filter: brightness(var(--btn-hover-brightness));
+    }
+  }
+  &:active {
+    --tw-inset-shadow: inset 0 1px 2px rgb(0 0 0 / var(--btn-press));
+    --tw-shadow: 0 0 #0000;
+    background-image: none;
+  }
+  &:disabled,
+  &[aria-disabled="true"] {
+    --tw-inset-shadow: 0 0 #0000;
+    --tw-shadow: 0 0 #0000;
+    background-image: none;
+    filter: none;
+  }
+}
+
 :root {
   --radius: 0.625rem;
   /* Brand colors – use for primary actions and accents; prefer semantic tokens (primary, border, etc.) where they fit.
@@ -370,6 +434,16 @@
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 240ms;
+  /* Button depth (btn-depth / btn-depth-light utilities): tune here.
+     Dark or saturated solid backgrounds: */
+  --btn-sheen-top: rgb(255 255 255 / 0.07); /* top of the gradient */
+  --btn-sheen-bottom: transparent;          /* bottom of the gradient: no dark half */
+  --btn-highlight: 0.15;           /* alpha of the inset white top highlight */
+  --btn-drop: 0.1;                 /* alpha of the 0 1px 2px drop shadow */
+  --btn-press: 0.18;               /* alpha of the pressed inset shadow */
+  --btn-hover-brightness: 1.06;    /* filter: brightness() on hover */
+  /* White or very light solid backgrounds (no gradient): */
+  --btn-light-edge: 0.06;          /* alpha of the inset bottom edge */
   --background: oklch(1 0 0);
   --foreground: #2E2D31;
   --card: oklch(1 0 0);
@@ -440,6 +514,10 @@
 }
 
 .dark {
+  /* Button depth: a quieter highlight, and no drop shadow (black at 6% is not
+     visible against the dark surfaces). */
+  --btn-highlight: 0.08;
+  --btn-drop: 0;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
