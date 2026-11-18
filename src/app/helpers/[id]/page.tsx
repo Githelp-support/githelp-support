@@ -21,7 +21,7 @@ import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeE
 import { usePaymentTransfers, usePayments, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import { monthLabel } from "@/lib/user-payment-reports"
@@ -390,8 +390,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   const helper = {
     id: helperData.helper_id,
     name: helperData.user?.name || "Unknown",
-    avatar: (helperData.user?.name || "U")[0].toUpperCase(),
-    avatarColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id),
+    avatarUrl: helperData.user?.avatar_url ?? null,
     category: helperData.category || "Community",
     isRemoved: !!helperData.deleted_at,
     discord: helperData.user?.username || "-",
@@ -410,12 +409,12 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
         <Card className="border-0 py-0">
           <CardContent className="px-0 py-8 space-y-5">
             <div className="flex items-center gap-4">
-              <div
-                className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
-                style={{ backgroundColor: helper.avatarColor }}
-              >
-                {helper.avatar}
-              </div>
+              <ProfileAvatar
+                id={helperData.user_id ?? helperData.helper_id}
+                name={helper.name}
+                avatarUrl={helper.avatarUrl}
+                size="lg"
+              />
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-base font-subtitle text-foreground">{helper.name}</h1>
                 <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
