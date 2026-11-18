@@ -94,7 +94,7 @@ export default function LandingPageSettings() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Landing page" subtitle="Customize your landing page branding and resources" />
-      <main className="flex-1 px-8 py-6 overflow-auto">
+      <main className="flex-1 px-8 pt-2 pb-6 overflow-auto">
         <div className="max-w-4xl">
 
           <div className="bg-background rounded-lg p-6 mb-3">
@@ -185,7 +185,7 @@ export default function LandingPageSettings() {
                 {resourcesLoading ? (
                   <ListSkeleton rows={3} avatar={false} badge={false} className="divide-y-0 [&>div]:px-0" />
                 ) : resources.length === 0 ? (
-                  <EmptyState size="sm" icon="fi-rr-folder-open" title="No resources added yet" description="Links you add here show on the support page." />
+                  <EmptyState size="sm" icon="fi-rr-folder-open" className="rounded-lg bg-bg-subtle" title="No resources added yet" description="Links you add here show on the support page." />
                 ) : (
                   <div className="space-y-3">
                     {resources.map((resource) => (

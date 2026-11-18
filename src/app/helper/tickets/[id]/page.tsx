@@ -874,7 +874,7 @@ export default function TicketDetailPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
         <div className="relative z-10">
-          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" />
+          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" className="border-b border-border-subtle" />
         </div>
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -907,6 +907,7 @@ export default function TicketDetailPage() {
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             titleClassName="text-xl"
+            className="border-b border-border-subtle"
             inlineRightContent={
               <span className="flex items-center gap-2">
                 <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>

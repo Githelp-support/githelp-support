@@ -13,7 +13,7 @@ export default function HelperSettingsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Settings" subtitle="Helper settings" />
 
-      <main className="flex-1 overflow-auto px-8 py-6">
+      <main className="flex-1 overflow-auto px-8 pt-2 pb-6">
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-2xl">
             <div className="bg-background rounded-lg p-6">
