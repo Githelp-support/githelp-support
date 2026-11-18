@@ -637,7 +637,7 @@ export default function PaymentSettingsPage() {
                               value="ticket"
                               checked={contractType === "ticket"}
                               onChange={(e) => setContractType(e.target.value as "ticket")}
-                              className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                              className="w-4 h-4 border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                             />
                             <span className="text-sm text-muted-foreground">By the ticket</span>
                           </label>
@@ -648,7 +648,7 @@ export default function PaymentSettingsPage() {
                               value="outside"
                               checked={contractType === "outside"}
                               onChange={(e) => setContractType(e.target.value as "outside")}
-                              className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                              className="w-4 h-4 border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                             />
                             <span className="text-sm text-muted-foreground">Payment outside Githelp</span>
                           </label>

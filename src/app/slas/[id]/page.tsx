@@ -361,7 +361,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             onClick={() => setTimePeriod("current-month")}
             className={
               timePeriod === "current-month"
-                ? "bg-brand-primary hover:bg-brand-primary/90"
+                ? "bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
                 : "border-border text-muted-foreground hover:bg-muted"
             }
           >
@@ -382,7 +382,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             onClick={() => setTimePeriod("all-time")}
             className={
               timePeriod === "all-time"
-                ? "bg-brand-primary hover:bg-brand-primary/90"
+                ? "bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
                 : "border-border text-muted-foreground hover:bg-muted"
             }
           >
