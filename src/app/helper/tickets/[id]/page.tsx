@@ -953,6 +953,7 @@ export default function TicketDetailPage() {
                     id={firstIssueMessage.senderId}
                     name={firstIssueMessage.senderName ?? "U"}
                     avatarUrl={firstIssueMessage.senderAvatarUrl ?? null}
+                    guest={isGuestTicket}
                     size="sm"
                     radius="9.625px"
                   />
@@ -1108,6 +1109,7 @@ export default function TicketDetailPage() {
                               id={msg.senderId}
                               name={msg.senderName ?? msg.avatar ?? "U"}
                               avatarUrl={msg.senderAvatarUrl ?? null}
+                              guest={isGuestTicket && msg.sender === "user" && msg.senderId === ticket?.created_by}
                               size="sm"
                               radius="9.625px"
                             />
@@ -1385,6 +1387,7 @@ export default function TicketDetailPage() {
                         id={participant.user?.id ?? participant.participant_id}
                         name={participant.user?.name ?? "Unknown"}
                         avatarUrl={participant.user?.avatar_url ?? null}
+                        guest={isGuestTicket && participant.participant_id === ticket?.created_by}
                         size="md"
                       />
                       <span className="text-ui text-muted-foreground">

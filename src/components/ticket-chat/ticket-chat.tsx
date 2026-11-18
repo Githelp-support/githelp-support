@@ -77,6 +77,8 @@ export type TicketChatMessage = {
   senderAvatarInitial?: string | null
   senderAvatarUrl?: string | null
   senderId?: string | null
+  /** The sender is a guest (not signed in): their avatar is the ghost. */
+  senderIsGuest?: boolean
   timestamp: string
   content: string
   kind?: "claimed" | "ended"
@@ -92,6 +94,8 @@ export type TicketChatParticipant = {
   avatarInitial: string
   avatarUrl?: string | null
   isCurrentUser?: boolean
+  /** A guest (not signed in): their avatar is the ghost. */
+  isGuest?: boolean
 }
 
 export interface TicketChatProps {
@@ -427,6 +431,7 @@ export function TicketChat(props: TicketChatProps) {
                                   id={msg.senderId}
                                   name={msg.senderName}
                                   avatarUrl={msg.senderAvatarUrl ?? null}
+                                  guest={msg.senderIsGuest}
                                   size="sm"
                                   radius="9.625px"
                                 />
@@ -676,6 +681,7 @@ export function TicketChat(props: TicketChatProps) {
                         id={p.id}
                         name={p.name}
                         avatarUrl={p.avatarUrl ?? null}
+                        guest={p.isGuest}
                         size="md"
                       />
                       <span className="text-ui text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>

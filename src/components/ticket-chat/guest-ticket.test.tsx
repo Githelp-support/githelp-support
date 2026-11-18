@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import {
   ClaimTicketButton,
   GUEST_CLAIM_BLOCKED_COPY,
@@ -178,5 +179,15 @@ describe("guest system messages", () => {
     render(<VisitorLeftAction onStartNewConversation={onStart} />)
     fireEvent.click(screen.getByRole("button", { name: "Start a new conversation" }))
     expect(onStart).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("ProfileAvatar guest", () => {
+  it("shows the ghost on the guest tile instead of an initial", () => {
+    render(<ProfileAvatar id="guest-1" name="Guest" guest />)
+    const avatar = screen.getByRole("img", { name: "Guest" })
+    expect(avatar).toHaveClass("bg-avatar-guest-bg", "text-avatar-guest-fg")
+    expect(avatar.querySelector(".fi-sr-ghost")).not.toBeNull()
+    expect(avatar).not.toHaveTextContent("G")
   })
 })

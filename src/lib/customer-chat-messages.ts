@@ -126,7 +126,8 @@ export interface CustomerThreadOptions {
     fallbackDescription?: string | null;
     /** Timestamp for the fallback first message (ticket created_at). */
     fallbackTimestamp?: string | null;
-    currentUser: { id?: string; name?: string | null; avatarUrl?: string | null };
+    /** `isGuest`: the viewer is not signed in, so their own messages get the guest avatar. */
+    currentUser: { id?: string; name?: string | null; avatarUrl?: string | null; isGuest?: boolean };
     /** Project's average response time in seconds (`null` until one exists). */
     avgResponseSeconds?: number | null;
     /**
@@ -202,6 +203,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderAvatarInitial: userInitial,
             senderAvatarUrl: currentUser.avatarUrl ?? null,
             senderId: currentUser.id,
+            senderIsGuest: !!currentUser.isGuest,
             timestamp: fallbackTimestamp ? formatChatTimestamp(fallbackTimestamp) : nowFormatted,
         });
     }
@@ -225,6 +227,8 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
                 msg.sender?.name?.[0]?.toUpperCase() || (senderType === "user" ? userInitial : "H"),
             senderAvatarUrl: msg.sender?.avatar_url ?? null,
             senderId: msg.sender_id ?? msg.sender?.id ?? null,
+            senderIsGuest:
+                !!currentUser.isGuest && senderType === "user" && (msg.sender_id ?? msg.sender?.id) === currentUser.id,
             timestamp: formatChatTimestamp(msg.created_at),
             // Payment system messages (payment_required, payment_requires_action,
             // payment_authorized, …) carry their kind + ticket_id here; TicketChat

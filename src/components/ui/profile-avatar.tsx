@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Icon } from "@/components/ui/icon"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
@@ -12,6 +13,8 @@ type SizePreset = {
   dimensions: string
   rounded: string
   text: string
+  /** Box of the ghost glyph in a guest avatar, proportional to the avatar. */
+  guestIcon: string
 }
 
 /**
@@ -23,9 +26,9 @@ type SizePreset = {
  * Initials stay proportional to their avatar (text-[21px] in the 48px one).
  */
 const SIZE_PRESETS: Record<ProfileAvatarSize, SizePreset> = {
-  sm: { dimensions: "w-7 h-7", rounded: SQUIRCLE_RADIUS[28], text: "text-sm" },
-  md: { dimensions: "w-8 h-8", rounded: SQUIRCLE_RADIUS[32], text: "text-sm" },
-  lg: { dimensions: "w-12 h-12", rounded: SQUIRCLE_RADIUS[48], text: "text-[21px]" },
+  sm: { dimensions: "w-7 h-7", rounded: SQUIRCLE_RADIUS[28], text: "text-sm", guestIcon: "[--icon-size:1rem]" },
+  md: { dimensions: "w-8 h-8", rounded: SQUIRCLE_RADIUS[32], text: "text-sm", guestIcon: "[--icon-size:1.125rem]" },
+  lg: { dimensions: "w-12 h-12", rounded: SQUIRCLE_RADIUS[48], text: "text-[21px]", guestIcon: "[--icon-size:1.75rem]" },
 }
 
 export interface ProfileAvatarProps {
@@ -35,6 +38,11 @@ export interface ProfileAvatarProps {
   name?: string | null
   /** Optional avatar image. When non-empty, an <img> is rendered; otherwise the colored fallback shows. */
   avatarUrl?: string | null
+  /**
+   * The person is a guest (visitor without an account): shows the ghost on
+   * the guest tile instead of an image or a coloured initial.
+   */
+  guest?: boolean
   /** Size preset. Defaults to `md`. */
   size?: ProfileAvatarSize
   /** Custom corner radius override (e.g. `"9.625px"` or `9.625`). Falls back to the size preset. */
@@ -52,6 +60,7 @@ export function ProfileAvatar({
   id,
   name,
   avatarUrl,
+  guest = false,
   size = "md",
   radius,
   className,
@@ -68,6 +77,25 @@ export function ProfileAvatar({
   const fallbackStyle: React.CSSProperties = {
     backgroundColor: bgColor,
     ...(radiusOverride ? { borderRadius: radiusOverride } : {}),
+  }
+
+  if (guest) {
+    return (
+      <span
+        data-slot="guest-avatar"
+        role="img"
+        aria-label="Guest"
+        className={cn(
+          preset.dimensions,
+          radiusOverride ? undefined : preset.rounded,
+          "flex shrink-0 items-center justify-center bg-avatar-guest-bg text-avatar-guest-fg",
+          className
+        )}
+        style={containerStyle}
+      >
+        <Icon name="fi-sr-ghost" className={preset.guestIcon} />
+      </span>
+    )
   }
 
   return (

@@ -189,7 +189,7 @@ export default function SupportPage() {
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, sessionUserId)
-  const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, sessionUserId)
+  const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, sessionUserId, null, isGuest)
 
   // Confirm the logged-time summary the helper sent (one action for every
   // pending entry; declines carry a reason the RPC posts into the chat).
@@ -313,7 +313,7 @@ export default function SupportPage() {
       fallbackTimestamp: liveTicket?.created_at ?? null,
       ticketStatus: liveTicket?.status ?? null,
       isFree: isFreeSupport(effectivePricing),
-      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
+      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
       avgResponseSeconds,
     })
     // A guest ticket closed because the visitor left carries its own

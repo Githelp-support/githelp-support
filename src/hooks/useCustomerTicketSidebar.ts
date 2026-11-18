@@ -123,7 +123,9 @@ export function useCustomerTicketSidebar(
 export function toChatParticipants(
     participants: ParticipantWithUser[] | undefined,
     currentUserId: string | undefined,
-    creator?: { id: string; name?: string | null; avatar_url?: string | null } | null
+    creator?: { id: string; name?: string | null; avatar_url?: string | null } | null,
+    /** The viewer is a guest (not signed in): they are listed as "Guest" with the guest avatar. */
+    currentUserIsGuest = false
 ): TicketChatParticipant[] {
     const list: ParticipantWithUser[] = [...(participants ?? [])];
     if (creator?.id && !list.some((p) => p.participant_id === creator.id)) {
@@ -139,11 +141,15 @@ export function toChatParticipants(
             },
         });
     }
-    return list.map((p) => ({
-        id: p.user?.id ?? p.participant_id,
-        name: p.user?.name ?? "Unknown",
-        avatarInitial: p.user?.name?.[0]?.toUpperCase() ?? "U",
-        avatarUrl: p.user?.avatar_url ?? null,
-        isCurrentUser: !!currentUserId && p.participant_id === currentUserId,
-    }));
+    return list.map((p) => {
+        const isCurrentUser = !!currentUserId && p.participant_id === currentUserId;
+        return {
+            id: p.user?.id ?? p.participant_id,
+            name: p.user?.name ?? "Unknown",
+            avatarInitial: p.user?.name?.[0]?.toUpperCase() ?? "U",
+            avatarUrl: p.user?.avatar_url ?? null,
+            isCurrentUser,
+            isGuest: isCurrentUser && currentUserIsGuest,
+        };
+    });
 }

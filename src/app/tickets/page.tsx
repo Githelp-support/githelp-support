@@ -22,6 +22,7 @@ import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } 
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { ErrorState } from "@/components/ui/error-state"
 import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
@@ -666,12 +667,16 @@ export default function TicketsPage() {
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-4">
                         <div className="flex items-start gap-4">
-                          <div
-                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-                            style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
-                          >
-                            {ticket.user.avatar}
-                          </div>
+                          {ticket.guest ? (
+                            <ProfileAvatar id={ticket.user.id} guest />
+                          ) : (
+                            <div
+                              className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                              style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                            >
+                              {ticket.user.avatar}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-medium text-foreground truncate">
                               {ticket.user.name}
@@ -758,12 +763,16 @@ export default function TicketsPage() {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-4">
                   <div className="flex items-start gap-4">
-                    <div
-                      className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-                      style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
-                    >
-                      {ticket.user.avatar}
-                    </div>
+                    {ticket.guest ? (
+                      <ProfileAvatar id={ticket.user.id} guest />
+                    ) : (
+                      <div
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                        style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                      >
+                        {ticket.user.avatar}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <Link href={`/helper/tickets/${ticket.id}`}>
                         <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
