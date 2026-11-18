@@ -24,6 +24,8 @@ vi.mock("@/contexts/project-context", () => ({ useProjectSelection: mocks.usePro
 vi.mock("@/hooks/useProjectRole", () => ({ useProjectRole: mocks.useProjectRole }))
 vi.mock("@/hooks/useDashboardStats", () => ({ useDashboardStats: mocks.useDashboardStats }))
 vi.mock("@/lib/supabase/client", () => ({ supabase: {} }))
+// Covered by its own tests; here it would need a QueryClient and seven queries.
+vi.mock("@/components/onboarding/onboarding-checklist", () => ({ OnboardingChecklist: () => null }))
 vi.mock("@/components/layout/sidebar", () => ({ Sidebar: () => <nav data-testid="sidebar" /> }))
 vi.mock("@/components/layout/header", () => ({
   Header: ({ title, subtitle }: { title: string; subtitle?: string }) => (
