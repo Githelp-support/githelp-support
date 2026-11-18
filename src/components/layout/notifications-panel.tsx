@@ -172,8 +172,17 @@ export function NotificationsPanel({
                         {!notification.is_read && <div className="w-2 h-2 bg-brand-primary rounded-full" />}
                       </div>
                     </div>
+                    {notification.title && (
+                      <p
+                        className={`text-sm font-medium break-words ${
+                          !notification.is_read ? "text-foreground" : "text-text-tertiary"
+                        }`}
+                      >
+                        {notification.title}
+                      </p>
+                    )}
                     <p
-                      className={`text-ui leading-relaxed ${
+                      className={`text-ui leading-relaxed break-words ${
                         !notification.is_read ? "text-foreground" : "text-text-tertiary"
                       }`}
                     >

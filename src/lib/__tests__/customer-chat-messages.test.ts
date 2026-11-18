@@ -4,10 +4,15 @@ import {
     buildCustomerThreadMessages,
     describeChargedLine,
     findPendingSca,
+    guestSystemMessageCopy,
+    hasVisitorLeft,
     helperSystemMessageCopy,
+    isGuestAbandoned,
     isPaymentFailedCtaLive,
     TICKET_DISCLAIMER,
     TICKET_DISCLAIMER_FREE,
+    GUEST_ABANDONED_HELPER_COPY,
+    GUEST_RETURNED_HELPER_COPY,
     GUEST_SIGNED_IN_HELPER_COPY,
     HELPER_PAYMENT_AUTHORIZED_MESSAGE,
     HELPER_PAYMENT_REQUIRED_MESSAGE,
@@ -263,5 +268,120 @@ describe("helperSystemMessageCopy", () => {
     it("returns null for any other kind so the stored text is shown", () => {
         expect(helperSystemMessageCopy("payment_completed")).toBeNull();
         expect(helperSystemMessageCopy(undefined)).toBeNull();
+    });
+});
+
+describe("guest abandonment system messages", () => {
+    const system = (id: string, kind: string, content = "stored text"): PersistedTicketMessage => ({
+        id,
+        content,
+        created_at: "2026-11-15T12:00:00Z",
+        sender_type: "system",
+        metadata: { kind },
+    });
+    const from = (id: string, sender_type: "user" | "helper", kind?: string): PersistedTicketMessage => ({
+        id,
+        content: "hello",
+        created_at: "2026-11-15T12:00:00Z",
+        sender_type,
+        metadata: kind ? { kind } : null,
+    });
+    const threadOpts = (messagesData: PersistedTicketMessage[], ticketStatus = "in-progress"): CustomerThreadOptions => ({
+        projectName: "Acme",
+        projectLogo: null,
+        nowFormatted: "15.11.2026, 12:00",
+        messagesData,
+        currentUser: { id: "guest-1", name: "Guest" },
+        ticketStatus,
+    });
+
+    it("gives the helper the abandoned and returned copy", () => {
+        expect(GUEST_ABANDONED_HELPER_COPY).toBe(
+            "The guest user has closed the chat window. You can decide to end the ticket, if you would like.",
+        );
+        expect(GUEST_RETURNED_HELPER_COPY).toBe("The guest user has returned to the chat.");
+        expect(guestSystemMessageCopy("guest_abandoned", "helper")).toBe(GUEST_ABANDONED_HELPER_COPY);
+        expect(guestSystemMessageCopy("guest_returned", "helper")).toBe(GUEST_RETURNED_HELPER_COPY);
+        expect(helperSystemMessageCopy("guest_abandoned")).toBe(GUEST_ABANDONED_HELPER_COPY);
+        expect(helperSystemMessageCopy("guest_returned")).toBe(GUEST_RETURNED_HELPER_COPY);
+    });
+
+    it("has no customer copy for the helper-only kinds", () => {
+        expect(guestSystemMessageCopy("guest_abandoned", "customer")).toBeNull();
+        expect(guestSystemMessageCopy("guest_returned", "customer")).toBeNull();
+    });
+
+    it("leaves guest_abandoned and guest_returned out of the customer thread", () => {
+        const list = buildCustomerThreadMessages(
+            threadOpts([
+                from("u1", "user"),
+                from("h1", "helper"),
+                system("s1", "guest_abandoned"),
+                system("s2", "guest_returned"),
+                system("s3", "time_logged", "Logged 5m"),
+            ]),
+        );
+        const ids = list.map((m) => m.id);
+        expect(ids).not.toContain("s1");
+        expect(ids).not.toContain("s2");
+        expect(ids).toEqual(expect.arrayContaining(["u1", "h1", "s3"]));
+        expect(list.some((m) => m.content === GUEST_ABANDONED_HELPER_COPY || m.content === GUEST_RETURNED_HELPER_COPY)).toBe(
+            false,
+        );
+    });
+
+    it("keeps a user or helper message whose metadata happens to carry one of the kinds", () => {
+        const list = buildCustomerThreadMessages(threadOpts([from("u1", "user", "guest_abandoned")]));
+        expect(list.find((m) => m.id === "u1")?.content).toBe("hello");
+    });
+
+    it("hides a visitor_left notice the visitor came back from", () => {
+        const messagesData = [system("s1", "visitor_left"), system("s2", "guest_returned")];
+        expect(hasVisitorLeft(messagesData, "cancelled")).toBe(false);
+        const ids = buildCustomerThreadMessages(threadOpts(messagesData, "cancelled")).map((m) => m.id);
+        expect(ids).not.toContain("s1");
+        expect(ids).not.toContain("s2");
+    });
+
+    describe("isGuestAbandoned", () => {
+        it("is true while the latest guest notice on an open ticket is guest_abandoned", () => {
+            const messages = [from("u1", "user"), from("h1", "helper"), system("s1", "guest_abandoned")];
+            expect(isGuestAbandoned(messages, "in-progress")).toBe(true);
+            expect(isGuestAbandoned(messages, "available")).toBe(true);
+            // Later messages of other kinds do not clear it.
+            expect(isGuestAbandoned([...messages, from("h2", "helper"), system("s2", "time_logged")], "in-progress")).toBe(true);
+        });
+
+        it("is false once the ticket is closed", () => {
+            const messages = [system("s1", "guest_abandoned")];
+            expect(isGuestAbandoned(messages, "completed")).toBe(false);
+            expect(isGuestAbandoned(messages, "cancelled")).toBe(false);
+        });
+
+        it("is false until the ticket status is known", () => {
+            expect(isGuestAbandoned([system("s1", "guest_abandoned")], undefined)).toBe(false);
+            expect(isGuestAbandoned([system("s1", "guest_abandoned")], null)).toBe(false);
+        });
+
+        it("is false after the guest returned", () => {
+            const messages = [system("s1", "guest_abandoned"), system("s2", "guest_returned")];
+            expect(isGuestAbandoned(messages, "in-progress")).toBe(false);
+        });
+
+        it("is false after the guest signed in", () => {
+            const messages = [system("s1", "guest_abandoned"), system("s2", "guest_signed_in")];
+            expect(isGuestAbandoned(messages, "in-progress")).toBe(false);
+        });
+
+        it("is true again when the guest leaves a second time", () => {
+            const messages = [system("s1", "guest_abandoned"), system("s2", "guest_returned"), system("s3", "guest_abandoned")];
+            expect(isGuestAbandoned(messages, "in-progress")).toBe(true);
+        });
+
+        it("is false without a guest_abandoned system message", () => {
+            expect(isGuestAbandoned(undefined, "in-progress")).toBe(false);
+            expect(isGuestAbandoned([], "in-progress")).toBe(false);
+            expect(isGuestAbandoned([from("u1", "user", "guest_abandoned")], "in-progress")).toBe(false);
+        });
     });
 });

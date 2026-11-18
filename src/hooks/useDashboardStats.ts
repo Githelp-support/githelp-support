@@ -21,6 +21,7 @@ export {
     type KeyStats,
     type DashboardStats,
 } from "@/lib/dashboard-stats";
+import { VISIBLE_TICKETS_OR_FILTER } from "@/lib/guest-tickets";
 
 interface DashboardRawData {
     tickets: DashboardTicket[];
@@ -69,7 +70,8 @@ export function useDashboardStats(
                 .from("tickets")
                 .select("id, status, created_at, completed_at, cancelled_at")
                 .eq("project_id", projectId)
-                .is("deleted_at", null);
+                .is("deleted_at", null)
+                .or(VISIBLE_TICKETS_OR_FILTER);
 
             // Get help categories (project_id in help_categories is bigint referencing projects.id)
             const { data: helpCategories } = await supabase

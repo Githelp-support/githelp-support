@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import TicketDetailPage from "./page"
+
+// The page reads the query client (cache invalidation after ending a ticket).
+function renderPage() {
+  return render(
+    <QueryClientProvider client={new QueryClient()}>
+      <TicketDetailPage />
+    </QueryClientProvider>,
+  )
+}
 
 Element.prototype.scrollIntoView = vi.fn()
 
@@ -128,7 +138,7 @@ describe("helper ticket page frame", () => {
   })
 
   it("lays the chat column and the right panel out side by side in one row", () => {
-    const { container } = render(<TicketDetailPage />)
+    const { container } = renderPage()
 
     const header = screen.getByRole("heading", { name: "Ticket with Testhelp" })
     const panelHeading = screen.getByText(/people in this chat/i)
@@ -144,7 +154,7 @@ describe("helper ticket page frame", () => {
   })
 
   it("lets the chat column shrink below its content width on narrow screens", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     // <main> is a flex row; without min-w-0 its column keeps its min-content
     // width and runs past the viewport on phones.
     const column = screen.getByRole("main").firstElementChild as HTMLElement
@@ -152,15 +162,53 @@ describe("helper ticket page frame", () => {
   })
 
   it("keeps the ticket id on one line and drops it below xl so the title keeps its room", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     const id = screen.getByText("ID: t1")
     expect(id.className).toMatch(/whitespace-nowrap/)
     expect(id.className).toMatch(/max-xl:hidden/)
   })
 
   it("pads the top of the panel sheet below lg, where the collapse toggle is hidden", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     const scroller = screen.getByText(/people in this chat/i).closest(".overflow-y-auto") as HTMLElement
     expect(scroller.className).toMatch(/max-lg:pt-4/)
+  })
+
+  // An abandoned guest ticket is cancelled by the backend, then soft-deleted;
+  // useRealtimeTicket refetches the row and the open page must not break.
+  it.each([
+    ["a guest ticket once it is cancelled", { guest: true, status: "cancelled" }],
+    ["a ticket once deleted_at is set", { deleted_at: "2026-11-18T10:30:00Z" }],
+  ])("shows the not-found state for %s", (_label, overrides) => {
+    const base = mocks.useTicket()
+    mocks.useTicket.mockReturnValue({ ...base, data: { ...base.data, ...overrides } })
+
+    renderPage()
+
+    expect(screen.getByRole("heading", { name: /ticket not found/i })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /back to tickets/i })).toHaveAttribute("href", "/tickets")
+    expect(screen.queryByText(/people in this chat/i)).not.toBeInTheDocument()
+  })
+
+  // The "Ticket abandoned" notification links here; 24 hours later the ticket
+  // is deleted for good and the `.single()` read errors.
+  it("shows the not-found state when the ticket row no longer exists", () => {
+    const base = mocks.useTicket()
+    mocks.useTicket.mockReturnValue({ ...base, data: undefined, isLoading: false, isError: true })
+    mocks.useTicketWithDetails.mockReturnValue({ data: undefined })
+
+    renderPage()
+
+    expect(screen.getByRole("heading", { name: /ticket not found/i })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /back to tickets/i })).toHaveAttribute("href", "/tickets")
+  })
+
+  it("keeps a signed-in customer's cancelled ticket open", () => {
+    const base = mocks.useTicket()
+    mocks.useTicket.mockReturnValue({ ...base, data: { ...base.data, guest: false, status: "cancelled" } })
+
+    renderPage()
+
+    expect(screen.queryByRole("heading", { name: /ticket not found/i })).not.toBeInTheDocument()
   })
 })

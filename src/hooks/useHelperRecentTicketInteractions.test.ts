@@ -97,6 +97,7 @@ function setupSupabase(fx: Fixture) {
                     const value = row[f.col];
                     if (f.op === "eq") return value === f.val;
                     if (f.op === "is") return value === f.val || (f.val === null && value === undefined);
+                    if (f.op === "visible") return !(row.guest === true && row.status === "cancelled");
                     if (f.op === "in") return (f.val as unknown[]).includes(value);
                     return true;
                 })
@@ -119,6 +120,11 @@ function setupSupabase(fx: Fixture) {
         builder.eq = chain("eq");
         builder.is = chain("is");
         builder.in = chain("in");
+        // Only the visible-tickets filter is used: NOT (guest AND cancelled).
+        builder.or = (expr: string) => {
+            filters.push({ op: "visible", col: "", val: expr });
+            return builder;
+        };
         builder.order = (col: string, opts?: { ascending?: boolean }) => {
             order = { col, ascending: opts?.ascending !== false };
             return builder;
@@ -328,6 +334,27 @@ describe("useHelperRecentTicketInteractions", () => {
 
         const data = await renderRecent();
         expect(data.map((d) => d.id)).toEqual(["t-live"]);
+    });
+
+    it("drops cancelled guest tickets before they are soft-deleted", async () => {
+        setupSupabase({
+            tickets: [
+                ticket("kept"),
+                ticket("abandoned", { guest: true, status: "cancelled" }),
+                ticket("open-guest", { guest: true }),
+                ticket("cancelled-customer", { guest: false, status: "cancelled" }),
+            ],
+            messages: [
+                { ticket_id: "kept", sender_id: HELPER_USER, created_at: "2026-01-10T00:00:00.000Z" },
+                { ticket_id: "abandoned", sender_id: HELPER_USER, created_at: "2026-01-11T00:00:00.000Z" },
+                { ticket_id: "open-guest", sender_id: HELPER_USER, created_at: "2026-01-12T00:00:00.000Z" },
+                { ticket_id: "cancelled-customer", sender_id: HELPER_USER, created_at: "2026-01-13T00:00:00.000Z" },
+            ],
+        });
+
+        const data = await renderRecent();
+
+        expect(data.map((t) => t.id).sort()).toEqual(["cancelled-customer", "kept", "open-guest"]);
     });
 
     it("derives status, creator, project details and message_count", async () => {

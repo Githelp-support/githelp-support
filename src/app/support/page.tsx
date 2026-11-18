@@ -12,6 +12,7 @@ import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation"
 import { GuestBanner } from "@/components/support/guest-banner"
+import { TicketUnavailableNotice } from "@/components/support/ticket-unavailable-notice"
 import { startGuestSignIn } from "@/lib/guest-adoption"
 import { ensureSupportSession, findGuestOpenTicket, isOwnGuestSession } from "@/lib/guest-session"
 import { useResumableGuestTicket } from "@/hooks/useResumableGuestTicket"
@@ -160,7 +161,15 @@ export default function SupportPage() {
   const { data: messagesData } = useTicketMessages(ticketId)
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
-  const { data: liveTicket } = useTicket(ticketId)
+  const { data: liveTicket, error: liveTicketError } = useTicket(ticketId)
+  // After 30 minutes away RLS hides a guest's ticket (and its messages) from
+  // them: the fetch finds no row (PGRST116), which is not a network failure.
+  const guestTicketExpired =
+    isGuest && !!ticketId && (liveTicketError as { code?: string } | null)?.code === "PGRST116"
+  // Drop the cached pointer to it so nothing resumes the hidden ticket.
+  useEffect(() => {
+    if (guestTicketExpired) queryClient.removeQueries({ queryKey: ["resumable-ticket"] })
+  }, [guestTicketExpired, queryClient])
   // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
   const ticketPricingSnapshot = (liveTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
   const effectivePricing = useMemo(
@@ -718,6 +727,19 @@ export default function SupportPage() {
                     </TooltipContent>
                   </Tooltip>
                 </div>
+              </div>
+            </div>
+          ) : guestTicketExpired ? (
+            <div className="flex-1 overflow-y-auto px-6 pt-16 md:px-18 md:pt-40">
+              <div className="max-w-3xl">
+                <TicketUnavailableNotice
+                  linking={false}
+                  failedFinal={false}
+                  guestExpired
+                  newConversationHref={currentHref}
+                  // Same page: reset the chat so the composer starts empty.
+                  onNewConversation={handleStartNewConversation}
+                />
               </div>
             </div>
           ) : (

@@ -4,6 +4,7 @@ import { Icon } from "@/components/ui/icon"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { getPostgresHint } from "@/lib/functions-error"
 import { cn } from "@/lib/utils"
 
 /**
@@ -93,6 +94,68 @@ export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation =
       {button}
       <p id="guest-claim-explanation" data-slot="guest-claim-explanation" className="w-fit rounded-md bg-bg-subtle px-3 py-2 text-ui text-text-muted">
         {GUEST_CLAIM_BLOCKED_COPY}
+      </p>
+    </div>
+  )
+}
+
+export const GUEST_ABANDONED_END_COPY =
+  "The guest has left. End the ticket to keep a record of the support given."
+
+/** `end_abandoned_guest_ticket` error hints, mapped to helper-facing copy. */
+export const END_ABANDONED_GUEST_TICKET_HINT_MESSAGES: Record<string, string> = {
+  guest_ticket_not_abandoned: "The guest is back in the chat.",
+  ticket_closed: "This ticket is already closed.",
+  guest_ticket_not_found: "Ticket not found.",
+}
+
+/** Helper-facing copy for a failed `end_abandoned_guest_ticket` call, or null for an unknown error. */
+export function endAbandonedGuestTicketErrorMessage(error: unknown): string | null {
+  const hint = getPostgresHint(error)
+  return hint && Object.hasOwn(END_ABANDONED_GUEST_TICKET_HINT_MESSAGES, hint)
+    ? END_ABANDONED_GUEST_TICKET_HINT_MESSAGES[hint]
+    : null
+}
+
+interface EndAbandonedGuestTicketButtonProps {
+  pending?: boolean
+  onEnd: () => void
+  /** Also show the explanation under the button (detail panel); the header keeps the button only. */
+  showExplanation?: boolean
+  className?: string
+}
+
+/**
+ * "End ticket" for a guest ticket the visitor has abandoned. Guest tickets
+ * can't be claimed, so the normal End ticket drawer never applies; this ends
+ * the ticket directly (no billing, time logging or summary).
+ */
+export function EndAbandonedGuestTicketButton({
+  pending = false,
+  onEnd,
+  showExplanation = true,
+  className,
+}: EndAbandonedGuestTicketButtonProps) {
+  const button = (
+    <Button
+      type="button"
+      variant="lavender"
+      loading={pending}
+      onClick={onEnd}
+      aria-describedby={showExplanation ? "guest-abandoned-end-explanation" : undefined}
+      className={cn("cursor-pointer w-fit", !showExplanation && className)}
+    >
+      End ticket
+    </Button>
+  )
+
+  if (!showExplanation) return button
+
+  return (
+    <div data-slot="end-abandoned-guest-ticket" className={cn("flex flex-col gap-1.5", className)}>
+      {button}
+      <p id="guest-abandoned-end-explanation" data-slot="guest-abandoned-end-explanation" className="text-ui text-text-muted">
+        {GUEST_ABANDONED_END_COPY}
       </p>
     </div>
   )

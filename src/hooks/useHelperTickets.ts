@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
+import { VISIBLE_TICKETS_OR_FILTER } from "@/lib/guest-tickets";
 
 type Ticket = Database["public"]["Tables"]["tickets"]["Row"];
 
@@ -109,6 +110,7 @@ export function useHelperClaimedTicketsSidebar(
                     )
                     .eq("id", currentTicketId)
                     .is("deleted_at", null)
+                    .or(VISIBLE_TICKETS_OR_FILTER)
                     .maybeSingle();
                 if (currentTicket) {
                     tickets = [currentTicket as SidebarTicketRow, ...tickets];
@@ -264,6 +266,7 @@ export function useAdminActiveTicketsSidebar(
                     )
                     .eq("id", currentTicketId)
                     .is("deleted_at", null)
+                    .or(VISIBLE_TICKETS_OR_FILTER)
                     .maybeSingle();
                 if (currentTicket) {
                     tickets = [currentTicket as SidebarTicketRow, ...tickets];
@@ -421,6 +424,7 @@ export function useHelperTickets(helperId: string, projectId?: string) {
                 .select("*")
                 .in("id", ticketIds)
                 .is("deleted_at", null)
+                .or(VISIBLE_TICKETS_OR_FILTER)
                 .order("created_at", { ascending: false });
 
             if (projectId) {

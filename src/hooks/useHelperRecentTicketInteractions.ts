@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { VISIBLE_TICKETS_OR_FILTER } from "@/lib/guest-tickets";
 
 export type HelperRecentTicketStatus = "Completed" | "Claimed" | "Unclaimed";
 
@@ -118,7 +119,8 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                     .from("tickets")
                     .select(TICKET_COLUMNS)
                     .in("id", missingIds)
-                    .is("deleted_at", null);
+                    .is("deleted_at", null)
+                    .or(VISIBLE_TICKETS_OR_FILTER);
                 if (ticketsError) throw ticketsError;
                 ((ticketRows || []) as unknown as TicketRow[]).forEach((t) => ticketsById.set(t.id, t));
             }

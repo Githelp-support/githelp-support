@@ -28,6 +28,7 @@ function mockChain(resolveWith: { data: unknown; error: unknown }) {
     const chain = {
         select: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         then: undefined as unknown,
@@ -93,6 +94,22 @@ describe("useTickets", () => {
         await waitFor(() => expect(result.current.isError).toBe(true));
 
         expect(result.current.error).toBe(dbError);
+    });
+
+    it("excludes cancelled guest tickets as well as deleted ones", async () => {
+        const chain = mockChain({ data: [], error: null });
+        vi.mocked(supabase.from).mockReturnValue(
+            chain as unknown as ReturnType<typeof supabase.from>,
+        );
+
+        const { result } = renderHook(() => useTickets("proj-guest"), {
+            wrapper: makeWrapper(),
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+        expect(chain.is).toHaveBeenCalledWith("deleted_at", null);
+        expect(chain.or).toHaveBeenCalledWith("guest.eq.false,status.neq.cancelled");
     });
 
     it("returns an array of tickets on success", async () => {

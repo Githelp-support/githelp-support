@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { getFunctionErrorMessage } from "@/lib/functions-error";
 import type { Database } from "@/types/database";
+import { VISIBLE_TICKETS_OR_FILTER } from "@/lib/guest-tickets";
 
 type TicketParticipant =
     Database["public"]["Tables"]["tickets_participants"]["Row"];
@@ -101,7 +102,8 @@ export function useMyParticipatingTicketIds(projectId?: string) {
                 .from("tickets")
                 .select("id")
                 .eq("project_id", projectId)
-                .is("deleted_at", null);
+                .is("deleted_at", null)
+                .or(VISIBLE_TICKETS_OR_FILTER);
 
             const ids = (ticketIds || []).map((t: { id: string }) => t.id);
             if (ids.length === 0) return new Set<string>();
@@ -142,7 +144,8 @@ export function useOtherHelperParticipatingTicketIds(projectId?: string) {
                 .from("tickets")
                 .select("id, created_by")
                 .eq("project_id", projectId)
-                .is("deleted_at", null);
+                .is("deleted_at", null)
+                .or(VISIBLE_TICKETS_OR_FILTER);
 
             const ids = (ticketRows || []).map((t: { id: string }) => t.id);
             if (ids.length === 0) return new Set<string>();

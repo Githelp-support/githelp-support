@@ -43,8 +43,17 @@ import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
-import { ClaimTicketButton, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy } from "@/lib/customer-chat-messages"
+import {
+  ClaimTicketButton,
+  EndAbandonedGuestTicketButton,
+  GuestTicketBadge,
+  GUEST_CLAIM_BLOCKED_COPY,
+  endAbandonedGuestTicketErrorMessage,
+  ticketCreatorDisplayName,
+} from "@/components/ticket-chat/guest-ticket"
+import { helperSystemMessageCopy, isGuestAbandoned } from "@/lib/customer-chat-messages"
+import { useQueryClient } from "@tanstack/react-query"
+import { isHiddenGuestTicket } from "@/lib/guest-tickets"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
@@ -114,6 +123,8 @@ export default function TicketDetailPage() {
   const [justClaimedLocal, setJustClaimedLocal] = useState(false)
   const [justEndedLocal, setJustEndedLocal] = useState(false)
   const [endOutcome, setEndOutcome] = useState<string | null>(null)
+  const [isEndingAbandonedGuest, setIsEndingAbandonedGuest] = useState(false)
+  const queryClient = useQueryClient()
   const [userHasSLA, setUserHasSLA] = useState(false)
   // In-flight guard for sending: `sendMessage.isPending` only flips once the
   // insert starts, after the (lazy-loaded) formatter has run, so a fast
@@ -290,6 +301,12 @@ export default function TicketDetailPage() {
   }, [participants, ticket?.created_by, ticketDetails?.user, isGuestTicket])
 
   const isTicketEnded = (ticket?.status === "completed" || ticket?.status === "cancelled") || justEndedLocal
+
+  // The guest left without signing in (latest guest notice is `guest_abandoned`,
+  // realtime via useRealtimeMessages; a `guest_returned` message clears it).
+  // Guest tickets can't be claimed, so the End ticket drawer never applies:
+  // the helper ends the ticket directly instead.
+  const isAbandonedGuest = isGuestTicket && !isTicketEnded && isGuestAbandoned(messagesData, ticket?.status)
 
   // Customer asked to end the session (tickets.end_requested_at, realtime via
   // useRealtimeTicket). Only the helper can actually end — they log remaining
@@ -630,6 +647,53 @@ export default function TicketDetailPage() {
   }
 
   /**
+   * End a guest ticket the visitor abandoned. No billing, time logging or
+   * summary: the RPC marks it completed and the refetched ticket row flips the
+   * page to its ended state.
+   */
+  const handleEndAbandonedGuestTicket = async () => {
+    if (!ticketId || isEndingAbandonedGuest) return
+    setIsEndingAbandonedGuest(true)
+    try {
+      const { error } = await supabase.rpc("end_abandoned_guest_ticket", { p_ticket_id: ticketId })
+      if (error) {
+        console.error("Failed to end abandoned guest ticket:", error)
+        const message = endAbandonedGuestTicketErrorMessage(error)
+        if (message) {
+          toast.error(message)
+        } else {
+          toast.error("Couldn't end the ticket. It is still open.", { description: error.message || "Please try again." })
+        }
+      } else {
+        toast.success("Ticket ended")
+      }
+      // Refresh either way: on an error the ticket or thread has usually moved
+      // on (guest returned, already closed). The ticket row is awaited so the
+      // button doesn't flash back before the ended state arrives.
+      void queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] })
+      void queryClient.invalidateQueries({ queryKey: ["ticket-with-details", ticketId] })
+      for (const key of [
+        "tickets",
+        "tickets-with-details",
+        "user-tickets",
+        "helper-tickets",
+        "helper-claimed-tickets-sidebar",
+        "admin-active-tickets-sidebar",
+      ]) {
+        void queryClient.invalidateQueries({ queryKey: [key] })
+      }
+      await queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] })
+    } catch (error) {
+      console.error("Failed to end abandoned guest ticket:", error)
+      toast.error("Couldn't end the ticket. It is still open.", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      })
+    } finally {
+      setIsEndingAbandonedGuest(false)
+    }
+  }
+
+  /**
    * End the ticket. The status update is awaited first: only once the database
    * has accepted it does the UI flip to "ended", the audit event get written
    * and the hold captured. If the update is rejected (e.g. by the column-guard
@@ -870,7 +934,11 @@ export default function TicketDetailPage() {
 
   // A ticket hidden by RLS (or a bad id) used to render a blank page: the
   // `.single()` read errors, and nothing else has data to show.
-  if (ticketError || (!ticketLoading && !ticket)) {
+  // Same branch for a guest ticket the visitor abandoned: the backend cancels
+  // it and soft-deletes it later; helpers no longer see it anywhere, so an
+  // open detail page (refreshed by useRealtimeTicket) falls back to not-found.
+  const isRemovedTicket = !!ticket && (isHiddenGuestTicket(ticket) || !!ticket.deleted_at)
+  if (ticketError || (!ticketLoading && !ticket) || isRemovedTicket) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
         <div className="relative z-10">
@@ -914,17 +982,26 @@ export default function TicketDetailPage() {
               </span>
             }
             actions={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="lg:hidden text-text-muted"
-                aria-label="Ticket details"
-                aria-expanded={mobilePanelOpen}
-                onClick={() => setMobilePanelOpen((v) => !v)}
-              >
-                <Icon name="fi-rr-sidebar-flip" />
-              </Button>
+              <>
+                {isAbandonedGuest && (
+                  <EndAbandonedGuestTicketButton
+                    pending={isEndingAbandonedGuest}
+                    onEnd={() => void handleEndAbandonedGuestTicket()}
+                    showExplanation={false}
+                  />
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden text-text-muted"
+                  aria-label="Ticket details"
+                  aria-expanded={mobilePanelOpen}
+                  onClick={() => setMobilePanelOpen((v) => !v)}
+                >
+                  <Icon name="fi-rr-sidebar-flip" />
+                </Button>
+              </>
             }
           />
         </div>
@@ -1049,6 +1126,13 @@ export default function TicketDetailPage() {
                         isGuest={isGuestTicket}
                         pending={claimTicket.isPending}
                         onClaim={() => void handleClaimTicket()}
+                      />
+                    )}
+
+                    {isAbandonedGuest && (
+                      <EndAbandonedGuestTicketButton
+                        pending={isEndingAbandonedGuest}
+                        onEnd={() => void handleEndAbandonedGuestTicket()}
                       />
                     )}
 

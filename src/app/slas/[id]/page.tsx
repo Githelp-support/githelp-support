@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { VISIBLE_TICKETS_OR_FILTER } from "@/lib/guest-tickets"
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -86,6 +87,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         .select("*, tickets_time_entries(*), tickets_participants(*)")
         .eq("sla_id", id)
         .is("deleted_at", null)
+        .or(VISIBLE_TICKETS_OR_FILTER)
         .order("created_at", { ascending: false })
       if (error) throw error
       // Entries the customer declined are not billed and don't consume SLA minutes.
