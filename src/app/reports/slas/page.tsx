@@ -424,7 +424,7 @@ export default function ReportsSLAsPage() {
                         <Checkbox
                           checked={selectedRows.includes(report.id)}
                           onCheckedChange={() => handleRowSelect(report.id)}
-                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
+                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-brand-foreground"
                         />
                       </div>
                       <div className="col-span-2">
@@ -537,7 +537,7 @@ export default function ReportsSLAsPage() {
                         <Checkbox
                           checked={selectedTicketRows.includes(ticket.id)}
                           onCheckedChange={() => handleTicketRowSelect(ticket.id)}
-                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-white"
+                          className="data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary data-[state=checked]:text-brand-foreground"
                         />
                       </div>
                       <div className="col-span-2">
