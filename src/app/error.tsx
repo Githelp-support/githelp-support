@@ -23,7 +23,7 @@ export default function Error({
           An unexpected error occurred. You can try again or return to the dashboard.
         </p>
         <div className="flex gap-3 justify-center">
-          <Button onClick={reset} className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
+          <Button onClick={reset} className="bg-brand-primary hover:bg-brand-primary-hover text-brand-foreground">
             Try again
           </Button>
           <Button variant="outline" asChild>

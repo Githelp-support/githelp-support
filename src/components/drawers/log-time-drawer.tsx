@@ -108,7 +108,7 @@ export function LogTimeDrawer({ isOpen, onClose, onLogTime }: LogTimeDrawerProps
             form="log-time-form"
             disabled={!hours && !minutes}
             variant="default"
-            className="flex-1 py-2.5 rounded-md text-ui font-medium bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground shadow-md"
+            className="flex-1 py-2.5 rounded-md text-ui font-medium bg-brand-primary hover:bg-brand-primary-hover text-brand-foreground shadow-md"
           >
             Log time
           </Button>

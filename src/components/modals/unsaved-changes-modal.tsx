@@ -40,7 +40,7 @@ export function UnsavedChangesModal({ open, message, onStay, onLeave }: UnsavedC
             Stay on page
           </Button>
           <Button
-            className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground rounded-md px-5 py-2.5 text-ui font-medium shadow-sm"
+            className="bg-brand-primary hover:bg-brand-primary-hover text-brand-foreground rounded-md px-5 py-2.5 text-ui font-medium shadow-sm"
             onClick={onLeave}
           >
             Leave without saving

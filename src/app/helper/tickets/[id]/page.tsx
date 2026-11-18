@@ -1622,7 +1622,7 @@ export default function TicketDetailPage() {
               Cancel
             </Button>
             <Button
-              className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground"
+              className="bg-brand-primary hover:bg-brand-primary-hover text-brand-foreground"
               onClick={handleAddSelfAsHelper}
               disabled={addSelfAsHelper.isPending}
             >

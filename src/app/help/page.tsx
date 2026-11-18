@@ -192,7 +192,7 @@ export default function HelpPage() {
               <div className="flex flex-wrap gap-3">
                 {isAuthenticated && (
                   <>
-                    <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
+                    <Button asChild className="bg-brand-primary hover:bg-brand-primary-hover text-brand-foreground">
                       <Link href={GITHELP_SUPPORT_URL} className="inline-flex items-center gap-2">
                         <Icon name="fi-rr-comment" />
                         Open support chat
@@ -208,7 +208,7 @@ export default function HelpPage() {
                   </>
                 )}
                 {!isAuthenticated && (
-                  <Button asChild className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground">
+                  <Button asChild className="bg-brand-primary hover:bg-brand-primary-hover text-brand-foreground">
                     <Link href="/auth/signin" className="inline-flex items-center gap-2">
                       Sign in to get support
                       <Icon name="fi-rr-arrow-right" />

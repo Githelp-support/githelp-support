@@ -251,7 +251,7 @@ export default function SupportTicketsPage() {
                 </div>
                 <Button
                   onClick={() => setIsNewTicketModalOpen(true)}
-                  className="bg-brand-primary hover:bg-brand-primary/90 text-brand-foreground text-ui"
+                  className="bg-brand-primary hover:bg-brand-primary-hover text-brand-foreground text-ui"
                 >
                   <Icon name="fi-rr-plus" />
                   New ticket
