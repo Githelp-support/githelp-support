@@ -59,7 +59,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
 
   return (
     <div className="space-y-8">
-      <h2 className="text-xl font-normal text-text-secondary mb-8">{projectName}&apos;s resources</h2>
+      <h2 className="text-xl font-book text-text-secondary mb-8">{projectName}&apos;s resources</h2>
 
       {resourcesLoading ? (
         <ListSkeleton rows={3} avatar={false} badge={false} className="max-w-xl divide-y-0 [&>div]:px-0" />
