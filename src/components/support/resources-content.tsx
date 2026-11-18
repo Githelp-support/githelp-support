@@ -103,7 +103,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
           <Accordion type="single" collapsible className="w-full">
             {filteredFaqs.map((faq, index) => (
               <AccordionItem key={index} value={`item-${index}`} className="px-6">
-                <AccordionTrigger className="text-foreground hover:no-underline hover:text-brand-primary">
+                <AccordionTrigger className="text-foreground hover:no-underline hover:text-link">
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">

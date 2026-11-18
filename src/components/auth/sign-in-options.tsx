@@ -160,7 +160,7 @@ export function SignInOptions({ confirmPath, className, dividerBgClassName = "bg
               setEmailLinkSentTo(null)
               setEmail("")
             }}
-            className="mt-2 text-xs text-brand-primary hover:underline"
+            className="mt-2 text-xs text-link hover:underline"
           >
             Use a different email
           </button>

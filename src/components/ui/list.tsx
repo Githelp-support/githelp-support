@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
  * Shared list chrome. Pages keep their own column grids, sorting, links and
  * click handlers; these only standardise the header band and the row frame.
  *
- * - `ListHeader`: GitHelp's lavender header band (brand-primary/10), h-10,
+ * - `ListHeader`: GitHelp's lavender header band (`bg-tint`), h-10,
  *   px-6, text-xs/500 in text-muted (muted-foreground is only 4.1:1 on the
  *   tint), hairline below. Sort buttons inside keep their brand hover.
  * - `SortHeader` / `SortIcon`: a sortable column label for the band. It
@@ -22,8 +22,8 @@ function ListHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="list-header"
       className={cn(
-        "flex min-h-10 items-center border-b border-border-subtle bg-brand-primary/10 px-6 py-2 text-xs font-medium text-text-muted max-md:min-w-[40rem]",
-        "[&_button]:cursor-pointer [&_button]:rounded-sm [&_button:hover]:text-brand-primary [&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-brand-primary/40",
+        "flex min-h-10 items-center border-b border-border-subtle bg-tint px-6 py-2 text-xs font-medium text-text-muted max-md:min-w-[40rem]",
+        "[&_button]:cursor-pointer [&_button]:rounded-sm [&_button:hover]:text-link [&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-brand-primary/40",
         "[&>*]:flex-1",
         className,
       )}
@@ -41,9 +41,9 @@ export type SortDirection = "asc" | "desc"
 function SortIcon({ active, direction }: { active: boolean; direction: SortDirection | null }) {
   if (!active || !direction) return <ChevronsUpDown className="size-4 text-muted-foreground" aria-hidden />
   return direction === "asc" ? (
-    <ChevronUp className="size-4 text-brand-primary" aria-hidden />
+    <ChevronUp className="size-4 text-link" aria-hidden />
   ) : (
-    <ChevronDown className="size-4 text-brand-primary" aria-hidden />
+    <ChevronDown className="size-4 text-link" aria-hidden />
   )
 }
 

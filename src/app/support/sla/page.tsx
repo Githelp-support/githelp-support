@@ -58,7 +58,7 @@ export default function SLAEntryPage() {
         <nav className="flex gap-8">
           <Link
             href="/support"
-            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-brand-primary border-b-2 border-brand-primary"
+            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-link border-b-2 border-brand-primary"
           >
             Get support
           </Link>
@@ -118,13 +118,13 @@ export default function SLAEntryPage() {
           <Button
             onClick={handleEnterSupportSpace}
             variant="outline"
-            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground cursor-pointer bg-transparent"
+            className="border-brand-primary text-link hover:bg-brand-primary hover:text-brand-foreground cursor-pointer bg-transparent"
             disabled={!slaIdValid}
           >
             Enter support space
           </Button>
 
-          <Link href="/support" className="flex items-center gap-2 text-brand-primary hover:underline text-sm">
+          <Link href="/support" className="flex items-center gap-2 text-link hover:underline text-sm">
             I don&apos;t have my SLA ID
           </Link>
         </div>

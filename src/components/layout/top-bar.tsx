@@ -81,7 +81,7 @@ const ProjectLogo = ({
     <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`${size} ${radius}`}>
       {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
       <AvatarFallback
-        className={`${primaryColor ? "" : "bg-brand-primary"} text-brand-foreground text-xs ${radius} font-[family-name:var(--font-outfit)]`}
+        className={`${primaryColor ? "" : "bg-linear-to-br from-tile-from to-tile-to"} text-brand-text text-xs ${radius} font-[family-name:var(--font-outfit)]`}
         style={primaryColor ? { backgroundColor: primaryColor } : undefined}
       >
         {firstLetter}
@@ -376,7 +376,7 @@ export function TopBar() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer font-sans text-sm text-brand-primary"
+                    className="cursor-pointer font-sans text-sm text-link"
                     onClick={goToAddRole}
                   >
                     <Icon name="fi-rr-plus" />
@@ -412,7 +412,7 @@ export function TopBar() {
                 className="w-56 font-sans"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
-                <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
+                <DropdownMenuItem className="group gap-2 bg-tint text-tint-text focus:bg-tint-strong focus:text-tint-text">
                   <PrivateContextIcon size="w-5 h-5" />
                   <span className="font-sans truncate text-sm font-book">Private</span>
                 </DropdownMenuItem>
@@ -420,7 +420,7 @@ export function TopBar() {
                   <Tooltip open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
                     <TooltipTrigger asChild>
                       <DropdownMenuItem
-                        className="font-sans text-sm text-brand-primary"
+                        className="font-sans text-sm text-link"
                         // Keep the menu open and show the explanation on tap as
                         // well as on hover.
                         onSelect={(e) => {
@@ -489,7 +489,7 @@ export function TopBar() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="font-sans text-sm text-brand-primary"
+                  className="font-sans text-sm text-link"
                   onClick={goToAddRole}
                 >
                   <Icon name="fi-rr-plus" />
@@ -558,7 +558,7 @@ function ProjectLogoWithBranding({
   return (
     <DropdownMenuItem
       onClick={() => onSelect(project)}
-      className={`group gap-2 ${isSelected ? "bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary" : ""}`}
+      className={`group gap-2 ${isSelected ? "bg-tint text-tint-text focus:bg-tint-strong focus:text-tint-text" : ""}`}
     >
       <ProjectLogo
         logoUrl={logoUrl}

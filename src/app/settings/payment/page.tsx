@@ -457,7 +457,7 @@ export default function PaymentSettingsPage() {
               onClick={() => setActiveTab("user")}
               className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                 activeTab === "user"
-                  ? "text-brand-primary border-brand-primary"
+                  ? "text-link border-brand-primary"
                   : "text-muted-foreground border-transparent hover:text-foreground"
               }`}
             >
@@ -467,7 +467,7 @@ export default function PaymentSettingsPage() {
               onClick={() => setActiveTab("helper")}
               className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                 activeTab === "helper"
-                  ? "text-brand-primary border-brand-primary"
+                  ? "text-link border-brand-primary"
                   : "text-muted-foreground border-transparent hover:text-foreground"
               }`}
             >
@@ -731,7 +731,7 @@ export default function PaymentSettingsPage() {
                       htmlFor="by-ticket"
                       className={cn(
                         "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
-                        paymentByTicket && "border-brand-primary bg-brand-primary/5"
+                        paymentByTicket && "border-brand-primary bg-tint-soft"
                       )}
                     >
                       <Checkbox
@@ -755,7 +755,7 @@ export default function PaymentSettingsPage() {
                       htmlFor="sla"
                       className={cn(
                         "flex items-start gap-3 rounded-md border border-border-control p-4 cursor-pointer transition-colors hover:bg-muted/40",
-                        paymentBySLA && "border-brand-primary bg-brand-primary/5"
+                        paymentBySLA && "border-brand-primary bg-tint-soft"
                       )}
                     >
                       <Checkbox

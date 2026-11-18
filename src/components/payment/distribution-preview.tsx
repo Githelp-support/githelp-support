@@ -206,8 +206,8 @@ export function DistributionPreview({
         })}
       </div>
       <div className="border-t border-border mt-3 pt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <span className="text-sm font-semibold text-brand-primary">Sum</span>
-        <span className="text-right text-sm font-semibold text-brand-primary tabular-nums">
+        <span className="text-sm font-semibold text-link">Sum</span>
+        <span className="text-right text-sm font-semibold text-link tabular-nums">
           <span className="mr-1">{sumMoney.symbol}</span>
           {sumMoney.amount}
         </span>

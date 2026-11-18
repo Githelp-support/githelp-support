@@ -57,7 +57,7 @@ describe("List", () => {
   it("ListHeader keeps the lavender tint with text-xs/500 text-muted and a hairline", () => {
     render(<ListHeader data-testid="h">Ticket</ListHeader>)
     const cls = screen.getByTestId("h").className
-    for (const t of ["bg-brand-primary/10", "min-h-10", "px-6", "text-xs", "font-medium", "text-text-muted", "border-b"]) {
+    for (const t of ["bg-tint", "min-h-10", "px-6", "text-xs", "font-medium", "text-text-muted", "border-b"]) {
       expect(cls, t).toContain(t)
     }
   })

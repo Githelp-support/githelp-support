@@ -83,7 +83,7 @@ export function ContributorsStep({
                 {!githubToken ? (
                     <p className="text-sm text-muted-foreground">
                         Connect with GitHub to see contributors.{" "}
-                        <Link href="/" className="text-brand-primary hover:underline">
+                        <Link href="/" className="text-link hover:underline">
                             Go to dashboard
                         </Link>
                     </p>
@@ -147,7 +147,7 @@ export function ContributorsStep({
                                             className={cn(
                                                 "flex items-center justify-between p-3 rounded-lg border transition-colors",
                                                 selected
-                                                    ? "border-brand-primary bg-brand-primary/5"
+                                                    ? "border-brand-primary bg-tint-soft"
                                                     : "border-border-subtle hover:bg-muted/50",
                                                 invited && "opacity-60"
                                             )}

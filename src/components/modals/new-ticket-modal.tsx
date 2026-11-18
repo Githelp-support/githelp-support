@@ -118,7 +118,7 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
                           className={cn(
                             "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-colors",
                             isSelected
-                              ? "bg-brand-primary/10 border-l-2 border-brand-primary text-brand-primary"
+                              ? "bg-tint border-l-2 border-brand-primary text-tint-text"
                               : "hover:bg-muted/50 text-foreground"
                           )}
                         >
@@ -127,7 +127,7 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
                             <span
                               className={cn(
                                 "ml-3 min-w-0 max-w-[45%] truncate text-xs",
-                                isSelected ? "text-brand-primary/80" : "text-muted-foreground"
+                                isSelected ? "text-tint-text/80" : "text-muted-foreground"
                               )}
                             >
                               {project.slug}

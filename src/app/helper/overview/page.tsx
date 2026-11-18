@@ -137,7 +137,7 @@ export default function HelperOverviewPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-subtitle text-foreground">Recent tickets</h2>
-            <Link href="/tickets" className="text-sm font-medium text-brand-primary hover:underline">
+            <Link href="/tickets" className="text-sm font-medium text-link hover:underline">
               View all tickets
             </Link>
           </div>
@@ -172,7 +172,7 @@ export default function HelperOverviewPage() {
                       href={`/helper/tickets/${ticket.id}`}
                       className={cn(
                         listRowClass({ interactive: true, bordered: true, className: "block" }),
-                        ticket.has_unread ? "bg-brand-primary/10 hover:bg-brand-primary/15" : "hover:bg-muted/50"
+                        ticket.has_unread ? "bg-tint hover:bg-tint-strong" : "hover:bg-muted/50"
                       )}
                     >
                       <div className="grid grid-cols-12 gap-4 items-center">
@@ -185,12 +185,12 @@ export default function HelperOverviewPage() {
                               {ticket.project_logo_url ? (
                                 <AvatarImage src={ticket.project_logo_url} alt={projectName} />
                               ) : null}
-                              <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
+                              <AvatarFallback className={`bg-linear-to-br from-tile-from to-tile-to text-brand-text text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                                 {(projectName?.[0] || "?").toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                              <h4 className="text-sm font-medium text-foreground hover:text-link cursor-pointer truncate">
                                 {projectName}
                               </h4>
                               <p
@@ -223,7 +223,7 @@ export default function HelperOverviewPage() {
                         </div>
                         <div className="col-span-1 flex justify-end">
                           {ticket.has_unread ? (
-                            <Icon name="fi-rr-comments" className="text-brand-primary" aria-hidden={false} aria-label="Unread messages" role="img" />
+                            <Icon name="fi-rr-comments" className="text-tint-text" aria-hidden={false} aria-label="Unread messages" role="img" />
                           ) : null}
                         </div>
                       </div>

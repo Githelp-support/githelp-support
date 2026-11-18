@@ -232,7 +232,7 @@ export default function AuthConfirmedPage() {
             {AUTH_CALLBACK_FAILURE_COPY[linkFailed].message}{" "}
             <Link
               href={signInRetryHref(requestedRedirect, searchParams.get("skipOnboarding") === "true")}
-              className="text-brand-primary font-medium hover:underline"
+              className="text-link font-medium hover:underline"
             >
               {AUTH_CALLBACK_FAILURE_COPY[linkFailed].action}
             </Link>
@@ -245,7 +245,7 @@ export default function AuthConfirmedPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
       <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
+        <Loader2 className="w-8 h-8 animate-spin text-link mx-auto mb-4" />
         <p className="text-sm text-muted-foreground">Completing sign in...</p>
       </div>
     </div>

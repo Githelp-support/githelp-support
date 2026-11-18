@@ -43,7 +43,7 @@ function EmptyState({
       <div
         data-testid="empty-state-icon"
         className={cn(
-          "flex items-center justify-center bg-brand-primary/10 text-brand-primary",
+          "flex items-center justify-center bg-tint text-tint-text",
           size === "sm" ? `size-8 ${SQUIRCLE_RADIUS[32]}` : `size-[42px] ${SQUIRCLE_RADIUS[42]}`,
         )}
       >

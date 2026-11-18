@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
+// Dev-only colour scheme tester (src/components/dev). On for `next dev` and for
+// Netlify deploy previews / branch deploys, off for production and for any
+// environment we do not recognise. Netlify sets NETLIFY and CONTEXT during builds.
+const showColourTester =
+    process.env.NODE_ENV === "development" ||
+    (process.env.NETLIFY === "true" && !!process.env.CONTEXT && process.env.CONTEXT !== "production");
+
 const nextConfig: NextConfig = {
+    env: {
+        NEXT_PUBLIC_COLOUR_TESTER: showColourTester ? "true" : "false",
+    },
     images: {
         remotePatterns: [
             {

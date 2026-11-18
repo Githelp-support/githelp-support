@@ -124,7 +124,7 @@ export default function HelperPayoutStatementPage() {
               <article className="bg-card rounded-lg border border-border-subtle print:border-0 print:rounded-none">
                 <header className="px-8 py-6 border-b border-border flex items-start justify-between gap-6">
                   <div className="flex items-center gap-3">
-                    <Logo className="text-brand-primary" />
+                    <Logo className="text-link" />
                     <div>
                       <div className="text-lg font-semibold text-foreground">Githelp</div>
                       <div className="text-sm text-muted-foreground">Payout statement</div>

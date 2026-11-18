@@ -127,7 +127,7 @@ export function RatesAndDetailsContent({
           <Button
             title={ILLUSTRATIVE_BUTTON_TOOLTIP}
             variant="outline"
-            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground cursor-pointer bg-transparent"
+            className="border-brand-primary text-link hover:bg-brand-primary hover:text-brand-foreground cursor-pointer bg-transparent"
           >
             Get an SLA
           </Button>

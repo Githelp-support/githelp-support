@@ -196,7 +196,7 @@ export default function SupportTicketsPage() {
                 <Button
                   asChild
                   variant="outline"
-                  className="mt-4 border-brand-primary text-brand-primary hover:bg-brand-primary/10"
+                  className="mt-4 border-brand-primary text-link hover:text-tint-text hover:bg-tint"
                 >
                   <SignInLink redirectTo="/support/tickets">Sign in</SignInLink>
                 </Button>
@@ -361,12 +361,12 @@ export default function SupportTicketsPage() {
                                       alt={ticket.project.name}
                                     />
                                   ) : null}
-                                  <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
+                                  <AvatarFallback className={`bg-linear-to-br from-tile-from to-tile-to text-brand-text text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                                     {(ticket.project.name?.[0] || "?").toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                                  <h4 className="text-sm font-medium text-foreground hover:text-link cursor-pointer truncate">
                                     {ticket.project.name}
                                   </h4>
                                   <p className="text-xs text-muted-foreground">{ticket.title}</p>

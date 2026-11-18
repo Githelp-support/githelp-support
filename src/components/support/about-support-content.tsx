@@ -33,7 +33,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
           {SUPPORT_AREAS.map((area) => (
             <span
               key={area}
-              className="px-4 py-2 border border-brand-primary text-brand-primary rounded-md text-sm"
+              className="px-4 py-2 border border-brand-primary text-link rounded-md text-sm"
               style={{ fontFamily: 'Cousine, monospace' }}
             >
               {area}

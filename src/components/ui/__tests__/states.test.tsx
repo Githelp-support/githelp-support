@@ -42,7 +42,7 @@ describe("EmptyState", () => {
     expect(screen.getByText("Tickets you open will appear here.")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Get support" })).toBeInTheDocument()
     const tile = screen.getByTestId("empty-state-icon")
-    expect(tile.className).toMatch(/bg-brand-primary\/10/)
+    expect(tile.className).toMatch(/\bbg-tint\b/)
   })
 
   it("works with only a title", () => {

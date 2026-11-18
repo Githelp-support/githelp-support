@@ -1097,7 +1097,7 @@ export default function TicketDetailPage() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-foreground">
-                              <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
+                              <Icon name="fi-rr-check" className="text-link shrink-0" />
                               <MarkdownContent content={msg.content} className="text-sm" />
                             </div>
                           </div>
@@ -1161,7 +1161,7 @@ export default function TicketDetailPage() {
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
+                          <Icon name="fi-rr-check" className="text-link shrink-0" />
                           <span>Ticket ended</span>
                         </div>
                         <div className="mt-2">
@@ -1170,7 +1170,7 @@ export default function TicketDetailPage() {
                               onClick={handleSeeDetails}
                               variant="outline"
                               size="sm"
-                              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                              className="border-brand-primary text-link hover:text-tint-text hover:bg-tint bg-transparent"
                             >
                               See details
                             </Button>
@@ -1247,7 +1247,7 @@ export default function TicketDetailPage() {
                                   disabled={captureTicket.isPending}
                                   variant="outline"
                                   size="sm"
-                                  className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                  className="mt-3 border-brand-primary text-link hover:text-tint-text hover:bg-tint bg-transparent"
                                 >
                                   {captureTicket.isPending ? "Retrying…" : "Retry payment"}
                                 </Button>
@@ -1399,7 +1399,7 @@ export default function TicketDetailPage() {
               <div className="text-center text-muted-foreground text-ui py-4">-</div>
             )}
             {!isTicketEnded && (
-              <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+              <Button variant="ghost" className="w-full justify-start text-link hover:text-tint-text hover:bg-tint" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                 <Icon name="fi-rr-plus" />
                 Invite other helper
               </Button>
@@ -1500,7 +1500,7 @@ export default function TicketDetailPage() {
             {!isTicketEnded && canManageTicket && (
               <Button
                 variant="outline"
-                className="w-full border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                className="w-full border-brand-primary text-link hover:text-tint-text hover:bg-tint bg-transparent"
                 onClick={() => {
                   if (isAdminButNotHelper) {
                     setPendingAction("logTime")
@@ -1531,7 +1531,7 @@ export default function TicketDetailPage() {
                     href={`/helper/tickets/${item.id}`}
                     className={`block w-full border cursor-pointer transition-colors ${
                       item.current
-                        ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
+                        ? "bg-tint border-border border-l-4 border-l-brand-primary"
                         : "bg-background border-border hover:bg-muted"
                     }`}
                   >

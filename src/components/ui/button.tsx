@@ -26,7 +26,7 @@ const buttonVariants = cva(
           "bg-brand-primary text-brand-foreground shadow-control hover:bg-brand-primary-hover",
         /** Outlined brand purple on a lavender tint; fills on hover. */
         lavender:
-          "bg-brand-primary/10 border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground",
+          "bg-tint border border-brand-primary text-tint-text hover:bg-brand-primary hover:text-brand-foreground",
         neutral:
           "bg-surface-hover border border-border-control text-foreground hover:bg-surface-active",
       },

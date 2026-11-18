@@ -125,7 +125,7 @@ export function CustomerChatIntro({
         </div>
 
         {isAuthenticated && !ticketCreated && (
-          <div className="flex items-center gap-2 text-sm text-brand-primary">
+          <div className="flex items-center gap-2 text-sm text-link">
             <Icon name="fi-rr-check" />
             <span>You are signed in as {userName}</span>
           </div>
@@ -136,7 +136,7 @@ export function CustomerChatIntro({
             <Button
               onClick={onSignIn}
               variant="outline"
-              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+              className="border-brand-primary text-link hover:text-tint-text hover:bg-tint bg-transparent"
             >
               Sign in
             </Button>

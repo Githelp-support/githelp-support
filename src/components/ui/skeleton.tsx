@@ -78,7 +78,7 @@ function PageSkeleton({ className, ...props }: React.ComponentProps<"div">) {
           ))}
         </div>
         <div className="overflow-hidden rounded-lg border border-border-subtle">
-          <div className="h-10 border-b border-border-subtle bg-brand-primary/10" />
+          <div className="h-10 border-b border-border-subtle bg-tint" />
           <ListSkeleton rows={4} role="presentation" aria-label={undefined} aria-live={undefined} />
         </div>
       </div>

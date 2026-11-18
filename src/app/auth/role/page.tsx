@@ -51,7 +51,7 @@ export default function RolePage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-page-muted">
-      <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+      <Loader2 className="w-8 h-8 animate-spin text-link" />
     </div>
   )
 }

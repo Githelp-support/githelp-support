@@ -560,7 +560,7 @@ export default function TicketsPage() {
                                   <Button
                                     variant="outline"
                                     disabled
-                                    className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                                    className="border-brand-primary text-link hover:text-tint-text hover:bg-tint bg-transparent"
                                   >
                                     <Icon name="fi-rr-sparkles" />
                                     Rephrase with AI
@@ -775,7 +775,7 @@ export default function TicketsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <Link href={`/helper/tickets/${ticket.id}`}>
-                        <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                        <h4 className="text-sm font-medium text-foreground hover:text-link cursor-pointer truncate">
                           {ticket.user.name}
                         </h4>
                       </Link>
@@ -804,7 +804,7 @@ export default function TicketsPage() {
                       {getStatusLabel(ticket.status)}
                     </Badge>
                     {ticket.helper && (
-                      <div className={`w-5 h-5 ${SQUIRCLE_RADIUS[20]} flex items-center justify-center bg-brand-primary text-brand-foreground text-xs font-medium shrink-0`}>
+                      <div className={`w-5 h-5 ${SQUIRCLE_RADIUS[20]} flex items-center justify-center bg-linear-to-br from-tile-from to-tile-to text-brand-text text-xs font-medium shrink-0`}>
                         {ticket.helper.avatar}
                       </div>
                     )}

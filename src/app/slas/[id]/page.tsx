@@ -242,7 +242,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         <div className="mb-6">
           <Link
             href="/slas"
-            className="inline-flex items-center text-brand-primary hover:text-brand-primary/80 text-sm font-medium"
+            className="inline-flex items-center text-link hover:text-link/80 text-sm font-medium"
           >
             <Icon name="fi-rr-arrow-left" className="mr-2" />
             Back to list of SLAs
@@ -262,7 +262,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Space ID:</span>
               <span className="font-mono tabular-nums">{spaceId}</span>
-              <Button variant="ghost" size="sm" onClick={copySpaceId} className="h-auto p-1 hover:bg-brand-primary/10">
+              <Button variant="ghost" size="sm" onClick={copySpaceId} className="h-auto p-1 hover:bg-tint">
                 <Icon name="fi-rr-copy" size={3} />
               </Button>
             </div>
@@ -489,7 +489,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border-subtle bg-brand-primary/10">
+                      <tr className="border-b border-border-subtle bg-tint">
                         <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Name</th>
                         <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">No of tickets</th>
                         <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Total time</th>
@@ -517,7 +517,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                             <td className="px-6 py-3 text-ui text-muted-foreground">{helper.tickets}</td>
                             <td className="p-4 text-sm text-muted-foreground tabular-nums">{formatMs(helper.totalMs)}</td>
                             <td className="px-6 py-3">
-                              <Button variant="ghost" size="sm" className="text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+                              <Button variant="ghost" size="sm" className="text-link hover:text-tint-text hover:bg-tint" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                                 <Icon name="fi-rr-arrow-up-right-from-square" />
                               </Button>
                             </td>
@@ -539,7 +539,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-border-subtle bg-brand-primary/10">
+                      <tr className="border-b border-border-subtle bg-tint">
                         <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Name</th>
                         <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">No of tickets</th>
                         <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">Total time</th>
@@ -565,7 +565,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border-subtle bg-brand-primary/10">
+                    <tr className="border-b border-border-subtle bg-tint">
                       <th className="h-10 px-6 py-2 text-left text-xs font-medium text-text-muted">
                         <input type="checkbox" className="mr-3" />
                         Ticket ID

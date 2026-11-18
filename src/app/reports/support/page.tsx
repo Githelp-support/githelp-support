@@ -438,7 +438,7 @@ export default function ReportsSupportPage() {
       type="button"
       onClick={() => setActiveTab(tab)}
       className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
-        activeTab === tab ? "text-brand-primary border-brand-primary" : "text-muted-foreground border-transparent hover:text-foreground"
+        activeTab === tab ? "text-link border-brand-primary" : "text-muted-foreground border-transparent hover:text-foreground"
       }`}
     >
       {label}
@@ -681,7 +681,7 @@ export default function ReportsSupportPage() {
                             <Link
                               href={ticketHref}
                               onClick={stopRowNavigation}
-                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              className="text-sm font-medium text-link hover:underline font-mono tabular-nums"
                             >
                               {getShortTicketId(row.ticketId)}
                             </Link>
@@ -916,7 +916,7 @@ export default function ReportsSupportPage() {
                                 {transfer.ticket_id ? (
                                   <Link
                                     href={`/helper/tickets/${transfer.ticket_id}`}
-                                    className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                                    className="text-sm font-medium text-link hover:underline font-mono tabular-nums"
                                   >
                                     {getShortTicketId(transfer.ticket_id)}
                                   </Link>

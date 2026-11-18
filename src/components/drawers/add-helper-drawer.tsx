@@ -381,7 +381,7 @@ export function AddHelperDrawer({
                           key={c.login}
                           className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                             selectedContributors.has(c.login)
-                              ? "bg-brand-primary/10 border border-brand-primary/60"
+                              ? "bg-tint border border-brand-primary/60"
                               : "border border-transparent hover:bg-muted/60"
                           }`}
                           onClick={() => toggleContributor(c.login)}

@@ -76,11 +76,11 @@ export function EndSessionRequestedBanner({
     <div
       role="status"
       className={cn(
-        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-brand-primary/30 bg-brand-primary/5 px-4 py-3",
+        "mx-4 mb-3 flex items-start gap-3 rounded-lg animate-enter border border-brand-primary/30 bg-tint-soft px-4 py-3",
         className,
       )}
     >
-      <Icon name="fi-rr-info" className="mt-0.5 shrink-0 text-brand-primary" />
+      <Icon name="fi-rr-info" className="mt-0.5 shrink-0 text-tint-text" />
       <div className="flex-1 text-sm leading-relaxed text-foreground">
         <p className="font-subtitle">The helper has been notified that you&apos;d like to end the session.</p>
         <p className="text-muted-foreground">

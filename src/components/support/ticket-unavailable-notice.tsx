@@ -35,7 +35,7 @@ export function TicketUnavailableNotice({
     return (
       <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle" role="status">
         <h1 className="text-2xl font-medium text-foreground mb-2 flex items-center gap-2">
-          {!deferred && <Loader2 className="w-5 h-5 animate-spin text-brand-primary" />}
+          {!deferred && <Loader2 className="w-5 h-5 animate-spin text-link" />}
           {deferred ? "Link your guest conversation?" : "Linking your conversation…"}
         </h1>
         <p className="text-muted-foreground">
@@ -57,7 +57,7 @@ export function TicketUnavailableNotice({
         <h1 className="text-2xl font-medium text-foreground mb-2">Conversation not linked</h1>
         <p className="text-muted-foreground">This guest conversation wasn&rsquo;t linked to your account in time.</p>
         <p className="mt-4">
-          <Link href={newConversationHref} className="text-brand-primary font-medium hover:underline">
+          <Link href={newConversationHref} className="text-link font-medium hover:underline">
             Start a new conversation
           </Link>
         </p>
@@ -72,7 +72,7 @@ export function TicketUnavailableNotice({
       </p>
       {failedFinal && (
         <p className="mt-4">
-          <Link href={newConversationHref} className="text-brand-primary font-medium hover:underline">
+          <Link href={newConversationHref} className="text-link font-medium hover:underline">
             Start a new conversation
           </Link>
         </p>

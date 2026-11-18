@@ -110,7 +110,7 @@ export default function ProjectLandingPage() {
     if (isCheckingAuth || projectLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-muted/50">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+                <Loader2 className="w-8 h-8 animate-spin text-link" />
             </div>
         )
     }
@@ -157,7 +157,7 @@ export default function ProjectLandingPage() {
                                 ) : (
                                     <Avatar className="w-[82px] h-[82px]">
                                         <AvatarFallback
-                                            className={cn("text-brand-foreground text-[26px]", !branding?.primary_color && "bg-brand-primary")}
+                                            className={cn("text-brand-text text-[26px]", !branding?.primary_color && "bg-linear-to-br from-tile-from to-tile-to")}
                                             style={branding?.primary_color ? { backgroundColor: branding.primary_color } : undefined}
                                         >
                                             {projectName?.[0]?.toUpperCase() || "?"}
@@ -232,7 +232,7 @@ export default function ProjectLandingPage() {
                         If you&apos;re looking for help with this project, visit the support page.
                     </p>
                     <Link href={`/support?project=${projectId}`}>
-                        <Button variant="outline" className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground">
+                        <Button variant="outline" className="border-brand-primary text-link hover:bg-brand-primary hover:text-brand-foreground">
                             Visit support page
                         </Button>
                     </Link>

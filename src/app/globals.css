@@ -6,6 +6,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
+  --color-brand-hover: var(--brand-hover);
+  --color-tile-from: var(--tile-from);
+  --color-tile-to: var(--tile-to);
+  --color-tint: var(--tint);
+  --color-tint-soft: var(--tint-soft);
+  --color-tint-nav: var(--tint-nav);
+  --color-tint-strong: var(--tint-strong);
+  --color-tint-text: var(--tint-text);
+  --color-link: var(--link);
   --color-brand-primary: var(--brand-primary);
   --color-brand-primary-hover: var(--brand-primary-hover);
   --color-brand-foreground: var(--brand-foreground);
@@ -335,9 +346,24 @@
   --radius: 0.625rem;
   /* Brand colors – use for primary actions and accents; prefer semantic tokens (primary, border, etc.) where they fit.
      #554ABF passes WCAG AA on white (6.7:1) and is the default project colour in settings/branding. */
-  --brand-primary: #554abf;
-  --brand-primary-hover: #4a3fa3;
-  --brand-foreground: #ffffff;
+  --brand: #554abf;        /* solid accent: primary buttons, active indicators, focus rings */
+  --brand-text: #ffffff;   /* text and icons on --brand */
+  --brand-hover: #4a3fa3;  /* hover/active of a --brand surface */
+  --tile-from: #554abf;    /* icon-tile gradient stops; equal stops render as a flat colour */
+  --tile-to: #554abf;
+  /* Translucent, so it looks the same as the old bg-brand-primary/10 on any background. */
+  --tint: color-mix(in oklab, var(--brand) 10%, transparent);
+  --tint-text: #554abf;    /* text and icons on --tint */
+  --link: #554abf;         /* inline text links */
+  /* Tint steps derived from the eight variables above (never set these per theme).
+     soft = the old /5, nav = the old /[0.08], strong = the old /15 (hover on a tint; also stands in for /20). */
+  --tint-soft: color-mix(in oklab, var(--tint) 50%, transparent);
+  --tint-nav: color-mix(in oklab, var(--tint) 80%, transparent);
+  --tint-strong: color-mix(in oklab, var(--tint), var(--tint-text) 5.56%);
+  /* Legacy aliases: existing brand-primary* classes keep working. */
+  --brand-primary: var(--brand);
+  --brand-primary-hover: var(--brand-hover);
+  --brand-foreground: var(--brand-text);
   --border-subtle: #e1e1e1;
   --border-control: rgba(0, 0, 0, 0.1);
   --border-avatar: #e1e4ea;

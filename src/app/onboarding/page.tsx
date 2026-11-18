@@ -75,7 +75,7 @@ function ProjectLogo({
     return (
         <Avatar key={`${logoUrl ?? ""}|${projectName}`} className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} shrink-0`}>
             {hasLogo ? <AvatarImage src={logoUrl as string} alt={projectName} /> : null}
-            <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
+            <AvatarFallback className={`bg-linear-to-br from-tile-from to-tile-to text-brand-text text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                 {projectName?.[0]?.toUpperCase() || "?"}
             </AvatarFallback>
         </Avatar>
@@ -387,7 +387,7 @@ export default function OnboardingPage() {
     if (onboardingStatusLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+                <Loader2 className="w-8 h-8 animate-spin text-link" />
             </div>
         )
     }
@@ -395,7 +395,7 @@ export default function OnboardingPage() {
     if (hasFinishedOnboardingWizard) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-muted/50 p-4">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+                <Loader2 className="w-8 h-8 animate-spin text-link" />
                 <p className="text-sm text-muted-foreground">Taking you to your workspace…</p>
             </div>
         )
@@ -517,7 +517,7 @@ export default function OnboardingPage() {
                                                     aria-pressed={isSelected}
                                                     className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${
                                                         isSelected
-                                                            ? "border-brand-primary bg-brand-primary/5"
+                                                            ? "border-brand-primary bg-tint-soft"
                                                             : "border-border hover:bg-muted/50 hover:border-brand-primary/50"
                                                     }`}
                                                 >
@@ -531,7 +531,7 @@ export default function OnboardingPage() {
                                                             /projects/{match.slug}
                                                         </div>
                                                     </div>
-                                                    {isSelected && <Icon name="fi-rr-check" size={5} className="text-brand-primary shrink-0" />}
+                                                    {isSelected && <Icon name="fi-rr-check" size={5} className="text-tint-text shrink-0" />}
                                                 </button>
                                             )
                                         })}
@@ -606,7 +606,7 @@ export default function OnboardingPage() {
                     <CardContent className="space-y-4">
                         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
                             <div className="flex items-start gap-3">
-                                <Icon name="fi-rr-envelope" size={5} className="text-brand-primary shrink-0 mt-0.5" />
+                                <Icon name="fi-rr-envelope" size={5} className="text-link shrink-0 mt-0.5" />
                                 <div className="text-sm text-foreground space-y-2">
                                     <p className="font-medium">How to get invited</p>
                                     <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
@@ -725,7 +725,7 @@ export default function OnboardingPage() {
                     <CardContent className="space-y-4">
                         <div className="rounded-lg border border-border bg-card p-4">
                             <div className="flex items-start gap-3">
-                                <Icon name="fi-rr-users" size={5} className="text-brand-primary shrink-0 mt-0.5" />
+                                <Icon name="fi-rr-users" size={5} className="text-link shrink-0 mt-0.5" />
                                 <div className="text-sm text-muted-foreground space-y-2">
                                     <p className="font-medium text-foreground">Help bring {trimmedName} to Githelp</p>
                                     <p>
@@ -795,7 +795,7 @@ export default function OnboardingPage() {
                         >
                             <div className="flex items-start gap-3">
                                 <span className="flex h-7 shrink-0 items-center">
-                                    <Icon name="fi-rr-add-folder" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                    <Icon name="fi-rr-add-folder" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-link group-active:text-link" />
                                 </span>
                                 <div>
                                     <div className="font-subtitle text-lg text-foreground">Create from scratch</div>
@@ -813,7 +813,7 @@ export default function OnboardingPage() {
                         >
                             <div className="flex items-start gap-3">
                                 <span className="flex h-7 shrink-0 items-center">
-                                    <Icon name="fi-brands-github" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                    <Icon name="fi-brands-github" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-link group-active:text-link" />
                                 </span>
                                 <div>
                                     <div className="font-subtitle text-lg text-foreground">Import from GitHub</div>
@@ -833,7 +833,7 @@ export default function OnboardingPage() {
                             >
                                 <div className="flex items-start gap-3 w-full">
                                     <span className="flex h-7 shrink-0 items-center">
-                                        <Icon name="fi-rr-flask" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-brand-primary group-active:text-brand-primary" />
+                                        <Icon name="fi-rr-flask" className="[--icon-size:1.2rem] text-foreground transition-colors duration-fast ease-out group-hover:text-link group-active:text-link" />
                                     </span>
                                     <div className="flex-1">
                                         <div className="font-subtitle text-lg text-foreground">Try a sandbox</div>

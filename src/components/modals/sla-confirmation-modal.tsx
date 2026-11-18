@@ -59,7 +59,7 @@ export function SLAConfirmationModal({ isOpen, onClose, slaId }: SLAConfirmation
               size="icon-sm"
               onClick={handleCopy}
               aria-label={copied ? "Copied" : "Copy ID"}
-              className="text-muted-foreground hover:bg-brand-primary/10"
+              className="text-muted-foreground hover:bg-tint"
             >
               <span key={String(copied)} className="inline-flex animate-fade-in">
                 {copied ? <Icon name="fi-rr-check" className="text-status-success-text" /> : <Icon name="fi-rr-copy" />}

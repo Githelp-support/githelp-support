@@ -16,6 +16,7 @@ import { LoadingFallback } from "@/components/ui/loading-fallback"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { GuestAdoptionConfirmDialog } from "@/components/auth/guest-adoption-confirm-dialog"
+import { ColourSchemeTesterLoader } from "@/components/dev/colour-scheme-tester-loader"
 import { Suspense } from "react"
 
 // Two body faces, picked by size (see the "Font by size" rules in globals.css):
@@ -92,6 +93,8 @@ export default function RootLayout({
         <Toaster position="top-right" richColors closeButton />
         {/* "Link your guest conversation?" after sign-in (lib/guest-adoption). */}
         <GuestAdoptionConfirmDialog />
+        {/* Dev-only colour scheme tester: off in production builds (next.config.ts). */}
+        {process.env.NEXT_PUBLIC_COLOUR_TESTER === "true" && <ColourSchemeTesterLoader />}
       </body>
     </html>
   )

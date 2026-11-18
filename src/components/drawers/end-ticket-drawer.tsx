@@ -158,9 +158,9 @@ export function EndTicketDrawer({
           </div>
         )}
         {needsSummary && (
-          <div role="status" className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 p-4 text-sm text-foreground">
+          <div role="status" className="rounded-lg border border-brand-primary/30 bg-tint-soft p-4 text-sm text-foreground">
             <p className="font-medium flex items-center gap-2">
-              <Icon name="fi-rr-clock" className="text-brand-primary" />
+              <Icon name="fi-rr-clock" className="text-tint-text" />
               {pendingReview.length === 1
                 ? "1 logged entry needs the user's confirmation."
                 : `${pendingReview.length} logged entries need the user's confirmation.`}

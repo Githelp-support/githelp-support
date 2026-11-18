@@ -121,7 +121,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
       {!isCollapsed && !isAuthenticated && (
         <div className="px-3 pb-3 shrink-0">
           <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
-            <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
+            <Button variant="outline" size="sm" className="w-full text-link" asChild>
               <SignInLink redirectTo={redirectTarget}>Sign in</SignInLink>
             </Button>
           </div>
@@ -139,7 +139,7 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
         <div className="space-y-1">
           {navigationItems.map((item) => {
             const isActive = activeTab === item.name
-            const activeClasses = "bg-brand-primary/[0.08] font-medium text-brand-primary"
+            const activeClasses = "bg-tint-nav font-medium text-tint-text"
             const inactiveClasses = "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
 
             return (

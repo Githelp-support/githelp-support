@@ -415,7 +415,7 @@ export default function HelperReportsPage() {
               onClick={() => setActiveTab("monthly")}
               className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                 activeTab === "monthly"
-                  ? "text-brand-primary border-brand-primary"
+                  ? "text-link border-brand-primary"
                   : "text-muted-foreground border-transparent hover:text-foreground"
               }`}
             >
@@ -426,7 +426,7 @@ export default function HelperReportsPage() {
               onClick={() => setActiveTab("payouts")}
               className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                 activeTab === "payouts"
-                  ? "text-brand-primary border-brand-primary"
+                  ? "text-link border-brand-primary"
                   : "text-muted-foreground border-transparent hover:text-foreground"
               }`}
             >
@@ -487,7 +487,7 @@ export default function HelperReportsPage() {
         )}
 
         {showPreview && (
-          <div className="rounded-lg border border-brand-primary/30 bg-brand-primary/5 px-4 py-3 text-sm text-foreground">
+          <div className="rounded-lg border border-brand-primary/30 bg-tint-soft px-4 py-3 text-sm text-foreground">
             {REPORTS_PAYOUTS_PREVIEW_DISCLAIMER}
           </div>
         )}
@@ -621,7 +621,7 @@ export default function HelperReportsPage() {
                             <Link
                               href={href}
                               onClick={stopRowNavigation}
-                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              className="text-sm font-medium text-link hover:underline font-mono tabular-nums"
                             >
                               {payout.ticketShortId}
                             </Link>

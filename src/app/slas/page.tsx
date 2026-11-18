@@ -137,7 +137,7 @@ export default function SLAsPage() {
                 onClick={() => setCurrentFilter("active")}
                 className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   currentFilter === "active"
-                    ? "text-brand-primary border-brand-primary"
+                    ? "text-link border-brand-primary"
                     : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
@@ -148,7 +148,7 @@ export default function SLAsPage() {
                 onClick={() => setCurrentFilter("deactivated")}
                 className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   currentFilter === "deactivated"
-                    ? "text-brand-primary border-brand-primary"
+                    ? "text-link border-brand-primary"
                     : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
@@ -159,7 +159,7 @@ export default function SLAsPage() {
                 onClick={() => setCurrentFilter("archived")}
                 className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                   currentFilter === "archived"
-                    ? "text-brand-primary border-brand-primary"
+                    ? "text-link border-brand-primary"
                     : "text-muted-foreground border-transparent hover:text-foreground"
                 }`}
               >
@@ -194,7 +194,7 @@ export default function SLAsPage() {
                 <div className="col-span-4 flex items-center space-x-2">
                   <button
                     onClick={() => handleSort("name")}
-                    className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
+                    className="flex items-center space-x-2 hover:text-link transition-colors cursor-pointer"
                   >
                     <span>Entity</span>
                     <SLASortIcon column="name" sortConfig={sortConfig} />
@@ -203,7 +203,7 @@ export default function SLAsPage() {
                 <div className="col-span-2 flex items-center space-x-2">
                   <button
                     onClick={() => handleSort("created")}
-                    className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
+                    className="flex items-center space-x-2 hover:text-link transition-colors cursor-pointer"
                   >
                     <span>Created</span>
                     <SLASortIcon column="created" sortConfig={sortConfig} />
@@ -212,7 +212,7 @@ export default function SLAsPage() {
                 <div className="col-span-3">
                   <button
                     onClick={() => handleSort("agreementCategory")}
-                    className="flex items-center space-x-2 hover:text-brand-primary transition-colors cursor-pointer"
+                    className="flex items-center space-x-2 hover:text-link transition-colors cursor-pointer"
                   >
                     <span>Agreement category</span>
                     <SLASortIcon column="agreementCategory" sortConfig={sortConfig} />
@@ -244,7 +244,7 @@ export default function SLAsPage() {
                       </div>
                       <Link
                         href={`/slas/${sla.id}`}
-                        className="text-sm font-medium text-foreground hover:text-brand-primary transition-colors cursor-pointer"
+                        className="text-sm font-medium text-foreground hover:text-link transition-colors cursor-pointer"
                       >
                         {sla.name}
                       </Link>

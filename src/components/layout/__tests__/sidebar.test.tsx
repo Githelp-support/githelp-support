@@ -91,7 +91,7 @@ describe("Sidebar — Support sub-categories", () => {
     // "Chat" is the active sub-item and keeps the ticket/project context in
     // its href so re-clicking it reopens the same conversation.
     const chatRow = screen.getByText("Chat")
-    expect(chatRow.className).toContain("text-brand-primary")
+    expect(chatRow.className).toContain("text-tint-text")
     expect(chatRow.closest("a")).toHaveAttribute(
       "href",
       "/support/chat?project=project-1&ticket=ticket-1",
@@ -133,11 +133,11 @@ describe("Sidebar — user-role menu order", () => {
 
     const overviewRow = screen.getByText("Overview")
     expect(overviewRow.closest("a")).toHaveAttribute("href", "/user/overview")
-    expect(overviewRow.className).toContain("text-brand-primary")
+    expect(overviewRow.className).toContain("text-tint-text")
 
     // Other top-level items are not highlighted.
     expect(screen.getByText("Tickets").className).not.toContain(
-      "text-brand-primary",
+      "text-tint-text",
     )
   })
 })

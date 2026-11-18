@@ -78,7 +78,7 @@ export function RoleOptionCards({
                         variant="outline"
                     >
                         <div className="flex items-start gap-3 w-full">
-                            {showIcons && <Icon name={option.icon} size={6} className="mt-0.5 text-brand-primary" />}
+                            {showIcons && <Icon name={option.icon} size={6} className="mt-0.5 text-link" />}
                             <div className="flex-1">
                                 <div className="font-subtitle text-lg text-foreground">{option.title}</div>
                                 <div className="text-sm font-normal text-muted-foreground mt-1">{option.description}</div>

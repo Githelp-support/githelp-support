@@ -415,7 +415,7 @@ export function TicketChat(props: TicketChatProps) {
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-foreground">
-                                  <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
+                                  <Icon name="fi-rr-check" className="text-link shrink-0" />
                                   <MarkdownContent content={msg.content} className="text-sm" />
                                 </div>
                               </div>
@@ -687,7 +687,7 @@ export function TicketChat(props: TicketChatProps) {
               )}
 
               {!isEnded && (
-                <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
+                <Button variant="ghost" className="w-full justify-start text-link hover:text-tint-text hover:bg-tint" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
                   <Icon name="fi-rr-plus" />
                   Invite other helper
                 </Button>

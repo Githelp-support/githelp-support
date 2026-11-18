@@ -178,7 +178,7 @@ export default function WaitingPage() {
                 <CardContent className="space-y-4">
                     <div className="bg-muted/50 rounded-lg p-6 border border-border">
                         <div className="flex items-start gap-4">
-                            <Icon name="fi-rr-envelope" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
+                            <Icon name="fi-rr-envelope" size={6} className="text-link mt-1 flex-shrink-0" />
                             <div className="flex-1">
                                 <h3 className="font-subtitle text-lg text-foreground mb-2">
                                     {onboardingStatus?.hasPendingRequest ? "Waiting for approval" : "Wait for an invite"}
@@ -192,7 +192,7 @@ export default function WaitingPage() {
                                     variant="outline"
                                     onClick={handleCheckAgain}
                                     disabled={isChecking}
-                                    className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground"
+                                    className="border-brand-primary text-link hover:bg-brand-primary hover:text-brand-foreground"
                                 >
                                     {isChecking ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -207,14 +207,14 @@ export default function WaitingPage() {
 
                     <div className="bg-muted/50 rounded-lg p-6 border border-border">
                         <div className="flex items-start gap-4">
-                            <Icon name="fi-rr-users" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
+                            <Icon name="fi-rr-users" size={6} className="text-link mt-1 flex-shrink-0" />
                             <div className="flex-1">
                                 <h3 className="font-subtitle text-lg text-foreground mb-2">Request to become a member</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     Visit a project&apos;s landing page and request to become a helper. You&apos;ll need the project ID or landing page URL from a project admin.
                                 </p>
                                 <Link href="/onboarding/join">
-                                    <Button variant="outline" className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground">
+                                    <Button variant="outline" className="border-brand-primary text-link hover:bg-brand-primary hover:text-brand-foreground">
                                         Find a project
                                         <Icon name="fi-rr-arrow-right" />
                                     </Button>
@@ -225,7 +225,7 @@ export default function WaitingPage() {
 
                     <div className="bg-muted/50 rounded-lg p-6 border border-border">
                         <div className="flex items-start gap-4">
-                            <Icon name="fi-rr-plus" size={6} className="text-brand-primary mt-1 flex-shrink-0" />
+                            <Icon name="fi-rr-plus" size={6} className="text-link mt-1 flex-shrink-0" />
                             <div className="flex-1">
                                 <h3 className="font-subtitle text-lg text-foreground mb-2">Create a new project</h3>
                                 <p className="text-sm text-muted-foreground mb-4">

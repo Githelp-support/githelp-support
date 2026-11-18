@@ -537,7 +537,7 @@ export default function HelpersPage() {
               {showAddSelfAsHelper && (
                 <Button
                   variant="outline"
-                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 rounded-md text-ui font-medium"
+                  className="border-brand-primary text-link hover:text-tint-text hover:bg-tint rounded-md text-ui font-medium"
                   onClick={handleAddSelfAsHelper}
                   disabled={addSelfAsHelper.isPending}
                 >
@@ -548,7 +548,7 @@ export default function HelpersPage() {
               {isAdmin && (
                 <Button
                   variant="ghost"
-                  className="text-brand-primary hover:text-brand-primary hover:bg-brand-primary/10 rounded-md text-ui font-medium"
+                  className="text-link hover:text-tint-text hover:bg-tint rounded-md text-ui font-medium"
                   onClick={handleCopyInvitationLink}
                   disabled={!projectId}
                   title="Copy link and share it in relevant channels, to make it easy for helper candidates to request to become helper for your project."
@@ -629,7 +629,7 @@ export default function HelpersPage() {
                   <div className="col-span-3 flex items-center space-x-2">
                     <button type="button"
                       onClick={() => handleSort("name")}
-                      className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
+                      className="flex items-center space-x-2 cursor-pointer hover:text-link transition-colors"
                     >
                       <span>Helper</span>
                       <HelpersSortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
@@ -638,7 +638,7 @@ export default function HelpersPage() {
                   <div className="col-span-3 flex items-center space-x-2">
                     <button type="button"
                       onClick={() => handleSort("githubAccount")}
-                      className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
+                      className="flex items-center space-x-2 cursor-pointer hover:text-link transition-colors"
                     >
                       <span>Github user</span>
                       <HelpersSortIcon field="githubAccount" sortField={sortField} sortDirection={sortDirection} />
@@ -647,7 +647,7 @@ export default function HelpersPage() {
                   <div className="col-span-2">
                     <button type="button"
                       onClick={() => handleSort("category")}
-                      className="flex items-center space-x-2 cursor-pointer hover:text-brand-primary transition-colors"
+                      className="flex items-center space-x-2 cursor-pointer hover:text-link transition-colors"
                     >
                       <span>Category</span>
                       <HelpersSortIcon field="category" sortField={sortField} sortDirection={sortDirection} />

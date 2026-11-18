@@ -358,7 +358,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   const backLink = (
     <Link
       href="/helpers"
-      className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none"
+      className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-link focus-visible:text-link focus-visible:outline-none"
     >
       <Icon name="fi-rr-arrow-left" size={3.5} className="mr-1.5" />
       Helpers
@@ -418,7 +418,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-base font-subtitle text-foreground">{helper.name}</h1>
-                <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
+                <Badge variant="secondary" className="bg-tint text-tint-text border-0 text-xs font-medium">
                   {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
                 </Badge>
                 {helper.isRemoved && (
@@ -439,7 +439,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               </div>
               <div className="flex items-center gap-2.5">
                 <GithubIcon className="w-4 h-4 text-muted-foreground/70 shrink-0" />
-                <span className="text-sm text-brand-primary truncate">{helper.github}</span>
+                <span className="text-sm text-link truncate">{helper.github}</span>
               </div>
             </div>
           </CardContent>
@@ -571,7 +571,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                             <Link
                               href={ticketHref}
                               onClick={stopRowNavigation}
-                              className="text-sm font-medium text-brand-primary hover:underline font-mono tabular-nums"
+                              className="text-sm font-medium text-link hover:underline font-mono tabular-nums"
                             >
                               {ticket.shortId}
                             </Link>

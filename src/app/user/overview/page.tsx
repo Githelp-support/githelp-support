@@ -169,7 +169,7 @@ export default function UserOverviewPage() {
             <h2 className="text-base font-subtitle text-foreground">Recent tickets</h2>
             <Link
               href="/support/tickets"
-              className="text-sm font-medium text-brand-primary hover:underline"
+              className="text-sm font-medium text-link hover:underline"
             >
               View all tickets
             </Link>
@@ -223,12 +223,12 @@ export default function UserOverviewPage() {
                               {ticket.project_logo_url ? (
                                 <AvatarImage src={ticket.project_logo_url} alt={projectName} />
                               ) : null}
-                              <AvatarFallback className={`bg-brand-primary text-brand-foreground text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
+                              <AvatarFallback className={`bg-linear-to-br from-tile-from to-tile-to text-brand-text text-sm font-medium ${SQUIRCLE_RADIUS[32]}`}>
                                 {(projectName?.[0] || "?").toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                              <h4 className="text-sm font-medium text-foreground hover:text-link cursor-pointer truncate">
                                 {projectName}
                               </h4>
                               <p

@@ -222,7 +222,7 @@ export default function HelperProfilePage() {
             )}
             <div className="flex items-center gap-4">
               <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
-              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
+              <Badge variant="secondary" className="bg-tint text-tint-text border-0 text-xs font-medium">
                 {categoryLabel}
               </Badge>
             </div>
@@ -298,7 +298,7 @@ export default function HelperProfilePage() {
               <h2 className="text-base font-subtitle text-foreground">Helper category</h2>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-sm font-medium">
+              <Badge variant="secondary" className="bg-tint text-tint-text border-0 text-sm font-medium">
                 {categoryLabel}
               </Badge>
               <p className="text-sm text-muted-foreground">
@@ -325,7 +325,7 @@ export default function HelperProfilePage() {
                 {projectKeywords.map((kw) => (
                   <label
                     key={kw.id}
-                    className="flex items-center gap-2 cursor-pointer rounded-md border border-border-control px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/10"
+                    className="flex items-center gap-2 cursor-pointer rounded-md border border-border-control px-3 py-2 hover:bg-muted/50 has-[:checked]:border-brand-primary has-[:checked]:bg-tint"
                   >
                     <Checkbox
                       checked={selectedKeywords.includes(kw.id)}

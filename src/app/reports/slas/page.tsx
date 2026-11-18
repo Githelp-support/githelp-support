@@ -310,7 +310,7 @@ export default function ReportsSLAsPage() {
               onClick={() => setActiveTab("monthly")}
               className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                 activeTab === "monthly"
-                  ? "text-brand-primary border-brand-primary"
+                  ? "text-link border-brand-primary"
                   : "text-muted-foreground border-transparent hover:text-foreground"
               }`}
             >
@@ -320,7 +320,7 @@ export default function ReportsSLAsPage() {
               onClick={() => setActiveTab("tickets")}
               className={`px-6 py-2 text-sm font-medium transition-colors border-b-2 cursor-pointer ${
                 activeTab === "tickets"
-                  ? "text-brand-primary border-brand-primary"
+                  ? "text-link border-brand-primary"
                   : "text-muted-foreground border-transparent hover:text-foreground"
               }`}
             >

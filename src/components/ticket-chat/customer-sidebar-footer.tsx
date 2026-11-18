@@ -105,7 +105,7 @@ export function CustomerTicketSidebarFooter({
                 href={`/support/chat?ticket=${item.id}`}
                 className={`block w-full border cursor-pointer transition-colors ${
                   item.current
-                    ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
+                    ? "bg-tint border-border border-l-4 border-l-brand-primary"
                     : "bg-background border-border hover:bg-muted"
                 }`}
               >
@@ -120,7 +120,7 @@ export function CustomerTicketSidebarFooter({
                       />
                     ) : (
                       <div
-                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center bg-brand-primary text-brand-foreground text-sm font-medium shrink-0`}
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center bg-linear-to-br from-tile-from to-tile-to text-brand-text text-sm font-medium shrink-0`}
                       >
                         {item.avatarInitial}
                       </div>

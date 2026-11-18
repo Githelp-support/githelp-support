@@ -69,7 +69,7 @@ export default function GetSupportPage() {
             <Avatar className="w-20 h-20">
               <AvatarImage src={projectLogo} alt={projectName} />
               <AvatarFallback
-                className={cn("text-brand-foreground text-xs", !brandingData?.primary_color && "bg-brand-primary")}
+                className={cn("text-brand-text text-xs", !brandingData?.primary_color && "bg-linear-to-br from-tile-from to-tile-to")}
                 style={brandingData?.primary_color ? { backgroundColor: brandingData.primary_color } : undefined}
               >
                 {projectName?.[0]?.toUpperCase() || "?"}
@@ -90,7 +90,7 @@ export default function GetSupportPage() {
         <nav className="flex gap-8">
           <Link
             href={`/support${supportQuery}`}
-            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-brand-primary border-b-2 border-brand-primary"
+            className="pb-3 px-1 text-sm font-medium cursor-pointer transition-colors text-link border-b-2 border-brand-primary"
           >
             Get support
           </Link>
@@ -129,7 +129,7 @@ export default function GetSupportPage() {
           <Link href={`/support/chat${supportQuery}`}>
             <Button
               variant="outline"
-              className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-brand-foreground cursor-pointer bg-transparent"
+              className="border-brand-primary text-link hover:bg-brand-primary hover:text-brand-foreground cursor-pointer bg-transparent"
             >
               Enter support space
             </Button>
@@ -138,7 +138,7 @@ export default function GetSupportPage() {
           <div className="mt-6">
             <Link
               href={`/support${supportQuery}`}
-              className="inline-flex items-center gap-2 text-brand-primary hover:text-brand-primary-hover transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 text-link hover:text-brand-primary-hover transition-colors cursor-pointer"
             >
               <Icon name="fi-rr-angle-small-left" />
               <span>Go back</span>
