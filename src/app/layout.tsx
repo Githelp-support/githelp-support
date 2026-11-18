@@ -42,9 +42,10 @@ const nudica = localFont({
   display: "swap",
 })
 
+// Outfit is variable too. Do not list static weights: Google serves the same
+// file for each one and the Turbopack build fails on the repeated font URL.
 const outfit = Outfit({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
   variable: "--font-outfit",
 })
 
