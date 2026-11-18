@@ -69,7 +69,7 @@ export default function SignInPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-page-muted">
+      <div className="min-h-screen flex items-center justify-center bg-page-muted" role="status" aria-busy="true">
         <Loader className="text-brand-primary" />
       </div>
     )

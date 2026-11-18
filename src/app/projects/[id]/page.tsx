@@ -110,7 +110,7 @@ export default function ProjectLandingPage() {
 
     if (isCheckingAuth || projectLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-muted/50">
+            <div className="min-h-screen flex items-center justify-center bg-muted/50" role="status" aria-busy="true">
                 <Loader className="text-brand-primary" />
             </div>
         )

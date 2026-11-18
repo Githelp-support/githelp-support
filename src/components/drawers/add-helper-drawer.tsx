@@ -352,7 +352,7 @@ export function AddHelperDrawer({
                     Contributors can only be invited from projects linked to a GitHub repository.
                   </p>
                 ) : contributorsLoading ? (
-                  <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center justify-center py-8" role="status" aria-busy="true">
                     <Loader size={24} className="text-muted-foreground" label="Loading contributors" />
                   </div>
                 ) : contributors.length === 0 ? (

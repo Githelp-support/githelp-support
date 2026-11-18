@@ -249,7 +249,7 @@ export default function InviteContributorsPage() {
 
     if (projectLoading || roleLoading) {
         return (
-            <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8">
+            <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8" role="status" aria-busy="true">
                 <Loader className="my-auto text-muted-foreground" />
             </div>
         )

@@ -244,7 +244,7 @@ export default function AuthConfirmedPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
-      <div className="text-center">
+      <div className="text-center" role="status" aria-busy="true">
         <Loader className="text-brand-primary mx-auto mb-4" label="Completing sign in" />
         <p className="text-sm text-muted-foreground">Completing sign in...</p>
       </div>

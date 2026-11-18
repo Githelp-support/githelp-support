@@ -92,7 +92,7 @@ export function ContributorsStep({
                         This project is not linked to a GitHub repository. Contributors can only be invited from imported repos.
                     </p>
                 ) : contributorsLoading ? (
-                    <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center justify-center py-12" role="status" aria-busy="true">
                         <Loader className="text-muted-foreground" label="Loading contributors" />
                     </div>
                 ) : contributors.length === 0 ? (

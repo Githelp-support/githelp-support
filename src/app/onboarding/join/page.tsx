@@ -145,7 +145,7 @@ export default function JoinProjectPage() {
                                     Connect with GitHub
                                 </Button>
                             ) : loadingContributed ? (
-                                <div className="flex items-center justify-center py-8">
+                                <div className="flex items-center justify-center py-8" role="status" aria-busy="true">
                                     <Loader size={24} className="text-muted-foreground" label="Loading projects" />
                                 </div>
                             ) : contributedProjects.length === 0 ? (
