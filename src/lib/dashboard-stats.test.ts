@@ -116,6 +116,52 @@ describe("computeDashboardStats key stats", () => {
     })
 })
 
+describe("computeDashboardStats abandoned guest tickets", () => {
+    const tickets = [
+        ticket({ id: "done-oct", status: "completed", completed_at: OCT }),
+        // Signed-in customer cancelled: a real cancellation
+        ticket({ id: "cancelled-oct", status: "cancelled", cancelled_at: OCT, guest: false }),
+        // Visitor left before signing in: counts nowhere
+        ticket({ id: "abandoned-oct", status: "cancelled", cancelled_at: OCT, guest: true }),
+    ]
+
+    it("leaves a cancelled guest ticket out of the cancelled and closed counts", () => {
+        // 1 completed / (1 completed + 1 non-guest cancelled) = 50%, not 33%
+        expect(computeDashboardStats(input({ tickets }), OCTOBER).keyStats.percentageSolved).toBe(50)
+        expect(computeDashboardStats(input({ tickets }), null).keyStats.percentageSolved).toBe(50)
+    })
+
+    it("still counts a non-guest cancelled ticket as cancelled", () => {
+        const withoutCancelled = tickets.filter((t) => t.id !== "cancelled-oct")
+        expect(computeDashboardStats(input({ tickets: withoutCancelled }), OCTOBER).keyStats.percentageSolved).toBe(100)
+    })
+
+    it("keeps a guest ticket that was completed", () => {
+        const { keyStats } = computeDashboardStats(
+            input({ tickets: [ticket({ id: "guest-done", status: "completed", completed_at: OCT, guest: true })] }),
+            OCTOBER,
+        )
+        expect(keyStats.totalTicketsSolved).toBe(1)
+    })
+
+    it("ignores time and issue types of a cancelled guest ticket", () => {
+        const timeEntries = [
+            entry({ id: "e1", ticket_id: "done-oct", time_milliseconds: HOUR }),
+            entry({ id: "e2", ticket_id: "abandoned-oct", time_milliseconds: 3 * HOUR }),
+        ]
+        const { keyStats, issueTypeStats, helperStats } = computeDashboardStats(
+            input({ tickets, timeEntries, helpCategories: [{ id: 1, value: "Bug" }] }),
+            OCTOBER,
+        )
+        expect(keyStats.totalTimeSpent).toBe("1h 0min")
+        expect(helperStats[0]).toMatchObject({ tickets: 1, time: "1h 0min" })
+        expect(issueTypeStats).toEqual([
+            { name: "Bug", tickets: "-", time: "-", applied: false },
+            { name: UNCATEGORIZED_ISSUE_TYPE, tickets: 1, time: "1h 0min", applied: true },
+        ])
+    })
+})
+
 describe("computeDashboardStats helpers table", () => {
     const tickets = [
         ticket({ id: "done-oct", status: "completed", completed_at: OCT }),

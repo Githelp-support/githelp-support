@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase/client";
+import { HIDE_ABANDONED_GUEST_TICKETS_OR } from "@/lib/guest-ticket-visibility";
 
 export interface TicketWithDetails {
     id: string;
@@ -47,6 +48,7 @@ export function useTicketsWithDetails(projectId?: string) {
         `
                 )
                 .is("deleted_at", null)
+                .or(HIDE_ABANDONED_GUEST_TICKETS_OR)
                 .order("created_at", { ascending: false });
 
             if (projectId) {

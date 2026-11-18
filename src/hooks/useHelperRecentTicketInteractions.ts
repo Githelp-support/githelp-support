@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { HIDE_ABANDONED_GUEST_TICKETS_OR } from "@/lib/guest-ticket-visibility";
 
 export type HelperRecentTicketStatus = "Completed" | "Claimed" | "Unclaimed";
 
@@ -118,7 +119,9 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                     .from("tickets")
                     .select(TICKET_COLUMNS)
                     .in("id", missingIds)
-                    .is("deleted_at", null);
+                    .is("deleted_at", null)
+                    // Guest tickets whose visitor left before signing in are hidden.
+                    .or(HIDE_ABANDONED_GUEST_TICKETS_OR);
                 if (ticketsError) throw ticketsError;
                 ((ticketRows || []) as unknown as TicketRow[]).forEach((t) => ticketsById.set(t.id, t));
             }
@@ -138,7 +141,7 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
             });
 
             const topTickets = [...lastInteraction.entries()]
-                .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible tickets
+                .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible / abandoned guest tickets
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, limit)
                 .map(([id, ms]) => ({ ticket: ticketsById.get(id)!, ms }));

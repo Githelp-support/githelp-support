@@ -12,6 +12,7 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 import { supabase } from "@/lib/supabase/client";
+import { HIDE_ABANDONED_GUEST_TICKETS_OR } from "@/lib/guest-ticket-visibility";
 
 function makeWrapper() {
     const queryClient = new QueryClient({
@@ -28,6 +29,7 @@ function mockChain(resolveWith: { data: unknown; error: unknown }) {
     const chain = {
         select: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         then: undefined as unknown,
@@ -114,5 +116,21 @@ describe("useTickets", () => {
 
         expect(Array.isArray(result.current.data)).toBe(true);
         expect(result.current.data).toHaveLength(2);
+    });
+
+    it("hides guest tickets whose visitor left before signing in", async () => {
+        const chain = mockChain({ data: [], error: null });
+        vi.mocked(supabase.from).mockReturnValue(
+            chain as unknown as ReturnType<typeof supabase.from>,
+        );
+
+        const { result } = renderHook(() => useTickets("proj-3"), {
+            wrapper: makeWrapper(),
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+        expect(chain.is).toHaveBeenCalledWith("deleted_at", null);
+        expect(chain.or).toHaveBeenCalledWith(HIDE_ABANDONED_GUEST_TICKETS_OR);
     });
 });

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
+import { HIDE_ABANDONED_GUEST_TICKETS_OR } from "@/lib/guest-ticket-visibility"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -86,6 +87,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
         .select("*, tickets_time_entries(*), tickets_participants(*)")
         .eq("sla_id", id)
         .is("deleted_at", null)
+        .or(HIDE_ABANDONED_GUEST_TICKETS_OR)
         .order("created_at", { ascending: false })
       if (error) throw error
       // Entries the customer declined are not billed and don't consume SLA minutes.
