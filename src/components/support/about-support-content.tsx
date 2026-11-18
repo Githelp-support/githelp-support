@@ -24,7 +24,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
     <div className="space-y-16">
       {/* How support works section */}
       <div className="max-w-[37rem]">
-        <h2 className="text-title font-normal text-text-secondary mb-6">How support works</h2>
+        <h2 className="text-xl font-book text-text-secondary mb-6">How support works</h2>
         <p className="text-sm text-text-secondary mb-4">
           The <span className="font-semibold">{projectName}</span> team can help out with issues related to areas such
           as:
@@ -44,7 +44,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
 
       {/* Get started section */}
       <div>
-        <h2 className="text-xl font-normal text-text-secondary mb-6">Get started</h2>
+        <h2 className="text-xl font-book text-text-secondary mb-6">Get started</h2>
         <div className="bg-card rounded-lg p-8 border border-border-subtle shadow-none max-w-[52rem]">
           <div className="space-y-0 max-w-[36rem]">
             {/* Step 1 */}
@@ -81,7 +81,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
 
       {/* Receive help section */}
       <div>
-        <h2 className="text-xl font-normal text-text-secondary mb-6">Receive help</h2>
+        <h2 className="text-xl font-book text-text-secondary mb-6">Receive help</h2>
         <div className="bg-card rounded-lg p-8 border border-border-subtle shadow-none max-w-[52rem]">
           <div className="space-y-0 max-w-[36rem]">
             {/* Step 1 */}
@@ -133,7 +133,7 @@ export function AboutSupportContent({ projectName }: AboutSupportContentProps) {
 
       {/* Payment and reports section */}
       <div>
-        <h2 className="text-xl font-normal text-text-secondary mb-6">Payment and reports</h2>
+        <h2 className="text-xl font-book text-text-secondary mb-6">Payment and reports</h2>
         <div className="bg-card rounded-lg p-8 border border-border-subtle shadow-none max-w-[52rem]">
           <div className="space-y-0 max-w-[36rem]">
             {/* Step 1 */}

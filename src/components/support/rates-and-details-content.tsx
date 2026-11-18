@@ -32,7 +32,7 @@ export function RatesAndDetailsContent({
     <div className="space-y-12">
       {/* Rates section */}
       <div>
-        <h2 className="text-title font-normal text-text-secondary mb-8">{projectName}&apos;s rates</h2>
+        <h2 className="text-xl font-book text-text-secondary mb-8">{projectName}&apos;s rates</h2>
 
         {isFree && (
           <p className="text-sm text-text-secondary mb-6">
