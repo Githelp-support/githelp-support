@@ -1,6 +1,5 @@
 "use client"
 
-import { Icon } from "@/components/ui/icon"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -33,8 +32,7 @@ export function GuestTicketBadge({ className }: { className?: string }) {
       )}
       title="Opened by a visitor who hasn't signed in yet"
     >
-      <Icon name="fi-rr-user-xmark" />
-      Guest — not signed in
+      Not signed in
     </Badge>
   )
 }

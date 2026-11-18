@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/layout/header"
 import { Icon } from "@/components/ui/icon"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
-import { GuestTicketBadge, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { formatDateTime, truncateText } from "@/lib/format"
@@ -676,7 +676,6 @@ export default function TicketsPage() {
                             <h4 className="text-sm font-medium text-foreground truncate">
                               {ticket.user.name}
                             </h4>
-                            {ticket.guest && <GuestTicketBadge className="mt-1" />}
                             <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                             <div className="flex items-center gap-1 mt-1">
                               <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
@@ -771,7 +770,6 @@ export default function TicketsPage() {
                           {ticket.user.name}
                         </h4>
                       </Link>
-                      {ticket.guest && <GuestTicketBadge className="mt-1" />}
                       <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
