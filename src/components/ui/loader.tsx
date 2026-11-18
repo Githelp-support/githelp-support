@@ -24,8 +24,9 @@ const LOADER_CSS = `
 `
 
 /**
- * Animated Githelp logo mark for page- and section-level loading. Colour comes
- * from `currentColor` (e.g. `text-brand-primary`); the dots are cut out of the
+ * Animated Githelp logo mark for page- and section-level loading. It is drawn in
+ * `currentColor` and defaults to `text-foreground`, the colour of the `Logo`
+ * above the sign-in card (#2E2D31 in light mode); the dots are cut out of the
  * disc with a mask, so whatever is behind the loader shows through. Place it in
  * a `role="status"` container so the loading state is announced.
  */
@@ -42,7 +43,7 @@ function Loader({ size = 32, label = "Loading", className, ...props }: LoaderPro
       viewBox="0 0 32 32"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("githelp-loader shrink-0", className)}
+      className={cn("githelp-loader shrink-0 text-foreground", className)}
       {...props}
     >
       <style>{LOADER_CSS}</style>

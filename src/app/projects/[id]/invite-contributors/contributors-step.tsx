@@ -93,7 +93,7 @@ export function ContributorsStep({
                     </p>
                 ) : contributorsLoading ? (
                     <div className="flex items-center justify-center py-12" role="status" aria-busy="true">
-                        <Loader className="text-muted-foreground" label="Loading contributors" />
+                        <Loader label="Loading contributors" />
                     </div>
                 ) : contributors.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">

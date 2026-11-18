@@ -146,7 +146,7 @@ export default function JoinProjectPage() {
                                 </Button>
                             ) : loadingContributed ? (
                                 <div className="flex items-center justify-center py-8" role="status" aria-busy="true">
-                                    <Loader size={24} className="text-muted-foreground" label="Loading projects" />
+                                    <Loader size={24} label="Loading projects" />
                                 </div>
                             ) : contributedProjects.length === 0 ? (
                                 <p className="text-sm text-muted-foreground py-4">

@@ -11,6 +11,12 @@ describe("Loader", () => {
     expect(svg).toHaveAttribute("data-slot", "loader")
   })
 
+  it("uses the logo colour (text-foreground) through currentColor by default", () => {
+    const { container } = render(<Loader />)
+    expect(screen.getByRole("img").getAttribute("class")).toMatch(/text-foreground/)
+    expect(container.querySelector("svg > circle")).toHaveAttribute("fill", "currentColor")
+  })
+
   it("takes a size, a label and extra classes", () => {
     render(<Loader size={24} label="Loading projects" className="text-brand-primary" />)
     const svg = screen.getByRole("img", { name: "Loading projects" })
@@ -18,6 +24,7 @@ describe("Loader", () => {
     expect(svg).toHaveAttribute("height", "24")
     expect(svg.getAttribute("class")).toMatch(/githelp-loader/)
     expect(svg.getAttribute("class")).toMatch(/text-brand-primary/)
+    expect(svg.getAttribute("class")).not.toMatch(/text-foreground/)
   })
 
   it("gives each instance its own mask id and points the disc at it", () => {

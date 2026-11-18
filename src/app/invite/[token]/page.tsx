@@ -271,7 +271,7 @@ export default function InviteAcceptancePage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-page-muted">
                 <div className="text-center" role="status" aria-busy="true">
-                    <Loader className="text-brand-primary mx-auto mb-4" label="Loading invite" />
+                    <Loader className="mx-auto mb-4" label="Loading invite" />
                     <p className="text-sm text-muted-foreground">Loading invite...</p>
                 </div>
             </div>

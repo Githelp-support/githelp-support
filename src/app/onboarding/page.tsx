@@ -388,7 +388,7 @@ export default function OnboardingPage() {
     if (onboardingStatusLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4" role="status" aria-busy="true">
-                <Loader className="text-brand-primary" />
+                <Loader />
             </div>
         )
     }
@@ -396,7 +396,7 @@ export default function OnboardingPage() {
     if (hasFinishedOnboardingWizard) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-muted/50 p-4" role="status" aria-busy="true">
-                <Loader className="text-brand-primary" label="Taking you to your workspace" />
+                <Loader label="Taking you to your workspace" />
                 <p className="text-sm text-muted-foreground">Taking you to your workspace…</p>
             </div>
         )
@@ -889,7 +889,7 @@ export default function OnboardingPage() {
                             </div>
                         ) : isLoadingRepos ? (
                             <div className="flex items-center justify-center py-12" role="status" aria-busy="true">
-                                <Loader className="text-muted-foreground" />
+                                <Loader />
                             </div>
                         ) : githubRepos.length === 0 ? (
                             <div className="space-y-4 py-4">

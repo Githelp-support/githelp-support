@@ -353,7 +353,7 @@ export function AddHelperDrawer({
                   </p>
                 ) : contributorsLoading ? (
                   <div className="flex items-center justify-center py-8" role="status" aria-busy="true">
-                    <Loader size={24} className="text-muted-foreground" label="Loading contributors" />
+                    <Loader size={24} label="Loading contributors" />
                   </div>
                 ) : contributors.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2">No contributors found for this repository.</p>

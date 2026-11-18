@@ -91,7 +91,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-page-muted">
         <div className="text-center" role="status" aria-busy="true">
-          <Loader className="text-brand-primary mx-auto mb-4" label="Checking authentication" />
+          <Loader className="mx-auto mb-4" label="Checking authentication" />
           <p className="text-sm text-muted-foreground">Checking authentication...</p>
         </div>
       </div>
