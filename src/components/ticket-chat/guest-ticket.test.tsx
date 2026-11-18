@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   ClaimTicketButton,
   GUEST_CLAIM_BLOCKED_COPY,
-  GuestTicketBadge,
   VisitorLeftAction,
   ticketCreatorDisplayName,
 } from "./guest-ticket"
@@ -94,11 +93,6 @@ describe("ClaimTicketButton", () => {
 })
 
 describe("guest ticket labels", () => {
-  it("renders the guest badge", () => {
-    render(<GuestTicketBadge />)
-    expect(screen.getByText("Guest — not signed in")).toBeInTheDocument()
-  })
-
   it("shows guests as Guest", () => {
     expect(ticketCreatorDisplayName("Ada", true)).toBe("Guest")
     expect(ticketCreatorDisplayName("Ada", false)).toBe("Ada")

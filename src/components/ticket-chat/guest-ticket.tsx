@@ -1,7 +1,5 @@
 "use client"
 
-import { Icon } from "@/components/ui/icon"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -20,23 +18,6 @@ export const GUEST_CLAIM_BLOCKED_COPY =
 export function ticketCreatorDisplayName(name: string | null | undefined, isGuest: boolean, fallback = "User"): string {
   if (isGuest) return "Guest"
   return name?.trim() || fallback
-}
-
-export function GuestTicketBadge({ className }: { className?: string }) {
-  return (
-    <Badge
-      variant="outline"
-      data-slot="guest-ticket-badge"
-      className={cn(
-        "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100",
-        className,
-      )}
-      title="Opened by a visitor who hasn't signed in yet"
-    >
-      <Icon name="fi-rr-user-xmark" />
-      Guest — not signed in
-    </Badge>
-  )
 }
 
 interface ClaimTicketButtonProps {

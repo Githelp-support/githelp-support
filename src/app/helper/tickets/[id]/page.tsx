@@ -43,7 +43,7 @@ import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
-import { ClaimTicketButton, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { ClaimTicketButton, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { helperSystemMessageCopy } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
@@ -910,7 +910,6 @@ export default function TicketDetailPage() {
             inlineRightContent={
               <span className="flex items-center gap-2">
                 <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>
-                {isGuestTicket && <GuestTicketBadge />}
               </span>
             }
             actions={
