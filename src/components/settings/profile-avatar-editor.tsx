@@ -51,7 +51,7 @@ export function ProfileAvatarEditor({ userId, name, avatarUrl, className }: Prof
   }
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex flex-col items-start gap-2", className)}>
       <ProfileAvatar id={userId} name={name} avatarUrl={avatarUrl} size="lg" />
       <Button type="button" variant="outline" size="sm" onClick={() => setIsUploadModalOpen(true)}>
         <Icon name="fi-rr-edit" />
