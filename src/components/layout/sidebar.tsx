@@ -65,6 +65,11 @@ const NAV_ROW_REST = `font-book text-text-muted hover:bg-surface-hover hover:tex
 const NAV_ICON_CLASS =
   "flex h-4 w-4 shrink-0 items-center justify-center text-base text-[color:var(--nav-icon,currentColor)] transition-colors duration-fast ease-out"
 
+// The inbox glyph is an open tray: its box is empty at the top, so the drawn
+// part sits below the label's optical centre. Nudge only the glyph up by 1px
+// (a transform, so the row's layout and the label spacing are unchanged).
+const INBOX_ICON_NUDGE = "-translate-y-px"
+
 // Sub-pages of the user-role "Support" parent item. Exact paths only —
 // /support/tickets belongs to the top-level "Tickets" item and must NOT
 // expand "Support".
@@ -349,7 +354,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               logo-only trigger; `empty:hidden` drops the padding when it
               renders nothing (no projects). */}
           {isAuthenticated && (
-            <div className="px-4 pb-3 shrink-0 empty:hidden">
+            <div className="px-4 pb-6.5 shrink-0 empty:hidden">
               <ProjectSwitcher collapsed />
             </div>
           )}
@@ -362,12 +367,15 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         // height (14px + 32px + 14px); the sheet's Close button sits beside it.
         <div
           className={cn(
-            "flex shrink-0 flex-col gap-1 px-4 pt-3.5",
+            // 10px from the logo row to the role row, 8px between the two
+            // switchers, and 26px down to the hairline (the same 26px sits
+            // between the hairline and the Inbox).
+            "flex shrink-0 flex-col gap-2 px-4 pt-3.5",
             // Guests only get the logo: keep the old header height above the Sign in card.
-            isAuthenticated ? "pb-3" : "mb-1.25 h-15",
+            isAuthenticated ? "pb-6.5" : "mb-1.25 h-15",
           )}
         >
-          <div className="flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5">
+          <div className={cn("flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5", isAuthenticated && "mb-0.5")}>
             <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
               <Logo />
             </span>
@@ -397,7 +405,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         <div
           aria-hidden="true"
           data-slot="sidebar-switcher-divider"
-          className={cn("mb-3 h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
+          className={cn("mb-6.5 h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
         />
       )}
 
@@ -437,7 +445,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                   )}
                 >
                   <span className={NAV_ICON_CLASS}>
-                    <FlaticonIcon iconClass="fi-rr-inbox" />
+                    <FlaticonIcon iconClass="fi-rr-inbox" className={INBOX_ICON_NUDGE} />
                   </span>
                   <span className="flex-1">Inbox</span>
                   {unreadCount > 0 && (
@@ -464,7 +472,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     )}
                   >
                     <span className={NAV_ICON_CLASS}>
-                      <FlaticonIcon iconClass="fi-rr-inbox" />
+                      <FlaticonIcon iconClass="fi-rr-inbox" className={INBOX_ICON_NUDGE} />
                     </span>
                     {!isCollapsed && <span className="flex-1 text-left">Inbox</span>}
                     {/* The unread count shows only above zero: at the far right

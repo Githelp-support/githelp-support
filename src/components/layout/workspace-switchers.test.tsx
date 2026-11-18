@@ -207,7 +207,9 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     const tile = role.querySelector('[data-slot="role-icon"]')!
     expect(tile.className).toContain("bg-card")
     expect(tile.className).toContain("text-foreground")
-    expect(tile.querySelector(".fi-rr-shield")).not.toBeNull()
+    // The Githelp maintainer glyph, not a Flaticon stand-in.
+    expect(tile.querySelector('svg[data-role-glyph="admin"]')).not.toBeNull()
+    expect(tile.querySelector(".fi")).toBeNull()
 
     // Each role in the menu gets its tile too.
     fireEvent.keyDown(role, { key: "Enter" })

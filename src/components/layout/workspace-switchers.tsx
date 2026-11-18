@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type ReactElement } from "react"
-import { Icon, type IconProps } from "@/components/ui/icon"
+import { Icon } from "@/components/ui/icon"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -64,7 +64,7 @@ const PrivateContextIcon = ({ size }: { size: string }) => (
   <span
     className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
   >
-    <Icon name="fi-rr-lock" size={3} />
+    <Icon name="fi-rr-lock" size={3.5} />
   </span>
 )
 
@@ -124,11 +124,37 @@ const SelectorIcon = () => (
   <Icon name="fi-rr-angle-small-down" className="shrink-0 text-text-tertiary" />
 )
 
-// Same icons as the role cards in onboarding (`RoleOptionCards`).
-const ROLE_ICONS: Record<UserRole, IconProps["name"]> = {
-  admin: "fi-rr-shield",
-  helper: "fi-rr-wrench-simple",
-  user: "fi-rr-life-ring",
+// Githelp role glyphs (githelp-role-maintainer.svg, githelp-role-helper.svg,
+// githelp-role-support-user.svg), inlined so they take the tile's text colour.
+const ROLE_GLYPHS: Record<UserRole, ReactElement> = {
+  admin: (
+    <>
+      <circle cx="19.5" cy="5.5" r="3.5" />
+      <circle cx="4" cy="4" r="2.75" />
+      <circle cx="4" cy="20.5" r="2" />
+      <path d="M4 6.75v11.75" />
+      <path d="M19.5 9v.5c0 4-2.5 5.5-7 5.5H8.5C6 15 4 16 4 17" />
+    </>
+  ),
+  helper: (
+    <>
+      <circle cx="12" cy="12" r="11" />
+      <circle cx="12" cy="12" r="4.5" />
+      <path d="M15.2 8.8l4.6-4.6M8.8 8.8 4.2 4.2M15.2 15.2l4.6 4.6M8.8 15.2l-4.6 4.6" />
+    </>
+  ),
+  user: (
+    <>
+      <path d="M10 5c.8 5.2 3.8 8.2 9 9-5.2.8-8.2 3.8-9 9-.8-5.2-3.8-8.2-9-9 5.2-.8 8.2-3.8 9-9z" />
+      <path d="M19.5 1c.3 2.3 1.2 3.2 3.5 3.5-2.3.3-3.2 1.2-3.5 3.5-.3-2.3-1.2-3.2-3.5-3.5 2.3-.3 3.2-1.2 3.5-3.5z" />
+    </>
+  ),
+}
+
+// Glyph size per tile size: a little under two thirds of the tile.
+const ROLE_GLYPH_SIZE: Record<string, string> = {
+  "w-5 h-5": "size-3.25",
+  "w-[22px] h-[22px]": "size-3.5",
 }
 
 // Role tile: the project avatar's squircle container, white with a dark glyph.
@@ -138,7 +164,23 @@ const RoleIcon = ({ role, size = "w-[22px] h-[22px]" }: { role: UserRole; size?:
     data-slot="role-icon"
     className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center border border-border-avatar bg-card text-foreground`}
   >
-    <Icon name={ROLE_ICONS[role] ?? "fi-rr-user"} size={3} />
+    {ROLE_GLYPHS[role] ? (
+      <svg
+        aria-hidden="true"
+        data-role-glyph={role}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={cn("shrink-0", ROLE_GLYPH_SIZE[size] ?? "size-3.5")}
+      >
+        {ROLE_GLYPHS[role]}
+      </svg>
+    ) : (
+      <Icon name="fi-rr-user" size={3.5} />
+    )}
   </span>
 )
 
