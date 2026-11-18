@@ -797,7 +797,7 @@ export default function HelpersPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
                               <DropdownMenuItem
-                                variant="destructive"
+                                className="text-muted-foreground focus:bg-surface-hover focus:text-foreground"
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >

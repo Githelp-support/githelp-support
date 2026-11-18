@@ -49,7 +49,7 @@ export function RemoveHelperModal({
           >
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={isRemoving}>
+          <Button variant="brand" onClick={onConfirm} disabled={isRemoving}>
             {isRemoving ? "Removing..." : "Remove helper"}
           </Button>
         </DialogFooter>
