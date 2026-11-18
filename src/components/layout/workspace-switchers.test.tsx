@@ -179,6 +179,36 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     expect(trigger.querySelector(".fi-rr-angle-small-down")).toBeNull()
   })
 
+  it("row variant: borderless nav-style rows with the up-down selector icon", () => {
+    renderWithTooltips(
+      <>
+        <RoleSwitcher variant="row" leading={<svg data-testid="logo" />} />
+        <ProjectSwitcher variant="row" />
+      </>,
+    )
+
+    const role = screen.getByRole("button", { name: /admin/i })
+    const project = screen.getByRole("button", { name: /alpha/i })
+    for (const trigger of [role, project]) {
+      expect(trigger.className).toContain("h-8")
+      expect(trigger.className).toContain("px-2.5")
+      expect(trigger.className).toContain("hover:bg-surface-hover")
+      expect(trigger.className).not.toContain("border")
+      expect(trigger.querySelector(".fi-rr-angles-up-down")).not.toBeNull()
+      expect(trigger.querySelector(".fi-rr-angle-small-down")).toBeNull()
+      // Icon slot, label, selector: the selector is the last child (right-aligned).
+      expect(trigger.children).toHaveLength(3)
+      expect(trigger.children[0].className).toContain("w-4")
+      expect(trigger.children[1].className).toContain("font-medium")
+      expect(trigger.children[1].className).toContain("text-sidebar-foreground")
+    }
+    expect(role).toContainElement(screen.getByTestId("logo"))
+
+    // The dropdown still opens from the keyboard.
+    fireEvent.keyDown(project, { key: "Enter" })
+    expect(screen.getAllByRole("menuitem").length).toBeGreaterThan(0)
+  })
+
   it("shows a loading placeholder while the projects load", () => {
     useUserProjects.mockReturnValue({ data: undefined, isLoading: true })
     const { container, rerender } = renderWithTooltips(<ProjectSwitcher />)

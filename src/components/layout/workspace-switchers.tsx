@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactElement } from "react"
+import { useState, type ReactElement, type ReactNode } from "react"
 import { Icon } from "@/components/ui/icon"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -104,16 +104,49 @@ function ProjectLogoWithBranding({
   )
 }
 
-export function RoleSwitcher() {
+type SwitcherVariant = "control" | "row"
+
+// Sidebar switcher rows share the nav item geometry: 32px high, 10px side
+// padding, a 16px icon slot and a 12px gap, so the logo, the project avatar and
+// the nav icons sit on one vertical axis and every label starts at the same x.
+// The logo and avatar are wider than the slot and overflow it evenly on both
+// sides, which keeps them centred on that axis.
+const ROW_TRIGGER_CLASS =
+  "flex h-8 w-full min-w-0 items-center gap-3 rounded-md px-2.5 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+const ROW_SLOT_CLASS = "flex h-4 w-4 shrink-0 items-center justify-center"
+const ROW_LABEL_CLASS =
+  "min-w-0 flex-1 truncate text-left font-sans text-ui font-medium text-sidebar-foreground"
+
+const SelectorIcon = () => (
+  <Icon name="fi-rr-angles-up-down" size={3.5} className="shrink-0 text-text-tertiary" />
+)
+
+export function RoleSwitcher({
+  variant = "control",
+  leading,
+}: {
+  /** `row` is the borderless sidebar row; `control` is the compact TopBar trigger. */
+  variant?: SwitcherVariant
+  /** Row variant only: shown in the row's icon slot (the sidebar passes the logo). */
+  leading?: ReactNode
+}) {
   const { user, visibleRoles, isPrivateContext, getRoleDisplayName, handleSwitchRole, goToAddRole } =
     useWorkspaceSwitcher()
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
-        <span className="font-sans text-ui text-muted-foreground">{getRoleDisplayName(user.role)}</span>
-        <Icon name="fi-rr-angle-small-down" className="text-muted-foreground" />
-      </DropdownMenuTrigger>
+      {variant === "row" ? (
+        <DropdownMenuTrigger className={ROW_TRIGGER_CLASS}>
+          {leading && <span className={ROW_SLOT_CLASS}>{leading}</span>}
+          <span className={ROW_LABEL_CLASS}>{getRoleDisplayName(user.role)}</span>
+          <SelectorIcon />
+        </DropdownMenuTrigger>
+      ) : (
+        <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
+          <span className="font-sans text-ui text-muted-foreground">{getRoleDisplayName(user.role)}</span>
+          <Icon name="fi-rr-angle-small-down" className="text-muted-foreground" />
+        </DropdownMenuTrigger>
+      )}
       <DropdownMenuContent align="start" className="w-40">
         {visibleRoles.length > 0 ? (
           <>
@@ -160,16 +193,19 @@ const COLLAPSED_SIZE = "w-6 h-6"
 
 /**
  * Dropdown trigger for the project/context control. Expanded it is the bordered
- * pill with logo, name and chevron; collapsed it is just the logo, with the
- * name in the shared Tooltip. Must be rendered inside a `DropdownMenu`.
+ * pill with logo, name and chevron (`control`, TopBar) or the borderless
+ * sidebar row with an up-down selector (`row`); collapsed it is just the logo,
+ * with the name in the shared Tooltip. Must be rendered inside a `DropdownMenu`.
  */
 function SwitcherTrigger({
   collapsed,
+  variant,
   className,
   name,
   logo,
 }: {
   collapsed: boolean
+  variant: SwitcherVariant
   className?: string
   name: string
   logo: (size: string) => ReactElement
@@ -188,6 +224,18 @@ function SwitcherTrigger({
           {name}
         </TooltipContent>
       </Tooltip>
+    )
+  }
+
+  if (variant === "row") {
+    return (
+      <DropdownMenuTrigger asChild>
+        <button type="button" className={cn(ROW_TRIGGER_CLASS, className)}>
+          <span className={ROW_SLOT_CLASS}>{logo("w-[22px] h-[22px]")}</span>
+          <span className={ROW_LABEL_CLASS}>{name}</span>
+          <SelectorIcon />
+        </button>
+      </DropdownMenuTrigger>
     )
   }
 
@@ -217,10 +265,13 @@ function SwitcherTrigger({
 
 export function ProjectSwitcher({
   collapsed = false,
+  variant = "control",
   className,
 }: {
   /** Logo-only trigger for the collapsed sidebar; the menu opens to the right. */
   collapsed?: boolean
+  /** `row` is the borderless sidebar row; `control` is the bordered TopBar pill. */
+  variant?: SwitcherVariant
   className?: string
 }) {
   const {
@@ -248,6 +299,7 @@ export function ProjectSwitcher({
       <DropdownMenu onOpenChange={(open) => !open && setEmployerTipOpen(false)}>
         <SwitcherTrigger
           collapsed={collapsed}
+          variant={variant}
           className={className}
           name="Private"
           logo={(size) => <PrivateContextIcon size={size} />}
@@ -294,7 +346,9 @@ export function ProjectSwitcher({
     return (
       <div
         className={cn(
-          "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
+          variant === "row"
+            ? "flex h-8 items-center px-2.5"
+            : "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
           className,
         )}
       >
@@ -309,6 +363,7 @@ export function ProjectSwitcher({
     <DropdownMenu>
       <SwitcherTrigger
         collapsed={collapsed}
+        variant={variant}
         className={className}
         name={selectedProject?.name || "Select Project"}
         logo={(size) => (

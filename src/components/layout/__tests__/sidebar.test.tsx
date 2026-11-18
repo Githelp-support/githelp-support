@@ -36,9 +36,13 @@ vi.mock("@/hooks/useWorkspaceSwitcher", () => ({
   useWorkspaceSwitcher: () => ({ signOut }),
 }))
 vi.mock("@/components/layout/workspace-switchers", () => ({
-  RoleSwitcher: () => <div data-testid="role-switcher" />,
-  ProjectSwitcher: ({ collapsed }: { collapsed?: boolean }) => (
-    <div data-testid="project-switcher" data-collapsed={String(!!collapsed)} />
+  RoleSwitcher: ({ variant, leading }: { variant?: string; leading?: React.ReactNode }) => (
+    <div data-testid="role-switcher" data-variant={variant}>
+      {leading}
+    </div>
+  ),
+  ProjectSwitcher: ({ collapsed, variant }: { collapsed?: boolean; variant?: string }) => (
+    <div data-testid="project-switcher" data-collapsed={String(!!collapsed)} data-variant={variant} />
   ),
 }))
 
@@ -148,7 +152,7 @@ describe("Sidebar — user-role menu order", () => {
       (el) => el.querySelector("a, button, [role='button']")?.textContent?.trim(),
     )
     expect(topLevelLabels).toEqual([
-      "Inbox0", // label + the unread count at the far right
+      "Inbox", // no unread count at zero
       "Overview",
       "Support",
       "Tickets",
@@ -244,10 +248,16 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument()
     expect(screen.queryByText(/^Role:/)).not.toBeInTheDocument()
-    // The logo sits in the header row, next to the role control; expanded it is not a button.
-    const header = screen.getByTestId("role-switcher").parentElement!
-    expect(header.querySelector(":scope > svg")).not.toBeNull()
-    expect(header).toContainElement(screen.getByRole("button", { name: "Collapse sidebar" }))
+    // Both switchers are sidebar rows; the logo is the role row's icon, not a button of its own.
+    const role = screen.getByTestId("role-switcher")
+    expect(role).toHaveAttribute("data-variant", "row")
+    expect(role.querySelector("svg")).not.toBeNull()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-variant", "row")
+    // The project row sits directly below the role row, beside the collapse button.
+    expect(role.nextElementSibling).toBe(screen.getByTestId("project-switcher"))
+    expect(role.parentElement!.parentElement).toContainElement(
+      screen.getByRole("button", { name: "Collapse sidebar" }),
+    )
   })
 
   it("starts collapsed from localStorage: the logo is the only expand control", () => {
@@ -342,16 +352,15 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
   })
 
-  it("shows the unread count at the far right of the Inbox item, also when it is zero", () => {
+  it("shows the unread count at the far right of the Inbox item, only above zero", () => {
     useNotifications.mockReturnValue({
       data: [{ id: "n1", is_read: true, content: "Old ticket", created_at: new Date().toISOString(), route: null }],
     })
     const { rerender } = renderSidebar()
 
     const inbox = screen.getByRole("button", { name: "Inbox" })
-    const count = inbox.querySelector('[data-slot="inbox-count"]')
-    expect(count).toHaveTextContent("0")
-    expect(inbox.lastElementChild).toBe(count)
+    expect(inbox.querySelector('[data-slot="inbox-count"]')).toBeNull()
+    expect(inbox).not.toHaveTextContent("0")
 
     useNotifications.mockReturnValue({
       data: Array.from({ length: 3 }, (_, i) => ({
@@ -363,9 +372,10 @@ describe("Sidebar — header, project row and profile block", () => {
       })),
     })
     rerender(<Sidebar />)
-    expect(
-      screen.getByRole("button", { name: "Inbox, 3 unread" }).querySelector('[data-slot="inbox-count"]'),
-    ).toHaveTextContent("3")
+    const unread = screen.getByRole("button", { name: "Inbox, 3 unread" })
+    const count = unread.querySelector('[data-slot="inbox-count"]')
+    expect(count).toHaveTextContent("3")
+    expect(unread.lastElementChild).toBe(count)
   })
 
   it("collapsed: the Inbox is icon-only and still opens the panel", () => {
@@ -385,16 +395,12 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.getByText("Inbox").closest("a")).toHaveAttribute("href", "/notifications")
   })
 
-  it("labels the project dropdown 'Projects' when expanded only", () => {
-    const { unmount } = renderSidebar()
-    const label = screen.getByText("Projects")
-    expect(label.className).toContain("uppercase")
-    expect(label.nextElementSibling).toContainElement(screen.getByTestId("project-switcher"))
-    unmount()
-
-    window.localStorage.setItem("sidebar:collapsed", "true")
+  it("has no 'Projects' label; a hairline separates the switchers from the menu", () => {
     renderSidebar()
     expect(screen.queryByText("Projects")).not.toBeInTheDocument()
+    const divider = document.querySelector('[data-slot="sidebar-switcher-divider"]')
+    expect(divider).not.toBeNull()
+    expect(divider!.nextElementSibling).toBe(screen.getByRole("navigation", { name: "Main" }))
   })
 
   it("guests: name only, no role, project or account controls", () => {

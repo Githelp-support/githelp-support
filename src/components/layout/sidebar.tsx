@@ -21,7 +21,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Logo } from "@/components/brand/logo"
 import { RoleSwitcher, ProjectSwitcher } from "@/components/layout/workspace-switchers"
 import { useWorkspaceSwitcher } from "@/hooks/useWorkspaceSwitcher"
-import { SidebarSectionHeading } from "@/components/ticket-chat/sidebar-section"
 import { NotificationsPanel } from "@/components/layout/notifications-panel"
 import {
   useNotifications,
@@ -330,63 +329,81 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
       // very top to the bottom and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      {/* Header row: same height as the mobile TopBar, with 5px extra space below it. */}
-      <div
-        className={cn(
-          "mb-1.25 flex h-15 shrink-0 items-center px-4",
-          isCollapsed ? "justify-center" : "gap-2",
-          // Mobile sheet: keep the role dropdown clear of the sheet's Close button.
-          forceExpanded && "pr-12",
-        )}
-      >
-        {isCollapsed ? (
-          withTooltip(
-            "Expand sidebar",
-            <button
-              type="button"
-              aria-label="Expand sidebar"
-              onClick={() => setCollapsed(false)}
-              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            >
-              <Logo />
-            </button>,
-          )
-        ) : (
-          <>
-            <Logo />
-            {isAuthenticated && <RoleSwitcher />}
-            {!forceExpanded && (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Collapse sidebar"
-                className="ml-auto h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-                onClick={() => setCollapsed(true)}
-              >
-                <SidebarToggleIcon />
-              </Button>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Project row. Guests have no role or project. `empty:hidden` drops the
-          padding when the switcher renders nothing (no projects). */}
-      {isAuthenticated && (
-        // The label is tied to the switcher: `has-[+_div:empty]` hides it when
-        // the switcher renders nothing.
+      {isCollapsed ? (
         <>
-          {!isCollapsed && (
-            // 3px more above the label, on top of the header row's 5px.
-            <SidebarSectionHeading className="mt-0.75 mb-2 shrink-0 px-6.5 has-[+_div:empty]:hidden">
-              Projects
-            </SidebarSectionHeading>
-          )}
-          <div className="px-4 pb-6.5 shrink-0 empty:hidden">
-            {/* Collapsed, the switcher centres its own logo-only trigger. */}
-            <ProjectSwitcher className={cn(!isCollapsed && "w-full")} collapsed={isCollapsed} />
+          {/* Header row: same height as the mobile TopBar, with 5px extra space below it. */}
+          <div className="mb-1.25 flex h-15 shrink-0 items-center justify-center px-4">
+            {withTooltip(
+              "Expand sidebar",
+              <button
+                type="button"
+                aria-label="Expand sidebar"
+                onClick={() => setCollapsed(false)}
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+              >
+                <Logo />
+              </button>,
+            )}
           </div>
+          {/* Guests have no role or project. The switcher centres its own
+              logo-only trigger; `empty:hidden` drops the padding when it
+              renders nothing (no projects). */}
+          {isAuthenticated && (
+            <div className="px-4 pb-3 shrink-0 empty:hidden">
+              <ProjectSwitcher collapsed />
+            </div>
+          )}
         </>
+      ) : (
+        // Switcher rows: the role row (with the logo in its icon slot) and the
+        // project row, built like the nav rows below so the logo, the project
+        // avatar and the nav icons share one axis. The first row is centred on
+        // the mobile TopBar's height (14px + 32px + 14px). Both rows end before
+        // the collapse control, so their selector icons line up.
+        <div
+          className={cn(
+            "flex shrink-0 items-start gap-1 px-4 pt-3.5",
+            // Guests only get the logo: keep the old header height above the Sign in card.
+            isAuthenticated ? "pb-3" : "mb-1.25 h-15",
+            // Mobile sheet: keep the rows clear of the sheet's Close button.
+            forceExpanded && "pr-12",
+          )}
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            {isAuthenticated ? (
+              <>
+                <RoleSwitcher variant="row" leading={<Logo />} />
+                <ProjectSwitcher variant="row" />
+              </>
+            ) : (
+              <div className="flex h-8 items-center px-2.5">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                  <Logo />
+                </span>
+              </div>
+            )}
+          </div>
+          {!forceExpanded && (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Collapse sidebar"
+              className="h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+              onClick={() => setCollapsed(true)}
+            >
+              <SidebarToggleIcon />
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Hairline between the switchers and the menu, inset to the rows' padding. */}
+      {isAuthenticated && (
+        <div
+          aria-hidden="true"
+          data-slot="sidebar-switcher-divider"
+          className={cn("mb-3 h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
+        />
       )}
 
       {!isCollapsed && !isAuthenticated && (
@@ -428,15 +445,14 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     <FlaticonIcon iconClass="fi-rr-inbox" />
                   </span>
                   <span className="flex-1">Inbox</span>
-                  <span
-                    data-slot="inbox-count"
-                    className={cn(
-                      "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs font-medium tabular-nums",
-                      unreadCount > 0 ? "bg-brand-primary text-brand-foreground" : "text-text-tertiary",
-                    )}
-                  >
-                    {unreadLabel}
-                  </span>
+                  {unreadCount > 0 && (
+                    <span
+                      data-slot="inbox-count"
+                      className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-brand-primary px-1 text-2xs font-medium tabular-nums text-brand-foreground"
+                    >
+                      {unreadLabel}
+                    </span>
+                  )}
                 </Link>
               ) : (
                 withTooltip(
@@ -456,14 +472,13 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                       <FlaticonIcon iconClass="fi-rr-inbox" />
                     </span>
                     {!isCollapsed && <span className="flex-1 text-left">Inbox</span>}
-                    {/* Expanded: the unread count always sits at the far right
-                        (muted at zero). Collapsed: only a badge when unread. */}
-                    {(unreadCount > 0 || !isCollapsed) && (
+                    {/* The unread count shows only above zero: at the far right
+                        when expanded, as a corner badge when collapsed. */}
+                    {unreadCount > 0 && (
                       <span
                         data-slot="inbox-count"
                         className={cn(
-                          "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs font-medium tabular-nums",
-                          unreadCount > 0 ? "bg-brand-primary text-brand-foreground" : "text-text-tertiary",
+                          "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-brand-primary px-1 text-2xs font-medium tabular-nums text-brand-foreground",
                           isCollapsed && "absolute right-1 top-0",
                         )}
                       >
@@ -640,7 +655,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         </div>
       </nav>
 
-      {/* Inset line, the same width as the one below the project dropdown. */}
+      {/* Inset line above the bottom items. */}
       <div aria-hidden="true" className="mx-4 h-px shrink-0 bg-sidebar-border" />
       <div className="px-4 py-2.5 space-y-1 shrink-0">
         {projectPageHref &&
