@@ -97,6 +97,40 @@ describe("TicketUnavailableNotice — expired key", () => {
   })
 })
 
+describe("TicketUnavailableNotice — guest conversation expired (closed for more than 30 minutes)", () => {
+  it("explains why the conversation is gone and offers a new one", () => {
+    render(<TicketUnavailableNotice linking={false} failedFinal={false} guestExpired newConversationHref="/support/chat?project=p1" />)
+    expect(screen.getByRole("heading", { name: "Conversation no longer available" })).toHaveClass("text-title")
+    expect(
+      screen.getByText("This guest conversation was closed because the chat window was closed for more than 30 minutes."),
+    ).toBeInTheDocument()
+    expect(screen.queryByText("Ticket not found")).not.toBeInTheDocument()
+    expect(screen.queryByText(/wasn.t linked to your account in time/)).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Start a new conversation" })).toHaveAttribute("href", "/support/chat?project=p1")
+  })
+
+  it("runs onNewConversation when the link is followed (the /support page resets its chat)", () => {
+    const onNewConversation = vi.fn()
+    render(
+      <TicketUnavailableNotice
+        linking={false}
+        failedFinal={false}
+        guestExpired
+        newConversationHref="/support/acme"
+        onNewConversation={onNewConversation}
+      />,
+    )
+    fireEvent.click(screen.getByRole("link", { name: "Start a new conversation" }))
+    expect(onNewConversation).toHaveBeenCalledTimes(1)
+  })
+
+  it("is not shown unless guestExpired is set", () => {
+    render(<TicketUnavailableNotice linking={false} failedFinal={false} newConversationHref="/support/chat" />)
+    expect(screen.queryByText("Conversation no longer available")).not.toBeInTheDocument()
+    expect(screen.getByText("Ticket not found")).toBeInTheDocument()
+  })
+})
+
 describe("signInSubtitle", () => {
   it("talks to support customers about getting help, not the dashboard", () => {
     expect(signInSubtitle(true)).toBe("Sign in to get help and follow your support conversations.")

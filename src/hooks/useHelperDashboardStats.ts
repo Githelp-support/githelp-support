@@ -12,6 +12,7 @@ import {
     type IssueTypeStats,
     type KeyStats,
 } from "./useDashboardStats";
+import { VISIBLE_TICKETS_OR_FILTER } from "@/lib/guest-tickets";
 
 /** A single in-progress ticket the helper is involved with (for table rows). */
 export interface HelperInProgressTicket {
@@ -89,6 +90,7 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                 .select("id, title, status, priority, created_at, completed_at")
                 .eq("project_id", projectId)
                 .is("deleted_at", null)
+                .or(VISIBLE_TICKETS_OR_FILTER)
                 .order("created_at", { ascending: false });
 
             // Help categories for the project.

@@ -16,6 +16,13 @@ interface TicketUnavailableNoticeProps {
   onLink?: () => void
   /** A saved guest conversation expired before it was linked (60 minutes). */
   expired?: boolean
+  /**
+   * The viewer is this browser's own guest and the ticket is hidden from
+   * them: the chat window was closed for more than 30 minutes.
+   */
+  guestExpired?: boolean
+  /** Runs when "Start a new conversation" is followed from the guest-expired notice. */
+  onNewConversation?: () => void
 }
 
 /**
@@ -30,6 +37,8 @@ export function TicketUnavailableNotice({
   deferred = false,
   onLink,
   expired = false,
+  guestExpired = false,
+  onNewConversation,
 }: TicketUnavailableNoticeProps) {
   if (linking) {
     return (
@@ -48,6 +57,25 @@ export function TicketUnavailableNotice({
             Link conversation
           </Button>
         )}
+      </div>
+    )
+  }
+  if (guestExpired) {
+    return (
+      <div data-slot="guest-conversation-expired" className="bg-card rounded-lg border border-border-subtle p-8">
+        <h1 className="text-title font-medium text-text-heading mb-2">Conversation no longer available</h1>
+        <p className="text-sm text-text-muted">
+          This guest conversation was closed because the chat window was closed for more than 30 minutes.
+        </p>
+        <p className="mt-4 text-sm">
+          <Link
+            href={newConversationHref}
+            onClick={onNewConversation}
+            className="rounded-sm font-medium text-brand-primary transition-colors duration-fast ease-out hover:text-brand-primary-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+          >
+            Start a new conversation
+          </Link>
+        </p>
       </div>
     )
   }

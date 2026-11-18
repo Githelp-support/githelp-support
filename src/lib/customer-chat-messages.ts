@@ -27,20 +27,45 @@ export function buildAutoReply(avgResponseSeconds: number | null | undefined): s
 }
 
 /**
- * Guest-ticket system messages (migration 20261029150000_guest_tickets):
- * `visitor_left` is posted by the cron that closes a guest ticket nobody has
- * seen for 15 minutes; `guest_signed_in` by adopt-guest-tickets when the
- * visitor signs in. The stored text is generic, so each side gets its own copy.
+ * Guest-ticket system messages (migrations 20261029150000_guest_tickets and
+ * 20261115130000_guest_ticket_abandonment). A guest ticket is abandoned once
+ * the visitor closed the chat window more than 2 minutes ago or has not been
+ * seen for 15 minutes. What the cron posts then depends on the ticket:
+ * - no helper has written in it: it is cancelled with `visitor_left`;
+ * - a helper has written in it: it stays open and `guest_abandoned` tells the
+ *   helper they may end it (see `isGuestAbandoned`).
+ * `guest_returned` is posted when the visitor comes back within 30 minutes
+ * (which also reopens a ticket cancelled by `visitor_left`), and
+ * `guest_signed_in` by adopt-guest-tickets when the visitor signs in.
+ * The stored text is generic, so each side gets its own copy; the abandoned /
+ * returned notices are for the helper only and never shown to the customer.
  */
 export const VISITOR_LEFT_CUSTOMER_COPY = "This conversation was closed because you left before signing in.";
 export const VISITOR_LEFT_HELPER_COPY = "The visitor left before signing in.";
 export const GUEST_SIGNED_IN_CUSTOMER_COPY = "You signed in — this conversation is now linked to your account.";
 export const GUEST_SIGNED_IN_HELPER_COPY = "The visitor signed in — you can claim this ticket now.";
+export const GUEST_ABANDONED_HELPER_COPY =
+    "The guest user has closed the chat window. You can decide to end the ticket, if you would like.";
+export const GUEST_RETURNED_HELPER_COPY = "The guest user has returned to the chat.";
 
-/** Side-specific copy for a guest system message, or null for any other kind. */
+/** Guest system messages that only the helper sees (a guest gets no note about themselves leaving). */
+const HELPER_ONLY_GUEST_KINDS = new Set<unknown>(["guest_abandoned", "guest_returned"]);
+
+/** Whether a guest system message kind is left out of the customer thread. */
+export function isHiddenFromCustomer(kind: unknown): boolean {
+    return HELPER_ONLY_GUEST_KINDS.has(kind);
+}
+
+/**
+ * Side-specific copy for a guest system message, or null for any other kind.
+ * The helper-only kinds (`guest_abandoned`, `guest_returned`) have no customer
+ * copy: they are filtered out of the customer thread instead.
+ */
 export function guestSystemMessageCopy(kind: unknown, audience: "customer" | "helper"): string | null {
     if (kind === "visitor_left") return audience === "customer" ? VISITOR_LEFT_CUSTOMER_COPY : VISITOR_LEFT_HELPER_COPY;
     if (kind === "guest_signed_in") return audience === "customer" ? GUEST_SIGNED_IN_CUSTOMER_COPY : GUEST_SIGNED_IN_HELPER_COPY;
+    if (kind === "guest_abandoned") return audience === "helper" ? GUEST_ABANDONED_HELPER_COPY : null;
+    if (kind === "guest_returned") return audience === "helper" ? GUEST_RETURNED_HELPER_COPY : null;
     return null;
 }
 
@@ -68,16 +93,16 @@ type KindMessage = { id?: string; sender_type: string; metadata?: Record<string,
 
 /**
  * The `visitor_left` message that explains the ticket's CURRENT closure, if
- * any. Adoption can reopen such a ticket (posting `guest_signed_in`), so it
- * only counts while the ticket is cancelled and no `guest_signed_in` came
- * after it.
+ * any. The visitor coming back (`guest_returned`) or adoption
+ * (`guest_signed_in`) can reopen such a ticket, so it only counts while the
+ * ticket is cancelled and neither came after it.
  */
 function activeVisitorLeft<T extends KindMessage>(messages: T[] | undefined, ticketStatus: string | null | undefined): T | null {
     if (ticketStatus !== "cancelled" || !messages) return null;
     for (let i = messages.length - 1; i >= 0; i--) {
         const m = messages[i];
         if (m.sender_type !== "system") continue;
-        if (m.metadata?.kind === "guest_signed_in") return null;
+        if (m.metadata?.kind === "guest_signed_in" || m.metadata?.kind === "guest_returned") return null;
         if (m.metadata?.kind === "visitor_left") return m;
     }
     return null;
@@ -90,6 +115,25 @@ function activeVisitorLeft<T extends KindMessage>(messages: T[] | undefined, tic
  */
 export function hasVisitorLeft(messages: KindMessage[] | undefined, ticketStatus: string | null | undefined): boolean {
     return activeVisitorLeft(messages, ticketStatus) !== null;
+}
+
+/**
+ * The guest closed the chat window on a ticket a helper has written in, and
+ * has neither come back nor signed in since: the ticket is still open and the
+ * helper may end it. True when the latest of the `guest_abandoned` /
+ * `guest_returned` / `guest_signed_in` system messages is `guest_abandoned`.
+ * Drives the helper's end action.
+ */
+export function isGuestAbandoned(messages: KindMessage[] | undefined, ticketStatus: string | null | undefined): boolean {
+    if (!messages || !ticketStatus || ticketStatus === "completed" || ticketStatus === "cancelled") return false;
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i];
+        if (m.sender_type !== "system") continue;
+        const kind = m.metadata?.kind;
+        if (kind === "guest_abandoned") return true;
+        if (kind === "guest_returned" || kind === "guest_signed_in") return false;
+    }
+    return false;
 }
 
 /** dd.mm.yyyy, HH:MM — the timestamp format used throughout the chat UI. */
@@ -208,8 +252,10 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
 
     // Only the visitor_left notice explaining the current closure is shown
     // (with its "Start a new conversation" action); a reopened ticket hides it.
+    // guest_abandoned / guest_returned are helper-only notices.
     const visitorLeftNow = activeVisitorLeft(messagesData, ticketStatus);
     messagesData?.forEach((msg) => {
+        if (msg.sender_type === "system" && isHiddenFromCustomer(msg.metadata?.kind)) return;
         if (msg.sender_type === "system" && msg.metadata?.kind === "visitor_left" && msg !== visitorLeftNow) return;
         const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";

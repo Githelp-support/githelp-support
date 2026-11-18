@@ -45,20 +45,46 @@ export interface GuestOpenTicket {
 }
 
 /**
+ * `touch_guest_ticket`, awaited: besides the presence heartbeat this is how a
+ * guest re-enters a conversation. The backend reopens (as `available`) the
+ * newest ticket that was cancelled because they left less than 30 minutes
+ * ago — only that ticket when an id is given. Resolves to whether the call
+ * succeeded; never throws.
+ */
+export async function touchGuestTicket(
+  ticketId?: string | null,
+  client: Pick<SupabaseClient, "rpc"> = supabase,
+): Promise<boolean> {
+  try {
+    const { error } = await (ticketId
+      ? client.rpc("touch_guest_ticket", { p_ticket_id: ticketId })
+      : client.rpc("touch_guest_ticket"))
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/**
  * The caller's newest open ticket they created on this project (for a guest:
  * their open guest ticket — a guest has at most one). Used to resume the
  * conversation after a reload / sign-in and when ticket creation hits
- * `guest_open_ticket_exists`. Never throws; null when there is none or the
- * lookup fails.
+ * `guest_open_ticket_exists`. For guests (`guestOnly`) the tickets are
+ * touched first, so a ticket that was cancelled when they closed the tab is
+ * reopened by the backend (within 30 minutes) and found by the lookup. Never
+ * throws; null when there is none or the lookup fails.
  */
 export async function findOpenTicket(
   userId: string,
   /** null: any project (e.g. a guest landing on /onboarding). */
   projectId: string | null,
   opts: { guestOnly?: boolean } = {},
-  client: Pick<SupabaseClient, "from"> = supabase,
+  client: Pick<SupabaseClient, "from" | "rpc"> = supabase,
 ): Promise<GuestOpenTicket | null> {
   if (!userId || projectId === "") return null
+  // Awaited: the lookup below must see the reopened ticket. A failed touch
+  // still falls through to the lookup (a ticket that stayed open is found).
+  if (opts.guestOnly) await touchGuestTicket(null, client)
   try {
     let query = client.from("tickets").select("id, project_id").eq("created_by", userId)
     if (projectId) query = query.eq("project_id", projectId)
@@ -80,7 +106,7 @@ export async function findOpenTicket(
 export function findGuestOpenTicket(
   guestId: string,
   projectId: string | null,
-  client: Pick<SupabaseClient, "from"> = supabase,
+  client: Pick<SupabaseClient, "from" | "rpc"> = supabase,
 ): Promise<GuestOpenTicket | null> {
   return findOpenTicket(guestId, projectId, { guestOnly: true }, client)
 }

@@ -18,7 +18,7 @@ import { wasGuestAdoptionExpired } from "@/lib/guest-adoption-storage"
 import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft, takeSupportDraft } from "@/lib/support-draft"
 import { startGuestSignIn } from "@/lib/guest-adoption"
 import { ensureSupportSession, findGuestOpenTicket, isOwnGuestSession } from "@/lib/guest-session"
-import { useResumableGuestTicket } from "@/hooks/useResumableGuestTicket"
+import { useGuestTicketReentry, useResumableGuestTicket } from "@/hooks/useResumableGuestTicket"
 import { useGuestAdoptionRetry } from "@/hooks/useGuestAdoptionRetry"
 import { GUEST_OPEN_TICKET_ELSEWHERE_MESSAGE, guestTicketCreateAction } from "@/lib/guest-ticket-errors"
 import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/support-sign-in-redirect"
@@ -79,7 +79,7 @@ export default function UserSupportChatPage() {
   const pathname = usePathname()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { user, setProjectRole } = useUser()
+  const { user, setProjectRole, isLoading: userLoading } = useUser()
   // Guests (anonymous session, see user-context) chat without an account:
   // `user.id` stays undefined for them, `guestId` carries their auth id.
   const sessionUserId = user?.id ?? user?.guestId
@@ -148,6 +148,28 @@ export default function UserSupportChatPage() {
   }, [noParams, latestUserTicket, router])
 
   const { data: existingTicket, isLoading: existingTicketLoading } = useTicketWithDetails(ticketIdParam || undefined)
+  // Own guest opening ?ticket=X: touch it first (re-entry within 30 minutes
+  // reopens a ticket cancelled on leave), then the ticket and messages are
+  // refetched. Not for a ticket created in this session.
+  const guestReentry = useGuestTicketReentry(
+    isGuest && ticketIdParam && ticketIdParam !== createdTicketId ? ticketIdParam : undefined,
+    user?.guestId,
+  )
+  // After 30 minutes RLS hides the ticket and its messages from the guest.
+  const guestTicketExpired =
+    isGuest &&
+    !!ticketIdParam &&
+    ticketIdParam !== createdTicketId &&
+    !guestReentry.isPending &&
+    !existingTicketLoading &&
+    !existingTicket?.id
+  // …so drop every cached pointer to it: a new conversation starts with an
+  // empty composer instead of being bounced back here.
+  useEffect(() => {
+    if (!guestTicketExpired) return
+    queryClient.removeQueries({ queryKey: ["resumable-ticket"] })
+    queryClient.removeQueries({ queryKey: ["latest-user-active-ticket"] })
+  }, [guestTicketExpired, queryClient])
   const projectIdFromTicket = existingTicket?.project_id
   const projectId = projectIdParam || projectIdFromTicket
   const { data: projectById } = useProject(projectId || "")
@@ -693,7 +715,12 @@ export default function UserSupportChatPage() {
   // A ticket created in this session is already on screen; don't swap it for
   // the loading/not-found screens while its ?ticket= lookup catches up.
   const openingOtherTicket = !!ticketIdParam && ticketIdParam !== createdTicketId
-  if (openingOtherTicket && existingTicketLoading) {
+  // A cancelled guest ticket may still be re-entered: wait for the touch (and
+  // for the session to tell us whether this is our guest) before showing it
+  // as closed.
+  const reentryUndecided =
+    guestReentry.isPending || (userLoading && !!existingTicket?.guest && existingTicket.status === "cancelled")
+  if (openingOtherTicket && (existingTicketLoading || reentryUndecided)) {
     return (
       <PageSkeleton />
     )
@@ -710,6 +737,8 @@ export default function UserSupportChatPage() {
             onLink={adoptionRetry.linkNow}
             // The guest conversation's key ran out before it was linked.
             expired={isAuthenticated && !adoptionRetry.linking && wasGuestAdoptionExpired()}
+            // This browser's own guest: the window was closed for over 30 minutes.
+            guestExpired={guestTicketExpired}
             newConversationHref={
               projectIdParam ? `/support/chat?project=${encodeURIComponent(projectIdParam)}` : "/support/chat"
             }

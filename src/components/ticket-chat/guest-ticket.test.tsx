@@ -3,7 +3,10 @@ import { fireEvent, render, screen } from "@testing-library/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   ClaimTicketButton,
+  EndAbandonedGuestTicketButton,
+  GUEST_ABANDONED_END_COPY,
   GUEST_CLAIM_BLOCKED_COPY,
+  endAbandonedGuestTicketErrorMessage,
   GuestTicketBadge,
   VisitorLeftAction,
   ticketCreatorDisplayName,
@@ -16,6 +19,7 @@ import {
   buildCustomerThreadMessages,
   guestSystemMessageCopy,
   hasVisitorLeft,
+  isGuestAbandoned,
 } from "@/lib/customer-chat-messages"
 
 describe("ClaimTicketButton", () => {
@@ -90,6 +94,69 @@ describe("ClaimTicketButton", () => {
       </TooltipProvider>,
     )
     expect(screen.getByRole("button", { name: "Claiming…" })).toBeDisabled()
+  })
+})
+
+describe("EndAbandonedGuestTicketButton", () => {
+  it("ends the ticket on click and explains why under the button", () => {
+    const onEnd = vi.fn()
+    render(<EndAbandonedGuestTicketButton onEnd={onEnd} />)
+    const button = screen.getByRole("button", { name: "End ticket" })
+    expect(button).toBeEnabled()
+    expect(button).not.toHaveAttribute("aria-busy")
+    const explanation = screen.getByText(GUEST_ABANDONED_END_COPY)
+    expect(explanation).toHaveTextContent("The guest has left. End the ticket to keep a record of the support given.")
+    expect(explanation).toHaveClass("text-ui", "text-text-muted")
+    expect(button).toHaveAttribute("aria-describedby", explanation.id)
+    fireEvent.click(button)
+    expect(onEnd).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows only the button without the explanation (header)", () => {
+    render(<EndAbandonedGuestTicketButton onEnd={vi.fn()} showExplanation={false} />)
+    const button = screen.getByRole("button", { name: "End ticket" })
+    expect(button).toBeEnabled()
+    expect(button).not.toHaveAttribute("aria-describedby")
+    expect(screen.queryByText(GUEST_ABANDONED_END_COPY)).not.toBeInTheDocument()
+  })
+
+  it("is busy and not clickable while the request is pending, keeping its label", () => {
+    const onEnd = vi.fn()
+    render(<EndAbandonedGuestTicketButton pending onEnd={onEnd} />)
+    const button = screen.getByRole("button", { name: "End ticket" })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute("aria-busy", "true")
+    expect(button.querySelector('[data-slot="button-spinner"]')).not.toBeNull()
+    fireEvent.click(button)
+    expect(onEnd).not.toHaveBeenCalled()
+  })
+
+  it("disappears when the guest returns or the ticket ends (page condition)", () => {
+    const system = (id: string, kind: string) => ({ id, sender_type: "system", metadata: { kind } })
+    const Harness = ({ messages, status }: { messages: ReturnType<typeof system>[]; status: string }) =>
+      isGuestAbandoned(messages, status) ? <EndAbandonedGuestTicketButton onEnd={vi.fn()} /> : null
+
+    const abandoned = [system("s1", "guest_abandoned")]
+    const { rerender } = render(<Harness messages={abandoned} status="available" />)
+    expect(screen.getByRole("button", { name: "End ticket" })).toBeInTheDocument()
+
+    // A realtime guest_returned message removes it.
+    rerender(<Harness messages={[...abandoned, system("s2", "guest_returned")]} status="available" />)
+    expect(screen.queryByRole("button", { name: "End ticket" })).not.toBeInTheDocument()
+    expect(screen.queryByText(GUEST_ABANDONED_END_COPY)).not.toBeInTheDocument()
+
+    // So does the ticket being ended.
+    rerender(<Harness messages={abandoned} status="completed" />)
+    expect(screen.queryByRole("button", { name: "End ticket" })).not.toBeInTheDocument()
+  })
+
+  it("maps the RPC error hints to helper-facing copy", () => {
+    expect(endAbandonedGuestTicketErrorMessage({ hint: "guest_ticket_not_abandoned" })).toBe("The guest is back in the chat.")
+    expect(endAbandonedGuestTicketErrorMessage({ hint: "ticket_closed" })).toBe("This ticket is already closed.")
+    expect(endAbandonedGuestTicketErrorMessage({ hint: "guest_ticket_not_found" })).toBe("Ticket not found.")
+    expect(endAbandonedGuestTicketErrorMessage({ hint: "something_else" })).toBeNull()
+    expect(endAbandonedGuestTicketErrorMessage(new Error("network"))).toBeNull()
+    expect(endAbandonedGuestTicketErrorMessage(null)).toBeNull()
   })
 })
 

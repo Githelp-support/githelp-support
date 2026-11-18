@@ -611,6 +611,16 @@ export type Database = {
                 Args: { p_ticket_id?: string | null };
                 Returns: undefined;
             };
+            /** The guest closed the window: marks the caller's own open guest ticket (or all of them without an id) as left. */
+            leave_guest_ticket: {
+                Args: { p_ticket_id?: string | null };
+                Returns: undefined;
+            };
+            /** A helper or admin formally ends a guest ticket the visitor has abandoned (status becomes completed). */
+            end_abandoned_guest_ticket: {
+                Args: { p_ticket_id: string };
+                Returns: undefined;
+            };
         };
     };
 };
