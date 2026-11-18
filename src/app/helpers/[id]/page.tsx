@@ -603,7 +603,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               {ticketHref ? (
                                 <DropdownMenuItem asChild>
                                   <Link href={ticketHref}>
