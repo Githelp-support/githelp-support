@@ -572,7 +572,7 @@ export default function UserReportsPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               {/* Portalled, but React events still bubble to the row. */}
-                              <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                              <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                                 {count > 1 ? (
                                   <DropdownMenuItem
                                     title="Each transaction has its own Stripe receipt"

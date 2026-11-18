@@ -712,7 +712,7 @@ export default function HelpersPage() {
                                   <Icon name="fi-rr-menu-dots-vertical" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui">
                                 <DropdownMenuItem onSelect={() => void handleCopyInviteLink(invite.invite_url)}>
                                   <Icon name="fi-rr-copy" />
                                   Copy invitation link
@@ -795,9 +795,9 @@ export default function HelpersPage() {
                                 <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui">
                               <DropdownMenuItem
-                                variant="destructive"
+                                className="text-muted-foreground focus:bg-surface-hover focus:text-foreground"
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >
