@@ -16,7 +16,7 @@ import { useAddSelfAsHelper } from "@/hooks/useHelpers"
 import { useUser } from "@/contexts/user-context"
 import { supabase } from "@/lib/supabase/client"
 import { getFunctionErrorMessage } from "@/lib/functions-error"
-import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -250,7 +250,7 @@ export default function InviteContributorsPage() {
     if (projectLoading || roleLoading) {
         return (
             <div className="h-full flex justify-center overflow-y-auto bg-muted/50 px-4 py-8">
-                <Loader2 className="my-auto w-8 h-8 animate-spin text-muted-foreground" />
+                <Loader className="my-auto text-muted-foreground" />
             </div>
         )
     }

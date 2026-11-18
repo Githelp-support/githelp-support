@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { Icon } from "@/components/ui/icon"
 import { supabase } from "@/lib/supabase/client"
 import { signInWithGitHub } from "@/lib/supabase/auth"
@@ -145,7 +146,7 @@ export default function JoinProjectPage() {
                                 </Button>
                             ) : loadingContributed ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                    <Loader size={24} className="text-muted-foreground" label="Loading projects" />
                                 </div>
                             ) : contributedProjects.length === 0 ? (
                                 <p className="text-sm text-muted-foreground py-4">

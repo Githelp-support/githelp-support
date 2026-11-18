@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/lib/supabase/client"
 import { hasSignedInSession } from "@/lib/supabase/auth-state"
 import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -270,7 +271,7 @@ export default function InviteAcceptancePage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-page-muted">
                 <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
+                    <Loader className="text-brand-primary mx-auto mb-4" label="Loading invite" />
                     <p className="text-sm text-muted-foreground">Loading invite...</p>
                 </div>
             </div>

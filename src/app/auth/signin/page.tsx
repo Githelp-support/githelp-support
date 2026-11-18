@@ -14,7 +14,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { notifyGuestAdoptionResult } from "@/lib/guest-adoption-toast"
 import { isSupportRoute, signInSubtitle } from "@/lib/sign-in-href"
 import { useGuestSignInPresence } from "@/hooks/useGuestPresence"
-import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 
 export default function SignInPage() {
   const router = useRouter()
@@ -70,7 +70,7 @@ export default function SignInPage() {
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-page-muted">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+        <Loader className="text-brand-primary" />
       </div>
     )
   }

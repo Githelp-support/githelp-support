@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -93,7 +93,7 @@ export function ContributorsStep({
                     </p>
                 ) : contributorsLoading ? (
                     <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                        <Loader className="text-muted-foreground" label="Loading contributors" />
                     </div>
                 ) : contributors.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">
