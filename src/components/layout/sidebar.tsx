@@ -438,7 +438,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                 <Link
                   href="/notifications"
                   className={cn(
-                    "flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
+                    "flex items-center gap-3 h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
                     pathname === "/notifications"
                       ? "bg-brand-primary/[0.08] font-medium text-brand-primary"
                       : NAV_ROW_REST,
@@ -467,7 +467,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     aria-expanded={isInboxOpen}
                     onClick={() => setIsInboxOpen((prev) => !prev)}
                     className={cn(
-                      "relative w-full flex items-center h-8 px-2.5 rounded-md text-ui cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
+                      "relative w-full flex items-center h-9 px-2.5 rounded-md text-ui cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
                       isCollapsed ? "justify-center" : "gap-3",
                     )}
                   >
@@ -516,7 +516,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                         <button
                           type="button"
                           aria-label={item.name}
-                          className={`w-full flex items-center justify-center h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                          className={`w-full flex items-center justify-center h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                             hasActiveSubItem ? activeClasses : inactiveClasses
                           }`}
                         >
@@ -557,7 +557,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                   ) : (
                     <div>
                       <div
-                        className={`w-full flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                        className={`w-full flex items-center gap-3 h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                           isActive ? activeClasses : inactiveClasses
                         }`}
                       >
@@ -607,14 +607,14 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                               Clamped to start/end at the center of the first/last dot. */}
                           <span
                             aria-hidden="true"
-                            className="pointer-events-none absolute left-[18px] top-4 bottom-4 w-px -translate-x-1/2 bg-border-subtle"
+                            className="pointer-events-none absolute left-[18px] top-4.5 bottom-4.5 w-px -translate-x-1/2 bg-border-subtle"
                           />
                           {item.subItems.map((subItem) => {
                             const isSubActive = isSubItemActive(subItem.href)
                             return (
                               <Link key={subItem.name} href={subItem.href} className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
                                 <div
-                                  className={`relative flex items-center h-8 pl-9 pr-2.5 rounded-md text-ui transition-colors duration-fast ease-out ${
+                                  className={`relative flex items-center h-9 pl-9 pr-2.5 rounded-md text-ui transition-colors duration-fast ease-out ${
                                     isSubActive ? activeClasses : NAV_ROW_REST
                                   }`}
                                 >
@@ -640,7 +640,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     item.name,
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
-                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                     >
@@ -669,7 +669,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              "flex items-center h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
+              "flex items-center h-9 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
               isCollapsed ? "justify-center" : "gap-3",
             )}
           >
@@ -681,7 +681,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           )}
         {bottomItems.map((item) => {
           const isActive = pathname === item.href
-          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-9 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
             isActive ? "bg-brand-primary/[0.08] font-medium text-brand-primary" : NAV_ROW_REST
           }`
           return (
