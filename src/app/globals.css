@@ -349,6 +349,23 @@
   animation: sheet-out-right var(--duration-base) var(--ease-in-out) both;
 }
 
+/* Thin, unobtrusive scrollbar for the sidebar menu. The gutter is always
+   reserved so a scrollbar appearing never shifts the layout (overlay
+   scrollbars reserve nothing). With a pointer the thumb only shows while the
+   region is hovered or holds focus; touch devices keep their own overlay bar. */
+@utility scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--border-subtle) transparent;
+  @media (hover: hover) {
+    scrollbar-color: transparent transparent;
+    &:hover,
+    &:focus-within {
+      scrollbar-color: var(--border-subtle) transparent;
+    }
+  }
+}
+
 /* Button depth: a sheen and shadow laid over whatever background-color the
    variant already has (neither utility sets a colour). Values are the --btn-*
    tokens in :root (dark-mode overrides in .dark).

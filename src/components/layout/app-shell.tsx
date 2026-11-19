@@ -4,12 +4,16 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { usePathname } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { MobileSidebarSheet } from "@/components/layout/mobile-nav"
+import { TopBar } from "@/components/layout/top-bar"
 
 /**
- * The app shell renders the Sidebar and the page frame once, in the root
- * layout, so navigation never remounts the sidebar. Pages render only their
- * Header and content. Which routes get the shell is decided by pathname (no
- * URL changes, no route groups) — see `isShellRoute`.
+ * The app shell renders the Sidebar, the TopBar and the page frame once, in
+ * the root layout, so navigation never remounts the sidebar. On shell routes
+ * the sidebar spans the full height of the screen and the TopBar sits at the
+ * top of the content column beside it; on every other route the TopBar spans
+ * the full width above the page. Pages render only their Header and content.
+ * Which routes get the shell is decided by pathname (no URL changes, no route
+ * groups) — see `isShellRoute`.
  */
 
 // Top-level sections that always live inside the shell (admin, helper, user).
@@ -72,23 +76,33 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [projectPageHref, setProjectPageHref] = useState<string | undefined>(undefined)
   const ctx = useMemo<ShellContextValue>(() => ({ setProjectPageHref }), [])
 
+  // Outside the shell (onboarding, /projects, public /support, …) the full
+  // TopBar sits above the page, as a direct child of the root layout's column.
   if (!isShellRoute(pathname)) {
-    return <ShellContext.Provider value={ctx}>{children}</ShellContext.Provider>
+    return (
+      <ShellContext.Provider value={ctx}>
+        <TopBar />
+        {children}
+      </ShellContext.Provider>
+    )
   }
 
   return (
     <ShellContext.Provider value={ctx}>
-      {/* `min-h-0` lets the row shrink inside the h-screen column so the page scrolls, not the window. */}
+      {/* The row fills the whole h-dvh column: `min-h-0` lets it shrink so the page scrolls, not the window. */}
       <div className="flex flex-1 min-h-0 overflow-hidden print:block print:h-auto print:overflow-visible">
-        {/* Desktop: the sidebar sits in the row. Below lg it becomes the off-canvas sheet. */}
+        {/* Desktop: the sidebar sits in the row, from the top of the screen to the bottom. Below lg it becomes the off-canvas sheet. */}
         <div className="hidden lg:contents">
           <Sidebar projectPageHref={projectPageHref} className="print:hidden" />
         </div>
         <MobileSidebarSheet label="Main menu">
           <Sidebar projectPageHref={projectPageHref} forceExpanded />
         </MobileSidebarSheet>
-        {/* The content column. Pages render a sticky Header plus a scrolling <main> inside it. */}
-        <div className="flex flex-1 flex-col min-w-0 min-h-0 overflow-hidden">{children}</div>
+        {/* The content column: the TopBar, then the page (a sticky Header plus a scrolling <main>). */}
+        <div className="flex flex-1 flex-col min-w-0 min-h-0 overflow-hidden">
+          <TopBar variant="shell" />
+          {children}
+        </div>
       </div>
     </ShellContext.Provider>
   )

@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 const usePathname = vi.fn()
 const useSearchParams = vi.fn()
 vi.mock("next/navigation", () => ({
   usePathname: () => usePathname(),
   useSearchParams: () => useSearchParams(),
+  useRouter: () => ({ push: vi.fn() }),
 }))
 
 const useUser = vi.fn()
@@ -25,6 +27,29 @@ vi.mock("next/link", () => ({
       {children}
     </a>
   ),
+}))
+
+// The role / project controls have their own data dependencies (queries,
+// project selection); the sidebar tests only assert where they are rendered.
+const signOut = vi.fn()
+vi.mock("@/hooks/useWorkspaceSwitcher", () => ({
+  useWorkspaceSwitcher: () => ({ signOut }),
+}))
+vi.mock("@/components/layout/workspace-switchers", () => ({
+  RoleSwitcher: ({ variant, collapsed }: { variant?: string; collapsed?: boolean }) => (
+    <div data-testid="role-switcher" data-variant={variant} data-collapsed={String(!!collapsed)} />
+  ),
+  ProjectSwitcher: ({ collapsed, variant }: { collapsed?: boolean; variant?: string }) => (
+    <div data-testid="project-switcher" data-collapsed={String(!!collapsed)} data-variant={variant} />
+  ),
+}))
+
+const useNotifications = vi.fn()
+vi.mock("@/hooks/useNotifications", () => ({
+  useNotifications: () => useNotifications(),
+  useMarkNotificationRead: () => ({ mutateAsync: vi.fn() }),
+  useMarkAllNotificationsRead: () => ({ mutateAsync: vi.fn() }),
+  notificationType: () => "SUPPORT_TICKET",
 }))
 
 import { Sidebar } from "../sidebar"
@@ -52,6 +77,7 @@ beforeEach(() => {
   usePathname.mockReturnValue("/support/tickets")
   useSearchParams.mockReturnValue(new URLSearchParams())
   useUser.mockReturnValue({ user: signedInUser, setProjectRole: vi.fn() })
+  useNotifications.mockReturnValue({ data: [] })
 })
 
 describe("Sidebar — project page link", () => {
@@ -121,9 +147,10 @@ describe("Sidebar — user-role menu order", () => {
     // Each item's own row is a link (leaf) or a role=button (parent); sub-menus
     // stay mounted below the row, so read the row rather than the whole item.
     const topLevelLabels = Array.from(nav!.firstElementChild!.children).map(
-      (el) => el.querySelector("a, [role='button']")?.textContent?.trim(),
+      (el) => el.querySelector("a, button, [role='button']")?.textContent?.trim(),
     )
     expect(topLevelLabels).toEqual([
+      "Inbox", // no unread count at zero
       "Overview",
       "Support",
       "Tickets",
@@ -199,5 +226,302 @@ describe("Sidebar — expansion follows client-side navigation", () => {
     rerender(<Sidebar />)
     expect(screen.getByText("Branding").closest("[data-state]")).toHaveAttribute("data-state", "open")
     expect(screen.getByText("Branding").closest("a")).toHaveAttribute("href", "/settings/branding")
+  })
+})
+
+describe("Sidebar — header, project row and profile block", () => {
+  // Collapsed rows are wrapped in tooltips, which need the root layout's provider.
+  const renderSidebar = (props: React.ComponentProps<typeof Sidebar> = {}) =>
+    render(
+      <TooltipProvider>
+        <Sidebar {...props} />
+      </TooltipProvider>,
+    )
+
+  it("expanded: shows the role and project controls and a collapse button, no role line", () => {
+    renderSidebar()
+
+    expect(screen.getByTestId("role-switcher")).toBeInTheDocument()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "false")
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Role:/)).not.toBeInTheDocument()
+    // Both switchers are sidebar rows, below the logo row that holds the collapse button.
+    const role = screen.getByTestId("role-switcher")
+    expect(role).toHaveAttribute("data-variant", "row")
+    expect(role.querySelector("svg")).toBeNull()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-variant", "row")
+    const logoRow = role.previousElementSibling!
+    expect(logoRow.querySelector('[data-slot="sidebar-logo"] svg')).not.toBeNull()
+    expect(logoRow).toContainElement(screen.getByRole("button", { name: "Collapse sidebar" }))
+    // The project row sits directly below the role row.
+    expect(role.nextElementSibling).toBe(screen.getByTestId("project-switcher"))
+  })
+
+  it("starts collapsed from localStorage: the logo is the only expand control", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+
+    // No chevron button in either direction: the logo expands the sidebar.
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
+    expect(document.querySelector(".fi-rr-angle-double-small-left")).toBeNull()
+    expect(document.querySelector(".fi-rr-angle-double-small-right")).toBeNull()
+    const expand = screen.getByRole("button", { name: "Expand sidebar" })
+    expect(expand.querySelector("svg")).not.toBeNull()
+
+    expect(screen.getByTestId("role-switcher")).toHaveAttribute("data-collapsed", "true")
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
+
+    fireEvent.click(expand)
+    expect(window.localStorage.getItem("sidebar:collapsed")).toBe("false")
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
+    expect(screen.getByTestId("role-switcher")).toBeInTheDocument()
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "false")
+  })
+
+  it("collapses to the logo button and expands again, persisting the state", () => {
+    renderSidebar()
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }))
+    expect(window.localStorage.getItem("sidebar:collapsed")).toBe("true")
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
+    expect(screen.getByTestId("role-switcher")).toHaveAttribute("data-collapsed", "true")
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
+    expect(screen.queryByText("Test User")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }))
+    expect(window.localStorage.getItem("sidebar:collapsed")).toBe("false")
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
+  })
+
+  it("centres the 'Open project page' link when collapsed", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar({ projectPageHref: "/support/acme" })
+
+    const link = document.querySelector('a[href="/support/acme"]')
+    expect(link?.className).toContain("justify-center")
+    expect(link?.className).not.toContain("gap-3")
+  })
+
+  it("forceExpanded (mobile sheet): no collapse button, even when the stored state is collapsed", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar({ forceExpanded: true })
+
+    expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument()
+    expect(screen.getByTestId("role-switcher")).toBeInTheDocument()
+  })
+
+  it("signs out through the account menu", () => {
+    renderSidebar()
+
+    const trigger = screen.getByRole("button", { name: "Account menu" })
+    fireEvent.keyDown(trigger, { key: "Enter" })
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }))
+    expect(signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps Sign out reachable from the avatar when collapsed", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Account menu" }), { key: "Enter" })
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }))
+    expect(signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows the Inbox at the top of the menu with the unread count, and opens the notifications panel", () => {
+    useNotifications.mockReturnValue({
+      data: [
+        { id: "n1", is_read: false, content: "New ticket", created_at: new Date().toISOString(), route: null },
+        { id: "n2", is_read: true, content: "Old ticket", created_at: new Date().toISOString(), route: null },
+      ],
+    })
+    const { container } = renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox, 1 unread" })
+    expect(inbox.querySelector(".fi-rr-inbox")).not.toBeNull()
+    expect(inbox).toHaveTextContent("Inbox")
+    expect(container.querySelector("nav")!.firstElementChild!.firstElementChild).toContainElement(inbox)
+    expect(document.querySelector(".fi-rr-bell")).toBeNull()
+
+    expect(screen.queryByRole("dialog", { name: "Notifications" })).not.toBeInTheDocument()
+    fireEvent.click(inbox)
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
+  })
+
+  it("shows the unread count at the far right of the Inbox item, only above zero", () => {
+    useNotifications.mockReturnValue({
+      data: [{ id: "n1", is_read: true, content: "Old ticket", created_at: new Date().toISOString(), route: null }],
+    })
+    const { rerender } = renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox" })
+    expect(inbox.querySelector('[data-slot="inbox-count"]')).toBeNull()
+    expect(inbox).not.toHaveTextContent("0")
+
+    useNotifications.mockReturnValue({
+      data: Array.from({ length: 3 }, (_, i) => ({
+        id: `n${i}`,
+        is_read: false,
+        content: "New ticket",
+        created_at: new Date().toISOString(),
+        route: null,
+      })),
+    })
+    rerender(<Sidebar />)
+    const unread = screen.getByRole("button", { name: "Inbox, 3 unread" })
+    const count = unread.querySelector('[data-slot="inbox-count"]')
+    expect(count).toHaveTextContent("3")
+    expect(unread.lastElementChild).toBe(count)
+  })
+
+  it("collapsed: the Inbox is icon-only and still opens the panel", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox" })
+    expect(inbox).not.toHaveTextContent("Inbox")
+    expect(inbox.querySelector('[data-slot="inbox-count"]')).toBeNull()
+    fireEvent.click(inbox)
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
+  })
+
+  it("forceExpanded (mobile sheet): the Inbox links to the notifications page", () => {
+    renderSidebar({ forceExpanded: true })
+
+    expect(screen.getByText("Inbox").closest("a")).toHaveAttribute("href", "/notifications")
+  })
+
+  it("has no 'Projects' label; a hairline separates the switchers from the menu", () => {
+    renderSidebar()
+    expect(screen.queryByText("Projects")).not.toBeInTheDocument()
+    const divider = document.querySelector('[data-slot="sidebar-switcher-divider"]')
+    expect(divider).not.toBeNull()
+    // The menu's scroll region follows the hairline directly.
+    const region = document.querySelector('[data-slot="sidebar-scroll"]')
+    expect(divider!.nextElementSibling).toBe(region)
+    expect(region).toContainElement(screen.getByRole("navigation", { name: "Main" }))
+  })
+
+  it("guests: name only, no role, project or account controls", () => {
+    useUser.mockReturnValue({ user: { ...anonymousUser, guestId: "g1" }, setProjectRole: vi.fn() })
+    renderSidebar()
+
+    expect(screen.getByText("Incognito")).toBeInTheDocument()
+    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("project-switcher")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Account menu" })).not.toBeInTheDocument()
+    expect(screen.queryByText("Inbox")).not.toBeInTheDocument()
+    expect(screen.queryByText("Projects")).not.toBeInTheDocument()
+  })
+})
+
+describe("Sidebar — scrolling menu", () => {
+  const renderSidebar = (props: React.ComponentProps<typeof Sidebar> = {}) =>
+    render(
+      <TooltipProvider>
+        <Sidebar {...props} />
+      </TooltipProvider>,
+    )
+
+  const setMetrics = (el: HTMLElement, metrics: { scrollHeight: number; clientHeight: number; scrollTop: number }) => {
+    for (const [key, value] of Object.entries(metrics)) {
+      Object.defineProperty(el, key, { configurable: true, writable: true, value })
+    }
+  }
+
+  it("only the menu scrolls: the switchers above and the bottom items stay outside it", () => {
+    renderSidebar({ projectPageHref: "/support/acme" })
+    const nav = screen.getByRole("navigation", { name: "Main" })
+
+    expect(nav.className).toContain("overflow-y-auto")
+    expect(nav.className).toContain("min-h-0")
+    expect(nav.className).toContain("flex-1")
+    expect(nav).toContainElement(screen.getByRole("button", { name: "Inbox" }))
+    expect(nav).toContainElement(screen.getByText("Settings"))
+    expect(nav).not.toContainElement(screen.getByTestId("role-switcher"))
+    expect(nav).not.toContainElement(screen.getByTestId("project-switcher"))
+    expect(nav).not.toContainElement(screen.getByText("Open project page"))
+    expect(nav).not.toContainElement(screen.getByText("Help"))
+    expect(nav).not.toContainElement(screen.getByRole("button", { name: "Account menu" }))
+  })
+
+  it("collapsed: the icon-only menu is the same scroll region", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+    const nav = screen.getByRole("navigation", { name: "Main" })
+
+    expect(nav.className).toContain("overflow-y-auto")
+    expect(nav).toContainElement(screen.getByRole("button", { name: "Inbox" }))
+    expect(nav).not.toContainElement(screen.getByRole("button", { name: "Account menu" }))
+  })
+
+  it("shows a fade only at the edges that have more content", () => {
+    renderSidebar()
+    const nav = screen.getByRole("navigation", { name: "Main" })
+    const top = document.querySelector('[data-slot="sidebar-fade-top"]')!
+    const bottom = document.querySelector('[data-slot="sidebar-fade-bottom"]')!
+    expect(top).toHaveAttribute("data-visible", "false")
+    expect(bottom).toHaveAttribute("data-visible", "false")
+
+    setMetrics(nav, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 })
+    fireEvent.scroll(nav)
+    expect(top).toHaveAttribute("data-visible", "false")
+    expect(bottom).toHaveAttribute("data-visible", "true")
+
+    setMetrics(nav, { scrollHeight: 600, clientHeight: 300, scrollTop: 120 })
+    fireEvent.scroll(nav)
+    expect(top).toHaveAttribute("data-visible", "true")
+    expect(bottom).toHaveAttribute("data-visible", "true")
+
+    setMetrics(nav, { scrollHeight: 600, clientHeight: 300, scrollTop: 300 })
+    fireEvent.scroll(nav)
+    expect(top).toHaveAttribute("data-visible", "true")
+    expect(bottom).toHaveAttribute("data-visible", "false")
+  })
+
+  it("scrolls the active item into view on load when it is below the visible part", () => {
+    usePathname.mockReturnValue("/user/settings/notifications")
+    const rect = (top: number, bottom: number) => ({ top, bottom, height: bottom - top }) as DOMRect
+    const spy = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      if (this.getAttribute("aria-label") === "Main") return rect(100, 400)
+      if (this.getAttribute("data-active") === "true") return rect(500, 536)
+      return rect(0, 0)
+    })
+    try {
+      renderSidebar()
+      const active = screen.getByText("Notifications")
+      expect(active).toHaveAttribute("data-active", "true")
+      expect(screen.getByRole("navigation", { name: "Main" }).scrollTop).toBe(136)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it("remembers the expanded section and restores it on the next visit", () => {
+    usePathname.mockReturnValue("/user/overview")
+    const first = renderSidebar()
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "closed")
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand Support" }))
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "open")
+    expect(JSON.parse(window.localStorage.getItem("sidebar:expanded")!)).toEqual(["Support"])
+
+    first.unmount()
+    renderSidebar()
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "open")
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse Support" }))
+    expect(JSON.parse(window.localStorage.getItem("sidebar:expanded")!)).toEqual([])
+  })
+
+  it("an active sub-page still opens its own section over the remembered one", () => {
+    window.localStorage.setItem("sidebar:expanded", JSON.stringify(["Support"]))
+    usePathname.mockReturnValue("/user/settings/payment")
+    renderSidebar()
+
+    expect(screen.getByText("Payment").closest("[data-state]")).toHaveAttribute("data-state", "open")
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "closed")
   })
 })

@@ -9,7 +9,6 @@ import { ProjectProvider } from "@/contexts/project-context"
 import { UnsavedChangesProvider } from "@/contexts/unsaved-changes-context"
 import { ReactQueryProvider } from "@/lib/react-query/provider"
 import { ProtectedLayout } from "@/components/layout/protected-layout"
-import { TopBar } from "@/components/layout/top-bar"
 import { AppShell } from "@/components/layout/app-shell"
 import { MobileNavProvider } from "@/components/layout/mobile-nav"
 import { LoadingFallback } from "@/components/ui/loading-fallback"
@@ -74,8 +73,7 @@ export default function RootLayout({
                     <MobileNavProvider>
                       {/* h-dvh (not h-screen) so the chat composer stays above the on-screen keyboard. */}
                       <div className="flex flex-col h-dvh">
-                        <TopBar />
-                        {/* Sidebar + page frame, rendered once; pages only render Header + content. */}
+                        {/* Sidebar + TopBar + page frame, rendered once; pages only render Header + content. */}
                         <AppShell>{children}</AppShell>
                       </div>
                     </MobileNavProvider>
