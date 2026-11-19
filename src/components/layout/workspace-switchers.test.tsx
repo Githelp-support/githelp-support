@@ -190,7 +190,7 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     const role = screen.getByRole("button", { name: /admin/i })
     const project = screen.getByRole("button", { name: /alpha/i })
     for (const trigger of [role, project]) {
-      expect(trigger.className).toContain("h-8")
+      expect(trigger.className).toContain("h-9")
       expect(trigger.className).toContain("hover:bg-surface-hover")
       // Subtle stroke, filled with the sidebar surface around it.
       expect(trigger.className).toContain("border-border-subtle")

@@ -108,15 +108,16 @@ function ProjectLogoWithBranding({
 
 type SwitcherVariant = "control" | "row"
 
-// Sidebar switcher rows share the nav item geometry: 32px high, 10px from the
+// Sidebar switcher rows share the nav item geometry: 36px high, 10px from the
 // edge to the icon slot (9px padding inside the 1px stroke), a 16px icon slot
 // and a 12px gap, so the role tile, the project avatar and the nav icons sit on
 // one vertical axis and every label starts at the same x. The tile and avatar
 // are wider than the slot and overflow it evenly on both sides, which keeps
-// them centred on that axis. The row is a container with a subtle stroke,
+// them centred on that axis: the 28px tile sits 4px from the row's left, top
+// and bottom edges. The row is a container with a subtle stroke,
 // filled with the sidebar surface around it.
 const ROW_TRIGGER_CLASS =
-  "flex h-8 w-full min-w-0 items-center gap-3 rounded-md border border-border-subtle bg-sidebar px-2.25 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+  "flex h-9 w-full min-w-0 items-center gap-3 rounded-md border border-border-subtle bg-sidebar px-2.25 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
 const ROW_SLOT_CLASS = "flex h-4 w-4 shrink-0 items-center justify-center"
 const ROW_LABEL_CLASS =
   "min-w-0 flex-1 truncate text-left font-sans text-ui font-medium text-sidebar-foreground"
@@ -418,7 +419,7 @@ export function ProjectSwitcher({
       <div
         className={cn(
           variant === "row"
-            ? "flex h-8 items-center rounded-md border border-border-subtle bg-sidebar px-2.25"
+            ? "flex h-9 items-center rounded-md border border-border-subtle bg-sidebar px-2.25"
             : "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
           className,
         )}

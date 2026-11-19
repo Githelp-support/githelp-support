@@ -354,7 +354,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               logo-only trigger; `empty:hidden` drops the padding when it
               renders nothing (no projects). */}
           {isAuthenticated && (
-            <div className="px-4 pb-6.5 shrink-0 empty:hidden">
+            <div className="px-4 pb-4 shrink-0 empty:hidden">
               <ProjectSwitcher collapsed />
             </div>
           )}
@@ -367,15 +367,15 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         // height (14px + 32px + 14px); the sheet's Close button sits beside it.
         <div
           className={cn(
-            // 20px from the logo row to the role row, 12px between the two
-            // switchers, and 26px down to the hairline (the same 26px sits
+            // 28px from the logo row to the role row, 12px between the two
+            // switchers, and 16px down to the hairline (the same 16px sits
             // between the hairline and the Inbox).
             "flex shrink-0 flex-col gap-3 px-4 pt-3.5",
             // Guests only get the logo: keep the old header height above the Sign in card.
-            isAuthenticated ? "pb-6.5" : "mb-1.25 h-15",
+            isAuthenticated ? "pb-4" : "mb-1.25 h-15",
           )}
         >
-          <div className={cn("flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5", isAuthenticated && "mb-2")}>
+          <div className={cn("flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5", isAuthenticated && "mb-4")}>
             <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
               <Logo />
             </span>
@@ -405,7 +405,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         <div
           aria-hidden="true"
           data-slot="sidebar-switcher-divider"
-          className={cn("mb-6.5 h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
+          className={cn("mb-4 h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
         />
       )}
 
