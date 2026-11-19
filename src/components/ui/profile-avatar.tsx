@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { GuestGhostIcon } from "@/components/ui/guest-ghost-icon"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
@@ -35,6 +36,11 @@ export interface ProfileAvatarProps {
   name?: string | null
   /** Optional avatar image. When non-empty, an <img> is rendered; otherwise the colored fallback shows. */
   avatarUrl?: string | null
+  /**
+   * The person is a guest (visitor without an account): shows the ghost on
+   * the guest tile, never an image, an initial or the image-failed fallback.
+   */
+  guest?: boolean
   /** Size preset. Defaults to `md`. */
   size?: ProfileAvatarSize
   /** Custom corner radius override (e.g. `"9.625px"` or `9.625`). Falls back to the size preset. */
@@ -48,10 +54,17 @@ function normalizeRadius(radius: string | number | undefined): string | undefine
   return typeof radius === "number" ? `${radius}px` : radius
 }
 
+/**
+ * The ghost in a guest avatar is 68% of the container's width (22px in the
+ * 32px avatar), so it keeps its proportion at every avatar size.
+ */
+const GUEST_ICON_SIZE = "size-[68%]"
+
 export function ProfileAvatar({
   id,
   name,
   avatarUrl,
+  guest = false,
   size = "md",
   radius,
   className,
@@ -68,6 +81,24 @@ export function ProfileAvatar({
   const fallbackStyle: React.CSSProperties = {
     backgroundColor: bgColor,
     ...(radiusOverride ? { borderRadius: radiusOverride } : {}),
+  }
+
+  if (guest) {
+    return (
+      <span
+        data-slot="guest-avatar"
+        aria-hidden="true"
+        className={cn(
+          preset.dimensions,
+          radiusOverride ? undefined : preset.rounded,
+          "flex shrink-0 items-center justify-center bg-avatar-guest-bg text-avatar-guest-fg",
+          className
+        )}
+        style={containerStyle}
+      >
+        <GuestGhostIcon className={GUEST_ICON_SIZE} />
+      </span>
+    )
   }
 
   return (

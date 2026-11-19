@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/layout/header"
 import { Icon } from "@/components/ui/icon"
 import { useTicketsWithDetails } from "@/hooks/useTicketsWithDetails"
-import { GuestTicketBadge, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { formatDateTime, truncateText } from "@/lib/format"
@@ -22,6 +22,9 @@ import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } 
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { GuestName } from "@/components/ui/guest-name"
+import { guestLabel } from "@/lib/guest-label"
 import { ErrorState } from "@/components/ui/error-state"
 import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
@@ -33,6 +36,8 @@ interface Ticket {
     id: string | null
     name: string
     avatar: string
+    /** Guests only: full email or guest identifier, for the name tooltip. */
+    guestFull?: string | null
   }
   /** Name of the ticket's first help category, or GENERAL_TYPE when it has none. */
   type: string
@@ -103,13 +108,15 @@ export default function TicketsPage() {
     if (!ticketsData) return []
     return ticketsData.map((ticket) => {
       const firstCategory = ticket.help_categories?.find((c) => !!c.value)
+      const guest = ticket.guest ? guestLabel({ id: ticket.created_by, email: ticket.user?.email }) : null
       return {
         id: ticket.id,
         title: ticket.title,
         description: ticket.description,
         user: {
           id: ticket.created_by ?? null,
-          name: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "Unknown"),
+          name: guest?.label ?? ticketCreatorDisplayName(ticket.user?.name, false, "Unknown"),
+          guestFull: guest?.full ?? null,
           avatar: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "U")[0].toUpperCase(),
         },
         guest: !!ticket.guest,
@@ -666,17 +673,26 @@ export default function TicketsPage() {
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-4">
                         <div className="flex items-start gap-4">
-                          <div
-                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-                            style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
-                          >
-                            {ticket.user.avatar}
-                          </div>
+                          {ticket.guest ? (
+                            <ProfileAvatar id={ticket.user.id} guest />
+                          ) : (
+                            <div
+                              className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                              style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                            >
+                              {ticket.user.avatar}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-foreground truncate">
-                              {ticket.user.name}
-                            </h4>
-                            {ticket.guest && <GuestTicketBadge className="mt-1" />}
+                            {ticket.guest ? (
+                              <h4 className="text-sm">
+                                <GuestName label={ticket.user.name} full={ticket.user.guestFull} />
+                              </h4>
+                            ) : (
+                              <h4 className="text-sm font-medium text-foreground truncate">
+                                {ticket.user.name}
+                              </h4>
+                            )}
                             <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                             <div className="flex items-center gap-1 mt-1">
                               <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
@@ -759,19 +775,32 @@ export default function TicketsPage() {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-4">
                   <div className="flex items-start gap-4">
-                    <div
-                      className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-                      style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
-                    >
-                      {ticket.user.avatar}
-                    </div>
+                    {ticket.guest ? (
+                      <ProfileAvatar id={ticket.user.id} guest />
+                    ) : (
+                      <div
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                        style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                      >
+                        {ticket.user.avatar}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <Link href={`/helper/tickets/${ticket.id}`}>
-                        <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                          {ticket.user.name}
-                        </h4>
+                        {ticket.guest ? (
+                          <h4 className="text-sm cursor-pointer">
+                            <GuestName
+                              label={ticket.user.name}
+                              full={ticket.user.guestFull}
+                              className="hover:text-brand-primary"
+                            />
+                          </h4>
+                        ) : (
+                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                            {ticket.user.name}
+                          </h4>
+                        )}
                       </Link>
-                      {ticket.guest && <GuestTicketBadge className="mt-1" />}
                       <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
