@@ -475,7 +475,7 @@ export default function UserSupportChatPage() {
       fallbackTimestamp: existingTicket?.created_at ?? null,
       ticketStatus: existingTicket?.status ?? null,
       isFree: isFreeSupport(effectivePricing),
-      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
+      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
       avgResponseSeconds,
     })
     // A guest ticket closed because the visitor left carries its own
@@ -910,6 +910,7 @@ export default function UserSupportChatPage() {
     existingTicket?.created_by && creatorUser
       ? { id: existingTicket.created_by, name: creatorUser.name, avatar_url: creatorUser.avatar_url }
       : null,
+    isGuest,
   )
 
   return (

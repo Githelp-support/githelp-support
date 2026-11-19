@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 
 import { ImageUploadModal } from "@/components/modals/image-upload-modal"
 import { Button } from "@/components/ui/button"
@@ -19,13 +19,15 @@ export interface ProfileAvatarEditorProps {
   name: string | null
   avatarUrl: string | null
   className?: string
+  /** Rendered beside the photo, centred on it (the profile name). */
+  children?: ReactNode
 }
 
 /**
  * Profile photo with an upload control. The upload saves immediately (like
  * the project logo), so it never takes part in a page's unsaved-changes state.
  */
-export function ProfileAvatarEditor({ userId, name, avatarUrl, className }: ProfileAvatarEditorProps) {
+export function ProfileAvatarEditor({ userId, name, avatarUrl, className, children }: ProfileAvatarEditorProps) {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const { user, setUser } = useUser()
   const updateProfile = useUpdateUserProfile()
@@ -51,8 +53,11 @@ export function ProfileAvatarEditor({ userId, name, avatarUrl, className }: Prof
   }
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <ProfileAvatar id={userId} name={name} avatarUrl={avatarUrl} size="lg" />
+    <div className={cn("flex flex-col items-start gap-4", className)}>
+      <div className="flex items-center gap-3">
+        <ProfileAvatar id={userId} name={name} avatarUrl={avatarUrl} size="lg" />
+        {children}
+      </div>
       <Button type="button" variant="outline" size="sm" onClick={() => setIsUploadModalOpen(true)}>
         <Icon name="fi-rr-edit" />
         {hasAvatar ? "Change photo" : "Upload photo"}

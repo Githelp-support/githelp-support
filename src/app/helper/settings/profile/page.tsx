@@ -204,6 +204,12 @@ export default function HelperProfilePage() {
   }
 
   const displayName = helperData.user?.name || "Unknown"
+  const profileName = (
+    <div className="flex items-center gap-4">
+      <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
+      <CategoryBadge category={category} label={categoryLabel} />
+    </div>
+  )
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -212,18 +218,18 @@ export default function HelperProfilePage() {
       <main className="flex-1 overflow-auto px-8 py-6">
         <div className="max-w-3xl">
           {/* Profile header */}
-          <div className="flex items-center gap-4 mb-8">
-            {user.id && (
+          <div className="mb-8">
+            {user.id ? (
               <ProfileAvatarEditor
                 userId={user.id}
                 name={displayName}
                 avatarUrl={helperData.user?.avatar_url ?? user.avatarUrl ?? null}
-              />
+              >
+                {profileName}
+              </ProfileAvatarEditor>
+            ) : (
+              profileName
             )}
-            <div className="flex items-center gap-4">
-              <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
-              <CategoryBadge category={category} label={categoryLabel} />
-            </div>
           </div>
 
           <div className="space-y-8">

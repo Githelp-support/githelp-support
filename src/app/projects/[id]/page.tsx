@@ -10,6 +10,7 @@ import { useOnboardingStatus, useCompleteOnboarding } from "@/hooks/useOnboardin
 import { supabase } from "@/lib/supabase/client"
 import { hasSignedInSession } from "@/lib/supabase/auth-state"
 import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
 import Image from "next/image"
@@ -109,8 +110,8 @@ export default function ProjectLandingPage() {
 
     if (isCheckingAuth || projectLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-muted/50">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+            <div className="min-h-screen flex items-center justify-center bg-muted/50" role="status" aria-busy="true">
+                <Loader />
             </div>
         )
     }

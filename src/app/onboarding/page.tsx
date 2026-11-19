@@ -25,6 +25,7 @@ import { useUser } from "@/contexts/user-context"
 import { homeRouteForRole } from "@/lib/roles"
 import { consumePendingRedirect } from "@/lib/safe-redirect"
 import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { Icon } from "@/components/ui/icon"
 import { RoleOptionCards } from "@/components/auth/role-option-cards"
 import type { UserRole } from "@/contexts/user-context"
@@ -386,16 +387,16 @@ export default function OnboardingPage() {
 
     if (onboardingStatusLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+            <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4" role="status" aria-busy="true">
+                <Loader />
             </div>
         )
     }
 
     if (hasFinishedOnboardingWizard) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-muted/50 p-4">
-                <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+            <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-muted/50 p-4" role="status" aria-busy="true">
+                <Loader label="Taking you to your workspace" />
                 <p className="text-sm text-muted-foreground">Taking you to your workspace…</p>
             </div>
         )
@@ -887,8 +888,8 @@ export default function OnboardingPage() {
                                 </Button>
                             </div>
                         ) : isLoadingRepos ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                            <div className="flex items-center justify-center py-12" role="status" aria-busy="true">
+                                <Loader />
                             </div>
                         ) : githubRepos.length === 0 ? (
                             <div className="space-y-4 py-4">
