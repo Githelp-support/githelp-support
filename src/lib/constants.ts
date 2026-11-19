@@ -70,6 +70,7 @@ export const SQUIRCLE_RADIUS = {
   22: "rounded-[8px]",
   24: "rounded-[8px]",
   28: "rounded-[10px]",
+  30: "rounded-[10px]",
   32: "rounded-[11px]",
   36: "rounded-[12px]",
   42: "rounded-[14px]",

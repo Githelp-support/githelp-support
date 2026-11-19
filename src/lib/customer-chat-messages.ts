@@ -20,11 +20,13 @@ export const TICKET_DISCLAIMER_FREE = "Feel free to chat and clarify details bef
 /**
  * Synthetic auto-reply shown right after the customer's first message.
  * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
- * Shows "~" while the project has no average response time yet.
+ * The average-response sentence is only added once the project has a real
+ * average (no "~" placeholder while there is none).
  */
 export function buildAutoReply(avgResponseSeconds: number | null | undefined): string {
-    const responseTime = avgResponseSeconds == null ? "~" : formatDuration(avgResponseSeconds);
-    return `Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **${responseTime}**.`;
+    const thanks = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+    if (avgResponseSeconds == null || !(avgResponseSeconds > 0)) return thanks;
+    return `${thanks} The average response time for this project is **${formatDuration(avgResponseSeconds)}**.`;
 }
 
 /**
@@ -209,6 +211,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderIsGuest: !!guest,
             senderGuestFull: guest?.full ?? null,
             timestamp: fallbackTimestamp ? formatChatTimestamp(fallbackTimestamp) : nowFormatted,
+            createdAt: fallbackTimestamp || new Date().toISOString(),
         });
     }
 
@@ -237,6 +240,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderIsGuest: isOwnGuestMessage,
             senderGuestFull: isOwnGuestMessage ? guest?.full ?? null : null,
             timestamp: formatChatTimestamp(msg.created_at),
+            createdAt: msg.created_at,
             // Payment system messages (payment_required, payment_requires_action,
             // payment_authorized, …) carry their kind + ticket_id here; TicketChat
             // renders the "Add payment method" CTA from it.
@@ -256,6 +260,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
             timestamp: list[firstUserIndex].timestamp,
+            createdAt: list[firstUserIndex].createdAt,
         });
     }
 

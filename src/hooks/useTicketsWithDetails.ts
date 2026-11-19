@@ -118,6 +118,11 @@ export interface UserActiveTicketSidebarItem {
     title: string;
     subtitle: string;
     date: string;
+    /** The ticket's title, falling back to its description. */
+    question: string;
+    projectName: string;
+    /** ISO timestamp of when the ticket was created. */
+    createdAt: string;
     avatarUrl: string | null;
     avatarInitial: string;
     current: boolean;
@@ -276,6 +281,10 @@ export function useUserActiveTicketsSidebar(
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
                     date: formatDate(t.created_at),
+                    question:
+                        t.title?.trim() || t.description?.trim() || "—",
+                    projectName,
+                    createdAt: t.created_at,
                     avatarUrl: projectLogo,
                     avatarInitial: projectName[0]?.toUpperCase() ?? "?",
                     current: t.id === currentTicketId,

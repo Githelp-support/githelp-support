@@ -31,7 +31,15 @@ export interface TicketChatInputProps {
   onImageFiles?: (files: File[]) => void
   /** Shows an "Uploading image…" hint while attachments are in flight */
   imagesUploading?: boolean
+  /**
+   * Start at one line and grow with the content up to ~200px, then scroll
+   * inside. Off by default: the textarea keeps its fixed 100px minimum.
+   */
+  autoGrow?: boolean
 }
+
+/** Tallest the auto-growing textarea gets before it scrolls; matches `max-h-50`. */
+const AUTO_GROW_MAX_HEIGHT = 200
 
 /** Image files carried by a paste or drop. */
 function imageFilesFrom(data: DataTransfer | null): File[] {
@@ -51,6 +59,7 @@ export function TicketChatInput({
   onImageClick: onImageClickProp,
   onImageFiles: onImageFilesProp,
   imagesUploading,
+  autoGrow,
 }: TicketChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [dragActive, setDragActive] = useState(false)
@@ -211,6 +220,17 @@ export function TicketChatInput({
     }
   }, [value])
 
+  // `field-sizing: content` (on the Textarea primitive) sizes the box in
+  // browsers that support it. Elsewhere, measure on every value change, which
+  // also shrinks the box back to one line when the value is cleared after a send.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current
+    if (!autoGrow || !ta) return
+    if (typeof CSS !== "undefined" && CSS.supports?.("field-sizing", "content")) return
+    ta.style.height = "auto"
+    ta.style.height = `${Math.min(ta.scrollHeight, AUTO_GROW_MAX_HEIGHT)}px`
+  }, [value, autoGrow])
+
   return (
     <div
       className={cn(
@@ -265,7 +285,11 @@ export function TicketChatInput({
           placeholder={disabled ? "This ticket is closed. New messages can't be sent." : placeholder}
           disabled={!!disabled}
           aria-disabled={!!disabled}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
+          rows={autoGrow ? 1 : undefined}
+          className={cn(
+            "resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed",
+            autoGrow ? "min-h-0 max-h-50 overflow-y-auto" : "min-h-[100px] max-h-32"
+          )}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           spellCheck={!isInsideOpenFence(value, value.length)}

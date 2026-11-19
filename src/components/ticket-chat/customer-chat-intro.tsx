@@ -58,11 +58,11 @@ export function CustomerChatIntro({
         <img
           src={projectLogo}
           alt={`${projectName} logo`}
-          className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} object-cover shrink-0`}
+          className={`size-7.5 ${SQUIRCLE_RADIUS[30]} object-cover shrink-0`}
         />
       ) : (
         <div
-          className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+          className={`size-7.5 ${SQUIRCLE_RADIUS[30]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
           style={{ backgroundColor: primaryColor || getAvatarColorHexForId(projectId) }}
         >
           {projectName?.[0]?.toUpperCase() || "A"}
@@ -71,21 +71,14 @@ export function CustomerChatIntro({
       <div className="flex-1 space-y-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm text-foreground font-medium">
+            <span className="text-sm font-semibold text-foreground">
               {projectName} Team
             </span>
-            <span
-              className="text-xs"
-              style={{
-                color: "var(--muted-foreground)",
-                fontFamily: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
+            <span className="font-mono text-xs tabular-nums text-muted-foreground">
               {timestamp}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground whitespace-pre-line">{welcomeText}</p>
+          <p className="text-sm text-foreground whitespace-pre-line">{welcomeText}</p>
         </div>
 
         {children}

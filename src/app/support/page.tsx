@@ -34,6 +34,7 @@ import {
   formatChatTimestamp,
   hasVisitorLeft,
 } from "@/lib/customer-chat-messages"
+import { composerPlaceholder, formatChatTime } from "@/lib/chat-thread"
 import { useCreateTicket, useRequestEndSession, useTicket } from "@/hooks/useTickets"
 import { useConfirmTimeEntries, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
 import type { TimeEntrySummaryDecline } from "@/components/ticket-chat/time-entry-review"
@@ -298,6 +299,8 @@ export default function SupportPage() {
 
 
   const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
+  // The intro message shows the time only, like the messages in the thread.
+  const introTime = useMemo(() => formatChatTime(new Date()), [])
 
   // Thread: disclaimer → claimed banner → (pending first message) → persisted
   // messages → session summary once ended. Shared with /support/chat.
@@ -619,7 +622,7 @@ export default function SupportPage() {
       projectLogo={projectLogo}
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
-      timestamp={nowFormatted}
+      timestamp={introTime}
       rates={rates}
       isFree={isFreeSupport(effectivePricing)}
       isAuthenticated={isAuthenticated}
@@ -757,6 +760,8 @@ export default function SupportPage() {
             messages={chatMessages}
             participants={chatParticipants}
             participantsLoading={participantsLoading}
+            helperJoined={!!claimer}
+            composerPlaceholder={composerPlaceholder({ slug: project?.slug, name: projectName })}
             message={message}
             onMessageChange={setMessage}
             onSend={handleSendMessage}
