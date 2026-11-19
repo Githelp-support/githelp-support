@@ -117,12 +117,14 @@ export default function ProfileSettingsPage() {
 
   // Users without a helper profile still get the photo control
   const userProfileHeader = user.id ? (
-    <div className="flex items-center gap-4 mb-8">
-      <ProfileAvatarEditor userId={user.id} name={user.name} avatarUrl={user.avatarUrl ?? null} />
-      <div className="flex items-center gap-4">
-        <h1 className="text-base font-subtitle text-foreground">{user.name}</h1>
-      </div>
-    </div>
+    <ProfileAvatarEditor
+      userId={user.id}
+      name={user.name}
+      avatarUrl={user.avatarUrl ?? null}
+      className="mb-8"
+    >
+      <h1 className="text-base font-subtitle text-foreground">{user.name}</h1>
+    </ProfileAvatarEditor>
   ) : null
 
   if (!projectId) {
@@ -165,6 +167,7 @@ export default function ProfileSettingsPage() {
   }
 
   const displayName = helperData.user?.name || "Unknown"
+  const profileName = <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -173,17 +176,18 @@ export default function ProfileSettingsPage() {
       <main className="flex-1 overflow-auto px-8 py-6">
         <div className="max-w-3xl">
           {/* Profile header */}
-          <div className="flex items-center gap-4 mb-8">
-            {user.id && (
+          <div className="mb-8">
+            {user.id ? (
               <ProfileAvatarEditor
                 userId={user.id}
                 name={displayName}
                 avatarUrl={helperData.user?.avatar_url ?? user.avatarUrl ?? null}
-              />
+              >
+                {profileName}
+              </ProfileAvatarEditor>
+            ) : (
+              profileName
             )}
-            <div className="flex items-center gap-4">
-              <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
-            </div>
           </div>
 
           <div className="divide-y divide-border-subtle">
