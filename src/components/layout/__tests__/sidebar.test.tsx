@@ -398,7 +398,10 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.queryByText("Projects")).not.toBeInTheDocument()
     const divider = document.querySelector('[data-slot="sidebar-switcher-divider"]')
     expect(divider).not.toBeNull()
-    expect(divider!.nextElementSibling).toBe(screen.getByRole("navigation", { name: "Main" }))
+    // The menu's scroll region follows the hairline directly.
+    const region = document.querySelector('[data-slot="sidebar-scroll"]')
+    expect(divider!.nextElementSibling).toBe(region)
+    expect(region).toContainElement(screen.getByRole("navigation", { name: "Main" }))
   })
 
   it("guests: name only, no role, project or account controls", () => {
@@ -411,5 +414,114 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.queryByRole("button", { name: "Account menu" })).not.toBeInTheDocument()
     expect(screen.queryByText("Inbox")).not.toBeInTheDocument()
     expect(screen.queryByText("Projects")).not.toBeInTheDocument()
+  })
+})
+
+describe("Sidebar — scrolling menu", () => {
+  const renderSidebar = (props: React.ComponentProps<typeof Sidebar> = {}) =>
+    render(
+      <TooltipProvider>
+        <Sidebar {...props} />
+      </TooltipProvider>,
+    )
+
+  const setMetrics = (el: HTMLElement, metrics: { scrollHeight: number; clientHeight: number; scrollTop: number }) => {
+    for (const [key, value] of Object.entries(metrics)) {
+      Object.defineProperty(el, key, { configurable: true, writable: true, value })
+    }
+  }
+
+  it("only the menu scrolls: the switchers above and the bottom items stay outside it", () => {
+    renderSidebar({ projectPageHref: "/support/acme" })
+    const nav = screen.getByRole("navigation", { name: "Main" })
+
+    expect(nav.className).toContain("overflow-y-auto")
+    expect(nav.className).toContain("min-h-0")
+    expect(nav.className).toContain("flex-1")
+    expect(nav).toContainElement(screen.getByRole("button", { name: "Inbox" }))
+    expect(nav).toContainElement(screen.getByText("Settings"))
+    expect(nav).not.toContainElement(screen.getByTestId("role-switcher"))
+    expect(nav).not.toContainElement(screen.getByTestId("project-switcher"))
+    expect(nav).not.toContainElement(screen.getByText("Open project page"))
+    expect(nav).not.toContainElement(screen.getByText("Help"))
+    expect(nav).not.toContainElement(screen.getByRole("button", { name: "Account menu" }))
+  })
+
+  it("collapsed: the icon-only menu is the same scroll region", () => {
+    window.localStorage.setItem("sidebar:collapsed", "true")
+    renderSidebar()
+    const nav = screen.getByRole("navigation", { name: "Main" })
+
+    expect(nav.className).toContain("overflow-y-auto")
+    expect(nav).toContainElement(screen.getByRole("button", { name: "Inbox" }))
+    expect(nav).not.toContainElement(screen.getByRole("button", { name: "Account menu" }))
+  })
+
+  it("shows a fade only at the edges that have more content", () => {
+    renderSidebar()
+    const nav = screen.getByRole("navigation", { name: "Main" })
+    const top = document.querySelector('[data-slot="sidebar-fade-top"]')!
+    const bottom = document.querySelector('[data-slot="sidebar-fade-bottom"]')!
+    expect(top).toHaveAttribute("data-visible", "false")
+    expect(bottom).toHaveAttribute("data-visible", "false")
+
+    setMetrics(nav, { scrollHeight: 600, clientHeight: 300, scrollTop: 0 })
+    fireEvent.scroll(nav)
+    expect(top).toHaveAttribute("data-visible", "false")
+    expect(bottom).toHaveAttribute("data-visible", "true")
+
+    setMetrics(nav, { scrollHeight: 600, clientHeight: 300, scrollTop: 120 })
+    fireEvent.scroll(nav)
+    expect(top).toHaveAttribute("data-visible", "true")
+    expect(bottom).toHaveAttribute("data-visible", "true")
+
+    setMetrics(nav, { scrollHeight: 600, clientHeight: 300, scrollTop: 300 })
+    fireEvent.scroll(nav)
+    expect(top).toHaveAttribute("data-visible", "true")
+    expect(bottom).toHaveAttribute("data-visible", "false")
+  })
+
+  it("scrolls the active item into view on load when it is below the visible part", () => {
+    usePathname.mockReturnValue("/user/settings/notifications")
+    const rect = (top: number, bottom: number) => ({ top, bottom, height: bottom - top }) as DOMRect
+    const spy = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      if (this.getAttribute("aria-label") === "Main") return rect(100, 400)
+      if (this.getAttribute("data-active") === "true") return rect(500, 536)
+      return rect(0, 0)
+    })
+    try {
+      renderSidebar()
+      const active = screen.getByText("Notifications")
+      expect(active).toHaveAttribute("data-active", "true")
+      expect(screen.getByRole("navigation", { name: "Main" }).scrollTop).toBe(136)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it("remembers the expanded section and restores it on the next visit", () => {
+    usePathname.mockReturnValue("/user/overview")
+    const first = renderSidebar()
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "closed")
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand Support" }))
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "open")
+    expect(JSON.parse(window.localStorage.getItem("sidebar:expanded")!)).toEqual(["Support"])
+
+    first.unmount()
+    renderSidebar()
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "open")
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse Support" }))
+    expect(JSON.parse(window.localStorage.getItem("sidebar:expanded")!)).toEqual([])
+  })
+
+  it("an active sub-page still opens its own section over the remembered one", () => {
+    window.localStorage.setItem("sidebar:expanded", JSON.stringify(["Support"]))
+    usePathname.mockReturnValue("/user/settings/payment")
+    renderSidebar()
+
+    expect(screen.getByText("Payment").closest("[data-state]")).toHaveAttribute("data-state", "open")
+    expect(screen.getByText("Chat").closest("[data-state]")).toHaveAttribute("data-state", "closed")
   })
 })

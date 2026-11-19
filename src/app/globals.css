@@ -359,6 +359,23 @@
    another shadow-* class on the same element.
    Hover brightens with filter; it is not in the Button's transition list, so
    the step is instant. */
+/* Thin, unobtrusive scrollbar for the sidebar menu. The gutter is always
+   reserved so a scrollbar appearing never shifts the layout (overlay
+   scrollbars reserve nothing). With a pointer the thumb only shows while the
+   region is hovered or holds focus; touch devices keep their own overlay bar. */
+@utility scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--border-subtle) transparent;
+  @media (hover: hover) {
+    scrollbar-color: transparent transparent;
+    &:hover,
+    &:focus-within {
+      scrollbar-color: var(--border-subtle) transparent;
+    }
+  }
+}
+
 @utility btn-depth {
   --tw-inset-shadow: inset 0 1px 0 rgb(255 255 255 / var(--btn-highlight));
   --tw-shadow: 0 1px 2px rgb(0 0 0 / var(--btn-drop));

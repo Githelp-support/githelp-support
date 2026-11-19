@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { isSupportRoute } from "@/lib/sign-in-href"
@@ -73,6 +73,35 @@ const INBOX_ICON_NUDGE = "-translate-y-px"
 // Sub-pages of the user-role "Support" parent item. Exact paths only —
 // /support/tickets belongs to the top-level "Tickets" item and must NOT
 // expand "Support".
+// Which sub-menus are open is remembered between visits.
+const EXPANDED_STORAGE_KEY = "sidebar:expanded"
+
+const readStoredExpanded = (): string[] => {
+  if (typeof window === "undefined") return []
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(EXPANDED_STORAGE_KEY) ?? "[]")
+    return Array.isArray(parsed) ? parsed.filter((name): name is string => typeof name === "string") : []
+  } catch {
+    return []
+  }
+}
+
+// Scrolls `scroller` (and nothing else) by the smallest amount that brings
+// `el` fully inside it, clear of the overflow fades (the scroller's
+// scroll-padding). Instant: no smooth scrolling.
+const scrollIntoNearest = (scroller: HTMLElement, el: Element) => {
+  const style = window.getComputedStyle(scroller)
+  const padTop = parseFloat(style.scrollPaddingTop) || 0
+  const padBottom = parseFloat(style.scrollPaddingBottom) || 0
+  const box = scroller.getBoundingClientRect()
+  const rect = el.getBoundingClientRect()
+  if (rect.top < box.top + padTop) {
+    scroller.scrollTop -= box.top + padTop - rect.top
+  } else if (rect.bottom > box.bottom - padBottom) {
+    scroller.scrollTop += rect.bottom - (box.bottom - padBottom)
+  }
+}
+
 const SUPPORT_SUB_PATHS = [
   "/support/chat",
   "/support/rates",
@@ -103,8 +132,16 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
     if (pathname?.startsWith("/helper/settings/")) return ["Settings"]
     if (pathname?.startsWith("/user/settings/")) return ["Settings"]
     if (pathname && SUPPORT_SUB_PATHS.includes(pathname)) return ["Support"]
-    return []
+    // No active sub-page: restore what was open on the last visit.
+    return readStoredExpanded()
   })
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(expandedItems))
+    } catch {
+      // Ignore localStorage write errors.
+    }
+  }, [expandedItems])
   // Persist collapsed state across reloads. Read localStorage synchronously
   // in the initializer so the first client render already has the right
   // width. On the server `window` is undefined so we fall back to `false`;
@@ -275,7 +312,10 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   const [expansionKey, setExpansionKey] = useState<{ role: typeof user.role; pathname: string | null } | null>(null)
   if (!expansionKey || expansionKey.role !== user.role || expansionKey.pathname !== pathname) {
     setExpansionKey({ role: user.role, pathname })
-    let next: string[] = []
+    // Without an active sub-page the current expansion is kept: it is either
+    // what the user opened or what was restored from the last visit (names
+    // that are not in this role's menu are simply never rendered).
+    let next: string[] = expandedItems
     for (const item of navigationItems) {
       if (!item.subItems) continue
       const matched = item.subItems.some((sub) => {
@@ -312,6 +352,63 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   // Sub-item hrefs may carry preserved query params (e.g. the Support
   // sub-pages); compare against the path portion only.
   const isSubItemActive = (href: string) => pathname === href.split("?")[0]
+
+  // The menu between the switchers and the bottom items scrolls on its own.
+  // `overflow` tracks whether there is more above / below, for the edge fades.
+  const scrollerRef = useRef<HTMLElement>(null)
+  const scrollContentRef = useRef<HTMLDivElement>(null)
+  const [overflow, setOverflow] = useState({ above: false, below: false })
+  const updateOverflow = () => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    const above = scroller.scrollTop > 1
+    const below = scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1
+    setOverflow((prev) => (prev.above === above && prev.below === below ? prev : { above, below }))
+  }
+
+  // On load (and when the route or role changes the menu) bring the active
+  // item into view if it is outside the visible part of the list. A sub-menu
+  // that is still opening changes the list height, so the reveal is repeated
+  // on resize for a short while; after that the user's scroll position wins.
+  const revealPendingRef = useRef(false)
+  const revealActiveItem = () => {
+    const scroller = scrollerRef.current
+    const active = scroller?.querySelector('[data-active="true"]')
+    if (scroller && active) scrollIntoNearest(scroller, active)
+  }
+  useLayoutEffect(() => {
+    revealPendingRef.current = true
+    revealActiveItem()
+    const timer = window.setTimeout(() => {
+      revealPendingRef.current = false
+    }, 500)
+    return () => window.clearTimeout(timer)
+  }, [pathname, user.role, isCollapsed])
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    const content = scrollContentRef.current
+    if (!scroller || !content || typeof ResizeObserver === "undefined") return
+    // Fires once on observe, then whenever the window or the list changes height.
+    const observer = new ResizeObserver(() => {
+      if (revealPendingRef.current) revealActiveItem()
+      updateOverflow()
+    })
+    observer.observe(scroller)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [])
+
+  // Keyboard focus moving into the list scrolls the focused item clear of the fades.
+  const handleNavFocus = (e: FocusEvent<HTMLElement>) => {
+    let viaKeyboard = true
+    try {
+      viaKeyboard = e.target.matches(":focus-visible")
+    } catch {
+      // :focus-visible unsupported: treat every focus as keyboard focus.
+    }
+    if (viaKeyboard) scrollIntoNearest(e.currentTarget, e.target)
+  }
 
   const profileAvatar = (
     <ProfileAvatar id={user.id} name={user.name} avatarUrl={user.avatarUrl} size="sm" />
@@ -405,7 +502,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         <div
           aria-hidden="true"
           data-slot="sidebar-switcher-divider"
-          className={cn("mb-4 h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
+          className={cn("h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
         />
       )}
 
@@ -428,8 +525,22 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         </div>
       )}
 
-      <nav aria-label="Main" className="flex-1 px-4 pb-3 overflow-hidden min-h-0">
-        <div className="space-y-1">
+      {/* Middle region: the only part of the sidebar that scrolls. The wrapper is
+          a size container, so the list keeps the sidebar's width minus the two
+          16px gutters whether or not a scrollbar takes space on the right. */}
+      <div data-slot="sidebar-scroll" className="@container relative flex min-h-0 flex-1 flex-col">
+      <nav
+        ref={scrollerRef}
+        aria-label="Main"
+        onScroll={updateOverflow}
+        onFocus={handleNavFocus}
+        className={cn(
+          "scrollbar-subtle min-h-0 flex-1 overflow-x-hidden overflow-y-auto scroll-py-6 pb-3 pl-4",
+          // The 16px between the hairline and the Inbox scrolls with the list.
+          isAuthenticated && "pt-4",
+        )}
+      >
+        <div ref={scrollContentRef} className="w-[calc(100cqw-2rem)] space-y-1">
           {isAuthenticated && (
             <div>
               {forceExpanded ? (
@@ -437,6 +548,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                 // notifications page (the sheet closes on navigation).
                 <Link
                   href="/notifications"
+                  data-active={pathname === "/notifications"}
                   className={cn(
                     "flex items-center gap-3 h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
                     pathname === "/notifications"
@@ -516,6 +628,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                         <button
                           type="button"
                           aria-label={item.name}
+                          data-active={hasActiveSubItem}
                           className={`w-full flex items-center justify-center h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                             hasActiveSubItem ? activeClasses : inactiveClasses
                           }`}
@@ -614,6 +727,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                             return (
                               <Link key={subItem.name} href={subItem.href} className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
                                 <div
+                                  data-active={isSubActive}
                                   className={`relative flex items-center h-9 pl-9 pr-2.5 rounded-md text-ui transition-colors duration-fast ease-out ${
                                     isSubActive ? activeClasses : NAV_ROW_REST
                                   }`}
@@ -640,6 +754,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     item.name,
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
+                      data-active={isActive}
                       className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
@@ -657,6 +772,26 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           })}
         </div>
       </nav>
+        {/* Overflow hints: a fade at an edge only while there is more in that direction. */}
+        <div
+          aria-hidden="true"
+          data-slot="sidebar-fade-top"
+          data-visible={overflow.above}
+          className={cn(
+            "pointer-events-none absolute inset-x-0 top-0 h-6 bg-linear-to-b from-sidebar to-transparent transition-opacity duration-fast ease-out",
+            overflow.above ? "opacity-100" : "opacity-0",
+          )}
+        />
+        <div
+          aria-hidden="true"
+          data-slot="sidebar-fade-bottom"
+          data-visible={overflow.below}
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-sidebar to-transparent transition-opacity duration-fast ease-out",
+            overflow.below ? "opacity-100" : "opacity-0",
+          )}
+        />
+      </div>
 
       {/* Inset line above the bottom items. */}
       <div aria-hidden="true" className="mx-4 h-px shrink-0 bg-sidebar-border" />
