@@ -367,15 +367,15 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         // height (14px + 32px + 14px); the sheet's Close button sits beside it.
         <div
           className={cn(
-            // 10px from the logo row to the role row, 8px between the two
+            // 20px from the logo row to the role row, 12px between the two
             // switchers, and 26px down to the hairline (the same 26px sits
             // between the hairline and the Inbox).
-            "flex shrink-0 flex-col gap-2 px-4 pt-3.5",
+            "flex shrink-0 flex-col gap-3 px-4 pt-3.5",
             // Guests only get the logo: keep the old header height above the Sign in card.
             isAuthenticated ? "pb-6.5" : "mb-1.25 h-15",
           )}
         >
-          <div className={cn("flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5", isAuthenticated && "mb-0.5")}>
+          <div className={cn("flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5", isAuthenticated && "mb-2")}>
             <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
               <Logo />
             </span>

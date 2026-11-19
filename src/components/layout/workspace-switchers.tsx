@@ -25,6 +25,7 @@ type Project = Database["public"]["Tables"]["projects"]["Row"]
 const sizeRadiusMap: Record<string, string> = {
   "w-5 h-5": SQUIRCLE_RADIUS[20],
   "w-[22px] h-[22px]": SQUIRCLE_RADIUS[22],
+  "w-7 h-7": SQUIRCLE_RADIUS[28],
   "w-6 h-6": SQUIRCLE_RADIUS[24],
   "w-8 h-8": SQUIRCLE_RADIUS[32],
 }
@@ -155,6 +156,7 @@ const ROLE_GLYPHS: Record<UserRole, ReactElement> = {
 const ROLE_GLYPH_SIZE: Record<string, string> = {
   "w-5 h-5": "size-3.25",
   "w-[22px] h-[22px]": "size-3.5",
+  "w-7 h-7": "size-4.5",
 }
 
 // Role tile: the project avatar's squircle container, white with a dark glyph.
@@ -198,7 +200,7 @@ export function RoleSwitcher({
       {variant === "row" ? (
         <DropdownMenuTrigger className={ROW_TRIGGER_CLASS}>
           <span className={ROW_SLOT_CLASS}>
-            <RoleIcon role={user.role} />
+            <RoleIcon role={user.role} size="w-7 h-7" />
           </span>
           <span className={ROW_LABEL_CLASS}>{getRoleDisplayName(user.role)}</span>
           <SelectorIcon />
@@ -209,7 +211,11 @@ export function RoleSwitcher({
           <Icon name="fi-rr-angle-small-down" className="text-muted-foreground" />
         </DropdownMenuTrigger>
       )}
-      <DropdownMenuContent align="start" className="w-40">
+      <DropdownMenuContent
+        align="start"
+        // The sidebar row menu is as wide as its trigger row.
+        className={variant === "row" ? "w-(--radix-dropdown-menu-trigger-width)" : "w-40"}
+      >
         {visibleRoles.length > 0 ? (
           <>
             {visibleRoles.map((role) => {
@@ -296,7 +302,7 @@ function SwitcherTrigger({
     return (
       <DropdownMenuTrigger asChild>
         <button type="button" className={cn(ROW_TRIGGER_CLASS, className)}>
-          <span className={ROW_SLOT_CLASS}>{logo("w-[22px] h-[22px]")}</span>
+          <span className={ROW_SLOT_CLASS}>{logo("w-7 h-7")}</span>
           <span className={ROW_LABEL_CLASS}>{name}</span>
           <SelectorIcon />
         </button>
