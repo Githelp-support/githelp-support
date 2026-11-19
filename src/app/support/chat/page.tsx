@@ -48,6 +48,7 @@ import {
   formatChatTimestamp,
   hasVisitorLeft,
 } from "@/lib/customer-chat-messages"
+import { composerPlaceholder, formatChatTime } from "@/lib/chat-thread"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { SignInModal } from "@/components/modals/sign-in-modal"
@@ -456,6 +457,8 @@ export default function UserSupportChatPage() {
   }, [isAuthenticated, isSupportUser, selectedOrganizationId])
 
   const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
+  // The intro message shows the time only, like the messages in the thread.
+  const introTime = useMemo(() => formatChatTime(new Date()), [])
 
   const welcomeText = slaCovered
     ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
@@ -918,8 +921,8 @@ export default function UserSupportChatPage() {
       <TicketChat
         threadKey={ticketId ?? undefined}
         headerTitle={`Ticket with ${projectName}`}
-        headerTitleClassName="text-xl"
-        headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
+        headerTitleClassName="text-base font-semibold"
+        ticketId={ticketCreated ? ticketId : undefined}
         showBackButton={true}
         intro={
           <CustomerChatIntro
@@ -928,7 +931,7 @@ export default function UserSupportChatPage() {
             projectLogo={projectLogo}
             primaryColor={brandingData?.primary_color}
             welcomeText={welcomeText}
-            timestamp={nowFormatted}
+            timestamp={introTime}
             rates={rates}
             isFree={isFreeSupport(effectivePricing)}
             isAuthenticated={isAuthenticated}
@@ -940,6 +943,8 @@ export default function UserSupportChatPage() {
         messages={chatMessages}
         participants={chatParticipants}
         participantsLoading={participantsLoading}
+        helperJoined={!!claimer}
+        composerPlaceholder={composerPlaceholder({ slug: project?.slug, name: projectName })}
         topics={topics}
         helpTypes={helpType}
         message={message}

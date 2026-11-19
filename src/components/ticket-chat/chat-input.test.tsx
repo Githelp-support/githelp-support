@@ -37,3 +37,48 @@ describe("TicketChatInput toolbar", () => {
         expect(toolbar.className).toMatch(/max-md:px-3/)
     })
 })
+
+describe("TicketChatInput autoGrow", () => {
+    it("starts at one line and caps the height when autoGrow is set", () => {
+        render(<TicketChatInput value="" onChange={() => {}} onSend={() => {}} autoGrow />)
+        const textarea = screen.getByRole("textbox")
+        expect(textarea).toHaveAttribute("rows", "1")
+        expect(textarea).toHaveClass("min-h-0", "max-h-50", "overflow-y-auto")
+        expect(textarea).not.toHaveClass("min-h-[100px]")
+        expect(textarea).not.toHaveClass("min-h-16")
+        // 16px text below md (no iOS zoom).
+        expect(textarea).toHaveClass("text-base")
+    })
+
+    it("sizes the textarea to its content, up to 200px, without field-sizing support", () => {
+        const scrollHeight = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get")
+        try {
+            scrollHeight.mockReturnValue(72)
+            const props = { onChange: () => {}, onSend: () => {}, autoGrow: true }
+            const { rerender } = render(<TicketChatInput value={"a\nb\nc"} {...props} />)
+            const textarea = screen.getByRole("textbox")
+            expect(textarea.style.height).toBe("72px")
+
+            scrollHeight.mockReturnValue(640)
+            rerender(<TicketChatInput value={"long\n".repeat(40)} {...props} />)
+            expect(textarea.style.height).toBe("200px")
+
+            // Cleared after sending: back to one line.
+            scrollHeight.mockReturnValue(24)
+            rerender(<TicketChatInput value="" {...props} />)
+            expect(textarea.style.height).toBe("24px")
+        } finally {
+            scrollHeight.mockRestore()
+        }
+    })
+
+    it("keeps the fixed 100px textarea without autoGrow", () => {
+        render(<TicketChatInput value="hello" onChange={() => {}} onSend={() => {}} />)
+        const textarea = screen.getByRole("textbox")
+        expect(textarea).not.toHaveAttribute("rows")
+        expect(textarea).toHaveClass("min-h-[100px]", "max-h-32")
+        expect(textarea).not.toHaveClass("max-h-50")
+        expect(textarea).not.toHaveClass("overflow-y-auto")
+        expect(textarea.style.height).toBe("")
+    })
+})

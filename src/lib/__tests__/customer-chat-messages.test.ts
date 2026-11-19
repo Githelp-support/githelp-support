@@ -79,9 +79,54 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         expect(list.find((m) => m.id === "auto-reply")?.content).toContain("**1h 30m**");
     });
 
-    it("shows ~ while the project has no average response time yet", () => {
-        expect(buildAutoReply(null)).toContain("**~**");
-        expect(buildAutoReply(undefined)).toContain("**~**");
+    it("is only the thank-you line while the project has no average response time", () => {
+        const thanks = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+        expect(buildAutoReply(null)).toBe(thanks);
+        expect(buildAutoReply(undefined)).toBe(thanks);
+        expect(buildAutoReply(0)).toBe(thanks);
+        expect(buildAutoReply(-5)).toBe(thanks);
+        expect(buildAutoReply(null)).not.toContain("~");
+    });
+
+    it("adds the average-response sentence for a real value", () => {
+        expect(buildAutoReply(90 * 60)).toBe(
+            "Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **1h 30m**.",
+        );
+    });
+
+    it("sets createdAt on persisted messages and copies it to the auto-reply", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({
+                claimer: { id: "helper-1", name: "Grace", avatar_url: null },
+                messagesData: [
+                    persistedUserMessage(),
+                    persistedUserMessage({ id: "msg-2", sender_type: "helper", created_at: "2026-01-01T12:03:00Z" }),
+                ],
+            }),
+        );
+        expect(list.map((m) => m.id)).toEqual(["welcome", "system-claimed", "msg-1", "auto-reply", "msg-2"]);
+        expect(list.find((m) => m.id === "msg-1")?.createdAt).toBe("2026-01-01T12:00:00Z");
+        expect(list.find((m) => m.id === "msg-2")?.createdAt).toBe("2026-01-01T12:03:00Z");
+        expect(list.find((m) => m.id === "auto-reply")?.createdAt).toBe("2026-01-01T12:00:00Z");
+        // Synthetic messages without a real time stay undated; timestamps are unchanged.
+        expect(list.find((m) => m.id === "welcome")?.createdAt).toBeUndefined();
+        expect(list.find((m) => m.id === "system-claimed")?.createdAt).toBeUndefined();
+        expect(list.find((m) => m.id === "welcome")?.timestamp).toBe("01/01/2026, 12:00");
+    });
+
+    it("sets createdAt on the pending first message from the fallback timestamp, else now", () => {
+        const withFallback = buildCustomerThreadMessages(
+            baseOpts({ fallbackDescription: "My build is broken", fallbackTimestamp: "2026-01-01T09:30:00Z" }),
+        );
+        expect(withFallback.find((m) => m.id === "pending-first")?.createdAt).toBe("2026-01-01T09:30:00Z");
+        expect(withFallback.find((m) => m.id === "auto-reply")?.createdAt).toBe("2026-01-01T09:30:00Z");
+
+        const before = Date.now();
+        const withoutFallback = buildCustomerThreadMessages(baseOpts({ pendingFirstMessage: "My build is broken" }));
+        const createdAt = withoutFallback.find((m) => m.id === "pending-first")?.createdAt;
+        expect(createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+        expect(new Date(createdAt!).getTime()).toBeGreaterThanOrEqual(before);
+        expect(new Date(createdAt!).getTime()).toBeLessThanOrEqual(Date.now());
     });
 });
 
