@@ -157,6 +157,7 @@ const ROLE_GLYPHS: Record<UserRole, ReactElement> = {
 const ROLE_GLYPH_SIZE: Record<string, string> = {
   "w-5 h-5": "size-3.25",
   "w-[22px] h-[22px]": "size-3.5",
+  "w-6 h-6": "size-4",
   "w-7 h-7": "size-4.5",
 }
 
@@ -187,18 +188,44 @@ const RoleIcon = ({ role, size = "w-[22px] h-[22px]" }: { role: UserRole; size?:
   </span>
 )
 
+// Collapsed sidebar: logo only — no name, chevron, border or background.
+const COLLAPSED_TRIGGER_CLASS =
+  "mx-auto flex shrink-0 items-center justify-center rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+
+const COLLAPSED_SIZE = "w-6 h-6"
+
 export function RoleSwitcher({
   variant = "control",
+  collapsed = false,
 }: {
   /** `row` is the outlined sidebar row with a role tile; `control` is the compact TopBar trigger. */
   variant?: SwitcherVariant
+  /** Role-tile-only trigger for the collapsed sidebar; the menu opens to the right. */
+  collapsed?: boolean
 }) {
   const { user, visibleRoles, isPrivateContext, getRoleDisplayName, handleSwitchRole, goToAddRole } =
     useWorkspaceSwitcher()
 
   return (
     <DropdownMenu>
-      {variant === "row" ? (
+      {collapsed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={getRoleDisplayName(user.role)}
+                className={COLLAPSED_TRIGGER_CLASS}
+              >
+                <RoleIcon role={user.role} size={COLLAPSED_SIZE} />
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            {getRoleDisplayName(user.role)}
+          </TooltipContent>
+        </Tooltip>
+      ) : variant === "row" ? (
         <DropdownMenuTrigger className={ROW_TRIGGER_CLASS}>
           <span className={ROW_SLOT_CLASS}>
             <RoleIcon role={user.role} size="w-7 h-7" />
@@ -214,8 +241,9 @@ export function RoleSwitcher({
       )}
       <DropdownMenuContent
         align="start"
+        {...(collapsed ? ({ side: "right", sideOffset: 8 } as const) : {})}
         // The sidebar row menu is as wide as its trigger row.
-        className={variant === "row" ? "w-(--radix-dropdown-menu-trigger-width)" : "w-40"}
+        className={variant === "row" && !collapsed ? "w-(--radix-dropdown-menu-trigger-width)" : "w-40"}
       >
         {visibleRoles.length > 0 ? (
           <>
@@ -256,12 +284,6 @@ export function RoleSwitcher({
 
 const TRIGGER_CLASS =
   "flex min-w-0 max-w-full items-center justify-between gap-2 px-3 h-9 bg-bg-subtle border border-border-subtle hover:border-brand-primary/30 hover:bg-muted rounded-lg transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-
-// Collapsed sidebar: logo only — no name, chevron, border or background.
-const COLLAPSED_TRIGGER_CLASS =
-  "mx-auto flex shrink-0 items-center justify-center rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-
-const COLLAPSED_SIZE = "w-6 h-6"
 
 /**
  * Dropdown trigger for the project/context control. Expanded it is the bordered

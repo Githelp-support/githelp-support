@@ -107,6 +107,14 @@ describe("RoleSwitcher", () => {
     expect(switchRole).toHaveBeenCalledWith("helper")
     expect(push).toHaveBeenCalledTimes(1)
   })
+  it("collapsed: role-tile-only trigger that keeps the role as its accessible name", () => {
+    actAs("helper")
+    renderWithTooltips(<RoleSwitcher variant="row" collapsed />)
+
+    const trigger = screen.getByRole("button", { name: "Helper" })
+    expect(trigger).not.toHaveTextContent("Helper")
+    expect(trigger.querySelector('[data-slot="role-icon"] [data-role-glyph="helper"]')).not.toBeNull()
+  })
 })
 
 describe("ProjectSwitcher — Private context (acting as User)", () => {

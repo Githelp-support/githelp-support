@@ -350,11 +350,11 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               </button>,
             )}
           </div>
-          {/* Guests have no role or project. The switcher centres its own
-              logo-only trigger; `empty:hidden` drops the padding when it
-              renders nothing (no projects). */}
+          {/* Guests have no role or project. Each switcher centres its own
+              icon-only trigger: the role tile, then the project logo. */}
           {isAuthenticated && (
-            <div className="px-4 pb-4 shrink-0 empty:hidden">
+            <div className="flex shrink-0 flex-col gap-3 px-4 pb-4">
+              <RoleSwitcher variant="row" collapsed />
               <ProjectSwitcher collapsed />
             </div>
           )}

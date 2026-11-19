@@ -36,8 +36,8 @@ vi.mock("@/hooks/useWorkspaceSwitcher", () => ({
   useWorkspaceSwitcher: () => ({ signOut }),
 }))
 vi.mock("@/components/layout/workspace-switchers", () => ({
-  RoleSwitcher: ({ variant }: { variant?: string }) => (
-    <div data-testid="role-switcher" data-variant={variant} />
+  RoleSwitcher: ({ variant, collapsed }: { variant?: string; collapsed?: boolean }) => (
+    <div data-testid="role-switcher" data-variant={variant} data-collapsed={String(!!collapsed)} />
   ),
   ProjectSwitcher: ({ collapsed, variant }: { collapsed?: boolean; variant?: string }) => (
     <div data-testid="project-switcher" data-collapsed={String(!!collapsed)} data-variant={variant} />
@@ -269,7 +269,7 @@ describe("Sidebar — header, project row and profile block", () => {
     const expand = screen.getByRole("button", { name: "Expand sidebar" })
     expect(expand.querySelector("svg")).not.toBeNull()
 
-    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
+    expect(screen.getByTestId("role-switcher")).toHaveAttribute("data-collapsed", "true")
     expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
 
     fireEvent.click(expand)
@@ -285,7 +285,7 @@ describe("Sidebar — header, project row and profile block", () => {
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }))
     expect(window.localStorage.getItem("sidebar:collapsed")).toBe("true")
     expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
-    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
+    expect(screen.getByTestId("role-switcher")).toHaveAttribute("data-collapsed", "true")
     expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
     expect(screen.queryByText("Test User")).not.toBeInTheDocument()
 
