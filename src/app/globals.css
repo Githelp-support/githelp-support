@@ -53,6 +53,7 @@
   --color-text-muted: var(--text-muted);
   --color-bg-subtle: var(--bg-subtle);
   --color-text-tertiary: var(--text-tertiary);
+  --color-text-note: var(--text-note);
   --color-support-header: var(--support-header);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -445,6 +446,8 @@
   --text-muted: #55555d;
   /* Blue-grey tertiary; passes AA (4.5:1+) on white, page-muted, bg-subtle and the lavender tint */
   --text-tertiary: #666b77;
+  /* Chat notes (system 'Note' lines, chat panel empty states): between muted and tertiary */
+  --text-note: #5c6370;
   --bg-subtle: #f6f6f6;
   --surface-hover: rgba(0, 0, 0, 0.04);
   --surface-active: rgba(0, 0, 0, 0.08);
@@ -582,6 +585,7 @@
   --text-secondary: #c9c9cf;
   --text-muted: #a1a1a8;
   --text-tertiary: #9a9fab;
+  --text-note: #9ea3ae;
   --bg-subtle: #1e1e22;
   --surface-hover: rgba(255, 255, 255, 0.06);
   --surface-active: rgba(255, 255, 255, 0.1);
