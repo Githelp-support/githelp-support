@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { GuestName } from "@/components/ui/guest-name"
+import { guestLabel } from "@/lib/guest-label"
 import {
   ClaimTicketButton,
   GUEST_CLAIM_BLOCKED_COPY,
@@ -97,6 +99,7 @@ describe("guest ticket labels", () => {
   it("shows guests as Guest", () => {
     expect(ticketCreatorDisplayName("Ada", true)).toBe("Guest")
     expect(ticketCreatorDisplayName("Ada", false)).toBe("Ada")
+    expect(ticketCreatorDisplayName("Ada", true, "User", { id: "a1b2c3d4-0000" })).toBe("Guest · a1b2")
     expect(ticketCreatorDisplayName(null, false)).toBe("User")
     expect(ticketCreatorDisplayName("  ", false, "Unknown")).toBe("Unknown")
   })
@@ -183,12 +186,52 @@ describe("guest system messages", () => {
 })
 
 describe("ProfileAvatar guest", () => {
-  it("shows the ghost on the guest tile instead of an initial", () => {
-    render(<ProfileAvatar id="guest-1" name="Guest" guest />)
-    const avatar = screen.getByRole("img", { name: "Guest" })
-    expect(avatar).toHaveClass("bg-avatar-guest-bg", "text-avatar-guest-fg")
-    expect(avatar.querySelector('svg[data-slot="guest-avatar-icon"]')).not.toBeNull()
-    expect(avatar.querySelector(".fi-sr-ghost")).toBeNull()
+  it("shows the ghost on the guest tile instead of an initial or image", () => {
+    const { container } = render(
+      <ProfileAvatar id="guest-1" name="Guest" avatarUrl="https://example.com/a.png" guest />,
+    )
+    const avatar = container.querySelector('[data-slot="guest-avatar"]') as HTMLElement
+    expect(avatar).toHaveClass("w-8", "h-8", "bg-avatar-guest-bg", "text-avatar-guest-fg")
+    expect(avatar).toHaveAttribute("aria-hidden", "true")
+    const icon = avatar.querySelector('svg[data-slot="guest-ghost-icon"]')
+    expect(icon).toHaveClass("size-[68%]")
+    expect(icon).toHaveAttribute("aria-hidden", "true")
+    expect(icon).not.toHaveAttribute("role")
+    expect(icon).not.toHaveAttribute("aria-label")
+    expect(container.querySelector("img")).toBeNull()
+    expect(screen.queryByRole("img")).toBeNull()
     expect(avatar).not.toHaveTextContent("G")
+  })
+})
+
+describe("guestLabel", () => {
+  it("prefers the email", () => {
+    expect(guestLabel({ id: "a1b2c3d4-0000", email: " ada@example.com " })).toEqual({
+      label: "ada@example.com",
+      full: "ada@example.com",
+    })
+  })
+
+  it("falls back to a short code from the stable guest id", () => {
+    expect(guestLabel({ id: "a1b2c3d4-0000", email: null })).toEqual({
+      label: "Guest · a1b2",
+      full: "a1b2c3d4-0000",
+    })
+  })
+
+  it("is just Guest when nothing identifies the guest", () => {
+    expect(guestLabel({ id: null })).toEqual({ label: "Guest", full: null })
+    expect(guestLabel()).toEqual({ label: "Guest", full: null })
+  })
+})
+
+describe("GuestName", () => {
+  it("renders the label in regular weight and the muted colour", () => {
+    render(
+      <TooltipProvider>
+        <GuestName label="Guest · a1b2" full="a1b2c3d4-0000" />
+      </TooltipProvider>,
+    )
+    expect(screen.getByText("Guest · a1b2")).toHaveClass("font-normal", "text-muted-foreground", "truncate")
   })
 })

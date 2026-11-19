@@ -513,9 +513,9 @@
   --avatar-7: #f7f3d1;
   --avatar-8: #e1d5f7;
   --avatar-9: #bce5f6;
-  /* Guest avatar (visitor without an account): grey ghost on a light grey tile */
-  --avatar-guest-bg: #f1f2f4;
-  --avatar-guest-fg: #868c97;
+  /* Guest avatar (visitor without an account): white ghost on a solid grey tile */
+  --avatar-guest-bg: #868c97;
+  --avatar-guest-fg: #ffffff;
 }
 
 .dark {
@@ -605,6 +605,8 @@
   --avatar-7: #4d4a2a;
   --avatar-8: #382b4d;
   --avatar-9: #1f3a4d;
+  --avatar-guest-bg: #4b515a;
+  --avatar-guest-fg: #e4e6ea;
 }
 
 /* Code blocks in chat (Figma: code block style) — editor-like: header with

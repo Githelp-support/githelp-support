@@ -29,6 +29,7 @@ import { isPaymentFailedCtaLive } from "@/lib/customer-chat-messages"
 import { VisitorLeftAction } from "@/components/ticket-chat/guest-ticket"
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { GuestName } from "@/components/ui/guest-name"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -77,8 +78,10 @@ export type TicketChatMessage = {
   senderAvatarInitial?: string | null
   senderAvatarUrl?: string | null
   senderId?: string | null
-  /** The sender is a guest (not signed in): their avatar is the ghost. */
+  /** The sender is a guest (not signed in): ghost avatar and muted name (`senderName` is their guest label). */
   senderIsGuest?: boolean
+  /** Guests only: full email or guest identifier, for the name tooltip. */
+  senderGuestFull?: string | null
   timestamp: string
   content: string
   kind?: "claimed" | "ended"
@@ -94,8 +97,10 @@ export type TicketChatParticipant = {
   avatarInitial: string
   avatarUrl?: string | null
   isCurrentUser?: boolean
-  /** A guest (not signed in): their avatar is the ghost. */
+  /** A guest (not signed in): ghost avatar and muted name (`name` is their guest label). */
   isGuest?: boolean
+  /** Guests only: full email or guest identifier, for the name tooltip. */
+  guestFull?: string | null
 }
 
 export interface TicketChatProps {
@@ -440,9 +445,17 @@ export function TicketChat(props: TicketChatProps) {
                               <div className="flex-1">
                                 {msg.senderType !== "system" && (
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm text-foreground font-medium">
-                                      {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
-                                    </span>
+                                    {msg.senderIsGuest ? (
+                                      <GuestName
+                                        label={msg.senderName || "Guest"}
+                                        full={msg.senderGuestFull}
+                                        className="text-sm"
+                                      />
+                                    ) : (
+                                      <span className="text-sm text-foreground font-medium">
+                                        {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
+                                      </span>
+                                    )}
                                     <span
                                       className="text-xs"
                                       style={{
@@ -684,7 +697,11 @@ export function TicketChat(props: TicketChatProps) {
                         guest={p.isGuest}
                         size="md"
                       />
-                      <span className="text-ui text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
+                      {p.isGuest && !p.isCurrentUser ? (
+                        <GuestName label={p.name} full={p.guestFull} className="text-ui" />
+                      ) : (
+                        <span className="text-ui text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { guestLabel, type GuestIdentity } from "@/lib/guest-label"
 import { cn } from "@/lib/utils"
 
 /**
@@ -14,9 +15,17 @@ import { cn } from "@/lib/utils"
 export const GUEST_CLAIM_BLOCKED_COPY =
   "The user needs to sign in before this ticket can be claimed. You can still reply."
 
-/** Display name for a ticket creator: guests show as "Guest". */
-export function ticketCreatorDisplayName(name: string | null | undefined, isGuest: boolean, fallback = "User"): string {
-  if (isGuest) return "Guest"
+/**
+ * Display name for a ticket creator. Guests show their email, else
+ * "Guest · " + a short code from their id, else "Guest" (see `guestLabel`).
+ */
+export function ticketCreatorDisplayName(
+  name: string | null | undefined,
+  isGuest: boolean,
+  fallback = "User",
+  guest?: GuestIdentity | null,
+): string {
+  if (isGuest) return guestLabel(guest).label
   return name?.trim() || fallback
 }
 

@@ -2,6 +2,7 @@ import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
 import { formatDateTime } from "./format";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
 import { formatDuration } from "@/lib/format";
+import { guestLabel } from "@/lib/guest-label";
 
 /**
  * Message-thread building shared by the two customer-facing chat pages
@@ -126,7 +127,7 @@ export interface CustomerThreadOptions {
     fallbackDescription?: string | null;
     /** Timestamp for the fallback first message (ticket created_at). */
     fallbackTimestamp?: string | null;
-    /** `isGuest`: the viewer is not signed in, so their own messages get the guest avatar. */
+    /** `isGuest`: the viewer is not signed in, so their own messages get the guest avatar and guest label. */
     currentUser: { id?: string; name?: string | null; avatarUrl?: string | null; isGuest?: boolean };
     /** Project's average response time in seconds (`null` until one exists). */
     avgResponseSeconds?: number | null;
@@ -163,7 +164,9 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         isFree,
     } = opts;
 
-    const userName = currentUser.name || "You";
+    // A guest's own messages carry the same label helpers see ("Guest · a1b2").
+    const guest = currentUser.isGuest ? guestLabel({ id: currentUser.id }) : null;
+    const userName = guest?.label ?? (currentUser.name || "You");
     const userInitial = userName[0]?.toUpperCase() || "Y";
 
     const list: TicketChatMessage[] = [
@@ -203,7 +206,8 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderAvatarInitial: userInitial,
             senderAvatarUrl: currentUser.avatarUrl ?? null,
             senderId: currentUser.id,
-            senderIsGuest: !!currentUser.isGuest,
+            senderIsGuest: !!guest,
+            senderGuestFull: guest?.full ?? null,
             timestamp: fallbackTimestamp ? formatChatTimestamp(fallbackTimestamp) : nowFormatted,
         });
     }
@@ -215,20 +219,23 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         if (msg.sender_type === "system" && msg.metadata?.kind === "visitor_left" && msg !== visitorLeftNow) return;
         const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";
+        const isOwnGuestMessage =
+            !!guest && senderType === "user" && (msg.sender_id ?? msg.sender?.id) === currentUser.id;
         list.push({
             id: msg.id,
             senderType,
             content:
                 (senderType === "system" ? guestSystemMessageCopy(msg.metadata?.kind, "customer") : null) ?? msg.content,
             senderName:
+                (isOwnGuestMessage ? guest?.label : null) ||
                 msg.sender?.name ||
                 (senderType === "user" ? userName : senderType === "helper" ? "Helper" : `${projectName} Team`),
             senderAvatarInitial:
                 msg.sender?.name?.[0]?.toUpperCase() || (senderType === "user" ? userInitial : "H"),
             senderAvatarUrl: msg.sender?.avatar_url ?? null,
             senderId: msg.sender_id ?? msg.sender?.id ?? null,
-            senderIsGuest:
-                !!currentUser.isGuest && senderType === "user" && (msg.sender_id ?? msg.sender?.id) === currentUser.id,
+            senderIsGuest: isOwnGuestMessage,
+            senderGuestFull: isOwnGuestMessage ? guest?.full ?? null : null,
             timestamp: formatChatTimestamp(msg.created_at),
             // Payment system messages (payment_required, payment_requires_action,
             // payment_authorized, …) carry their kind + ticket_id here; TicketChat

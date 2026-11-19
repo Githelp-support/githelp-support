@@ -45,6 +45,8 @@ import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { ClaimTicketButton, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
 import { helperSystemMessageCopy } from "@/lib/customer-chat-messages"
+import { GuestName } from "@/components/ui/guest-name"
+import { guestLabel } from "@/lib/guest-label"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
@@ -138,6 +140,15 @@ export default function TicketDetailPage() {
   // can claim / log time / bill until they do. Realtime clears the flag after
   // adoption (adopt-guest-tickets), which re-enables the claim button.
   const isGuestTicket = !!(ticket as { guest?: boolean } | null | undefined)?.guest
+  // Name shown for the guest who opened the ticket: their email if we have
+  // one, else "Guest · " + a short code from their (anonymous) user id.
+  const creatorGuestId = ticket?.created_by ?? null
+  const creatorGuestEmail = ticketDetails?.user?.email ?? null
+  const creatorGuest = useMemo(
+    () => (isGuestTicket ? guestLabel({ id: creatorGuestId, email: creatorGuestEmail }) : null),
+    [isGuestTicket, creatorGuestId, creatorGuestEmail],
+  )
+  const isGuestCreator = (id: string | null | undefined) => !!creatorGuest && !!id && id === creatorGuestId
   // Fetch payment settings (the payment gate needs them: free support opens it)
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
   // Billing uses the prices snapshotted when the ticket was opened; prefer them over
@@ -960,7 +971,11 @@ export default function TicketDetailPage() {
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm text-foreground font-medium">{firstIssueMessage.senderName}</span>
+                        {creatorGuest ? (
+                          <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-sm" />
+                        ) : (
+                          <span className="text-sm text-foreground font-medium">{firstIssueMessage.senderName}</span>
+                        )}
                         <span
                           className="text-xs"
                           style={{
@@ -1109,7 +1124,7 @@ export default function TicketDetailPage() {
                               id={msg.senderId}
                               name={msg.senderName ?? msg.avatar ?? "U"}
                               avatarUrl={msg.senderAvatarUrl ?? null}
-                              guest={isGuestTicket && msg.sender === "user" && msg.senderId === ticket?.created_by}
+                              guest={msg.sender === "user" && isGuestCreator(msg.senderId)}
                               size="sm"
                               radius="9.625px"
                             />
@@ -1117,7 +1132,11 @@ export default function TicketDetailPage() {
                           <div className="flex-1">
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
+                                {creatorGuest && msg.sender === "user" && isGuestCreator(msg.senderId) ? (
+                                  <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-sm" />
+                                ) : (
+                                  <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
+                                )}
                                 <span
                                   className="text-xs"
                                   style={{
@@ -1387,12 +1406,16 @@ export default function TicketDetailPage() {
                         id={participant.user?.id ?? participant.participant_id}
                         name={participant.user?.name ?? "Unknown"}
                         avatarUrl={participant.user?.avatar_url ?? null}
-                        guest={isGuestTicket && participant.participant_id === ticket?.created_by}
+                        guest={isGuestCreator(participant.participant_id)}
                         size="md"
                       />
-                      <span className="text-ui text-muted-foreground">
-                        {isCurrentUser ? "You" : participant.user?.name ?? "Unknown"}
-                      </span>
+                      {creatorGuest && !isCurrentUser && isGuestCreator(participant.participant_id) ? (
+                        <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-ui" />
+                      ) : (
+                        <span className="text-ui text-muted-foreground">
+                          {isCurrentUser ? "You" : participant.user?.name ?? "Unknown"}
+                        </span>
+                      )}
                     </div>
                   )
                 })}

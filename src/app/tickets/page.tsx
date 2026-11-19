@@ -23,6 +23,8 @@ import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { GuestName } from "@/components/ui/guest-name"
+import { guestLabel } from "@/lib/guest-label"
 import { ErrorState } from "@/components/ui/error-state"
 import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
@@ -34,6 +36,8 @@ interface Ticket {
     id: string | null
     name: string
     avatar: string
+    /** Guests only: full email or guest identifier, for the name tooltip. */
+    guestFull?: string | null
   }
   /** Name of the ticket's first help category, or GENERAL_TYPE when it has none. */
   type: string
@@ -104,13 +108,15 @@ export default function TicketsPage() {
     if (!ticketsData) return []
     return ticketsData.map((ticket) => {
       const firstCategory = ticket.help_categories?.find((c) => !!c.value)
+      const guest = ticket.guest ? guestLabel({ id: ticket.created_by, email: ticket.user?.email }) : null
       return {
         id: ticket.id,
         title: ticket.title,
         description: ticket.description,
         user: {
           id: ticket.created_by ?? null,
-          name: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "Unknown"),
+          name: guest?.label ?? ticketCreatorDisplayName(ticket.user?.name, false, "Unknown"),
+          guestFull: guest?.full ?? null,
           avatar: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "U")[0].toUpperCase(),
         },
         guest: !!ticket.guest,
@@ -678,9 +684,15 @@ export default function TicketsPage() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-foreground truncate">
-                              {ticket.user.name}
-                            </h4>
+                            {ticket.guest ? (
+                              <h4 className="text-sm">
+                                <GuestName label={ticket.user.name} full={ticket.user.guestFull} />
+                              </h4>
+                            ) : (
+                              <h4 className="text-sm font-medium text-foreground truncate">
+                                {ticket.user.name}
+                              </h4>
+                            )}
                             <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                             <div className="flex items-center gap-1 mt-1">
                               <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
@@ -775,9 +787,19 @@ export default function TicketsPage() {
                     )}
                     <div className="flex-1 min-w-0">
                       <Link href={`/helper/tickets/${ticket.id}`}>
-                        <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                          {ticket.user.name}
-                        </h4>
+                        {ticket.guest ? (
+                          <h4 className="text-sm cursor-pointer">
+                            <GuestName
+                              label={ticket.user.name}
+                              full={ticket.user.guestFull}
+                              className="hover:text-brand-primary"
+                            />
+                          </h4>
+                        ) : (
+                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                            {ticket.user.name}
+                          </h4>
+                        )}
                       </Link>
                       <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                         <div className="flex items-center gap-1 mt-1">

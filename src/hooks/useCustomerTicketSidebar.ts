@@ -9,6 +9,7 @@ import {
 } from "@/hooks/useTimeEntries";
 import { useUserActiveTicketsSidebar } from "@/hooks/useTicketsWithDetails";
 import type { TicketChatParticipant } from "@/components/ticket-chat/ticket-chat";
+import { guestLabel } from "@/lib/guest-label";
 
 export interface CustomerTimeEntryDisplay {
     id: string;
@@ -143,13 +144,15 @@ export function toChatParticipants(
     }
     return list.map((p) => {
         const isCurrentUser = !!currentUserId && p.participant_id === currentUserId;
+        const guest = isCurrentUser && currentUserIsGuest ? guestLabel({ id: p.participant_id }) : null;
         return {
             id: p.user?.id ?? p.participant_id,
-            name: p.user?.name ?? "Unknown",
+            name: guest?.label ?? p.user?.name ?? "Unknown",
             avatarInitial: p.user?.name?.[0]?.toUpperCase() ?? "U",
             avatarUrl: p.user?.avatar_url ?? null,
             isCurrentUser,
-            isGuest: isCurrentUser && currentUserIsGuest,
+            isGuest: !!guest,
+            guestFull: guest?.full ?? null,
         };
     });
 }
