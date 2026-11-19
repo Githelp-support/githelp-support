@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { HIDE_ABANDONED_GUEST_TICKETS_OR } from "@/lib/guest-ticket-visibility";
 import { useCurrentHelper } from "./useCurrentHelper";
 import {
     useTimeEntries,
@@ -89,6 +90,7 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                 .select("id, title, status, priority, created_at, completed_at")
                 .eq("project_id", projectId)
                 .is("deleted_at", null)
+                .or(HIDE_ABANDONED_GUEST_TICKETS_OR)
                 .order("created_at", { ascending: false });
 
             // Help categories for the project.

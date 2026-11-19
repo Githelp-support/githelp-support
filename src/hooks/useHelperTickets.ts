@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase/client";
+import { HIDE_ABANDONED_GUEST_TICKETS_OR } from "@/lib/guest-ticket-visibility";
 import type { Database } from "@/types/database";
 
 type Ticket = Database["public"]["Tables"]["tickets"]["Row"];
@@ -85,6 +86,7 @@ export function useHelperClaimedTicketsSidebar(
                     )
                     .in("id", claimedTicketIds)
                     .is("deleted_at", null)
+                    .or(HIDE_ABANDONED_GUEST_TICKETS_OR)
                     .in("status", ["claimed", "in-progress"])
                     .order("updated_at", { ascending: false });
 
@@ -242,6 +244,7 @@ export function useAdminActiveTicketsSidebar(
                 )
                 .eq("project_id", projectId)
                 .is("deleted_at", null)
+                .or(HIDE_ABANDONED_GUEST_TICKETS_OR)
                 .in("status", ["claimed", "in-progress"])
                 .order("updated_at", { ascending: false });
 
@@ -421,6 +424,7 @@ export function useHelperTickets(helperId: string, projectId?: string) {
                 .select("*")
                 .in("id", ticketIds)
                 .is("deleted_at", null)
+                .or(HIDE_ABANDONED_GUEST_TICKETS_OR)
                 .order("created_at", { ascending: false });
 
             if (projectId) {

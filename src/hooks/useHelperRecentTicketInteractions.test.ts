@@ -36,6 +36,7 @@ function ticket(id: string, overrides: Record<string, unknown> = {}) {
         title: `Ticket ${id}`,
         project_id: "proj-1",
         status: "available",
+        guest: false,
         created_at: "2026-01-01T00:00:00.000Z",
         created_by: CUSTOMER,
         completed_at: null,
@@ -94,6 +95,16 @@ function setupSupabase(fx: Fixture) {
                         const h = tables.projects_helpers.find((ph) => ph.helper_id === row.helper_id);
                         return !!h && h.user_id === f.val;
                     }
+                    if (f.op === "or") {
+                        return String(f.val)
+                            .split(",")
+                            .some((cond) => {
+                                const [col, op, raw] = cond.split(".");
+                                if (op === "is") return String(row[col]) === raw;
+                                if (op === "neq") return row[col] != null && String(row[col]) !== raw;
+                                throw new Error(`Unsupported or() condition: ${cond}`);
+                            });
+                    }
                     const value = row[f.col];
                     if (f.op === "eq") return value === f.val;
                     if (f.op === "is") return value === f.val || (f.val === null && value === undefined);
@@ -119,6 +130,11 @@ function setupSupabase(fx: Fixture) {
         builder.eq = chain("eq");
         builder.is = chain("is");
         builder.in = chain("in");
+        // PostgREST `or=(a.is.false,b.neq.x)`: keep rows matching any condition.
+        builder.or = (expr: string) => {
+            filters.push({ op: "or", col: "", val: expr });
+            return builder;
+        };
         builder.order = (col: string, opts?: { ascending?: boolean }) => {
             order = { col, ascending: opts?.ascending !== false };
             return builder;
@@ -328,6 +344,38 @@ describe("useHelperRecentTicketInteractions", () => {
 
         const data = await renderRecent();
         expect(data.map((d) => d.id)).toEqual(["t-live"]);
+    });
+
+    it("drops guest tickets whose visitor left before signing in, keeps other cancelled tickets", async () => {
+        setupSupabase({
+            tickets: [
+                // guest left before signing in: hidden
+                ticket("t-abandoned", {
+                    guest: true,
+                    status: "cancelled",
+                    cancelled_at: "2026-01-09T00:00:00.000Z",
+                }),
+                // guest ticket still open: visible
+                ticket("t-guest-open", { guest: true }),
+                // adopted (signed-in) ticket that was cancelled: visible
+                ticket("t-cancelled", {
+                    guest: false,
+                    status: "cancelled",
+                    cancelled_at: "2026-01-08T00:00:00.000Z",
+                }),
+            ],
+            participants: [
+                participant("t-abandoned", { created_at: "2026-01-03T00:00:00.000Z" }),
+                participant("t-guest-open", { created_at: "2026-01-02T00:00:00.000Z" }),
+                participant("t-cancelled", { created_at: "2026-01-01T00:00:00.000Z" }),
+            ],
+            messages: [
+                message("m1", "t-abandoned", "2026-01-05T00:00:00.000Z", { sender_id: HELPER_USER }),
+            ],
+        });
+
+        const data = await renderRecent();
+        expect(data.map((d) => d.id)).toEqual(["t-cancelled", "t-guest-open"]);
     });
 
     it("derives status, creator, project details and message_count", async () => {

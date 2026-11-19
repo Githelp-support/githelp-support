@@ -9,6 +9,7 @@
  * the date of the individual entry.
  */
 import { getAvatarColorHexForId } from "@/lib/constants";
+import { isAbandonedGuestTicket } from "@/lib/guest-ticket-visibility";
 import { ticketClosedAt } from "@/lib/helper-payout-reports";
 import { monthLabel } from "@/lib/user-payment-reports";
 import {
@@ -66,6 +67,8 @@ export const EMPTY_DASHBOARD_STATS: DashboardStats = {
 export interface DashboardTicket {
     id: string;
     status: string | null;
+    /** Opened by a visitor who has not signed in; cancelled guest tickets are not counted. */
+    guest?: boolean | null;
     completed_at?: string | null;
     cancelled_at?: string | null;
 }
@@ -150,9 +153,12 @@ function normalizeHelperCategory(raw: string | null | undefined): string {
 }
 
 export function computeDashboardStats(
-    { tickets, timeEntries, helpers, helpCategories, ticketsHelpCategories }: DashboardStatsInput,
+    { tickets: allTickets, timeEntries, helpers, helpCategories, ticketsHelpCategories }: DashboardStatsInput,
     targetMonth: string | null
 ): DashboardStats {
+    // A guest ticket whose visitor left before signing in is not a real
+    // cancellation: it counts nowhere (cancelled, closed or issue types).
+    const tickets = allTickets.filter((ticket) => !isAbandonedGuestTicket(ticket));
     const periodTickets = tickets.filter((ticket) =>
         isTicketClosedInPeriod(ticket, targetMonth)
     );

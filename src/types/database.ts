@@ -611,6 +611,16 @@ export type Database = {
                 Args: { p_ticket_id?: string | null };
                 Returns: undefined;
             };
+            /** The guest leaves on purpose: ends the caller's own open guest ticket, or all of them when called without an id. */
+            leave_guest_ticket: {
+                Args: { p_ticket_id?: string | null };
+                Returns: undefined;
+            };
+            /** Ends one guest ticket whose visitor left before signing in. */
+            end_abandoned_guest_ticket: {
+                Args: { p_ticket_id: string };
+                Returns: undefined;
+            };
         };
     };
 };
