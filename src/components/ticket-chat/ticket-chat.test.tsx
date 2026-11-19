@@ -82,6 +82,12 @@ describe("TicketChat thread", () => {
     expect(dividers).toHaveLength(2)
     expect(dividers[0]).toHaveTextContent("Sunday 15 November")
     expect(dividers[1]).toHaveTextContent("Monday 16 November")
+    dividers.forEach((divider) => {
+      const label = divider.querySelector("span")
+      expect(label).not.toBeNull()
+      expect(label).not.toHaveClass("font-mono")
+      expect(label).toHaveClass("text-xs", "text-muted-foreground")
+    })
   })
 
   it("renders a system message as a 'Note' without the grey box", () => {

@@ -477,7 +477,7 @@ export function TicketChat(props: TicketChatProps) {
                               className="relative mt-4 flex items-center justify-center first:mt-0"
                             >
                               <div aria-hidden className="absolute inset-x-0 top-1/2 border-t border-border-subtle" />
-                              <span className="relative rounded-full border border-border-subtle bg-background px-3 font-mono text-xs text-muted-foreground">
+                              <span className="relative rounded-full border border-border-subtle bg-background px-3 text-xs text-muted-foreground">
                                 {item.label}
                               </span>
                             </div>
