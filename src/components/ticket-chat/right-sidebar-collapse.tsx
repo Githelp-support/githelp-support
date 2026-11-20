@@ -57,9 +57,10 @@ export function RightSidebarCollapseToggle({
       <Button
         variant="ghost"
         size="sm"
-        // Expanded: pull the 32px button left by its 6px icon inset so the
-        // 20px glyph lines up with the sidebar content's px-4 edge.
-        className={`${isCollapsed ? "" : "-ml-1.5 "}h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30`}
+        // Expanded: pull the 32px button left by its 8px icon inset so the
+        // 16px glyph lines up with the sidebar content's px-4 edge.
+        aria-label={isCollapsed ? "Expand details panel" : "Collapse details panel"}
+        className={`${isCollapsed ? "" : "-ml-2 "}h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30`}
         onClick={() => onToggle(!isCollapsed)}
       >
         <SidebarToggleIcon mirrored />
