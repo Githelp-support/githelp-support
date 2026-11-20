@@ -446,7 +446,7 @@
   --text-muted: #55555d;
   /* Blue-grey tertiary; passes AA (4.5:1+) on white, page-muted, bg-subtle and the lavender tint */
   --text-tertiary: #666b77;
-  /* Chat notes (timestamps, day dividers, system lines): between text-muted and text-tertiary */
+  /* Chat notes only (the "Note ·" system rows and the right panel's one-line empty states): between text-muted and text-tertiary; AA on background and bg-subtle in both themes */
   --text-note: #5c6370;
   --bg-subtle: #f6f6f6;
   --surface-hover: rgba(0, 0, 0, 0.04);
