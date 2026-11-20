@@ -30,6 +30,59 @@ export function formatDateTime(value: string | Date): string {
   return `${formatDate(date)}, ${hours}:${minutes}`
 }
 
+/** HH:MM in local time, zero-padded (09:05): the time beside a chat message. */
+export function formatTime(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  return `${hours}:${minutes}`
+}
+
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+]
+
+/** Whether two dates fall on the same local calendar day. */
+export function isSameLocalDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
+/**
+ * Label for a chat day divider: "Today", "Yesterday", otherwise the weekday,
+ * day and month ("Sunday 15 November"). Compared by local calendar day against
+ * `now`, which is a parameter so the function stays pure.
+ */
+export function formatDayLabel(value: string | Date, now: Date = new Date()): string {
+  const date = value instanceof Date ? value : new Date(value)
+  if (isSameLocalDay(date, now)) return "Today"
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  if (isSameLocalDay(date, yesterday)) return "Yesterday"
+  return `${WEEKDAY_NAMES[date.getDay()]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`
+}
+
+/** Day and abbreviated month, "15 Nov". */
+export function formatShortDate(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  return `${date.getDate()} ${MONTH_NAMES[date.getMonth()].slice(0, 3)}`
+}
+
+/** The first 8 characters of a ticket id (the first UUID segment), as shown in the UI. */
+export function shortTicketId(id: string): string {
+  return id.slice(0, 8)
+}
+
 /**
  * Format a date string as a relative time (e.g. "Just now", "5 min", "2h", "3d").
  * Use for notifications, activity feeds, etc.

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatShortDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase/client";
 
 export interface TicketWithDetails {
@@ -118,6 +118,13 @@ export interface UserActiveTicketSidebarItem {
     title: string;
     subtitle: string;
     date: string;
+    /** Ticket title when set, otherwise the first message / description. Untruncated — CSS truncates. */
+    subject: string;
+    projectName: string;
+    /** First 8 characters of the ticket id. */
+    shortId: string;
+    /** Created date in short form, e.g. "15 Nov". */
+    dateShort: string;
     avatarUrl: string | null;
     avatarInitial: string;
     current: boolean;
@@ -276,6 +283,10 @@ export function useUserActiveTicketsSidebar(
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
                     date: formatDate(t.created_at),
+                    subject: t.title?.trim() || firstMsg.trim() || "—",
+                    projectName,
+                    shortId: t.id.slice(0, 8),
+                    dateShort: formatShortDate(t.created_at),
                     avatarUrl: projectLogo,
                     avatarInitial: projectName[0]?.toUpperCase() ?? "?",
                     current: t.id === currentTicketId,

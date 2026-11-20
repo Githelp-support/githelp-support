@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useProject, useProjectBySlug, useProjectResources, useProjectBranding, useProjectPaymentSettings } from "@/hooks/useProject"
+import { truncateText } from "@/lib/format"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { useUser } from "@/contexts/user-context"
@@ -122,6 +123,8 @@ export default function SupportPage() {
   // Get project logo from branding only
   const projectLogo = brandingData?.logo_url || null
   const projectName = project?.name || "Support"
+  // Composer placeholder: "Ask #slug", or the display name when the project has no slug.
+  const composerPlaceholder = `Ask #${truncateText(project?.slug || projectName)}`
 
 
   // Transform resources data
@@ -297,7 +300,8 @@ export default function SupportPage() {
   )
 
 
-  const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
+  const nowIso = useMemo(() => new Date().toISOString(), [])
+  const nowFormatted = useMemo(() => formatChatTimestamp(nowIso), [nowIso])
 
   // Thread: disclaimer → claimed banner → (pending first message) → persisted
   // messages → session summary once ended. Shared with /support/chat.
@@ -306,6 +310,7 @@ export default function SupportPage() {
       projectName,
       projectLogo,
       nowFormatted,
+      nowIso,
       messagesData,
       claimer,
       pendingFirstMessage,
@@ -339,6 +344,7 @@ export default function SupportPage() {
     projectName,
     projectLogo,
     nowFormatted,
+    nowIso,
     messagesData,
     claimer,
     pendingFirstMessage,
@@ -620,6 +626,7 @@ export default function SupportPage() {
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
       timestamp={nowFormatted}
+      createdAt={nowIso}
       rates={rates}
       isFree={isFreeSupport(effectivePricing)}
       isAuthenticated={isAuthenticated}
@@ -763,6 +770,7 @@ export default function SupportPage() {
             sendDisabled={!message.trim() || createTicket.isPending}
             sending={isSending}
             isEnded={ticketEnded}
+            composerPlaceholder={composerPlaceholder}
             paymentStatus={paymentStatus.status}
             // Signed-out visitors get the composer: the first send starts a
             // guest session. While a guest, a banner above it offers sign-in.

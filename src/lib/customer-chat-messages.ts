@@ -20,11 +20,12 @@ export const TICKET_DISCLAIMER_FREE = "Feel free to chat and clarify details bef
 /**
  * Synthetic auto-reply shown right after the customer's first message.
  * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
- * Shows "~" while the project has no average response time yet.
+ * The average-response-time sentence is left out while the project has none.
  */
 export function buildAutoReply(avgResponseSeconds: number | null | undefined): string {
-    const responseTime = avgResponseSeconds == null ? "~" : formatDuration(avgResponseSeconds);
-    return `Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **${responseTime}**.`;
+    const reply = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+    if (typeof avgResponseSeconds !== "number" || !Number.isFinite(avgResponseSeconds)) return reply;
+    return `${reply} The average response time for this project is **${formatDuration(avgResponseSeconds)}**.`;
 }
 
 /**
@@ -114,6 +115,8 @@ export interface CustomerThreadOptions {
     projectLogo: string | null;
     /** Timestamp for synthetic (non-persisted) messages. */
     nowFormatted: string;
+    /** The same instant as `nowFormatted`, as a raw ISO string → `createdAt` of the synthetic messages. */
+    nowIso?: string | null;
     messagesData: PersistedTicketMessage[] | undefined;
     /** The helper who claimed the ticket, if any → "Ticket is claimed by …" banner. */
     claimer?: { id: string; name: string; avatar_url: string | null } | null;
@@ -153,6 +156,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         projectName,
         projectLogo,
         nowFormatted,
+        nowIso,
         messagesData,
         claimer,
         pendingFirstMessage,
@@ -177,6 +181,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
             timestamp: nowFormatted,
+            createdAt: nowIso ?? null,
         },
     ];
 
@@ -190,6 +195,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderAvatarUrl: claimer.avatar_url ?? null,
             senderId: claimer.id,
             timestamp: nowFormatted,
+            createdAt: nowIso ?? null,
             // kind="claimed" switches TicketChat to the helper-avatar banner layout.
             kind: "claimed",
         });
@@ -209,6 +215,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderIsGuest: !!guest,
             senderGuestFull: guest?.full ?? null,
             timestamp: fallbackTimestamp ? formatChatTimestamp(fallbackTimestamp) : nowFormatted,
+            createdAt: fallbackTimestamp || nowIso || null,
         });
     }
 
@@ -237,6 +244,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderIsGuest: isOwnGuestMessage,
             senderGuestFull: isOwnGuestMessage ? guest?.full ?? null : null,
             timestamp: formatChatTimestamp(msg.created_at),
+            createdAt: msg.created_at,
             // Payment system messages (payment_required, payment_requires_action,
             // payment_authorized, …) carry their kind + ticket_id here; TicketChat
             // renders the "Add payment method" CTA from it.
@@ -256,6 +264,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
             timestamp: list[firstUserIndex].timestamp,
+            createdAt: list[firstUserIndex].createdAt ?? null,
         });
     }
 

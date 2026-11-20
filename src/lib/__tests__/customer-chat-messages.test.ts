@@ -79,9 +79,76 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         expect(list.find((m) => m.id === "auto-reply")?.content).toContain("**1h 30m**");
     });
 
-    it("shows ~ while the project has no average response time yet", () => {
-        expect(buildAutoReply(null)).toContain("**~**");
-        expect(buildAutoReply(undefined)).toContain("**~**");
+    it("leaves out the average response time while the project has none", () => {
+        const withoutAverage = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+        expect(buildAutoReply(null)).toBe(withoutAverage);
+        expect(buildAutoReply(undefined)).toBe(withoutAverage);
+        expect(buildAutoReply(Number.NaN)).toBe(withoutAverage);
+        expect(buildAutoReply(Number.POSITIVE_INFINITY)).toBe(withoutAverage);
+    });
+
+    it("appends the average response time when it is a real number", () => {
+        expect(buildAutoReply(90 * 60)).toBe(
+            "Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **1h 30m**.",
+        );
+        expect(buildAutoReply(0)).toContain("The average response time for this project is **<1m**.");
+    });
+});
+
+describe("buildCustomerThreadMessages createdAt", () => {
+    const NOW_ISO = "2026-01-02T09:30:00.000Z";
+    const baseOpts = (overrides: Partial<CustomerThreadOptions> = {}): CustomerThreadOptions => ({
+        projectName: "Acme",
+        projectLogo: null,
+        nowFormatted: "02.01.2026, 09:30",
+        nowIso: NOW_ISO,
+        messagesData: undefined,
+        currentUser: { id: "user-1", name: "Ada" },
+        ...overrides,
+    });
+    const byId = (list: TicketChatMessage[], id: string) => list.find((m) => m.id === id);
+
+    it("uses created_at for persisted messages and keeps the formatted timestamp", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({
+                messagesData: [
+                    { id: "msg-1", content: "Hi", created_at: "2026-01-01T12:00:00Z", sender_type: "user" },
+                    { id: "msg-2", content: "Hello", created_at: "2026-01-01T12:03:00Z", sender_type: "helper" },
+                ],
+            }),
+        );
+        expect(byId(list, "msg-1")?.createdAt).toBe("2026-01-01T12:00:00Z");
+        expect(byId(list, "msg-2")?.createdAt).toBe("2026-01-01T12:03:00Z");
+        expect(byId(list, "msg-1")?.timestamp).toMatch(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+        // The auto-reply shares the instant of the message it answers.
+        expect(byId(list, "auto-reply")?.createdAt).toBe("2026-01-01T12:00:00Z");
+        expect(list.map((m) => m.id)).toEqual(["welcome", "msg-1", "auto-reply", "msg-2"]);
+    });
+
+    it("uses the now instant for the welcome and claimed entries", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({ claimer: { id: "helper-1", name: "Grace", avatar_url: null } }),
+        );
+        expect(byId(list, "welcome")).toMatchObject({ createdAt: NOW_ISO, timestamp: "02.01.2026, 09:30" });
+        expect(byId(list, "system-claimed")).toMatchObject({ createdAt: NOW_ISO, timestamp: "02.01.2026, 09:30" });
+    });
+
+    it("uses fallbackTimestamp for the pending first message, or now without one", () => {
+        const withFallback = buildCustomerThreadMessages(
+            baseOpts({ fallbackDescription: "My build is broken", fallbackTimestamp: "2026-01-01T08:00:00Z" }),
+        );
+        expect(byId(withFallback, "pending-first")?.createdAt).toBe("2026-01-01T08:00:00Z");
+        expect(byId(withFallback, "auto-reply")?.createdAt).toBe("2026-01-01T08:00:00Z");
+
+        const withoutFallback = buildCustomerThreadMessages(baseOpts({ pendingFirstMessage: "My build is broken" }));
+        expect(byId(withoutFallback, "pending-first")?.createdAt).toBe(NOW_ISO);
+    });
+
+    it("leaves createdAt empty for synthetic messages when no now instant is given", () => {
+        const list = buildCustomerThreadMessages(baseOpts({ nowIso: undefined, pendingFirstMessage: "Hi" }));
+        expect(byId(list, "welcome")?.createdAt).toBeNull();
+        expect(byId(list, "pending-first")?.createdAt).toBeNull();
+        expect(byId(list, "auto-reply")?.createdAt).toBeNull();
     });
 });
 

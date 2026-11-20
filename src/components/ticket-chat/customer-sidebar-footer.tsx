@@ -126,14 +126,15 @@ export function CustomerTicketSidebarFooter({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <h4 className="font-medium text-foreground text-ui truncate">{item.title}</h4>
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="text-sm font-semibold text-foreground truncate">{item.subject}</h4>
                         {item.hasNotification && (
                           <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                      <p className="text-xs text-muted-foreground">{item.date}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.projectName} · <span className="font-mono">{item.shortId}</span> · {item.dateShort}
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -44,3 +44,19 @@ describe("CustomerChatIntro rates", () => {
     expect(screen.getByText(/signed in as Alice/)).toBeInTheDocument()
   })
 })
+
+describe("CustomerChatIntro header", () => {
+  it("shows only the time of the welcome line when its instant is known", () => {
+    render(
+      <CustomerChatIntro
+        {...baseProps}
+        timestamp="20.11.2026, 09:05"
+        createdAt={new Date(2026, 10, 20, 9, 5).toISOString()}
+      />,
+    )
+    expect(screen.getByText("09:05")).toHaveClass("font-mono", "text-xs", "tabular-nums", "text-muted-foreground")
+    expect(screen.queryByText(/20\.11\.2026/)).not.toBeInTheDocument()
+    expect(screen.getByText("Acme Team")).toHaveClass("text-sm", "font-semibold")
+    expect(screen.getByText("Welcome!")).toHaveClass("text-foreground")
+  })
+})

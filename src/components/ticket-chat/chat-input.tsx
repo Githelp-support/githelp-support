@@ -23,6 +23,11 @@ export interface TicketChatInputProps {
    */
   disabled?: boolean
   placeholder?: string
+  /**
+   * Start at one line and grow with the content up to 200px, then scroll
+   * inside. Off by default: the textarea keeps its fixed 100px minimum.
+   */
+  autoGrow?: boolean
   /** Optional content to render at the end of the toolbar (e.g. "End session" button) */
   toolbarEndContent?: React.ReactNode
   /** Called when the image/attachment button is clicked */
@@ -32,6 +37,9 @@ export interface TicketChatInputProps {
   /** Shows an "Uploading image…" hint while attachments are in flight */
   imagesUploading?: boolean
 }
+
+/** Tallest the auto-growing textarea gets before it scrolls (matches `max-h-50`). */
+const AUTO_GROW_MAX_HEIGHT = 200
 
 /** Image files carried by a paste or drop. */
 function imageFilesFrom(data: DataTransfer | null): File[] {
@@ -47,6 +55,7 @@ export function TicketChatInput({
   sending,
   disabled,
   placeholder = "Message #askanything",
+  autoGrow = false,
   toolbarEndContent,
   onImageClick: onImageClickProp,
   onImageFiles: onImageFilesProp,
@@ -211,6 +220,17 @@ export function TicketChatInput({
     }
   }, [value])
 
+  // `field-sizing: content` (set by Textarea) does the sizing where it exists.
+  // Elsewhere the height is measured, which also shrinks the textarea back to
+  // one line when `value` is cleared after sending.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current
+    if (!autoGrow || !ta) return
+    if (typeof CSS !== "undefined" && CSS.supports?.("field-sizing", "content")) return
+    ta.style.height = "auto"
+    ta.style.height = `${Math.min(ta.scrollHeight, AUTO_GROW_MAX_HEIGHT)}px`
+  }, [value, autoGrow])
+
   return (
     <div
       className={cn(
@@ -265,7 +285,12 @@ export function TicketChatInput({
           placeholder={disabled ? "This ticket is closed. New messages can't be sent." : placeholder}
           disabled={!!disabled}
           aria-disabled={!!disabled}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
+          rows={autoGrow ? 1 : undefined}
+          className={cn(
+            "resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed",
+            // One line (line-height + the 12px vertical padding): 16px text below md, 14px from md.
+            autoGrow ? "min-h-9 md:min-h-8 max-h-50 overflow-y-auto" : "min-h-[100px] max-h-32"
+          )}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           spellCheck={!isInsideOpenFence(value, value.length)}

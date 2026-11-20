@@ -24,6 +24,7 @@ import { GUEST_OPEN_TICKET_ELSEWHERE_MESSAGE, guestTicketCreateAction } from "@/
 import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/support-sign-in-redirect"
 import { useProject, useProjectBySlug, useProjectPaymentSettings, useProjectBranding, useProjects, PROJECT_SEARCH_MIN_LENGTH } from "@/hooks/useProject"
 import { useRequestProjectSupport } from "@/hooks/useRequestProjectSupport"
+import { truncateText } from "@/lib/format"
 import { formatTicketRates, isFreeSupport } from "@/lib/ticket-pricing"
 import { useCreateTicket, useRequestEndSession } from "@/hooks/useTickets"
 import { useConfirmTimeEntries, getReviewTimeEntryErrorHint } from "@/hooks/useTimeEntries"
@@ -179,6 +180,8 @@ export default function UserSupportChatPage() {
   useSetProjectPageHref(projectPageHref)
   const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
+  // Composer placeholder: "Ask #slug", or the display name when the project has no slug.
+  const composerPlaceholder = `Ask #${truncateText(project?.slug || projectName)}`
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
 
   // Ticket-ended summary for the customer: reflect that the helper closed the
@@ -455,7 +458,8 @@ export default function UserSupportChatPage() {
     void ensureOrg()
   }, [isAuthenticated, isSupportUser, selectedOrganizationId])
 
-  const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
+  const nowIso = useMemo(() => new Date().toISOString(), [])
+  const nowFormatted = useMemo(() => formatChatTimestamp(nowIso), [nowIso])
 
   const welcomeText = slaCovered
     ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
@@ -468,6 +472,7 @@ export default function UserSupportChatPage() {
       projectName,
       projectLogo,
       nowFormatted,
+      nowIso,
       messagesData,
       claimer,
       pendingFirstMessage,
@@ -501,6 +506,7 @@ export default function UserSupportChatPage() {
     projectName,
     projectLogo,
     nowFormatted,
+    nowIso,
     messagesData,
     claimer,
     pendingFirstMessage,
@@ -918,8 +924,8 @@ export default function UserSupportChatPage() {
       <TicketChat
         threadKey={ticketId ?? undefined}
         headerTitle={`Ticket with ${projectName}`}
-        headerTitleClassName="text-xl"
-        headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
+        headerTitleClassName="text-base font-semibold"
+        ticketId={ticketCreated ? ticketId : undefined}
         showBackButton={true}
         intro={
           <CustomerChatIntro
@@ -929,6 +935,7 @@ export default function UserSupportChatPage() {
             primaryColor={brandingData?.primary_color}
             welcomeText={welcomeText}
             timestamp={nowFormatted}
+            createdAt={nowIso}
             rates={rates}
             isFree={isFreeSupport(effectivePricing)}
             isAuthenticated={isAuthenticated}
@@ -948,6 +955,7 @@ export default function UserSupportChatPage() {
         sendDisabled={!message.trim() || createTicket.isPending}
         sending={isSending}
         isEnded={ticketEnded}
+        composerPlaceholder={composerPlaceholder}
         paymentStatus={paymentStatus.status}
         // Signed-out visitors get the composer: the first send starts a guest
         // session. While a guest, a banner above it offers sign-in.

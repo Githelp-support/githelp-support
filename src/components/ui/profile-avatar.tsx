@@ -7,7 +7,7 @@ import { GuestGhostIcon } from "@/components/ui/guest-ghost-icon"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
-export type ProfileAvatarSize = "sm" | "md" | "lg"
+export type ProfileAvatarSize = "sm" | "chat" | "md" | "lg"
 
 type SizePreset = {
   dimensions: string
@@ -19,12 +19,14 @@ type SizePreset = {
  * Size presets matching the dimensions used across the app. Corners come
  * from the shared squircle map so every avatar keeps the same proportion:
  * - sm: sidebar (28px)
+ * - chat: chat message author (30px)
  * - md: right-sidebar participants / helpers list (32px)
  * - lg: profile header (48px)
  * Initials stay proportional to their avatar (text-[21px] in the 48px one).
  */
 const SIZE_PRESETS: Record<ProfileAvatarSize, SizePreset> = {
   sm: { dimensions: "w-7 h-7", rounded: SQUIRCLE_RADIUS[28], text: "text-sm" },
+  chat: { dimensions: "size-7.5", rounded: SQUIRCLE_RADIUS[30], text: "text-sm" },
   md: { dimensions: "w-8 h-8", rounded: SQUIRCLE_RADIUS[32], text: "text-sm" },
   lg: { dimensions: "w-12 h-12", rounded: SQUIRCLE_RADIUS[48], text: "text-[21px]" },
 }
