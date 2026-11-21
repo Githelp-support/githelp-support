@@ -39,7 +39,7 @@ export function GuestBanner({ redirectTo, onSignIn }: GuestBannerProps) {
 
   return (
     <div
-      className="animate-enter mx-4 mb-2 rounded-lg border border-border bg-card px-4 py-3 flex flex-wrap items-center justify-between gap-3"
+      className="animate-enter mx-12 mb-2 max-md:mx-4 rounded-lg border border-border bg-card px-4 py-3 flex flex-wrap items-center justify-between gap-3"
       data-slot="guest-banner"
     >
       <p className="text-sm text-foreground">

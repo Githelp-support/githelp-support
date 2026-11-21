@@ -96,7 +96,7 @@ export function CustomerChatIntro({
             <div className="bg-card border border-border rounded-lg p-3">
               <p className="text-sm font-medium text-foreground">Free support</p>
               <p className="text-sm text-muted-foreground">
-                {projectName} offers support for free — no payment method needed.
+                {projectName} offers support for free - no payment method needed.
               </p>
             </div>
           ) : rates == null ? (
