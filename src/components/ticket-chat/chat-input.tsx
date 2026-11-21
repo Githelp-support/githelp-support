@@ -214,8 +214,9 @@ export function TicketChatInput({
   return (
     <div
       className={cn(
-        "bg-card border border-border rounded-lg shadow-soft mx-4 mb-4 overflow-hidden",
-        dragActive && "border-brand-primary ring-2 ring-brand-primary/30"
+        "bg-card border border-border rounded-lg shadow-soft mx-12 mb-4 max-md:mx-4 overflow-hidden focus-within:border-border-composer-focus transition-colors duration-150 ease-out",
+        // The drag state wins over the focus colour, so it repeats the border under focus-within.
+        dragActive && "border-brand-primary focus-within:border-brand-primary ring-2 ring-brand-primary/30"
       )}
       onDragOver={handleDragOver}
       onDragLeave={() => setDragActive(false)}

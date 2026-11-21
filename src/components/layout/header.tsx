@@ -29,6 +29,8 @@ interface HeaderProps {
   aboveTitle?: ReactNode
   /** Page-level actions (e.g. the primary button), rendered right-aligned. */
   actions?: ReactNode
+  /** Ticket chat header: a 60px row with 20px side padding and every item vertically centred. */
+  compact?: boolean
 }
 
 /**
@@ -36,7 +38,7 @@ interface HeaderProps {
  * sticky under the TopBar with a hairline below. Pages render it themselves
  * because it carries page-specific props; the Sidebar comes from AppShell.
  */
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle, actions }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle, actions, compact = false }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -74,18 +76,22 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     <header
       ref={headerRef}
       className={cn(
-        "sticky top-0 z-30 shrink-0 border-b border-border-subtle px-8 py-5",
+        "sticky top-0 z-30 shrink-0 border-b border-border-subtle",
+        compact ? "flex h-15 items-center px-5" : "px-8 py-5",
         !backgroundColor && "bg-background",
         className,
       )}
       style={backgroundColor ? { backgroundColor } : undefined}
     >
-      <div className="flex items-center justify-between gap-8">
-        <div className="flex min-w-0 items-start gap-4">
+      <div className={cn("flex items-center justify-between gap-8", compact && "min-w-0 flex-1")}>
+        <div className={cn("flex min-w-0 gap-4", compact ? "items-center" : "items-start")}>
           {showBackButton && (
             <button
               onClick={handleBackClick}
-              className="mt-1 flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+              className={cn(
+                "flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
+                !compact && "mt-1",
+              )}
             >
               <Icon name="fi-rr-arrow-left" className="text-muted-foreground" />
               {backButtonText && (

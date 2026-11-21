@@ -13,6 +13,7 @@
   --color-surface-hover: var(--surface-hover);
   --color-surface-active: var(--surface-active);
   --color-border-control: var(--border-control);
+  --color-border-composer-focus: var(--border-composer-focus);
   --color-border-avatar: var(--border-avatar);
   --color-status-success-bg: var(--status-success-bg);
   --color-status-success-text: var(--status-success-text);
@@ -439,6 +440,7 @@
   --brand-foreground: #ffffff;
   --border-subtle: #e1e1e1;
   --border-control: rgba(0, 0, 0, 0.1);
+  --border-composer-focus: #8a909b;
   --border-avatar: #e1e4ea;
   --text-heading: #0f0f11;
   --text-secondary: #444444;
@@ -577,6 +579,7 @@
   --brand-foreground: #ffffff;
   --border-subtle: oklch(1 0 0 / 12%);
   --border-control: rgba(255, 255, 255, 0.12);
+  --border-composer-focus: #9ca3af;
   --border-avatar: oklch(1 0 0 / 16%);
   --text-heading: #f0f0f2;
   --text-secondary: #c9c9cf;

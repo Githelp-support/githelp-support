@@ -37,3 +37,22 @@ describe("TicketChatInput toolbar", () => {
         expect(toolbar.className).toMatch(/max-md:px-3/)
     })
 })
+
+describe("TicketChatInput focus", () => {
+    it("darkens the composer border on focus-within without a ring on the textarea", () => {
+        render(<TicketChatInput value="" onChange={() => {}} onSend={() => {}} />)
+        const textarea = screen.getByRole("textbox")
+        const composer = textarea.closest(".shadow-soft") as HTMLElement
+        expect(composer).toHaveClass("focus-within:border-border-composer-focus", "transition-colors", "border-border")
+        expect(composer.className).not.toMatch(/transition-all/)
+        expect(textarea).toHaveClass("focus-visible:ring-0")
+    })
+
+    it("lets the drag state override the focus border", () => {
+        render(<TicketChatInput value="" onChange={() => {}} onSend={() => {}} onImageFiles={() => {}} />)
+        const composer = screen.getByRole("textbox").closest(".shadow-soft") as HTMLElement
+        fireEvent.dragOver(composer, { dataTransfer: { types: ["Files"], files: [] } })
+        expect(composer).toHaveClass("border-brand-primary", "focus-within:border-brand-primary")
+        expect(composer).not.toHaveClass("focus-within:border-border-composer-focus")
+    })
+})

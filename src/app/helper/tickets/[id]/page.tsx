@@ -918,6 +918,7 @@ export default function TicketDetailPage() {
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             titleClassName="text-xl"
+            compact
             inlineRightContent={
               <span className="flex items-center gap-2">
                 <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>
@@ -956,7 +957,7 @@ export default function TicketDetailPage() {
                     if (distance <= e.target.offsetHeight + 120) scrollToBottom()
                   }}
                 >
-                  <div className="p-6">
+                  <div className="px-12 py-6 max-md:px-6">
                     <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
                 <div className="flex gap-3 items-start">

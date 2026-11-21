@@ -107,6 +107,8 @@ export interface TicketChatProps {
   headerTitle: string
   /** Optional extra classes applied to the header title (e.g. to override its font size). */
   headerTitleClassName?: string
+  /** 60px header row with centred items (the ticket pages); see Header's `compact`. */
+  headerCompact?: boolean
   headerSubtitle?: string
   /** Subtitle text rendered below the title in the header (separate from inline headerSubtitle). */
   subtitle?: string
@@ -218,6 +220,7 @@ export function TicketChat(props: TicketChatProps) {
   const {
     headerTitle,
     headerTitleClassName,
+    headerCompact,
     headerSubtitle,
     subtitle,
     headerLeadingIcon,
@@ -347,6 +350,7 @@ export function TicketChat(props: TicketChatProps) {
           <Header
             title={headerTitle}
             titleClassName={headerTitleClassName}
+            compact={headerCompact}
             subtitle={subtitle}
             showBackButton={showBackButton}
             leadingIcon={headerLeadingIcon}
@@ -390,7 +394,7 @@ export function TicketChat(props: TicketChatProps) {
                   if (distance <= e.target.offsetHeight + 120) scrollToBottom()
                 }}
               >
-                <div className="px-6 py-5">
+                <div className="px-12 py-5 max-md:px-6">
                   <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
                     {intro}
 
