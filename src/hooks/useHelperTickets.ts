@@ -10,6 +10,13 @@ export interface HelperClaimedTicketSidebarItem {
     title: string;
     subtitle: string;
     date: string;
+    /** Start of the ticket's question (first message/description), else the ticket title, else "Untitled ticket". */
+    subject: string;
+    projectName: string;
+    /** First 8 characters of the ticket id. */
+    shortId: string;
+    /** Raw ISO `created_at` of the ticket. */
+    createdAt: string;
     avatarUrl: string | null;
     avatarInitial: string;
     /** Ticket creator's user id — used for deterministic avatar background color. */
@@ -176,11 +183,20 @@ export function useHelperClaimedTicketsSidebar(
                 const lastRead = lastReadByTicket.get(t.id) ?? null;
                 const hasNotification = lastMessageId != null && lastRead !== lastMessageId;
 
+                const subject =
+                    subtitle !== "—"
+                        ? subtitle
+                        : t.title?.trim() || "Untitled ticket";
+
                 return {
                     id: t.id,
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
                     date: formatDate(t.created_at),
+                    subject,
+                    projectName,
+                    shortId: t.id.slice(0, 8),
+                    createdAt: t.created_at,
                     avatarUrl: creator?.avatar_url ?? null,
                     avatarInitial: creator?.name?.[0]?.toUpperCase() ?? "?",
                     creatorId: t.created_by ?? null,
@@ -366,11 +382,20 @@ export function useAdminActiveTicketsSidebar(
                 const hasNotification =
                     lastMessageId != null && lastRead !== lastMessageId;
 
+                const subject =
+                    subtitle !== "—"
+                        ? subtitle
+                        : t.title?.trim() || "Untitled ticket";
+
                 return {
                     id: t.id,
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
                     date: formatDate(t.created_at),
+                    subject,
+                    projectName,
+                    shortId: t.id.slice(0, 8),
+                    createdAt: t.created_at,
                     avatarUrl: creator?.avatar_url ?? null,
                     avatarInitial: creator?.name?.[0]?.toUpperCase() ?? "?",
                     creatorId: t.created_by ?? null,

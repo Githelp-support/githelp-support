@@ -61,3 +61,8 @@ export function SidebarEmpty({
 }) {
   return <div className={cn("text-center text-muted-foreground text-ui py-4", className)}>{children}</div>
 }
+
+/** Left-aligned one-line note for a section with nothing in it yet ("No helper has joined yet."). */
+export function SidebarNote({ children, className }: { children: ReactNode; className?: string }) {
+  return <p className={cn("text-ui text-text-note", className)}>{children}</p>
+}

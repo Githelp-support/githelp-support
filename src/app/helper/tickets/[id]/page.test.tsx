@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import TicketDetailPage from "./page"
 
 Element.prototype.scrollIntoView = vi.fn()
@@ -86,8 +86,43 @@ vi.mock("@/components/ticket-chat/markdown-content", () => ({
 vi.mock("@/components/ticket-chat/chat-input", () => ({ TicketChatInput: () => <textarea aria-label="Message" /> }))
 vi.mock("@/components/ticket-chat/attach-image-modal", () => ({ AttachImageModal: () => null }))
 vi.mock("@/components/ticket-chat/end-session-request", () => ({ EndSessionRequestedHelperBanner: () => null }))
-vi.mock("@/components/drawers/end-ticket-drawer", () => ({ EndTicketDrawer: () => null }))
+vi.mock("@/components/drawers/end-ticket-drawer", () => ({
+  EndTicketDrawer: ({ isOpen }: { isOpen: boolean }) => (isOpen ? <div role="dialog" aria-label="End ticket" /> : null),
+}))
 vi.mock("@/components/drawers/log-time-drawer", () => ({ LogTimeDrawer: () => null }))
+
+/** An item as the helper/admin sidebar hooks return it, including the fields `ActiveTicketsList` reads. */
+const sidebarItem = (overrides: Record<string, unknown> = {}) => ({
+  id: "b435097a-1111-2222-3333-444455556666",
+  title: "Testhelp - b435097a",
+  subtitle: "Build fails on main",
+  date: "25.08.2026",
+  subject: "Build fails on main",
+  projectName: "Testhelp",
+  shortId: "b435097a",
+  createdAt: "2026-08-25T10:00:00Z",
+  avatarUrl: null,
+  avatarInitial: "C",
+  creatorId: "c1",
+  current: false,
+  hasNotification: false,
+  ...overrides,
+})
+
+/** The viewer (u1) is the helper who claimed the ticket. */
+const claimedByMe = () =>
+  mocks.useTicketParticipants.mockReturnValue({
+    data: [
+      {
+        id: "tp1",
+        participant_id: "u1",
+        claimed: true,
+        created_at: "2026-08-25T10:05:00Z",
+        user: { id: "u1", name: "Helper", avatar_url: null },
+      },
+    ],
+    isLoading: false,
+  })
 
 describe("helper ticket page frame", () => {
   beforeEach(() => {
@@ -151,11 +186,59 @@ describe("helper ticket page frame", () => {
     expect(column.className).toMatch(/min-w-0/)
   })
 
-  it("keeps the ticket id on one line and drops it below xl so the title keeps its room", () => {
+  it("shows the short ticket id on a pill with a button that copies the full id", () => {
+    mocks.useParams.mockReturnValue({ id: "b435097a-1111-2222-3333-444455556666" })
     render(<TicketDetailPage />)
-    const id = screen.getByText("ID: t1")
-    expect(id.className).toMatch(/whitespace-nowrap/)
-    expect(id.className).toMatch(/max-xl:hidden/)
+    const pill = screen.getByText("b435097a..").closest('[data-slot="ticket-id-pill"]') as HTMLElement
+    expect(pill).toBeInTheDocument()
+    expect(pill.className).not.toMatch(/max-xl:hidden/)
+    expect(screen.queryByText(/^ID:/)).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Copy full ticket ID" })).toBeInTheDocument()
+  })
+
+  it("shows End session in the header for the helper who claimed the ticket", () => {
+    claimedByMe()
+    render(<TicketDetailPage />)
+    const button = screen.getByRole("button", { name: "End session" })
+    expect(screen.getByRole("banner")).toContainElement(button)
+  })
+
+  it("shows End session in the header for an admin", () => {
+    mocks.useProjectRole.mockReturnValue({ data: "admin" })
+    mocks.useAdminActiveTicketsSidebar.mockReturnValue({ data: { items: [sidebarItem()], activeCount: 1 } })
+    mocks.useHelperClaimedTicketsSidebar.mockReturnValue({ data: undefined })
+    render(<TicketDetailPage />)
+    const button = screen.getByRole("button", { name: "End session" })
+    expect(screen.getByRole("banner")).toContainElement(button)
+  })
+
+  it("does not show End session to a helper who can only read along", () => {
+    // Claimed (ticket status), but not by this helper, and they are not an admin.
+    render(<TicketDetailPage />)
+    expect(screen.queryByRole("button", { name: "End session" })).not.toBeInTheDocument()
+  })
+
+  it("opens the End ticket drawer from End session", () => {
+    claimedByMe()
+    render(<TicketDetailPage />)
+    expect(screen.queryByRole("dialog", { name: "End ticket" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "End session" }))
+    expect(screen.getByRole("dialog", { name: "End ticket" })).toBeInTheDocument()
+  })
+
+  it("lists active tickets with subject, project and short id, linking to the helper ticket page", () => {
+    mocks.useHelperClaimedTicketsSidebar.mockReturnValue({ data: { items: [sidebarItem()], activeCount: 1 } })
+    render(<TicketDetailPage />)
+    expect(screen.getByText("Active tickets (1)")).toBeInTheDocument()
+    const link = screen.getByRole("link", { name: /Build fails on main/ })
+    expect(link).toHaveAttribute("href", "/helper/tickets/b435097a-1111-2222-3333-444455556666")
+    expect(link).toHaveTextContent("Testhelp · b435097a")
+  })
+
+  it("says no helper has joined while only the ticket creator is in the chat", () => {
+    render(<TicketDetailPage />)
+    expect(screen.getByText("No helper has joined yet.")).toBeInTheDocument()
+    expect(screen.getByText("No other topics yet.")).toBeInTheDocument()
   })
 
   it("pads the top of the panel sheet below lg, where the collapse toggle is hidden", () => {

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -11,7 +11,18 @@ import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput } from "@/components/ticket-chat/chat-input"
 import { AttachImageModal } from "@/components/ticket-chat/attach-image-modal"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
-import { SidebarSectionHeading, SidebarDivider, SidebarEmpty } from "./sidebar-section"
+import { SidebarSectionHeading, SidebarDivider, SidebarNote } from "./sidebar-section"
+import {
+  ChatAvatar,
+  ChatAvatarSpacer,
+  ChatDayDivider,
+  ChatMessageMeta,
+  ChatSystemNote,
+} from "@/components/ticket-chat/chat-thread-parts"
+import { TicketIdPill } from "@/components/ticket-chat/ticket-id-pill"
+import { EndSessionButton } from "@/components/ticket-chat/end-session-button"
+import { TimeEntryReviewStatusBadge } from "@/components/ticket-chat/time-entry-review"
+import { buildThreadRows, chatTimeLabel, firstThreadDay } from "@/lib/chat-thread"
 import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "./right-sidebar-collapse"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import {
@@ -21,7 +32,7 @@ import {
   type TimeEntrySummaryDecline,
   type TimeEntrySummaryItem,
 } from "@/components/ticket-chat/time-entry-review"
-import { describeAutoAcceptDeadline } from "@/lib/time-entries"
+import { describeAutoAcceptDeadline, isManualTimeConfirmation } from "@/lib/time-entries"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
@@ -82,7 +93,10 @@ export type TicketChatMessage = {
   senderIsGuest?: boolean
   /** Guests only: full email or guest identifier, for the name tooltip. */
   senderGuestFull?: string | null
+  /** Formatted timestamp; the thread shows only its time, and only when `createdAt` is missing. */
   timestamp: string
+  /** Raw ISO time of the message: drives the time shown, day dividers and grouping. Synthetic messages may have none. */
+  createdAt?: string | null
   content: string
   kind?: "claimed" | "ended"
   paymentMetadata?: {
@@ -107,8 +121,9 @@ export interface TicketChatProps {
   headerTitle: string
   /** Optional extra classes applied to the header title (e.g. to override its font size). */
   headerTitleClassName?: string
-  headerSubtitle?: string
-  /** Subtitle text rendered below the title in the header (separate from inline headerSubtitle). */
+  /** The ticket's id, shown as a copyable pill beside the title. Omit before a ticket exists. */
+  ticketId?: string
+  /** Subtitle text rendered below the title in the header. */
   subtitle?: string
   /** Optional icon rendered to the left of the title/subtitle block in the header. */
   headerLeadingIcon?: React.ReactNode
@@ -123,6 +138,8 @@ export interface TicketChatProps {
   messages: TicketChatMessage[]
   participants?: TicketChatParticipant[]
   participantsLoading?: boolean
+  /** A helper has joined; while false the people list says "No helper has joined yet." */
+  hasHelper?: boolean
 
   topics?: string[]
   helpTypes?: string[]
@@ -132,6 +149,8 @@ export interface TicketChatProps {
   onMessageChange: (v: string) => void
   onSend: () => void | Promise<void>
   sendDisabled?: boolean
+  /** Composer placeholder ("Ask #project"); see buildComposerPlaceholder. */
+  composerPlaceholder?: string
   /** A send is in flight (see TicketChatInput). */
   sending?: boolean
   /** Closed ticket: the composer and attachments are disabled. */
@@ -156,7 +175,7 @@ export interface TicketChatProps {
   onSignInClick?: () => void
 
   /**
-   * Customer-side "End session". Pressing the toolbar button does not end the
+   * Customer-side "End session". Pressing the header button does not end the
    * ticket — it asks the helper to finalise. When `endSessionRequestedAt` is
    * set, the button is replaced by a status banner with a cancel action.
    * Omit `onRequestEndSession` to hide the button entirely (e.g. no ticket yet).
@@ -214,11 +233,34 @@ export interface TicketChatProps {
   paymentStatus?: TicketPaymentStatus
 }
 
+/** Kinds of system message that keep their coloured bubble; every other one is a plain "Note · …" line. */
+const BUBBLE_SYSTEM_KINDS = new Set<string>([
+  "payment_authorized",
+  "guest_signed_in",
+  "payment_cap_exceeded",
+  "payment_failed",
+  "payment_refund_needed",
+  "payment_remainder_waived",
+  "time_entry_declined",
+  "payment_hold_declined",
+])
+
+function isSystemNote(msg: TicketChatMessage): boolean {
+  if (msg.senderType !== "system") return false
+  const kind = msg.paymentMetadata?.kind
+  if (!kind) return true
+  if (kind === "time_entries_confirmed") {
+    const declined = msg.paymentMetadata?.declined
+    return !(Array.isArray(declined) && declined.length > 0)
+  }
+  return !BUBBLE_SYSTEM_KINDS.has(kind)
+}
+
 export function TicketChat(props: TicketChatProps) {
   const {
     headerTitle,
     headerTitleClassName,
-    headerSubtitle,
+    ticketId,
     subtitle,
     headerLeadingIcon,
     headerBackgroundColor,
@@ -227,11 +269,13 @@ export function TicketChat(props: TicketChatProps) {
     messages,
     participants,
     participantsLoading,
+    hasHelper = false,
     topics = [],
     message,
     onMessageChange,
     onSend,
     sendDisabled,
+    composerPlaceholder,
     sending,
     isEnded,
     composerReplacement,
@@ -313,6 +357,26 @@ export function TicketChat(props: TicketChatProps) {
   if ((initialMessages === null || initialMessages.key !== threadKey) && thread.length > 0) {
     setInitialMessages({ key: threadKey, ids: new Set(thread.map((m) => m.id)) })
   }
+  // One day divider sits above the intro (the first dated message's day, or
+  // today for a thread with none yet); rows only add one when the day changes.
+  const [mountedAt] = useState(() => new Date())
+  const threadStartDay = useMemo(() => {
+    const items = thread.map((m) => ({ id: m.id, senderKey: null, isSystem: true, createdAt: m.createdAt }))
+    return firstThreadDay(items) ?? mountedAt
+  }, [thread, mountedAt])
+  const threadRows = useMemo(
+    () =>
+      buildThreadRows(
+        thread.map((m) => ({
+          id: m.id,
+          senderKey: m.senderId || `${m.senderType}:${m.senderName ?? ""}`,
+          isSystem: m.senderType === "system",
+          createdAt: m.createdAt,
+        })),
+        { initialDay: threadStartDay },
+      ),
+    [thread, threadStartDay],
+  )
   const isNewMessage = (id: string) =>
     initialMessages !== null && initialMessages.key === threadKey && !initialMessages.ids.has(id)
 
@@ -351,36 +415,40 @@ export function TicketChat(props: TicketChatProps) {
             showBackButton={showBackButton}
             leadingIcon={headerLeadingIcon}
             backgroundColor={headerBackgroundColor}
-            inlineRightContent={
-              headerSubtitle ? (
-                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
-              ) : undefined
-            }
+            inlineRightContent={ticketId ? <TicketIdPill ticketId={ticketId} /> : undefined}
             actions={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="lg:hidden text-text-muted"
-                aria-label="Ticket details"
-                aria-expanded={mobilePanelOpen}
-                onClick={() => setMobilePanelOpen((v) => !v)}
-              >
-                <Icon name="fi-rr-sidebar-flip" />
-              </Button>
+              <>
+                {!isEnded && onRequestEndSession && !endSessionRequested && (
+                  <EndSessionButton
+                    onClick={() => setEndSessionDialogOpen(true)}
+                    disabled={endSessionRequestPending}
+                  />
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden text-text-muted"
+                  aria-label="Ticket details"
+                  aria-expanded={mobilePanelOpen}
+                  onClick={() => setMobilePanelOpen((v) => !v)}
+                >
+                  <Icon name="fi-rr-sidebar-flip" />
+                </Button>
+              </>
             }
           />
         </div>
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden bg-background">
           {/* Main Content */}
           <div className="flex-1 flex flex-col min-h-0">
           {/* Messages Area */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 p-4 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0">
               {/* Chat Messages Container */}
               <div
-                className="bg-card rounded-lg shadow-soft flex-1 overflow-auto"
+                className="flex-1 overflow-auto"
                 onLoadCapture={(e) => {
                   // Images load after the initial scroll and push the thread
                   // down; keep it pinned to the bottom if it was there.
@@ -391,82 +459,98 @@ export function TicketChat(props: TicketChatProps) {
                 }}
               >
                 <div className="px-6 py-5">
-                  <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
-                    {intro}
+                  <div className="flex flex-col gap-8">
+                    <div className="flex flex-col gap-4">
+                      <ChatDayDivider date={threadStartDay} />
+                      {intro}
+                    </div>
 
                     {/* Chat Messages */}
-                    <div className="flex flex-col" style={{ rowGap: '16px' }}>
-                      {thread.map((msg) => (
-                        <div key={msg.id} className={cn("flex gap-3 items-start", isNewMessage(msg.id) && "animate-enter")}>
+                    <div className="flex flex-col gap-4">
+                      {thread.map((msg, index) => {
+                        const row = threadRows[index]
+                        const time = chatTimeLabel(msg.createdAt, msg.timestamp)
+                        const systemKind = msg.senderType === "system" ? msg.paymentMetadata?.kind : undefined
+                        return (
+                        <Fragment key={msg.id}>
+                        {row?.showDayDivider && row.dayLabelDate && <ChatDayDivider date={row.dayLabelDate} />}
+                        <div
+                          className={cn(
+                            "flex gap-3 items-start",
+                            // A continuation sits 4px under the message above instead of the 16px row gap.
+                            row && !row.isGroupStart && "-mt-3",
+                            isNewMessage(msg.id) && "animate-enter",
+                          )}
+                        >
                           {msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended") ? (
                             <div className="flex items-start gap-3 w-full">
-                              <ProfileAvatar
-                                id={msg.senderId}
-                                name={msg.senderName}
-                                avatarUrl={msg.senderAvatarUrl ?? null}
-                                size="sm"
-                                radius="9.625px"
-                              />
+                              <ChatAvatar id={msg.senderId} name={msg.senderName} avatarUrl={msg.senderAvatarUrl ?? null} />
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-sm text-foreground font-medium">
-                                    {msg.senderName || "System"}
-                                  </span>
-                                  <span
-                                    className="text-xs"
-                                    style={{
-                                      color: "var(--muted-foreground)",
-                                      fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                                      fontVariantNumeric: 'tabular-nums',
-                                    }}
-                                  >
-                                    {msg.timestamp}
-                                  </span>
-                                </div>
+                                <ChatMessageMeta name={msg.senderName || "System"} time={time} />
                                 <div className="flex items-center gap-2 text-sm text-foreground">
                                   <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
                                   <MarkdownContent content={msg.content} className="text-sm" />
                                 </div>
                               </div>
                             </div>
+                          ) : isSystemNote(msg) ? (
+                            <ChatSystemNote
+                              markdown={msg.content}
+                              extra={
+                                systemKind === "visitor_left" && onStartNewConversation ? (
+                                  <VisitorLeftAction onStartNewConversation={onStartNewConversation} />
+                                ) : systemKind === "payment_required" && !isPromptResolved(msg) ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      variant="brand"
+                                      onClick={() => handlePaymentCta(msg)}
+                                      loading={ctaLoading}
+                                    >
+                                      {ctaLabel("Add payment method")}
+                                    </Button>
+                                    {typeof msg.paymentMetadata?.hold_amount_smallest_unit === "number" &&
+                                      msg.paymentMetadata.hold_amount_smallest_unit > 0 && (
+                                        <p className="mt-1.5 text-xs text-muted-foreground">
+                                          Once your card is saved we place a temporary hold of $
+                                          {(msg.paymentMetadata.hold_amount_smallest_unit / 100).toFixed(2)} on it. This is not a
+                                          charge: you only pay for the time your helper logs.
+                                        </p>
+                                      )}
+                                  </>
+                                ) : systemKind === "time_entries_confirmed" && isManualTimeConfirmation(msg.paymentMetadata) ? (
+                                  <TimeEntryReviewStatusBadge status="accepted" />
+                                ) : undefined
+                              }
+                            />
                           ) : (
                             <>
-                              {msg.senderType !== "system" && (
-                                <ProfileAvatar
-                                  id={msg.senderId}
-                                  name={msg.senderName}
-                                  avatarUrl={msg.senderAvatarUrl ?? null}
-                                  guest={msg.senderIsGuest}
-                                  size="sm"
-                                  radius="9.625px"
-                                />
-                              )}
+                              {msg.senderType !== "system" &&
+                                (row?.isGroupStart === false ? (
+                                  <ChatAvatarSpacer />
+                                ) : (
+                                  <ChatAvatar
+                                    id={msg.senderId}
+                                    name={msg.senderName}
+                                    avatarUrl={msg.senderAvatarUrl ?? null}
+                                    guest={msg.senderIsGuest}
+                                  />
+                                ))}
 
                               <div className="flex-1">
-                                {msg.senderType !== "system" && (
-                                  <div className="flex items-center gap-2 mb-1">
+                                {msg.senderType !== "system" && row?.isGroupStart !== false && (
+                                  <ChatMessageMeta
+                                    name={msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
+                                    time={time}
+                                  >
                                     {msg.senderIsGuest ? (
                                       <GuestName
                                         label={msg.senderName || "Guest"}
                                         full={msg.senderGuestFull}
-                                        className="text-sm"
+                                        className="text-sm font-semibold"
                                       />
-                                    ) : (
-                                      <span className="text-sm text-foreground font-medium">
-                                        {msg.senderName || (msg.senderType === "user" ? "User" : "Unknown")}
-                                      </span>
-                                    )}
-                                    <span
-                                      className="text-xs"
-                                      style={{
-                                        color: "var(--muted-foreground)",
-                                        fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                                        fontVariantNumeric: 'tabular-nums',
-                                      }}
-                                    >
-                                      {msg.timestamp}
-                                    </span>
-                                  </div>
+                                    ) : undefined}
+                                  </ChatMessageMeta>
                                 )}
                                 <div
                                   className={
@@ -481,13 +565,7 @@ export function TicketChat(props: TicketChatProps) {
                                             : msg.paymentMetadata?.kind === "payment_refund_needed" ||
                                                 msg.paymentMetadata?.kind === "payment_remainder_waived"
                                               ? "bg-background border border-border text-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                            : msg.paymentMetadata?.kind === "time_entry_declined" ||
-                                                msg.paymentMetadata?.kind === "payment_hold_declined" ||
-                                                (msg.paymentMetadata?.kind === "time_entries_confirmed" &&
-                                                  Array.isArray(msg.paymentMetadata?.declined) &&
-                                                  msg.paymentMetadata.declined.length > 0)
-                                              ? "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                              : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
+                                              : "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 py-2 px-4 rounded-lg text-sm text-left ml-11"
                                       : "text-sm text-foreground"
                                   }
                                 >
@@ -501,31 +579,6 @@ export function TicketChat(props: TicketChatProps) {
                                           : msg.content
                                       }
                                     />
-                                  )}
-                                  {msg.senderType === "system" &&
-                                    msg.paymentMetadata?.kind === "visitor_left" &&
-                                    onStartNewConversation && (
-                                    <VisitorLeftAction onStartNewConversation={onStartNewConversation} />
-                                  )}
-                                  {msg.senderType === "system" && msg.paymentMetadata?.kind === "payment_required" && !isPromptResolved(msg) && (
-                                    <div className="mt-2">
-                                      <Button
-                                        type="button"
-                                        variant="brand"
-                                        onClick={() => handlePaymentCta(msg)}
-                                        loading={ctaLoading}
-                                      >
-                                        {ctaLabel("Add payment method")}
-                                      </Button>
-                                      {typeof msg.paymentMetadata?.hold_amount_smallest_unit === "number" &&
-                                        msg.paymentMetadata.hold_amount_smallest_unit > 0 && (
-                                          <p className="mt-1.5 text-xs text-muted-foreground">
-                                            Once your card is saved we place a temporary hold of $
-                                            {(msg.paymentMetadata.hold_amount_smallest_unit / 100).toFixed(2)} on it. This is not a
-                                            charge: you only pay for the time your helper logs.
-                                          </p>
-                                        )}
-                                    </div>
                                   )}
                                   {msg.senderType === "system" &&
                                     msg.paymentMetadata?.kind === "payment_failed" &&
@@ -558,15 +611,14 @@ export function TicketChat(props: TicketChatProps) {
                             </>
                           )}
                         </div>
-                      ))}
+                        </Fragment>
+                        )
+                      })}
                       <div ref={messagesEndRef} />
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Full-width line under chat */}
-              <div className="w-full border-b border-border"></div>
             </div>
           </div>
 
@@ -597,23 +649,10 @@ export function TicketChat(props: TicketChatProps) {
             sendDisabled={sendDisabled}
             sending={sending}
             disabled={isEnded}
-            placeholder="Message #askanything"
+            placeholder={composerPlaceholder}
             onImageClick={attachmentStoragePrefix && !isEnded ? () => setImageUploadOpen(true) : undefined}
             onImageFiles={attachmentStoragePrefix && !isEnded ? uploadFiles : undefined}
             imagesUploading={isUploading}
-            toolbarEndContent={
-              !isEnded && onRequestEndSession && !endSessionRequested ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEndSessionDialogOpen(true)}
-                  disabled={endSessionRequestPending}
-                  className="cursor-pointer text-foreground font-medium text-sm hover:bg-transparent"
-                >
-                  End session
-                </Button>
-              ) : undefined
-            }
           />
           )}
 
@@ -686,27 +725,32 @@ export function TicketChat(props: TicketChatProps) {
 
               {participantsLoading ? (
                 <ListSkeleton rows={2} badge={false} className="divide-y-0 [&>div]:px-0" />
-              ) : participants && participants.length > 0 ? (
-                <div className="space-y-2 mb-3">
-                  {participants.map((p) => (
-                    <div key={p.id} className="flex items-center gap-2">
-                      <ProfileAvatar
-                        id={p.id}
-                        name={p.name}
-                        avatarUrl={p.avatarUrl ?? null}
-                        guest={p.isGuest}
-                        size="md"
-                      />
-                      {p.isGuest && !p.isCurrentUser ? (
-                        <GuestName label={p.name} full={p.guestFull} className="text-ui" />
-                      ) : (
-                        <span className="text-ui text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
               ) : (
-                <SidebarEmpty />
+                <>
+                  {participants && participants.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {participants.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2">
+                        <ProfileAvatar
+                          id={p.id}
+                          name={p.name}
+                          avatarUrl={p.avatarUrl ?? null}
+                          guest={p.isGuest}
+                          size="md"
+                        />
+                        {p.isGuest && !p.isCurrentUser ? (
+                          <GuestName label={p.name} full={p.guestFull} className="text-ui" />
+                        ) : (
+                          <span className="text-ui text-muted-foreground">{p.isCurrentUser ? "You" : p.name}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  )}
+                  {(!hasHelper || !participants || participants.length === 0) && (
+                    <SidebarNote className="mb-3">No helper has joined yet.</SidebarNote>
+                  )}
+                </>
               )}
 
               {!isEnded && (
@@ -732,7 +776,7 @@ export function TicketChat(props: TicketChatProps) {
                   ))}
                 </div>
               ) : (
-                <SidebarEmpty />
+                <SidebarNote>No other topics yet.</SidebarNote>
               )}
             </div>
 

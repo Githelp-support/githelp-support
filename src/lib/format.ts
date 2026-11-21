@@ -30,6 +30,52 @@ export function formatDateTime(value: string | Date): string {
   return `${formatDate(date)}, ${hours}:${minutes}`
 }
 
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+]
+
+function isSameLocalDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+
+/** HH:MM (24h, zero-padded, local time): the timestamp beside a chat message. */
+export function formatTime(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  return `${hours}:${minutes}`
+}
+
+/**
+ * Label for a chat day divider: "Today", "Yesterday", otherwise weekday, day
+ * and month ("Sunday 15 November"). English, local time.
+ */
+export function formatDayLabel(value: string | Date, now: Date = new Date()): string {
+  const date = value instanceof Date ? value : new Date(value)
+  if (isSameLocalDay(date, now)) return "Today"
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  if (isSameLocalDay(date, yesterday)) return "Yesterday"
+  return `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`
+}
+
+/** "15 Nov 2026": the compact date in the chat's ticket list (local time). */
+export function formatShortDate(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  return `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)} ${date.getFullYear()}`
+}
+
 /**
  * Format a date string as a relative time (e.g. "Just now", "5 min", "2h", "3d").
  * Use for notifications, activity feeds, etc.

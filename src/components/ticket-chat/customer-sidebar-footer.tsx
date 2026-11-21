@@ -1,11 +1,11 @@
 "use client"
 
-import Link from "next/link"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import type { CustomerTimeEntryDisplay } from "@/hooks/useCustomerTicketSidebar"
 import type { UserActiveTicketSidebarItem } from "@/hooks/useTicketsWithDetails"
+import { ActiveTicketsList } from "./active-tickets-list"
 import { SidebarSectionHeading, SidebarDivider } from "./sidebar-section"
 import { TimeEntriesReviewStatus } from "./time-entry-review"
 
@@ -93,55 +93,24 @@ export function CustomerTicketSidebarFooter({
       )}
 
       {/* Active Tickets — latest active tickets for this user */}
-      <div>
-        <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-        <div className={`-mx-4 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
-          {activeTickets.length === 0 ? (
-            <p className="text-ui text-muted-foreground px-4">No active tickets</p>
+      <ActiveTicketsList
+        // `date` on the hook's item is already formatted; the list formats the raw created_at itself.
+        items={activeTickets.map((item) => ({ ...item, date: item.createdAt }))}
+        count={activeTicketsCount}
+        hrefFor={(item) => `/support/chat?ticket=${item.id}`}
+        renderAvatar={(item) =>
+          item.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.avatarUrl} alt="" className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} object-cover shrink-0`} />
           ) : (
-            activeTickets.map((item) => (
-              <Link
-                key={item.id}
-                href={`/support/chat?ticket=${item.id}`}
-                className={`block w-full border cursor-pointer transition-colors ${
-                  item.current
-                    ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                    : "bg-background border-border hover:bg-muted"
-                }`}
-              >
-                <div className="px-4 py-3">
-                  <div className="flex items-start gap-3">
-                    {item.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.avatarUrl}
-                        alt=""
-                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} object-cover shrink-0`}
-                      />
-                    ) : (
-                      <div
-                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center bg-brand-primary text-brand-foreground text-sm font-medium shrink-0`}
-                      >
-                        {item.avatarInitial}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <h4 className="font-medium text-foreground text-ui truncate">{item.title}</h4>
-                        {item.hasNotification && (
-                          <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                      <p className="text-xs text-muted-foreground">{item.date}</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))
-          )}
-        </div>
-      </div>
+            <div
+              className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center bg-brand-primary text-brand-foreground text-sm font-medium shrink-0`}
+            >
+              {item.avatarInitial}
+            </div>
+          )
+        }
+      />
     </>
   )
 }
