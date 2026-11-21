@@ -27,6 +27,7 @@ import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-s
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
+  buildComposerPlaceholder,
   buildCustomerThreadMessages,
   buildSessionEndedMessage,
   describeChargedLine,
@@ -757,6 +758,8 @@ export default function SupportPage() {
             messages={chatMessages}
             participants={chatParticipants}
             participantsLoading={participantsLoading}
+            hasHelper={!!claimer}
+            composerPlaceholder={buildComposerPlaceholder({ slug: project?.slug, name: projectName })}
             message={message}
             onMessageChange={setMessage}
             onSend={handleSendMessage}

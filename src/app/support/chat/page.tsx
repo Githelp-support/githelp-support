@@ -41,6 +41,7 @@ import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustome
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
+  buildComposerPlaceholder,
   buildCustomerThreadMessages,
   buildSessionEndedMessage,
   describeChargedLine,
@@ -918,8 +919,8 @@ export default function UserSupportChatPage() {
       <TicketChat
         threadKey={ticketId ?? undefined}
         headerTitle={`Ticket with ${projectName}`}
-        headerTitleClassName="text-xl"
-        headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
+        headerTitleClassName="text-base font-semibold"
+        ticketId={ticketCreated && ticketId ? ticketId : undefined}
         showBackButton={true}
         intro={
           <CustomerChatIntro
@@ -940,6 +941,8 @@ export default function UserSupportChatPage() {
         messages={chatMessages}
         participants={chatParticipants}
         participantsLoading={participantsLoading}
+        hasHelper={!!claimer}
+        composerPlaceholder={buildComposerPlaceholder({ slug: project?.slug, name: projectName })}
         topics={topics}
         helpTypes={helpType}
         message={message}

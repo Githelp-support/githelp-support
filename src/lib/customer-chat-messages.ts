@@ -1,7 +1,7 @@
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
 import { formatDateTime } from "./format";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, truncateText } from "@/lib/format";
 import { guestLabel } from "@/lib/guest-label";
 
 /**
@@ -20,11 +20,32 @@ export const TICKET_DISCLAIMER_FREE = "Feel free to chat and clarify details bef
 /**
  * Synthetic auto-reply shown right after the customer's first message.
  * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
- * Shows "~" while the project has no average response time yet.
+ * The average response time sentence is only added when the project has a
+ * real value (finite and above zero); otherwise the thank-you stands alone.
  */
 export function buildAutoReply(avgResponseSeconds: number | null | undefined): string {
-    const responseTime = avgResponseSeconds == null ? "~" : formatDuration(avgResponseSeconds);
-    return `Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **${responseTime}**.`;
+    const thanks = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+    if (avgResponseSeconds == null || !Number.isFinite(avgResponseSeconds) || avgResponseSeconds <= 0) return thanks;
+    return `${thanks} The average response time for this project is **${formatDuration(avgResponseSeconds)}**.`;
+}
+
+/** The short form of a ticket id shown in the chat header and ticket list: its first 8 characters. */
+export function shortTicketId(id: string): string {
+    return id.slice(0, 8);
+}
+
+/** Longest project slug or name shown in the composer placeholder before it is cut with "…". */
+const COMPOSER_PLACEHOLDER_NAME_MAX = 32;
+
+/**
+ * Composer placeholder: "Ask #" + the project's slug, or its display name
+ * when it has no slug, truncated with a single "…". "Ask a question" when
+ * neither is known.
+ */
+export function buildComposerPlaceholder(project: { slug?: string | null; name?: string | null }): string {
+    const label = project.slug?.trim() || project.name?.trim();
+    if (!label) return "Ask a question";
+    return `Ask #${truncateText(label, COMPOSER_PLACEHOLDER_NAME_MAX)}`;
 }
 
 /**
@@ -209,6 +230,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderIsGuest: !!guest,
             senderGuestFull: guest?.full ?? null,
             timestamp: fallbackTimestamp ? formatChatTimestamp(fallbackTimestamp) : nowFormatted,
+            createdAt: fallbackTimestamp ?? null,
         });
     }
 
@@ -237,6 +259,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderIsGuest: isOwnGuestMessage,
             senderGuestFull: isOwnGuestMessage ? guest?.full ?? null : null,
             timestamp: formatChatTimestamp(msg.created_at),
+            createdAt: msg.created_at,
             // Payment system messages (payment_required, payment_requires_action,
             // payment_authorized, …) carry their kind + ticket_id here; TicketChat
             // renders the "Add payment method" CTA from it.
@@ -256,6 +279,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
             timestamp: list[firstUserIndex].timestamp,
+            createdAt: list[firstUserIndex].createdAt,
         });
     }
 

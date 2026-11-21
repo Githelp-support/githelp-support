@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
     buildAutoReply,
+    buildComposerPlaceholder,
     buildCustomerThreadMessages,
     describeChargedLine,
     findPendingSca,
     helperSystemMessageCopy,
     isPaymentFailedCtaLive,
+    shortTicketId,
     TICKET_DISCLAIMER,
     TICKET_DISCLAIMER_FREE,
     GUEST_SIGNED_IN_HELPER_COPY,
@@ -79,9 +81,99 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         expect(list.find((m) => m.id === "auto-reply")?.content).toContain("**1h 30m**");
     });
 
-    it("shows ~ while the project has no average response time yet", () => {
-        expect(buildAutoReply(null)).toContain("**~**");
-        expect(buildAutoReply(undefined)).toContain("**~**");
+    it("is only the thank-you while the project has no real average response time", () => {
+        const thanks = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+        for (const value of [null, undefined, Number.NaN, Number.POSITIVE_INFINITY, 0, -30]) {
+            expect(buildAutoReply(value)).toBe(thanks);
+        }
+        expect(buildAutoReply(null)).not.toContain("~");
+        expect(buildAutoReply(null)).not.toContain("average response time");
+    });
+
+    it("appends the average response time only with a real value", () => {
+        expect(buildAutoReply(90 * 60)).toBe(
+            "Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **1h 30m**.",
+        );
+    });
+});
+
+describe("buildCustomerThreadMessages createdAt", () => {
+    const opts = (overrides: Partial<CustomerThreadOptions> = {}): CustomerThreadOptions => ({
+        projectName: "Acme",
+        projectLogo: null,
+        nowFormatted: "01/01/2026, 12:00",
+        messagesData: undefined,
+        currentUser: { id: "user-1", name: "Ada" },
+        ...overrides,
+    });
+    const byId = (list: ReturnType<typeof buildCustomerThreadMessages>, id: string) => list.find((m) => m.id === id);
+
+    it("carries the raw created_at on persisted messages and on the auto-reply after the first one", () => {
+        const list = buildCustomerThreadMessages(
+            opts({
+                claimer: { id: "helper-1", name: "Grace", avatar_url: null },
+                messagesData: [
+                    { id: "m1", content: "Hi", created_at: "2026-01-01T12:00:00Z", sender_type: "user", sender_id: "user-1" },
+                    { id: "m2", content: "Hello", created_at: "2026-01-02T08:30:00Z", sender_type: "helper", sender_id: "helper-1" },
+                ],
+            })
+        );
+        expect(byId(list, "m1")?.createdAt).toBe("2026-01-01T12:00:00Z");
+        expect(byId(list, "m2")?.createdAt).toBe("2026-01-02T08:30:00Z");
+        expect(byId(list, "auto-reply")?.createdAt).toBe("2026-01-01T12:00:00Z");
+        // Synthetic messages have no time of their own.
+        expect(byId(list, "welcome")?.createdAt).toBeUndefined();
+        expect(byId(list, "system-claimed")?.createdAt).toBeUndefined();
+    });
+
+    it("dates the pending first message from the ticket, or not at all", () => {
+        const dated = buildCustomerThreadMessages(
+            opts({ pendingFirstMessage: "Help", fallbackTimestamp: "2026-01-03T09:00:00Z" })
+        );
+        expect(byId(dated, "pending-first")?.createdAt).toBe("2026-01-03T09:00:00Z");
+        expect(byId(dated, "auto-reply")?.createdAt).toBe("2026-01-03T09:00:00Z");
+
+        const undated = buildCustomerThreadMessages(opts({ pendingFirstMessage: "Help" }));
+        expect(byId(undated, "pending-first")?.createdAt).toBeNull();
+        expect(byId(undated, "pending-first")?.timestamp).toBe("01/01/2026, 12:00");
+    });
+});
+
+describe("shortTicketId", () => {
+    it("returns the first 8 characters", () => {
+        expect(shortTicketId("b435097a-1c2d-4e5f-8a9b-0c1d2e3f4a5b")).toBe("b435097a");
+    });
+
+    it("returns a shorter id unchanged", () => {
+        expect(shortTicketId("abc")).toBe("abc");
+        expect(shortTicketId("")).toBe("");
+    });
+});
+
+describe("buildComposerPlaceholder", () => {
+    it("uses the slug when there is one", () => {
+        expect(buildComposerPlaceholder({ slug: "githelp-crm", name: "Githelp CRM" })).toBe("Ask #githelp-crm");
+    });
+
+    it("falls back to the display name when the slug is missing or empty", () => {
+        expect(buildComposerPlaceholder({ slug: "", name: "Githelp sandbox" })).toBe("Ask #Githelp sandbox");
+        expect(buildComposerPlaceholder({ slug: null, name: "Githelp sandbox" })).toBe("Ask #Githelp sandbox");
+        expect(buildComposerPlaceholder({ slug: "   ", name: "Githelp sandbox" })).toBe("Ask #Githelp sandbox");
+    });
+
+    it("truncates a long name with a single ellipsis", () => {
+        const result = buildComposerPlaceholder({ slug: "a".repeat(60) });
+        expect(result).toBe(`Ask #${"a".repeat(32)}…`);
+        expect(result.match(/…/g)).toHaveLength(1);
+    });
+
+    it("leaves a name at the limit untouched", () => {
+        expect(buildComposerPlaceholder({ slug: "a".repeat(32) })).toBe(`Ask #${"a".repeat(32)}`);
+    });
+
+    it("falls back to a generic placeholder when both are missing", () => {
+        expect(buildComposerPlaceholder({})).toBe("Ask a question");
+        expect(buildComposerPlaceholder({ slug: null, name: "  " })).toBe("Ask a question");
     });
 });
 

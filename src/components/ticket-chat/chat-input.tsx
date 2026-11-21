@@ -22,8 +22,12 @@ export interface TicketChatInputProps {
    * `placeholder` is replaced by a short "closed" notice.
    */
   disabled?: boolean
+  /** Callers pass the "Ask #…" string; the default is a neutral fallback. */
   placeholder?: string
-  /** Optional content to render at the end of the toolbar (e.g. "End session" button) */
+  /**
+   * Optional content at the end of the toolbar, e.g. the helper page's
+   * `ClaimTicketButton`. ("End session" lives in the page header.)
+   */
   toolbarEndContent?: React.ReactNode
   /** Called when the image/attachment button is clicked */
   onImageClick?: () => void
@@ -32,6 +36,9 @@ export interface TicketChatInputProps {
   /** Shows an "Uploading image…" hint while attachments are in flight */
   imagesUploading?: boolean
 }
+
+/** The textarea grows with its content up to this height (Tailwind `max-h-50`), then scrolls. */
+const MAX_TEXTAREA_HEIGHT = 200
 
 /** Image files carried by a paste or drop. */
 function imageFilesFrom(data: DataTransfer | null): File[] {
@@ -46,7 +53,7 @@ export function TicketChatInput({
   sendDisabled,
   sending,
   disabled,
-  placeholder = "Message #askanything",
+  placeholder = "Write a message",
   toolbarEndContent,
   onImageClick: onImageClickProp,
   onImageFiles: onImageFilesProp,
@@ -211,6 +218,16 @@ export function TicketChatInput({
     }
   }, [value])
 
+  // Auto-grow. `field-sizing-content` on the primitive already does this where
+  // it is supported; setting the height here gives every browser the same
+  // result, including shrinking back to one line when the value is cleared.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = "auto"
+    ta.style.height = `${Math.min(ta.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`
+  }, [value])
+
   return (
     <div
       className={cn(
@@ -263,9 +280,10 @@ export function TicketChatInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={disabled ? "This ticket is closed. New messages can't be sent." : placeholder}
+          rows={1}
           disabled={!!disabled}
           aria-disabled={!!disabled}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
+          className="min-h-0 max-h-50 overflow-y-auto resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground placeholder:truncate disabled:cursor-not-allowed"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           spellCheck={!isInsideOpenFence(value, value.length)}
