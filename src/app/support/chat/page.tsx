@@ -43,6 +43,7 @@ import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-s
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
   buildCustomerThreadMessages,
+  customerThreadStart,
   buildSessionEndedMessage,
   describeChargedLine,
   findPendingSca,
@@ -460,6 +461,12 @@ export default function UserSupportChatPage() {
 
   const nowIso = useMemo(() => new Date().toISOString(), [])
   const nowFormatted = useMemo(() => formatChatTimestamp(nowIso), [nowIso])
+  // The intro opens the thread, so it is dated like the thread's first entry
+  // (ticket creation on an existing ticket, now before one exists).
+  const threadStartIso = useMemo(
+    () => customerThreadStart({ messagesData, fallbackTimestamp: existingTicket?.created_at ?? null, nowIso }) ?? nowIso,
+    [messagesData, existingTicket?.created_at, nowIso],
+  )
 
   const welcomeText = slaCovered
     ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
@@ -934,8 +941,8 @@ export default function UserSupportChatPage() {
             projectLogo={projectLogo}
             primaryColor={brandingData?.primary_color}
             welcomeText={welcomeText}
-            timestamp={nowFormatted}
-            createdAt={nowIso}
+            timestamp={formatChatTimestamp(threadStartIso)}
+            createdAt={threadStartIso}
             rates={rates}
             isFree={isFreeSupport(effectivePricing)}
             isAuthenticated={isAuthenticated}

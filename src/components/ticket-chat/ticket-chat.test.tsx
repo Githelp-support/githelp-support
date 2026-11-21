@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -28,10 +29,17 @@ function message(overrides: Partial<TicketChatMessage> & Pick<TicketChatMessage,
   }
 }
 
-function renderChat(messages: TicketChatMessage[]) {
+function renderChat(messages: TicketChatMessage[], intro?: ReactNode) {
   return render(
     <TooltipProvider>
-      <TicketChat headerTitle="Ticket" messages={messages} message="" onMessageChange={() => {}} onSend={() => {}} />
+      <TicketChat
+        headerTitle="Ticket"
+        messages={messages}
+        intro={intro}
+        message=""
+        onMessageChange={() => {}}
+        onSend={() => {}}
+      />
     </TooltipProvider>,
   )
 }
@@ -63,6 +71,18 @@ describe("TicketChat message list", () => {
     const dividers = screen.getAllByRole("separator")
     expect(dividers.map((d) => d.textContent)).toEqual(["Sunday 15 November", "Yesterday", "Today"])
     expect(dividers[0]).not.toHaveClass("animate-enter")
+  })
+
+  it("puts the first day divider above the intro", () => {
+    renderChat(
+      [message({ id: "m1", createdAt: at(15, 9, 5) }), message({ id: "m2", createdAt: at(19, 10, 0) })],
+      <p>Welcome to the support chat.</p>,
+    )
+    const dividers = screen.getAllByRole("separator")
+    expect(dividers.map((d) => d.textContent)).toEqual(["Sunday 15 November", "Yesterday"])
+    const intro = screen.getByText("Welcome to the support chat.")
+    expect(dividers[0].compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(intro.compareDocumentPosition(screen.getAllByText("Hello")[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("hides the name, time and avatar inside a grouped run", () => {

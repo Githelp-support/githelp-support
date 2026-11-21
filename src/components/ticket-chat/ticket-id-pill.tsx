@@ -14,8 +14,8 @@ export interface TicketIdPillProps {
 
 /**
  * Ticket ID in the chat header: the short ID in a grey pill with a button that
- * copies the full ID. The button swaps to a checkmark for 1.5s and announces
- * "Copied" to screen readers.
+ * copies the full ID. For 1.5s the button swaps to a checkmark and "Copied"
+ * shows beside it (also announced to screen readers).
  */
 export function TicketIdPill({ ticketId, className }: TicketIdPillProps) {
   const [copied, setCopied] = useState(false)
@@ -54,7 +54,10 @@ export function TicketIdPill({ ticketId, className }: TicketIdPillProps) {
           <Icon name={copied ? "fi-rr-check" : "fi-rr-copy"} size={3} />
         </span>
       </Button>
-      <span aria-live="polite" className="sr-only">
+      <span
+        aria-live="polite"
+        className={copied ? "text-xs text-text-muted animate-fade-in" : "sr-only"}
+      >
         {copied ? "Copied" : ""}
       </span>
     </span>

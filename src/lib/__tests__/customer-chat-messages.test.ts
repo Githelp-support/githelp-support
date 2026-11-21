@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     buildAutoReply,
     buildCustomerThreadMessages,
+    customerThreadStart,
     describeChargedLine,
     findPendingSca,
     helperSystemMessageCopy,
@@ -15,6 +16,7 @@ import {
     type PersistedTicketMessage,
 } from "../customer-chat-messages";
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
+import { groupChatMessages } from "../chat-grouping";
 
 describe("buildCustomerThreadMessages auto-reply", () => {
     const baseOpts = (overrides: Partial<CustomerThreadOptions> = {}): CustomerThreadOptions => ({
@@ -131,6 +133,41 @@ describe("buildCustomerThreadMessages createdAt", () => {
         );
         expect(byId(list, "welcome")).toMatchObject({ createdAt: NOW_ISO, timestamp: "02.01.2026, 09:30" });
         expect(byId(list, "system-claimed")).toMatchObject({ createdAt: NOW_ISO, timestamp: "02.01.2026, 09:30" });
+    });
+
+    it("dates the welcome and claimed entries with the thread start on an older ticket", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({
+                claimer: { id: "helper-1", name: "Grace", avatar_url: null },
+                fallbackTimestamp: "2026-01-01T11:59:00Z",
+                messagesData: [
+                    { id: "msg-1", content: "Hi", created_at: "2026-01-01T12:00:00Z", sender_type: "user" },
+                    { id: "msg-2", content: "Hello", created_at: "2026-01-01T12:03:00Z", sender_type: "helper" },
+                ],
+            }),
+        );
+        expect(byId(list, "welcome")?.createdAt).toBe("2026-01-01T11:59:00Z");
+        expect(byId(list, "system-claimed")?.createdAt).toBe("2026-01-01T11:59:00Z");
+        expect(byId(list, "welcome")?.timestamp).not.toBe("02.01.2026, 09:30");
+
+        // Day dividers only ever move forward: no "Today" above an older day.
+        const days = groupChatMessages(list)
+            .filter((item) => item.type === "day")
+            .map((item) => new Date((item as { date: string }).date).getTime());
+        expect(days).toHaveLength(1);
+        expect(days).toEqual([...days].sort((a, b) => a - b));
+    });
+
+    it("customerThreadStart picks the earliest instant, or now without a ticket", () => {
+        const messagesData = [
+            { id: "msg-1", content: "Hi", created_at: "2026-01-01T12:00:00Z", sender_type: "user" },
+        ];
+        expect(customerThreadStart({ messagesData, fallbackTimestamp: "2026-01-01T11:59:00Z", nowIso: NOW_ISO })).toBe(
+            "2026-01-01T11:59:00Z",
+        );
+        expect(customerThreadStart({ messagesData, fallbackTimestamp: null, nowIso: NOW_ISO })).toBe("2026-01-01T12:00:00Z");
+        expect(customerThreadStart({ messagesData: undefined, fallbackTimestamp: null, nowIso: NOW_ISO })).toBe(NOW_ISO);
+        expect(customerThreadStart({ messagesData: undefined, nowIso: undefined })).toBeNull();
     });
 
     it("uses fallbackTimestamp for the pending first message, or now without one", () => {

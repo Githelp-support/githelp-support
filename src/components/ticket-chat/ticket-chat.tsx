@@ -408,14 +408,17 @@ export function TicketChat(props: TicketChatProps) {
   const renderItems = useMemo(() => groupChatMessages(thread), [thread])
   // A day divider and every group start open a new block, so the gap inside a
   // sender group can be tighter than the gap between groups.
+  // With an intro above the thread, the first day divider moves above the
+  // intro, so the day label covers the welcome block as well as the messages.
+  const leadingDay = intro && renderItems[0]?.type === "day" ? renderItems[0] : null
   const messageGroups = useMemo(() => {
     const groups: ChatRenderItem[][] = []
-    for (const item of renderItems) {
+    for (const item of leadingDay ? renderItems.slice(1) : renderItems) {
       if (item.type === "day" || item.isGroupStart || groups.length === 0) groups.push([item])
       else groups[groups.length - 1].push(item)
     }
     return groups
-  }, [renderItems])
+  }, [renderItems, leadingDay])
 
   const renderMessage = (msg: TicketChatMessage, isGroupStart: boolean) => {
     const rowClass = cn("flex items-start gap-3", isNewMessage(msg.id) && "animate-enter")
@@ -617,7 +620,14 @@ export function TicketChat(props: TicketChatProps) {
               >
                 <div className="px-6 py-5">
                   <div className="flex flex-col gap-8">
-                    {intro}
+                    {leadingDay ? (
+                      <div className="flex flex-col gap-4">
+                        <ChatDayDivider date={leadingDay.date} />
+                        {intro}
+                      </div>
+                    ) : (
+                      intro
+                    )}
 
                     {/* Chat Messages: sender groups 16px apart, 4px between the messages of one group */}
                     <div className="flex flex-col gap-4">

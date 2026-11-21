@@ -29,6 +29,7 @@ import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
   buildCustomerThreadMessages,
+  customerThreadStart,
   buildSessionEndedMessage,
   describeChargedLine,
   findPendingSca,
@@ -302,6 +303,12 @@ export default function SupportPage() {
 
   const nowIso = useMemo(() => new Date().toISOString(), [])
   const nowFormatted = useMemo(() => formatChatTimestamp(nowIso), [nowIso])
+  // The intro opens the thread, so it is dated like the thread's first entry
+  // (ticket creation on an existing ticket, now before one exists).
+  const threadStartIso = useMemo(
+    () => customerThreadStart({ messagesData, fallbackTimestamp: liveTicket?.created_at ?? null, nowIso }) ?? nowIso,
+    [messagesData, liveTicket?.created_at, nowIso],
+  )
 
   // Thread: disclaimer → claimed banner → (pending first message) → persisted
   // messages → session summary once ended. Shared with /support/chat.
@@ -625,8 +632,8 @@ export default function SupportPage() {
       projectLogo={projectLogo}
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
-      timestamp={nowFormatted}
-      createdAt={nowIso}
+      timestamp={formatChatTimestamp(threadStartIso)}
+      createdAt={threadStartIso}
       rates={rates}
       isFree={isFreeSupport(effectivePricing)}
       isAuthenticated={isAuthenticated}

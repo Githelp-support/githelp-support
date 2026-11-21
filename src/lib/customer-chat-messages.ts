@@ -115,7 +115,11 @@ export interface CustomerThreadOptions {
     projectLogo: string | null;
     /** Timestamp for synthetic (non-persisted) messages. */
     nowFormatted: string;
-    /** The same instant as `nowFormatted`, as a raw ISO string → `createdAt` of the synthetic messages. */
+    /**
+     * The same instant as `nowFormatted`, as a raw ISO string. Synthetic messages
+     * use it as `createdAt` only while the thread has no older instant (see
+     * `customerThreadStart`).
+     */
     nowIso?: string | null;
     messagesData: PersistedTicketMessage[] | undefined;
     /** The helper who claimed the ticket, if any → "Ticket is claimed by …" banner. */
@@ -148,6 +152,28 @@ export interface CustomerThreadOptions {
 }
 
 /**
+ * The instant the thread opens at: the earliest of the ticket's creation
+ * (`fallbackTimestamp`) and its persisted messages, or `nowIso` before a ticket
+ * exists. The synthetic entries at the top of the thread (intro, disclaimer,
+ * claimed banner) are dated with it, so they never sit under a later day than
+ * the messages below them.
+ */
+export function customerThreadStart(
+    opts: Pick<CustomerThreadOptions, "messagesData" | "fallbackTimestamp" | "nowIso">,
+): string | null {
+    let earliest: string | null = null;
+    let earliestMs = Number.POSITIVE_INFINITY;
+    for (const value of [opts.fallbackTimestamp, ...(opts.messagesData ?? []).map((m) => m.created_at)]) {
+        if (!value) continue;
+        const ms = new Date(value).getTime();
+        if (Number.isNaN(ms) || ms >= earliestMs) continue;
+        earliest = value;
+        earliestMs = ms;
+    }
+    return earliest ?? opts.nowIso ?? null;
+}
+
+/**
  * Disclaimer → claimed banner → (pending first message) → persisted messages.
  * Callers append page-specific trailing messages (e.g. the session summary).
  */
@@ -173,6 +199,11 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     const userName = guest?.label ?? (currentUser.name || "You");
     const userInitial = userName[0]?.toUpperCase() || "Y";
 
+    // The disclaimer and the claimed banner sit above the persisted messages, so
+    // they take the thread's opening instant rather than the page-load time.
+    const startIso = customerThreadStart({ messagesData, fallbackTimestamp, nowIso });
+    const startFormatted = startIso && startIso !== nowIso ? formatChatTimestamp(startIso) : nowFormatted;
+
     const list: TicketChatMessage[] = [
         {
             id: "welcome",
@@ -180,8 +211,8 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             content: isFree ? TICKET_DISCLAIMER_FREE : TICKET_DISCLAIMER,
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
-            timestamp: nowFormatted,
-            createdAt: nowIso ?? null,
+            timestamp: startFormatted,
+            createdAt: startIso,
         },
     ];
 
@@ -194,8 +225,8 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderAvatarInitial: claimer.name?.[0]?.toUpperCase() || "H",
             senderAvatarUrl: claimer.avatar_url ?? null,
             senderId: claimer.id,
-            timestamp: nowFormatted,
-            createdAt: nowIso ?? null,
+            timestamp: startFormatted,
+            createdAt: startIso,
             // kind="claimed" switches TicketChat to the helper-avatar banner layout.
             kind: "claimed",
         });
