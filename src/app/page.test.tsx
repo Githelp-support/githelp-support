@@ -175,7 +175,7 @@ describe("Dashboard (admin Overview)", () => {
 
     render(<Dashboard />)
 
-    expect(mocks.replace).toHaveBeenCalledWith("/helper/overview")
+    expect(mocks.replace).toHaveBeenCalledWith("/helper/support/chat")
     expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
   })

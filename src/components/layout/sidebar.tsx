@@ -102,6 +102,11 @@ const scrollIntoNearest = (scroller: HTMLElement, el: Element) => {
   }
 }
 
+// A helper's ticket chat lives at /helper/tickets/<id>; in the helper menu it
+// belongs to the "Chat" sub-item of "Support".
+const HELPER_TICKET_PREFIX = "/helper/tickets/"
+const HELPER_CHAT_PATH = "/helper/support/chat"
+
 const SUPPORT_SUB_PATHS = [
   "/support/chat",
   "/support/rates",
@@ -132,6 +137,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
     if (pathname?.startsWith("/helper/settings/")) return ["Settings"]
     if (pathname?.startsWith("/user/settings/")) return ["Settings"]
     if (pathname && SUPPORT_SUB_PATHS.includes(pathname)) return ["Support"]
+    if (pathname?.startsWith("/helper/support/")) return ["Support"]
     // No active sub-page: restore what was open on the last visit.
     return readStoredExpanded()
   })
@@ -232,9 +238,32 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
     },
   ]
 
+  // The ticket a helper has open (/helper/tickets/<id>), or "" anywhere else.
+  const helperTicketId =
+    user.role === "helper" && pathname?.startsWith(HELPER_TICKET_PREFIX)
+      ? pathname.slice(HELPER_TICKET_PREFIX.length).split("/")[0]
+      : ""
+  // Whether a sub-item (path portion of its href) is the current page.
+  const isSubPathActive = (subPath: string) =>
+    pathname === subPath || (helperTicketId !== "" && subPath === HELPER_CHAT_PATH)
+
   const helperNavigationItems: NavigationItem[] = [
     { name: "Overview", href: "/helper/overview", icon: "fi-rr-apps" },
-    { name: "Tickets", href: "/tickets", icon: "fi-rr-comments" },
+    {
+      name: "Support",
+      href: "#",
+      icon: "fi-rr-comments",
+      subItems: [
+        { name: "Chat", href: HELPER_CHAT_PATH, icon: "fi-rr-comments" },
+        {
+          name: "Resources",
+          // From a ticket chat, carry the ticket so Resources resolves the same project.
+          href: `/helper/support/resources${helperTicketId ? `?ticket=${encodeURIComponent(helperTicketId)}` : ""}`,
+          icon: "fi-rr-folder",
+        },
+      ],
+    },
+    { name: "Tickets", href: "/tickets", icon: "fi-rr-list" },
     { name: "Reports", href: "/helper/reports", icon: "fi-rr-document" },
     {
       name: "Settings",
@@ -322,7 +351,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         // Sub-item hrefs may carry preserved query params (e.g. the Support
         // sub-pages); match on the path portion only.
         const subPath = sub.href.split("?")[0]
-        return pathname === subPath || (pathname?.startsWith(subPath + "/") ?? false)
+        return isSubPathActive(subPath) || (pathname?.startsWith(subPath + "/") ?? false)
       })
       if (matched) {
         next = [item.name]
@@ -351,7 +380,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
 
   // Sub-item hrefs may carry preserved query params (e.g. the Support
   // sub-pages); compare against the path portion only.
-  const isSubItemActive = (href: string) => pathname === href.split("?")[0]
+  const isSubItemActive = (href: string) => isSubPathActive(href.split("?")[0])
 
   // The menu between the switchers and the bottom items scrolls on its own.
   // `overflow` tracks whether there is more above / below, for the edge fades.
