@@ -25,7 +25,10 @@ type Project = Database["public"]["Tables"]["projects"]["Row"]
 const sizeRadiusMap: Record<string, string> = {
   "w-5 h-5": SQUIRCLE_RADIUS[20],
   "w-[22px] h-[22px]": SQUIRCLE_RADIUS[22],
-  "w-7 h-7": SQUIRCLE_RADIUS[28],
+  // The 28px tile and avatar exist only in the expanded sidebar rows. They are
+  // not squircles: they take the nested radius of the row container, so the
+  // corners are concentric (row rounded-md 6px, tile 4px inside: 6 - 4 = 2px).
+  "w-7 h-7": "rounded-xs",
   "w-6 h-6": SQUIRCLE_RADIUS[24],
   "w-8 h-8": SQUIRCLE_RADIUS[32],
 }
@@ -114,8 +117,10 @@ type SwitcherVariant = "control" | "row"
 // one vertical axis and every label starts at the same x. The tile and avatar
 // are wider than the slot and overflow it evenly on both sides, which keeps
 // them centred on that axis: the 28px tile sits 4px from the row's left, top
-// and bottom edges. The row is a container with a subtle stroke,
-// filled with the sidebar surface around it.
+// and bottom edges, and its corners are concentric with the row's: the row is
+// rounded-md (6px), so the tile is rounded-xs (6 - 4 = 2px, see sizeRadiusMap).
+// The row is a container with a subtle stroke, filled with the sidebar surface
+// around it; the project row overrides that with the white card surface.
 const ROW_TRIGGER_CLASS =
   "flex h-9 w-full min-w-0 items-center gap-3 rounded-md border border-border-subtle bg-sidebar px-2.25 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
 const ROW_SLOT_CLASS = "flex h-4 w-4 shrink-0 items-center justify-center"
@@ -153,12 +158,13 @@ const ROLE_GLYPHS: Record<UserRole, ReactElement> = {
   ),
 }
 
-// Glyph size per tile size: a little under two thirds of the tile.
+// Glyph size per tile size: a little under two thirds of the tile, except in
+// the 28px sidebar row tile, where the glyph is half the tile (14px).
 const ROLE_GLYPH_SIZE: Record<string, string> = {
   "w-5 h-5": "size-3.25",
   "w-[22px] h-[22px]": "size-3.5",
   "w-6 h-6": "size-4",
-  "w-7 h-7": "size-4.5",
+  "w-7 h-7": "size-3.5",
 }
 
 // Role tile: the project avatar's squircle container, white with a dark glyph.
@@ -324,7 +330,7 @@ function SwitcherTrigger({
   if (variant === "row") {
     return (
       <DropdownMenuTrigger asChild>
-        <button type="button" className={cn(ROW_TRIGGER_CLASS, className)}>
+        <button type="button" className={cn(ROW_TRIGGER_CLASS, "bg-card", className)}>
           <span className={ROW_SLOT_CLASS}>{logo("w-7 h-7")}</span>
           <span className={ROW_LABEL_CLASS}>{name}</span>
           <SelectorIcon />
@@ -441,7 +447,7 @@ export function ProjectSwitcher({
       <div
         className={cn(
           variant === "row"
-            ? "flex h-9 items-center rounded-md border border-border-subtle bg-sidebar px-2.25"
+            ? "flex h-9 items-center rounded-md border border-border-subtle bg-card px-2.25"
             : "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
           className,
         )}

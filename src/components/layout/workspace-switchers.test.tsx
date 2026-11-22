@@ -200,9 +200,13 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     for (const trigger of [role, project]) {
       expect(trigger.className).toContain("h-9")
       expect(trigger.className).toContain("hover:bg-surface-hover")
-      // Subtle stroke, filled with the sidebar surface around it.
+      // Subtle stroke; the role row is filled with the sidebar surface around
+      // it, the project row with the white card surface.
       expect(trigger.className).toContain("border-border-subtle")
-      expect(trigger.className).toContain("bg-sidebar")
+      expect(trigger.className).toContain(trigger === project ? "bg-card" : "bg-sidebar")
+      expect(trigger.className).not.toContain(trigger === project ? "bg-sidebar" : "bg-card")
+      // The 28px tile/avatar takes the row's nested radius (6 - 4 = 2px).
+      expect(trigger.children[0].firstElementChild!.className).toContain("rounded-xs")
       expect(trigger.querySelector(".fi-rr-angles-up-down")).toBeNull()
       expect(trigger.querySelectorAll(".fi-rr-angle-small-down")).toHaveLength(1)
       // Icon slot, label, selector: the selector is the last child (right-aligned).
@@ -211,18 +215,26 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
       expect(trigger.children[1].className).toContain("font-medium")
       expect(trigger.children[1].className).toContain("text-sidebar-foreground")
     }
-    // The role tile: white squircle with the role's icon in the foreground colour.
+    // The role tile: white tile with the role's icon in the foreground colour.
     const tile = role.querySelector('[data-slot="role-icon"]')!
     expect(tile.className).toContain("bg-card")
     expect(tile.className).toContain("text-foreground")
+    // In the row it takes the row's nested radius, not the squircle, with a 14px glyph.
+    expect(tile.className).toContain("rounded-xs")
+    expect(tile.className).not.toContain("rounded-[")
+    expect(tile.querySelector("svg")!.getAttribute("class")).toContain("size-3.5")
     // The Githelp maintainer glyph, not a Flaticon stand-in.
     expect(tile.querySelector('svg[data-role-glyph="admin"]')).not.toBeNull()
     expect(tile.querySelector(".fi")).toBeNull()
 
-    // Each role in the menu gets its tile too.
+    // Each role in the menu gets its tile too: the 20px squircle with a 13px glyph.
     fireEvent.keyDown(role, { key: "Enter" })
     for (const item of screen.getAllByRole("menuitem")) {
-      expect(item.querySelector('[data-slot="role-icon"]')).not.toBeNull()
+      const itemTile = item.querySelector('[data-slot="role-icon"]')
+      expect(itemTile).not.toBeNull()
+      expect(itemTile!.className).toContain("rounded-[7px]")
+      expect(itemTile!.className).not.toContain("rounded-xs")
+      expect(itemTile!.querySelector("svg")!.getAttribute("class")).toContain("size-3.25")
     }
     fireEvent.keyDown(document.activeElement!, { key: "Escape" })
 
