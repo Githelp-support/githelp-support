@@ -5,6 +5,7 @@ export interface ProjectAdmin {
   user_id: string
   name: string | null
   email: string | null
+  avatar_url: string | null
   created_at: string
 }
 
@@ -35,7 +36,7 @@ export function useProjectAdmins(projectId?: string) {
       const userIds = members.map((m) => m.user_id)
       const { data: profiles, error: profilesError } = await supabase
         .from("users_public")
-        .select("id, name, email")
+        .select("id, name, email, avatar_url")
         .in("id", userIds)
 
       if (profilesError) throw profilesError
@@ -48,6 +49,7 @@ export function useProjectAdmins(projectId?: string) {
           created_at: m.created_at,
           name: profile?.name ?? null,
           email: profile?.email ?? null,
+          avatar_url: profile?.avatar_url ?? null,
         }
       })
     },

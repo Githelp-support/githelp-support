@@ -459,7 +459,7 @@ export default function ReportsSupportPage() {
               {tabButton("tickets", "Tickets")}
               {tabButton("helpers", "Helpers")}
             </div>
-            <div className="h-px bg-border -mx-6" />
+            <div className="h-px bg-border" />
           </div>
 
           <div className="flex gap-2 mb-6">

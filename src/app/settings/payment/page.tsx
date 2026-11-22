@@ -474,8 +474,8 @@ export default function PaymentSettingsPage() {
               Helper
             </button>
           </div>
-          {/* Full-width line below tabs */}
-          <div className="h-px bg-border -mx-8"></div>
+          {/* Line below tabs, aligned with the content gutters */}
+          <div className="h-px bg-border mx-6"></div>
         </div>
 
         <div className="max-w-5xl">

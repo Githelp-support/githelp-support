@@ -4,7 +4,8 @@ import { Icon } from "@/components/ui/icon"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/layout/header"
 import { useHelper } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useUser } from "@/contexts/user-context"
@@ -78,7 +79,6 @@ export default function HelperPayoutPage() {
   }
 
   const displayName = helperData.user?.name || "Unknown"
-  const displayAvatar = (displayName || "U")[0].toUpperCase()
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -108,12 +108,12 @@ export default function HelperPayoutPage() {
                   <span className="size-1 rounded-full bg-muted-foreground/40" />
                   <span className="size-1 rounded-full bg-muted-foreground/40" />
                 </div>
-                <div
-                  className={`flex size-[42px] shrink-0 items-center justify-center ${SQUIRCLE_RADIUS[42]} text-foreground font-medium`}
-                  style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
-                >
-                  {displayAvatar}
-                </div>
+                <ProfileAvatar
+                  id={helperData.user_id ?? helperData.helper_id}
+                  name={displayName}
+                  avatarUrl={helperData.user?.avatar_url ?? user?.avatarUrl}
+                  className={`w-[42px] h-[42px] ${SQUIRCLE_RADIUS[42]}`}
+                />
               </div>
 
               <p className="max-w-[502px] text-sm leading-normal tracking-tight text-text-muted">

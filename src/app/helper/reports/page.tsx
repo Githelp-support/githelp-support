@@ -433,7 +433,7 @@ export default function HelperReportsPage() {
               Payouts
             </button>
           </div>
-          <div className="h-px bg-border -mx-6" />
+          <div className="h-px bg-border" />
         </div>
 
         {/* Filters */}

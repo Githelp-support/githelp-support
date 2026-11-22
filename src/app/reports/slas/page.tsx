@@ -327,8 +327,8 @@ export default function ReportsSLAsPage() {
               Tickets
             </button>
           </div>
-          {/* Full-width line below tabs */}
-          <div className="h-px bg-border -mx-6"></div>
+          {/* Line below tabs, aligned with the content gutters */}
+          <div className="h-px bg-border"></div>
         </div>
 
         <div className="max-w-7xl space-y-6">
