@@ -117,6 +117,19 @@ export function useCustomerTicketSidebar(
 }
 
 /**
+ * Whether a helper has claimed or joined the ticket: someone holds the claim,
+ * or a participant other than the customer (the viewer and/or the ticket
+ * creator, passed as `customerIds`) is in the chat. Drives "No helper has
+ * joined yet." under "People in this chat".
+ */
+export function hasHelperJoined(
+    participants: ParticipantWithUser[] | undefined,
+    customerIds: Array<string | null | undefined>
+): boolean {
+    return (participants ?? []).some((p) => p.claimed || !customerIds.includes(p.participant_id));
+}
+
+/**
  * Participant rows → the shape `TicketChat` renders under "People in this chat".
  * If the ticket creator has no participant row (older tickets, or a creator
  * profile we know from the ticket itself) pass `creator` so they're still listed.

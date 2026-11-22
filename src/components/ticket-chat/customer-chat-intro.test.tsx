@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+
+// ChatMessageMeta lives beside MarkdownContent → ChatImage → useTicketAttachments, which pulls in the client (throws without env vars).
+vi.mock("@/lib/supabase/client", () => ({ supabase: {} }))
+
 import { CustomerChatIntro } from "./customer-chat-intro"
 
 const baseProps = {
@@ -14,6 +18,19 @@ const baseProps = {
   userName: "Alice",
   onSignIn: vi.fn(),
 }
+
+describe("CustomerChatIntro header row", () => {
+  it("shows the team name, the Project badge and a time-only stamp on a 30px avatar", () => {
+    const { container } = render(<CustomerChatIntro {...baseProps} />)
+    expect(screen.getByText("Acme Team")).toBeInTheDocument()
+    expect(screen.getByText("Project")).toBeInTheDocument()
+    expect(screen.getByText("12:00")).toBeInTheDocument()
+    expect(container.querySelector(".size-7\\.5")).toHaveTextContent("A")
+    // The welcome line reads as message text, not as secondary text.
+    expect(screen.getByText("Welcome!")).toHaveClass("text-foreground")
+    expect(screen.getByText("Welcome!")).not.toHaveClass("text-muted-foreground")
+  })
+})
 
 describe("CustomerChatIntro rates", () => {
   it("lists the three rates for a paid project", () => {

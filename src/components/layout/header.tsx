@@ -29,6 +29,12 @@ interface HeaderProps {
   aboveTitle?: ReactNode
   /** Page-level actions (e.g. the primary button), rendered right-aligned. */
   actions?: ReactNode
+  /**
+   * `chat` is the compact ticket-chat header: a 60px row with 20px gutters,
+   * everything centred on one line and a 16px semibold title. Opt-in; every
+   * other page keeps `default`.
+   */
+  variant?: "default" | "chat"
 }
 
 /**
@@ -36,7 +42,8 @@ interface HeaderProps {
  * sticky under the TopBar with a hairline below. Pages render it themselves
  * because it carries page-specific props; the Sidebar comes from AppShell.
  */
-export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle, actions }: HeaderProps) {
+export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle, actions, variant = "default" }: HeaderProps) {
+  const isChat = variant === "chat"
   const headerRef = useRef<HTMLElement>(null)
   const titleRowRef = useRef<HTMLDivElement>(null)
   const inlineRef = useRef<HTMLDivElement>(null)
@@ -74,18 +81,22 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     <header
       ref={headerRef}
       className={cn(
-        "sticky top-0 z-30 shrink-0 border-b border-border-subtle px-8 py-5",
+        "sticky top-0 z-30 shrink-0 border-b border-border-subtle",
+        isChat ? "flex h-15 items-center px-5" : "px-8 py-5",
         !backgroundColor && "bg-background",
         className,
       )}
       style={backgroundColor ? { backgroundColor } : undefined}
     >
-      <div className="flex items-center justify-between gap-8">
-        <div className="flex min-w-0 items-start gap-4">
+      <div className={cn("flex items-center justify-between gap-8", isChat && "w-full min-w-0")}>
+        <div className={cn("flex min-w-0 gap-4", isChat ? "items-center" : "items-start")}>
           {showBackButton && (
             <button
               onClick={handleBackClick}
-              className="mt-1 flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+              className={cn(
+                "flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
+                !isChat && "mt-1",
+              )}
             >
               <Icon name="fi-rr-arrow-left" className="text-muted-foreground" />
               {backButtonText && (
@@ -97,7 +108,13 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
           <div className="min-w-0">
             {aboveTitle && <div className="mb-2">{aboveTitle}</div>}
             <div ref={titleRowRef} className="flex items-center gap-3">
-              <h1 className={cn("truncate text-title font-medium text-foreground", titleClassName)}>{title}</h1>
+              <h1
+                className={cn(
+                  "truncate text-foreground",
+                  isChat ? "text-base font-semibold" : "text-title font-medium",
+                  titleClassName,
+                )}
+              >{title}</h1>
               {info && (
                 <Tooltip>
                   <TooltipTrigger asChild>

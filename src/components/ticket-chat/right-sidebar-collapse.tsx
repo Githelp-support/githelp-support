@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Icon } from "@/components/ui/icon"
 import { SidebarToggleIcon } from "@/components/ui/sidebar-toggle-icon"
 
 const STORAGE_KEY = "sidebar:right:collapsed"
@@ -65,5 +66,51 @@ export function RightSidebarCollapseToggle({
         <SidebarToggleIcon mirrored />
       </Button>
     </div>
+  )
+}
+
+/**
+ * The right panel's toggle for a page header's `actions`. From `lg` up it
+ * collapses / expands the panel (same state and glyph as the in-panel
+ * toggle); below `lg`, where the panel is an off-canvas sheet, it opens and
+ * closes the sheet.
+ */
+export function RightSidebarHeaderToggle({
+  isCollapsed,
+  onToggle,
+  mobileOpen,
+  onMobileToggle,
+}: {
+  isCollapsed: boolean
+  onToggle: (collapsed: boolean) => void
+  mobileOpen: boolean
+  onMobileToggle: () => void
+}) {
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        suppressHydrationWarning
+        className="max-lg:hidden text-text-muted"
+        aria-label={isCollapsed ? "Show ticket details" : "Hide ticket details"}
+        aria-expanded={!isCollapsed}
+        onClick={() => onToggle(!isCollapsed)}
+      >
+        <SidebarToggleIcon mirrored />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="lg:hidden text-text-muted"
+        aria-label="Ticket details"
+        aria-expanded={mobileOpen}
+        onClick={onMobileToggle}
+      >
+        <Icon name="fi-rr-sidebar-flip" />
+      </Button>
+    </>
   )
 }

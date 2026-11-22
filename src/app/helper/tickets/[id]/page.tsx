@@ -36,9 +36,13 @@ import {
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
 import { useProject } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
-import { TicketChatInput } from "@/components/ticket-chat/chat-input"
+import { TicketChatInput, composerPlaceholder } from "@/components/ticket-chat/chat-input"
+import { ChatAvatarSlot, ChatDayDivider, ChatMessageMeta, SystemNote } from "@/components/ticket-chat/chat-message-parts"
+import { TicketIdPill } from "@/components/ticket-chat/ticket-id-pill"
+import { ActiveTicketsList } from "@/components/ticket-chat/active-tickets-list"
+import { buildThreadRows, formatChatTime, formatDayDividerLabel } from "@/lib/chat-thread"
 import { Icon } from "@/components/ui/icon"
-import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { Fragment, useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react"
 import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
@@ -52,8 +56,8 @@ import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
-import { SidebarSectionHeading, SidebarDivider } from "@/components/ticket-chat/sidebar-section"
-import { useRightSidebarCollapsed, RightSidebarCollapseToggle } from "@/components/ticket-chat/right-sidebar-collapse"
+import { SidebarSectionHeading, SidebarDivider, SidebarEmptyText } from "@/components/ticket-chat/sidebar-section"
+import { useRightSidebarCollapsed, RightSidebarHeaderToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFlatFeePricing, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
@@ -83,6 +87,8 @@ interface Message {
   sender: "user" | "helper" | "system"
   content: string
   timestamp: string
+  /** Raw ISO time of a persisted message. Absent on the synthetic "claimed" row. Drives day dividers and grouping. */
+  createdAt?: string
   avatar?: string
   senderName?: string
   senderId?: string
@@ -94,6 +100,12 @@ interface Message {
   hasDeclines?: boolean
   /** Raw `metadata` of the persisted message (read by `TimeReviewSystemMessage`). */
   metadata?: TimeReviewMessageMetadata
+}
+
+/** "HH:MM" for a message: from its raw time, else the time part of its formatted timestamp. */
+function messageTime(msg: Message): string | null {
+  if (msg.createdAt) return formatChatTime(msg.createdAt)
+  return msg.timestamp.match(/\d{2}:\d{2}$/)?.[0] ?? null
 }
 
 /** Toast for a failed capture: only card problems mention updating the card. */
@@ -301,6 +313,8 @@ export default function TicketDetailPage() {
   }, [participants, ticket?.created_by, ticketDetails?.user, isGuestTicket])
 
   const isTicketEnded = (ticket?.status === "completed" || ticket?.status === "cancelled") || justEndedLocal
+  // When the ticket was closed, for the time on the "Ticket ended" row.
+  const endedAt = ticket?.completed_at ?? ticket?.cancelled_at ?? null
 
   // Customer asked to end the session (tickets.end_requested_at, realtime via
   // useRealtimeTicket). Only the helper can actually end — they log remaining
@@ -426,6 +440,7 @@ export default function TicketDetailPage() {
             ? helperSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind)
             : null) ?? msg.content,
         timestamp: formatDateTime(msg.created_at),
+        createdAt: msg.created_at,
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
         senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
         senderId: msg.sender_id ?? msg.sender?.id,
@@ -491,21 +506,54 @@ export default function TicketDetailPage() {
     handleImageAttached,
   )
 
+  // Scroll container (the thread) and the sentinel after the last message.
+  const scrollBoxRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     // block:"nearest" keeps the scroll local to the messages container; with
     // block:"start" (default) the browser also scrolls ancestor scrollers —
     // including the window — if the document is ever taller than the viewport.
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth", block: "nearest" })
   }
 
-  useEffect(() => {
+  // Opening a ticket (first render, another ticket id, or its history
+  // arriving from the server) jumps straight to the newest message. Messages
+  // that come in after that scroll smoothly.
+  const hasHistory = messages.some((m) => !!m.createdAt)
+  const anchorRef = useRef<{ key: string; history: boolean } | null>(null)
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current
+    const sameThread = anchor !== null && anchor.key === ticketId
+    const opening = !sameThread || (!anchor.history && hasHistory)
+    anchorRef.current = { key: ticketId, history: hasHistory || (sameThread && anchor.history) }
+    if (opening) {
+      const box = scrollBoxRef.current
+      if (box) box.scrollTop = box.scrollHeight
+      return
+    }
     // Defer to after layout so the (tall) ended/outcome summary — which renders
     // based on ticket status, not message count — is measured before we scroll.
     const id = requestAnimationFrame(() => scrollToBottom())
     return () => cancelAnimationFrame(id)
-  }, [messages, isTicketEnded])
+  }, [ticketId, messages, isTicketEnded, hasHistory])
+
+  // Day dividers and sender grouping. The first divider sits above the "Info
+  // about issue" block and takes its date (the first message, else the ticket).
+  const { rows, topDayLabel } = useMemo(() => {
+    const now = new Date()
+    const built = buildThreadRows(messages, now)
+    const introDate = firstIssueMessage.timestamp ? new Date(firstIssueMessage.timestamp) : null
+    const top =
+      introDate && !Number.isNaN(introDate.getTime())
+        ? formatDayDividerLabel(introDate, now)
+        : (built[0]?.showDayDivider ?? formatDayDividerLabel(now, now))
+    return { rows: built, topDayLabel: top }
+  }, [messages, firstIssueMessage.timestamp])
+
+  // A helper has claimed the ticket or joined the chat (anyone but its creator).
+  const helperJoined =
+    !!claimer || !!participants?.some((p) => p.claimed || p.participant_id !== ticket?.created_by)
 
   const handleSendMessage = async () => {
     if (!message.trim() || !ticketId || !currentUser?.id) return
@@ -885,7 +933,7 @@ export default function TicketDetailPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
         <div className="relative z-10">
-          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" />
+          <Header variant="chat" title="Ticket" showBackButton={true} />
         </div>
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -912,41 +960,42 @@ export default function TicketDetailPage() {
     // The AppShell content column is a vertical flex column: this row puts
     // the right panel beside the chat column (TicketChat does the same).
     <div className="flex-1 flex overflow-hidden">
-      <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <div className="relative z-10">
           <Header
+            variant="chat"
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
-            titleClassName="text-xl"
-            inlineRightContent={
-              <span className="flex items-center gap-2">
-                <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>
-              </span>
-            }
+            inlineRightContent={<TicketIdPill id={ticketId} />}
             actions={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="lg:hidden text-text-muted"
-                aria-label="Ticket details"
-                aria-expanded={mobilePanelOpen}
-                onClick={() => setMobilePanelOpen((v) => !v)}
-              >
-                <Icon name="fi-rr-sidebar-flip" />
-              </Button>
+              <>
+                {isClaimed && !isTicketEnded && canManageTicket && (
+                  <Button type="button" variant="outline" onClick={() => setIsEndTicketDrawerOpen(true)}>
+                    <Icon name="fi-rr-sign-out-alt" />
+                    End session
+                  </Button>
+                )}
+                <RightSidebarHeaderToggle
+                  isCollapsed={isCollapsed}
+                  onToggle={setCollapsed}
+                  mobileOpen={mobilePanelOpen}
+                  onMobileToggle={() => setMobilePanelOpen((v) => !v)}
+                />
+              </>
             }
           />
         </div>
-        <main className="flex-1 flex overflow-hidden">
+        {/* Chat area: white from below the header down to the composer. */}
+        <main className="flex-1 flex overflow-hidden bg-background">
           {/* Main Content (min-w-0: the column must shrink to the viewport on phones) */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Messages Area */}
             <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 p-4 flex flex-col min-h-0">
-                {/* Chat Messages Container */}
+                {/* Messages: the scroll container */}
                 <div
-                  className="bg-card rounded-lg shadow-soft flex-1 overflow-auto"
+                  ref={scrollBoxRef}
+                  data-slot="chat-scroll"
+                  className="flex-1 min-h-0 overflow-auto"
                   onLoadCapture={(e) => {
                     // Images load after the initial scroll and push the thread
                     // down; keep it pinned to the bottom if it was there.
@@ -956,39 +1005,28 @@ export default function TicketDetailPage() {
                     if (distance <= e.target.offsetHeight + 120) scrollToBottom()
                   }}
                 >
-                  <div className="p-6">
-                    <div className="flex flex-col" style={{ rowGap: '31.2px' }}>
+                  {/* Short threads sit at the bottom, next to the composer. */}
+                  <div className="min-h-full flex flex-col justify-end">
+                    <div className="flex flex-col px-6 py-10 md:px-12">
+                <ChatDayDivider label={topDayLabel} className="mb-4" />
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
                 <div className="flex gap-3 items-start">
-                  <ProfileAvatar
+                  <ChatAvatarSlot
+                    kind="avatar"
                     id={firstIssueMessage.senderId}
                     name={firstIssueMessage.senderName ?? "U"}
                     avatarUrl={firstIssueMessage.senderAvatarUrl ?? null}
                     guest={isGuestTicket}
-                    size="sm"
-                    radius="9.625px"
                   />
-                  <div className="flex-1 space-y-4">
+                  <div className="min-w-0 flex-1 space-y-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        {creatorGuest ? (
-                          <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-sm" />
-                        ) : (
-                          <span className="text-sm text-foreground font-medium">{firstIssueMessage.senderName}</span>
-                        )}
-                        <span
-                          className="text-xs"
-                          style={{
-                            color: "var(--muted-foreground)",
-                            fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                            fontVariantNumeric: 'tabular-nums',
-                          }}
-                        >
-                          {firstIssueMessage.timestamp
-                            ? formatDateTime(firstIssueMessage.timestamp)
-                            : "—"}
-                        </span>
-                      </div>
+                      <ChatMessageMeta
+                        name={creatorGuest ? creatorGuest.label : (firstIssueMessage.senderName ?? "User")}
+                        guest={!!creatorGuest}
+                        guestFull={creatorGuest?.full}
+                        time={firstIssueMessage.timestamp ? formatChatTime(firstIssueMessage.timestamp) : null}
+                        className="mb-1"
+                      />
                       <div>
                         <h3 className="text-sm font-medium mb-2 text-foreground">Info about issue</h3>
                         <div className="space-y-3 text-foreground">
@@ -1084,102 +1122,109 @@ export default function TicketDetailPage() {
                   </div>
                 </div>
 
-                {/* Chat Messages */}
-                <div className="flex flex-col" style={{ rowGap: '16px' }}>
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={cn("flex gap-3 items-start", isNewMessage(msg.id) && "animate-enter")}>
-                      {msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended") ? (
-                        <div className="flex items-start gap-3 w-full">
-                          <ProfileAvatar
-                            id={msg.senderId}
-                            name={msg.senderName ?? msg.avatar ?? "H"}
-                            avatarUrl={msg.senderAvatarUrl ?? null}
-                            size="sm"
-                            radius="9.625px"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
-                              <span
-                                className="text-xs"
-                                style={{
-                                  color: "var(--muted-foreground)",
-                                  fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                                  fontVariantNumeric: 'tabular-nums',
-                                }}
-                              >
-                                {msg.timestamp}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-foreground">
-                              <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
-                              <MarkdownContent content={msg.content} className="text-sm" />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {msg.sender !== "system" && (
-                            <ProfileAvatar
-                              id={msg.senderId}
-                              name={msg.senderName ?? msg.avatar ?? "U"}
-                              avatarUrl={msg.senderAvatarUrl ?? null}
-                              guest={msg.sender === "user" && isGuestCreator(msg.senderId)}
-                              size="sm"
-                              radius="9.625px"
-                            />
-                          )}
-                          <div className="flex-1">
-                            {msg.sender !== "system" && (
-                              <div className="flex items-center gap-2 mb-1">
-                                {creatorGuest && msg.sender === "user" && isGuestCreator(msg.senderId) ? (
-                                  <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-sm" />
-                                ) : (
-                                  <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
-                                )}
-                                <span
-                                  className="text-xs"
-                                  style={{
-                                    color: "var(--muted-foreground)",
-                                    fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                                    fontVariantNumeric: 'tabular-nums',
-                                  }}
-                                >
-                                  {msg.timestamp}
-                                </span>
+                {/* Chat Messages: day dividers above each new day, follow-ups grouped under their sender */}
+                  {rows.map((row, index) => {
+                    const msg = row.item
+                    // The top divider already shows the intro's day.
+                    const dayLabel = row.showDayDivider && (index > 0 || row.showDayDivider !== topDayLabel) ? row.showDayDivider : null
+                    const isBanner = msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended")
+                    // Only the amber declined variant keeps its box; every other
+                    // system message is assumed to be the default grey kind and
+                    // renders as a plain note (same assumption as TicketChat).
+                    const isDeclined =
+                      msg.metadataKind === "time_entry_declined" ||
+                      (msg.metadataKind === "time_entries_confirmed" && msg.hasDeclines)
+                    const isGuestSender = !!creatorGuest && msg.sender === "user" && isGuestCreator(msg.senderId)
+                    return (
+                      <Fragment key={msg.id}>
+                        {dayLabel && <ChatDayDivider label={dayLabel} className="mt-4" />}
+                        <div className={cn(row.groupStart ? "mt-4" : "mt-1", isNewMessage(msg.id) && "animate-enter")}>
+                          {isBanner ? (
+                            <div data-slot="chat-banner-row" className="flex items-start gap-3">
+                              <ChatAvatarSlot
+                                kind="avatar"
+                                id={msg.senderId}
+                                name={msg.senderName ?? msg.avatar ?? "H"}
+                                avatarUrl={msg.senderAvatarUrl}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <ChatMessageMeta name={msg.senderName || "Helper"} time={messageTime(msg)} className="mb-1" />
+                                <div className="flex items-center gap-2 text-sm text-foreground">
+                                  <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
+                                  <MarkdownContent content={msg.content} className="text-sm" />
+                                </div>
                               </div>
-                            )}
-                            <div
-                              className={
-                                msg.sender === "system"
-                                  ? msg.metadataKind === "time_entry_declined" ||
-                                    (msg.metadataKind === "time_entries_confirmed" && msg.hasDeclines)
-                                    ? "bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                    : "bg-muted text-muted-foreground py-2 px-4 rounded-lg text-sm text-left ml-11"
-                                  : "text-sm text-foreground"
-                              }
-                            >
-                              {msg.sender === "system" && msg.metadataKind === "time_entries_confirmed" ? (
-                                <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
-                              ) : (
-                                <MarkdownContent content={msg.content} />
-                              )}
                             </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
+                          ) : msg.sender === "system" ? (
+                            isDeclined ? (
+                              <div data-slot="chat-status-row" className="flex items-start gap-3">
+                                <ChatAvatarSlot kind="spacer" />
+                                <div className="min-w-0 flex-1 bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left">
+                                  {msg.metadataKind === "time_entries_confirmed" ? (
+                                    <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
+                                  ) : (
+                                    <MarkdownContent content={msg.content} />
+                                  )}
+                                </div>
+                              </div>
+                            ) : msg.metadataKind === "time_entries_confirmed" ? (
+                              <SystemNote>
+                                <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
+                              </SystemNote>
+                            ) : (
+                              <SystemNote markdown={msg.content} />
+                            )
+                          ) : (
+                            <div
+                              data-slot="chat-message-row"
+                              data-group-start={row.groupStart ? "" : undefined}
+                              className="flex items-start gap-3"
+                            >
+                              {row.groupStart ? (
+                                <ChatAvatarSlot
+                                  kind="avatar"
+                                  id={msg.senderId}
+                                  name={msg.senderName ?? msg.avatar ?? "U"}
+                                  avatarUrl={msg.senderAvatarUrl}
+                                  guest={msg.sender === "user" && isGuestCreator(msg.senderId)}
+                                />
+                              ) : (
+                                <ChatAvatarSlot kind="spacer" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                {row.groupStart && (
+                                  <ChatMessageMeta
+                                    name={isGuestSender ? creatorGuest.label : (msg.senderName ?? "Unknown")}
+                                    guest={isGuestSender}
+                                    guestFull={isGuestSender ? creatorGuest.full : undefined}
+                                    time={messageTime(msg)}
+                                    className="mb-1"
+                                  />
+                                )}
+                                <div className="text-sm text-foreground">
+                                  <MarkdownContent content={msg.content} />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Fragment>
+                    )
+                  })}
                   {isTicketEnded && (
-                    <div className="flex gap-3 pt-2 items-start">
-                      <ProfileAvatar
+                    <div data-slot="chat-banner-row" className="mt-4 flex gap-3 items-start">
+                      <ChatAvatarSlot
+                        kind="avatar"
                         id={claimer?.id}
                         name={claimer?.name ?? "H"}
                         avatarUrl={claimer?.avatar_url ?? null}
-                        size="sm"
-                        radius="9.625px"
                       />
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
+                        <ChatMessageMeta
+                          name={claimer?.name || "Helper"}
+                          time={endedAt ? formatChatTime(endedAt) : null}
+                          className="mb-1"
+                        />
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
                           <span>Ticket ended</span>
@@ -1290,8 +1335,6 @@ export default function TicketDetailPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
             </div>
 
             {timeReviewRequested ? (
@@ -1328,6 +1371,8 @@ export default function TicketDetailPage() {
               />
             )}
 
+            {/* The composer has no side margin of its own: the page supplies the gutter. */}
+            <div className="px-4 md:px-12">
             <TicketChatInput
               value={message}
               onChange={setMessage}
@@ -1335,7 +1380,7 @@ export default function TicketDetailPage() {
               sendDisabled={!message.trim() || !canChat}
               sending={isSending}
               disabled={isTicketEnded}
-              placeholder="Message #askanything"
+              placeholder={composerPlaceholder(project ?? { name: "Support" })}
               onImageClick={attachmentStoragePrefix && canChat ? () => setIsImageUploadOpen(true) : undefined}
               onImageFiles={attachmentStoragePrefix && canChat ? uploadFiles : undefined}
               imagesUploading={imagesUploading}
@@ -1347,18 +1392,10 @@ export default function TicketDetailPage() {
                     onClaim={() => void handleClaimTicket()}
                     showExplanation={false}
                   />
-                ) : isClaimed && !isTicketEnded && canManageTicket ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEndTicketDrawerOpen(true)}
-                    className="cursor-pointer text-foreground font-medium text-sm hover:bg-transparent"
-                  >
-                    End session
-                  </Button>
                 ) : undefined
               }
             />
+            </div>
 
             {attachmentStoragePrefix && canChat && (
               <AttachImageModal
@@ -1384,13 +1421,15 @@ export default function TicketDetailPage() {
           "max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-50 max-lg:w-80 max-lg:max-w-[85vw] max-lg:shadow-modal",
           !mobilePanelOpen && "max-lg:hidden",
           "lg:relative lg:z-20",
-          isCollapsed ? "lg:w-16" : "lg:w-80",
+          // Collapsed from the header toggle: the panel closes completely on
+          // desktop (there is no in-panel toggle row to keep a rail for).
+          isCollapsed ? "lg:w-0 lg:border-l-0" : "lg:w-80",
         )}
       >
-        <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
-
-        {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto px-4 pb-6 max-lg:pt-4">
+        <div
+          suppressHydrationWarning
+          className={cn("w-80 max-w-full flex-1 overflow-y-auto px-4 pt-4 pb-6", isCollapsed && "lg:hidden")}
+        >
           {/* People in Chat */}
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
@@ -1420,8 +1459,9 @@ export default function TicketDetailPage() {
                   )
                 })}
               </div>
-            ) : (
-              <div className="text-center text-muted-foreground text-ui py-4">-</div>
+            ) : null}
+            {!participantsLoading && !helperJoined && (
+              <SidebarEmptyText className="mb-2">No helper has joined yet.</SidebarEmptyText>
             )}
             {!isTicketEnded && (
               <Button variant="ghost" className="w-full justify-start text-brand-primary hover:bg-brand-primary/10" title={ILLUSTRATIVE_BUTTON_TOOLTIP}>
@@ -1446,7 +1486,7 @@ export default function TicketDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-ui text-muted-foreground">—</p>
+              <SidebarEmptyText>No other topics yet.</SidebarEmptyText>
             )}
           </div>
 
@@ -1543,50 +1583,14 @@ export default function TicketDetailPage() {
           {/* Divider */}
           <SidebarDivider />
 
-          {/* Active Tickets — 3 latest claimed by this helper */}
-          <div>
-            <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-            <div className={`-mx-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
-              {activeTicketsSidebar.length === 0 ? (
-                <p className="text-ui text-muted-foreground px-4">No active tickets</p>
-              ) : (
-                activeTicketsSidebar.map((item) => (
-                  <NextLink
-                    key={item.id}
-                    href={`/helper/tickets/${item.id}`}
-                    className={`block w-full border cursor-pointer transition-colors ${
-                      item.current
-                        ? "bg-brand-primary/10 border-border border-l-4 border-l-brand-primary"
-                        : "bg-background border-border hover:bg-muted"
-                    }`}
-                  >
-                    <div className="px-4 py-3">
-                      <div className="flex items-start gap-3">
-                        <ProfileAvatar
-                          id={item.creatorId}
-                          name={item.avatarInitial}
-                          avatarUrl={item.avatarUrl}
-                          size="md"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            <h4 className="font-medium text-foreground text-ui truncate">{item.title}</h4>
-                            {item.hasNotification && (
-                              <div className="w-2 h-2 bg-[#f09191] rounded-full flex-shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{item.subtitle}</p>
-                          <p className="text-xs text-muted-foreground tabular-nums">{item.date}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </NextLink>
-                ))
-              )}
-            </div>
-          </div>
+          {/* Active Tickets — the helper's claimed tickets, or every active ticket in the project for an admin */}
+          <ActiveTicketsList
+            items={activeTicketsSidebar}
+            count={activeTicketsCount}
+            getHref={(item) => `/helper/tickets/${item.id}`}
+            avatar="person"
+          />
         </div>
-        )}
       </div>
 
       {/* End Ticket / Log time drawers — only for the claimed helper or an admin */}
