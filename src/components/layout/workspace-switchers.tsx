@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useProjectBranding } from "@/hooks/useProject"
 import { useWorkspaceSwitcher } from "@/hooks/useWorkspaceSwitcher"
-import type { UserRole } from "@/contexts/user-context"
 import type { Database } from "@/types/database"
 import { SQUIRCLE_RADIUS, squircleRadiusClass } from "@/lib/constants"
 
@@ -69,18 +68,47 @@ const PrivateContextIcon = ({ size }: { size: string }) => (
   </span>
 )
 
+type SwitcherVariant = "control" | "row"
+
+// Sidebar (`row`) menu rows: a 28px image and the name, with a checkmark on the
+// current one. 28px + py-1.5 makes each row 40px high.
+const ROW_MENU_ITEM_CLASS = "gap-2.5 py-1.5"
+const ROW_MENU_LABEL_CLASS = "min-w-0 truncate font-sans text-sm text-foreground"
+
+const SelectedCheck = () => (
+  <Icon name="fi-rr-check" className="ml-auto shrink-0 text-muted-foreground" />
+)
+
 // Component to render project logo with branding in dropdown
 function ProjectLogoWithBranding({
   project,
   isSelected,
   onSelect,
+  variant = "control",
 }: {
   project: Project
   isSelected: boolean
   onSelect: (project: Project) => void
+  /** `row` is the sidebar menu (28px logo, checkmark); `control` is the TopBar's (20px logo, brand tint). */
+  variant?: SwitcherVariant
 }) {
   const { data: branding } = useProjectBranding(project.project_id)
   const logoUrl = branding?.logo_url ?? null
+
+  if (variant === "row") {
+    return (
+      <DropdownMenuItem onClick={() => onSelect(project)} className={ROW_MENU_ITEM_CLASS}>
+        <ProjectLogo
+          logoUrl={logoUrl}
+          projectName={project.name}
+          size="w-7 h-7"
+          primaryColor={branding?.primary_color}
+        />
+        <span className={ROW_MENU_LABEL_CLASS}>{project.name}</span>
+        {isSelected && <SelectedCheck />}
+      </DropdownMenuItem>
+    )
+  }
 
   return (
     <DropdownMenuItem
@@ -106,86 +134,28 @@ function ProjectLogoWithBranding({
   )
 }
 
-type SwitcherVariant = "control" | "row"
+// Sidebar switchers are flat: no border and no fill at rest, with the same
+// grey fill on hover and while the menu is open.
+const ROW_INTERACTION_CLASS =
+  "cursor-pointer transition-colors duration-fast ease-out hover:bg-sidebar-control-hover data-[state=open]:bg-sidebar-control-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
 
-// Sidebar switcher rows share the nav item geometry: 36px high, 10px from the
-// edge to the icon slot (9px padding inside the 1px stroke), a 16px icon slot
-// and a 12px gap, so the role tile, the project avatar and the nav icons sit on
-// one vertical axis and every label starts at the same x. The tile and avatar
-// are wider than the slot and overflow it evenly on both sides, which keeps
-// them centred on that axis: the 28px tile sits 4px from the row's left, top
-// and bottom edges. The row is a container with a subtle stroke,
-// filled with the sidebar surface around it.
-const ROW_TRIGGER_CLASS =
-  "flex h-9 w-full min-w-0 items-center gap-3 rounded-md border border-border-subtle bg-sidebar px-2.25 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-const ROW_SLOT_CLASS = "flex h-4 w-4 shrink-0 items-center justify-center"
-const ROW_LABEL_CLASS =
-  "min-w-0 flex-1 truncate text-left font-sans text-ui font-medium text-sidebar-foreground"
+// Role button: content-width, 32px high, 8px padding; the role name and a 14px chevron.
+const ROLE_ROW_TRIGGER_CLASS = cn(
+  "inline-flex h-8 w-auto shrink-0 items-center gap-1 rounded-md px-2",
+  ROW_INTERACTION_CLASS,
+)
+
+// Project button: full width, 40px high, 6px padding, so the 28px image sits
+// 6px from the left, top and bottom edges, 10px from the name.
+const PROJECT_ROW_TRIGGER_CLASS = cn(
+  "flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg px-1.5",
+  ROW_INTERACTION_CLASS,
+)
+const PROJECT_ROW_LABEL_CLASS =
+  "min-w-0 flex-1 truncate text-left font-sans text-sm font-medium text-foreground"
 
 const SelectorIcon = () => (
   <Icon name="fi-rr-angle-small-down" className="shrink-0 text-text-tertiary" />
-)
-
-// Githelp role glyphs (githelp-role-maintainer.svg, githelp-role-helper.svg,
-// githelp-role-support-user.svg), inlined so they take the tile's text colour.
-const ROLE_GLYPHS: Record<UserRole, ReactElement> = {
-  admin: (
-    <>
-      <circle cx="19.5" cy="5.5" r="3.5" />
-      <circle cx="4" cy="4" r="2.75" />
-      <circle cx="4" cy="20.5" r="2" />
-      <path d="M4 6.75v11.75" />
-      <path d="M19.5 9v.5c0 4-2.5 5.5-7 5.5H8.5C6 15 4 16 4 17" />
-    </>
-  ),
-  helper: (
-    <>
-      <circle cx="12" cy="12" r="11" />
-      <circle cx="12" cy="12" r="4.5" />
-      <path d="M15.2 8.8l4.6-4.6M8.8 8.8 4.2 4.2M15.2 15.2l4.6 4.6M8.8 15.2l-4.6 4.6" />
-    </>
-  ),
-  user: (
-    <>
-      <path d="M10 5c.8 5.2 3.8 8.2 9 9-5.2.8-8.2 3.8-9 9-.8-5.2-3.8-8.2-9-9 5.2-.8 8.2-3.8 9-9z" />
-      <path d="M19.5 1c.3 2.3 1.2 3.2 3.5 3.5-2.3.3-3.2 1.2-3.5 3.5-.3-2.3-1.2-3.2-3.5-3.5 2.3-.3 3.2-1.2 3.5-3.5z" />
-    </>
-  ),
-}
-
-// Glyph size per tile size: a little under two thirds of the tile.
-const ROLE_GLYPH_SIZE: Record<string, string> = {
-  "w-5 h-5": "size-3.25",
-  "w-[22px] h-[22px]": "size-3.5",
-  "w-6 h-6": "size-4",
-  "w-7 h-7": "size-4.5",
-}
-
-// Role tile: the project avatar's squircle container, white with a dark glyph.
-// The hairline keeps the white tile readable on the near-white sidebar.
-const RoleIcon = ({ role, size = "w-[22px] h-[22px]" }: { role: UserRole; size?: string }) => (
-  <span
-    data-slot="role-icon"
-    className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center border border-border-avatar bg-card text-foreground`}
-  >
-    {ROLE_GLYPHS[role] ? (
-      <svg
-        aria-hidden="true"
-        data-role-glyph={role}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={cn("shrink-0", ROLE_GLYPH_SIZE[size] ?? "size-3.5")}
-      >
-        {ROLE_GLYPHS[role]}
-      </svg>
-    ) : (
-      <Icon name="fi-rr-user" size={3.5} />
-    )}
-  </span>
 )
 
 // Collapsed sidebar: logo only — no name, chevron, border or background.
@@ -193,45 +163,30 @@ const COLLAPSED_TRIGGER_CLASS =
   "mx-auto flex shrink-0 items-center justify-center rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
 
 const COLLAPSED_SIZE = "w-6 h-6"
+// The collapsed sidebar shows the project image at the expanded row's 28px.
+const ROW_COLLAPSED_SIZE = "w-7 h-7"
 
 export function RoleSwitcher({
   variant = "control",
-  collapsed = false,
 }: {
-  /** `row` is the outlined sidebar row with a role tile; `control` is the compact TopBar trigger. */
+  /** `row` is the flat, content-width sidebar button; `control` is the compact TopBar trigger. */
   variant?: SwitcherVariant
-  /** Role-tile-only trigger for the collapsed sidebar; the menu opens to the right. */
-  collapsed?: boolean
 }) {
   const { user, visibleRoles, isPrivateContext, getRoleDisplayName, handleSwitchRole, goToAddRole } =
     useWorkspaceSwitcher()
+  const isRow = variant === "row"
 
   return (
     <DropdownMenu>
-      {collapsed ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={getRoleDisplayName(user.role)}
-                className={COLLAPSED_TRIGGER_CLASS}
-              >
-                <RoleIcon role={user.role} size={COLLAPSED_SIZE} />
-              </button>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={8}>
+      {isRow ? (
+        <DropdownMenuTrigger
+          aria-label={`Switch role, current: ${getRoleDisplayName(user.role)}`}
+          className={ROLE_ROW_TRIGGER_CLASS}
+        >
+          <span className="font-sans text-sm font-medium text-foreground">
             {getRoleDisplayName(user.role)}
-          </TooltipContent>
-        </Tooltip>
-      ) : variant === "row" ? (
-        <DropdownMenuTrigger className={ROW_TRIGGER_CLASS}>
-          <span className={ROW_SLOT_CLASS}>
-            <RoleIcon role={user.role} size="w-7 h-7" />
           </span>
-          <span className={ROW_LABEL_CLASS}>{getRoleDisplayName(user.role)}</span>
-          <SelectorIcon />
+          <Icon name="fi-rr-angle-small-down" size={3.5} className="shrink-0 text-text-tertiary" />
         </DropdownMenuTrigger>
       ) : (
         <DropdownMenuTrigger className="flex items-center gap-1 hover:bg-muted rounded-md px-2 py-1 transition-colors cursor-pointer font-sans">
@@ -239,12 +194,7 @@ export function RoleSwitcher({
           <Icon name="fi-rr-angle-small-down" className="text-muted-foreground" />
         </DropdownMenuTrigger>
       )}
-      <DropdownMenuContent
-        align="start"
-        {...(collapsed ? ({ side: "right", sideOffset: 8 } as const) : {})}
-        // The sidebar row menu is as wide as its trigger row.
-        className={variant === "row" && !collapsed ? "w-(--radix-dropdown-menu-trigger-width)" : "w-40"}
-      >
+      <DropdownMenuContent align="start" className="w-40">
         {visibleRoles.length > 0 ? (
           <>
             {visibleRoles.map((role) => {
@@ -253,10 +203,12 @@ export function RoleSwitcher({
                 <DropdownMenuItem
                   key={role}
                   onClick={() => handleSwitchRole(role)}
-                  className="cursor-pointer text-ui flex items-center justify-between"
+                  className={cn(
+                    "cursor-pointer flex items-center justify-between",
+                    isRow ? "min-h-8.5 font-sans text-sm text-foreground" : "text-ui",
+                  )}
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    {variant === "row" && <RoleIcon role={role} size="w-5 h-5" />}
                     <span>{getRoleDisplayName(role)}</span>
                   </span>
                   {isCurrent && <Icon name="fi-rr-check" className="text-muted-foreground" />}
@@ -287,9 +239,9 @@ const TRIGGER_CLASS =
 
 /**
  * Dropdown trigger for the project/context control. Expanded it is the bordered
- * pill with logo, name and chevron (`control`, TopBar) or the outlined
- * sidebar row with a single down arrow (`row`); collapsed it is just the logo,
- * with the name in the shared Tooltip. Must be rendered inside a `DropdownMenu`.
+ * pill with logo, name and chevron (`control`, TopBar) or the flat, borderless
+ * sidebar row with a 28px image and a single down arrow (`row`); collapsed it
+ * is just the logo (28px in the sidebar), with the name in the shared Tooltip. Must be rendered inside a `DropdownMenu`.
  */
 function SwitcherTrigger({
   collapsed,
@@ -310,7 +262,7 @@ function SwitcherTrigger({
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label={name} className={cn(COLLAPSED_TRIGGER_CLASS, className)}>
-              {logo(COLLAPSED_SIZE)}
+              {logo(variant === "row" ? ROW_COLLAPSED_SIZE : COLLAPSED_SIZE)}
             </button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -324,9 +276,9 @@ function SwitcherTrigger({
   if (variant === "row") {
     return (
       <DropdownMenuTrigger asChild>
-        <button type="button" className={cn(ROW_TRIGGER_CLASS, className)}>
-          <span className={ROW_SLOT_CLASS}>{logo("w-7 h-7")}</span>
-          <span className={ROW_LABEL_CLASS}>{name}</span>
+        <button type="button" className={cn(PROJECT_ROW_TRIGGER_CLASS, className)}>
+          {logo("w-7 h-7")}
+          <span className={PROJECT_ROW_LABEL_CLASS}>{name}</span>
           <SelectorIcon />
         </button>
       </DropdownMenuTrigger>
@@ -364,7 +316,7 @@ export function ProjectSwitcher({
 }: {
   /** Logo-only trigger for the collapsed sidebar; the menu opens to the right. */
   collapsed?: boolean
-  /** `row` is the outlined sidebar row; `control` is the bordered TopBar pill. */
+  /** `row` is the flat sidebar row (and its 28px collapsed logo); `control` is the bordered TopBar pill. */
   variant?: SwitcherVariant
   className?: string
 }) {
@@ -382,6 +334,9 @@ export function ProjectSwitcher({
   const contentPosition = collapsed
     ? ({ side: "right", align: "start", sideOffset: 8 } as const)
     : ({ align: "start" } as const)
+  const isRow = variant === "row"
+  // The expanded sidebar menu is as wide as its trigger row.
+  const contentClass = cn(isRow && !collapsed ? "w-(--radix-dropdown-menu-trigger-width)" : "w-56", "font-sans")
 
   // User context dropdown (User role) — styled like the project dropdown.
   // "Private" is the only context today; in time the user will be able to
@@ -400,13 +355,21 @@ export function ProjectSwitcher({
         />
         <DropdownMenuContent
           {...contentPosition}
-          className="w-56 font-sans"
+          className={contentClass}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
-            <PrivateContextIcon size="w-5 h-5" />
-            <span className="font-sans truncate text-ui font-book">Private</span>
-          </DropdownMenuItem>
+          {isRow ? (
+            <DropdownMenuItem className={ROW_MENU_ITEM_CLASS}>
+              <PrivateContextIcon size="w-7 h-7" />
+              <span className={ROW_MENU_LABEL_CLASS}>Private</span>
+              <SelectedCheck />
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem className="group gap-2 bg-brand-primary/10 text-brand-primary focus:bg-brand-primary/15 focus:text-brand-primary">
+              <PrivateContextIcon size="w-5 h-5" />
+              <span className="font-sans truncate text-ui font-book">Private</span>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <Tooltip open={employerTipOpen} onOpenChange={setEmployerTipOpen}>
             <TooltipTrigger asChild>
@@ -435,13 +398,14 @@ export function ProjectSwitcher({
 
   if (projectsLoading) {
     if (collapsed) {
-      return <Skeleton className={cn("mx-auto", COLLAPSED_SIZE, sizeRadiusMap[COLLAPSED_SIZE], className)} />
+      const size = isRow ? ROW_COLLAPSED_SIZE : COLLAPSED_SIZE
+      return <Skeleton className={cn("mx-auto", size, sizeRadiusMap[size], className)} />
     }
     return (
       <div
         className={cn(
-          variant === "row"
-            ? "flex h-9 items-center rounded-md border border-border-subtle bg-sidebar px-2.25"
+          isRow
+            ? "flex h-10 items-center rounded-lg px-1.5"
             : "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
           className,
         )}
@@ -471,12 +435,13 @@ export function ProjectSwitcher({
       />
       <DropdownMenuContent
         {...contentPosition}
-        className="w-56 font-sans"
+        className={contentClass}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        {/* Scrollable project list — capped at three rows (3 × 32px) so the
-            separator and "Add new" below always stay visible. */}
-        <div className={cn("max-h-24 overflow-y-auto")}>
+        {/* Scrollable project list — capped at three rows (3 × 32px in the
+            TopBar, 3 × 40px in the sidebar) so the separator and "Add new"
+            below always stay visible. */}
+        <div className={cn("overflow-y-auto", isRow ? "max-h-30" : "max-h-24")}>
           {userProjects.map((project) => {
             const isSelected = selectedProject?.project_id === project.project_id
             return (
@@ -484,6 +449,7 @@ export function ProjectSwitcher({
                 key={project.project_id}
                 project={project}
                 isSelected={isSelected}
+                variant={variant}
                 onSelect={handleProjectSelect}
               />
             )

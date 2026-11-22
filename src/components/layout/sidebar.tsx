@@ -476,35 +476,46 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               </button>,
             )}
           </div>
-          {/* Guests have no role or project. Each switcher centres its own
-              icon-only trigger: the role tile, then the project logo. */}
+          {/* Guests have no project. Collapsed, the role is not shown: only
+              the project logo, which centres its own icon-only trigger. */}
           {isAuthenticated && (
             <div className="flex shrink-0 flex-col gap-3 px-4 pb-4">
-              <RoleSwitcher variant="row" collapsed />
-              <ProjectSwitcher collapsed />
+              <ProjectSwitcher variant="row" collapsed />
             </div>
           )}
         </>
       ) : (
-        // Logo row with the collapse control, then the role row and the project
-        // row below it. The logo sits in the same 16px icon slot as the rows
-        // below, so the logo, the role tile, the project avatar and the nav
-        // icons share one axis. The logo row is centred on the mobile TopBar's
-        // height (14px + 32px + 14px); the sheet's Close button sits beside it.
+        // Top row: logo, a "/" separator and the role dropdown on the left, the
+        // collapse control on the far right; the project row spans the width
+        // below it. The logo sits in the same 16px icon slot as the nav rows,
+        // so the logo and the nav icons share one axis. The top row is centred
+        // on the mobile TopBar's height (14px + 32px + 14px); the sheet's Close
+        // button sits beside it.
         <div
           className={cn(
-            // 28px from the logo row to the role row, 12px between the two
-            // switchers, and 16px down to the hairline (the same 16px sits
-            // between the hairline and the Inbox).
+            // 12px from the top row to the project row and 16px down to the
+            // hairline (the same 16px sits between the hairline and the Inbox).
             "flex shrink-0 flex-col gap-3 px-4 pt-3.5",
             // Guests only get the logo: keep the old header height above the Sign in card.
             isAuthenticated ? "pb-4" : "mb-1.25 h-15",
           )}
         >
-          <div className={cn("flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5", isAuthenticated && "mb-4")}>
-            <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
-              <Logo />
-            </span>
+          <div className="flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5">
+            {/* Left group. Only the role button has a hover background; the
+                logo and the separator are static. Guests get the logo alone. */}
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
+                <Logo />
+              </span>
+              {isAuthenticated && (
+                <>
+                  {/* font-sans: Inter is variable and has the 300 weight;
+                      Nudica (the text-xl default) ships Regular, Medium and Bold only. */}
+                  <span aria-hidden="true" className="select-none font-sans text-xl font-light text-sidebar-separator">/</span>
+                  <RoleSwitcher variant="row" />
+                </>
+              )}
+            </div>
             {!forceExpanded && (
               <Button
                 variant="ghost"
@@ -517,12 +528,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               </Button>
             )}
           </div>
-          {isAuthenticated && (
-            <>
-              <RoleSwitcher variant="row" />
-              <ProjectSwitcher variant="row" />
-            </>
-          )}
+          {isAuthenticated && <ProjectSwitcher variant="row" />}
         </div>
       )}
 

@@ -312,16 +312,20 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Expand sidebar" })).not.toBeInTheDocument()
     expect(screen.queryByText(/^Role:/)).not.toBeInTheDocument()
-    // Both switchers are sidebar rows, below the logo row that holds the collapse button.
+    // The role sits in the top row: logo, "/" separator, role, then the collapse button.
     const role = screen.getByTestId("role-switcher")
     expect(role).toHaveAttribute("data-variant", "row")
     expect(role.querySelector("svg")).toBeNull()
     expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-variant", "row")
-    const logoRow = role.previousElementSibling!
-    expect(logoRow.querySelector('[data-slot="sidebar-logo"] svg')).not.toBeNull()
+    const separator = role.previousElementSibling!
+    expect(separator).toHaveTextContent("/")
+    expect(separator).toHaveAttribute("aria-hidden", "true")
+    expect(separator.previousElementSibling).toHaveAttribute("data-slot", "sidebar-logo")
+    expect(separator.previousElementSibling!.querySelector("svg")).not.toBeNull()
+    const logoRow = role.parentElement!.parentElement!
     expect(logoRow).toContainElement(screen.getByRole("button", { name: "Collapse sidebar" }))
-    // The project row sits directly below the role row.
-    expect(role.nextElementSibling).toBe(screen.getByTestId("project-switcher"))
+    // The project row sits directly below the top row.
+    expect(logoRow.nextElementSibling).toBe(screen.getByTestId("project-switcher"))
   })
 
   it("starts collapsed from localStorage: the logo is the only expand control", () => {
@@ -335,8 +339,10 @@ describe("Sidebar — header, project row and profile block", () => {
     const expand = screen.getByRole("button", { name: "Expand sidebar" })
     expect(expand.querySelector("svg")).not.toBeNull()
 
-    expect(screen.getByTestId("role-switcher")).toHaveAttribute("data-collapsed", "true")
+    // Collapsed, the role is not shown.
+    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
     expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
+    expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-variant", "row")
 
     fireEvent.click(expand)
     expect(window.localStorage.getItem("sidebar:collapsed")).toBe("false")
@@ -351,7 +357,8 @@ describe("Sidebar — header, project row and profile block", () => {
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }))
     expect(window.localStorage.getItem("sidebar:collapsed")).toBe("true")
     expect(screen.queryByRole("button", { name: "Collapse sidebar" })).not.toBeInTheDocument()
-    expect(screen.getByTestId("role-switcher")).toHaveAttribute("data-collapsed", "true")
+    // Collapsed, the role is not shown.
+    expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
     expect(screen.getByTestId("project-switcher")).toHaveAttribute("data-collapsed", "true")
     expect(screen.queryByText("Test User")).not.toBeInTheDocument()
 
@@ -477,6 +484,8 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(screen.getByText("Incognito")).toBeInTheDocument()
     expect(screen.queryByTestId("role-switcher")).not.toBeInTheDocument()
     expect(screen.queryByTestId("project-switcher")).not.toBeInTheDocument()
+    // No role, so no "/" separator after the logo either.
+    expect(screen.queryByText("/")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Account menu" })).not.toBeInTheDocument()
     expect(screen.queryByText("Inbox")).not.toBeInTheDocument()
     expect(screen.queryByText("Projects")).not.toBeInTheDocument()

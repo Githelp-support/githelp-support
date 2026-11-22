@@ -77,6 +77,23 @@ describe("RoleSwitcher", () => {
     expect(screen.getByRole("button", { name: "Helper" })).toBeInTheDocument()
   })
 
+  it("row variant: flat, content-width trigger with the role name and one chevron, no role tile", () => {
+    actAs("helper")
+    render(<RoleSwitcher variant="row" />)
+
+    const trigger = screen.getByRole("button", { name: "Switch role, current: Helper" })
+    expect(screen.getByText("Helper")).toBeInTheDocument()
+    expect(trigger).toHaveTextContent("Helper")
+    expect(trigger.querySelectorAll(".fi-rr-angle-small-down")).toHaveLength(1)
+    expect(trigger.querySelector('[data-slot="role-icon"]')).toBeNull()
+
+    const classes = trigger.className.split(/\s+/)
+    expect(classes).toEqual(
+      expect.arrayContaining(["h-8", "rounded-md", "hover:bg-sidebar-control-hover"]),
+    )
+    expect(classes.filter((c) => /(^|:)border(-|$)/.test(c))).toEqual([])
+  })
+
   it("in the private User context lists every held role plus 'New role'", () => {
     useUserRoles.mockReturnValue({ data: ["helper", "user"], isSuccess: true })
     render(<RoleSwitcher />)
@@ -106,14 +123,6 @@ describe("RoleSwitcher", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Helper" }))
     expect(switchRole).toHaveBeenCalledWith("helper")
     expect(push).toHaveBeenCalledTimes(1)
-  })
-  it("collapsed: role-tile-only trigger that keeps the role as its accessible name", () => {
-    actAs("helper")
-    renderWithTooltips(<RoleSwitcher variant="row" collapsed />)
-
-    const trigger = screen.getByRole("button", { name: "Helper" })
-    expect(trigger).not.toHaveTextContent("Helper")
-    expect(trigger.querySelector('[data-slot="role-icon"] [data-role-glyph="helper"]')).not.toBeNull()
   })
 })
 
@@ -187,7 +196,7 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     expect(trigger.querySelector(".fi-rr-angle-small-down")).toBeNull()
   })
 
-  it("row variant: outlined nav-style rows with a single down arrow and a role tile", () => {
+  it("row variant: flat, borderless triggers with a single down arrow", () => {
     renderWithTooltips(
       <>
         <RoleSwitcher variant="row" />
@@ -195,40 +204,76 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
       </>,
     )
 
-    const role = screen.getByRole("button", { name: /admin/i })
+    const role = screen.getByRole("button", { name: "Switch role, current: Admin" })
     const project = screen.getByRole("button", { name: /alpha/i })
     for (const trigger of [role, project]) {
-      expect(trigger.className).toContain("h-9")
-      expect(trigger.className).toContain("hover:bg-surface-hover")
-      // Subtle stroke, filled with the sidebar surface around it.
-      expect(trigger.className).toContain("border-border-subtle")
-      expect(trigger.className).toContain("bg-sidebar")
-      expect(trigger.querySelector(".fi-rr-angles-up-down")).toBeNull()
+      expect(trigger.className).toContain("hover:bg-sidebar-control-hover")
+      expect(trigger.className).toContain("data-[state=open]:bg-sidebar-control-hover")
+      expect(trigger.className).not.toContain("border")
+      expect(trigger.className).not.toContain("bg-sidebar ")
       expect(trigger.querySelectorAll(".fi-rr-angle-small-down")).toHaveLength(1)
-      // Icon slot, label, selector: the selector is the last child (right-aligned).
-      expect(trigger.children).toHaveLength(3)
-      expect(trigger.children[0].className).toContain("w-4")
-      expect(trigger.children[1].className).toContain("font-medium")
-      expect(trigger.children[1].className).toContain("text-sidebar-foreground")
     }
-    // The role tile: white squircle with the role's icon in the foreground colour.
-    const tile = role.querySelector('[data-slot="role-icon"]')!
-    expect(tile.className).toContain("bg-card")
-    expect(tile.className).toContain("text-foreground")
-    // The Githelp maintainer glyph, not a Flaticon stand-in.
-    expect(tile.querySelector('svg[data-role-glyph="admin"]')).not.toBeNull()
-    expect(tile.querySelector(".fi")).toBeNull()
 
-    // Each role in the menu gets its tile too.
+    // Role: content-width button with the name and the chevron, no role tile.
+    expect(role.className).toContain("h-8")
+    expect(role.className).toContain("w-auto")
+    expect(role).toHaveTextContent("Admin")
+    expect(role.children).toHaveLength(2)
+    expect(role.querySelector('[data-slot="role-icon"]')).toBeNull()
+
+    // Project: 40px row, 28px image 6px from the edges, truncated name, chevron.
+    const projectClasses = project.className.split(/\s+/)
+    expect(projectClasses).toEqual(
+      expect.arrayContaining(["h-10", "rounded-lg", "px-1.5", "gap-2.5", "hover:bg-sidebar-control-hover"]),
+    )
+    expect(projectClasses).not.toContain("border-border-subtle")
+    expect(projectClasses).not.toContain("bg-sidebar")
+    expect(project.children).toHaveLength(3)
+    expect(project.children[0].className).toContain("w-7 h-7")
+    expect(project.children[1]).toHaveTextContent("Alpha")
+    expect(project.children[1].className).toContain("font-medium")
+    expect(project.children[1].className).toContain("truncate")
+    expect(project.children[1].className).toContain("text-foreground")
+
+    // The role menu lists names only, with a checkmark on the current role.
     fireEvent.keyDown(role, { key: "Enter" })
     for (const item of screen.getAllByRole("menuitem")) {
-      expect(item.querySelector('[data-slot="role-icon"]')).not.toBeNull()
+      expect(item.querySelector('[data-slot="role-icon"]')).toBeNull()
+      expect(item.querySelector("svg")).toBeNull()
     }
+    expect(screen.getByRole("menuitem", { name: "Admin" }).querySelector(".fi-rr-check")).not.toBeNull()
+    const roleItems = screen.getAllByRole("menuitem")
+    expect(roleItems.length).toBeGreaterThan(1)
+    expect(roleItems.filter((item) => item.querySelector(".fi-rr-check"))).toHaveLength(1)
     fireEvent.keyDown(document.activeElement!, { key: "Escape" })
 
-    // The dropdown still opens from the keyboard.
+    // The project menu: 28px images, a checkmark on the current project, no brand tint.
     fireEvent.keyDown(project, { key: "Enter" })
-    expect(screen.getAllByRole("menuitem").length).toBeGreaterThan(0)
+    const [current, other] = screen.getAllByRole("menuitem")
+    expect(current).toHaveTextContent("Alpha")
+    expect(other).toHaveTextContent("Beta")
+    for (const item of [current, other]) {
+      expect(item.children[0].className).toContain("w-7 h-7")
+      expect(item.className).not.toContain("bg-brand-primary")
+    }
+    expect(current.querySelector(".fi-rr-check")).not.toBeNull()
+    expect(other.querySelector(".fi-rr-check")).toBeNull()
+  })
+
+  it("row variant, collapsed: 28px logo-only trigger; the TopBar path keeps its size", () => {
+    const { rerender } = renderWithTooltips(<ProjectSwitcher variant="row" collapsed />)
+    const trigger = screen.getByRole("button", { name: "Alpha" })
+    expect(trigger.children).toHaveLength(1)
+    expect(trigger.children[0].className).toContain("w-7 h-7")
+    expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
+    expect(trigger.querySelector(".fi-rr-angle-small-down")).toBeNull()
+
+    rerender(
+      <TooltipProvider>
+        <ProjectSwitcher collapsed />
+      </TooltipProvider>,
+    )
+    expect(screen.getByRole("button", { name: "Alpha" }).children[0].className).toContain("w-6 h-6")
   })
 
   it("shows a loading placeholder while the projects load", () => {
