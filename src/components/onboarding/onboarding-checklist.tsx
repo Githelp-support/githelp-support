@@ -11,7 +11,32 @@ import type { OnboardingChecklist as Checklist, OnboardingStep } from "@/lib/onb
 import { cn } from "@/lib/utils"
 
 const iconButtonClass =
-  "relative z-10 inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast ease-out hover:bg-brand-primary/10 hover:text-foreground active:bg-brand-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+  "relative z-10 inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-text-tertiary transition-colors duration-fast ease-out hover:bg-surface-hover active:bg-surface-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+
+/** Open step: the dashed ring from githelp-step-todo. */
+function StepTodoIcon() {
+  return (
+    <svg role="img" aria-label="Not done" viewBox="0 0 20 20" fill="none" className="size-5 shrink-0 text-step-todo">
+      <circle cx="10" cy="10" r="8.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2.6 2.4" />
+    </svg>
+  )
+}
+
+/** Done step: the Githelp face cut out of a brand disc (githelp-step-done). */
+function StepDoneIcon() {
+  const maskId = useId()
+  return (
+    <svg role="img" aria-label="Done" viewBox="0 0 512 512" className="size-5 shrink-0 text-brand-primary">
+      <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+        <rect width="512" height="512" fill="#fff" />
+        <circle cx="318" cy="176" r="106" fill="#000" />
+        <circle cx="132" cy="273" r="62" fill="#000" />
+        <path d="M190 392Q260 433 330 350" fill="none" stroke="#000" strokeWidth="38" strokeLinecap="round" />
+      </mask>
+      <circle cx="256" cy="256" r="256" fill="currentColor" mask={`url(#${maskId})`} />
+    </svg>
+  )
+}
 
 /**
  * Info button: the details show on hover and focus, stay open on click, and
@@ -50,10 +75,13 @@ function StepDetails({ step }: { step: OnboardingStep }) {
 
 function StepRow({
   step,
+  isNext,
   onOpen,
   onDismiss,
 }: {
   step: OnboardingStep
+  /** The first step that is not done: marked with a brand edge (visual only). */
+  isNext: boolean
   onOpen: (step: OnboardingStep) => void
   onDismiss: (step: OnboardingStep) => void
 }) {
@@ -61,62 +89,47 @@ function StepRow({
   return (
     <li
       className={cn(
-        "relative flex min-h-8 items-center gap-2 rounded-md px-2",
+        // 10px has no radius token (md 6, lg 8, xl 12).
+        "relative flex min-h-13 items-center gap-3 rounded-[10px] border border-border-subtle bg-card px-4",
+        isNext && "shadow-[inset_3px_0_0_var(--color-brand-primary)]",
         isLink &&
-          "transition-colors duration-fast ease-out hover:bg-brand-primary/10 has-[a:focus-visible]:bg-brand-primary/10 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-brand-primary/40",
+          "transition-colors duration-fast ease-out hover:bg-surface-hover has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-brand-primary/40",
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "flex size-4 shrink-0 items-center justify-center rounded-full",
-          step.done ? "bg-brand-primary text-brand-foreground" : "border border-brand-primary/40 bg-card",
-        )}
-      >
-        {step.done && <Icon name="fi-rr-check" className="[--icon-size:0.625rem]" />}
-      </span>
+      {step.done ? <StepDoneIcon /> : <StepTodoIcon />}
 
       {isLink ? (
-        // The link is stretched over the cell (after:inset-0); the buttons sit above it.
+        // The link is stretched over the row (after:inset-0); the buttons sit above it.
         <Link
           href={step.href as string}
           onClick={() => onOpen(step)}
-          className="min-w-0 truncate text-ui font-medium text-foreground outline-none after:absolute after:inset-0"
+          className="min-w-0 truncate text-sm font-medium text-foreground outline-none after:absolute after:inset-0"
         >
           {step.label}
         </Link>
       ) : (
         <span
-          className={cn(
-            "min-w-0 truncate text-ui",
-            step.done ? "text-muted-foreground line-through" : "font-medium text-foreground",
-          )}
+          className={cn("min-w-0 truncate text-sm font-medium", step.done ? "text-muted-foreground" : "text-foreground")}
         >
           {step.label}
-          {step.done && <span className="sr-only"> (done)</span>}
         </span>
       )}
       {step.optional && !step.done && (
-        <Badge variant="outline" className="border-border-subtle bg-card font-normal text-muted-foreground">
+        <Badge variant="outline" className="border-border-subtle bg-card px-1.75 font-medium text-muted-foreground">
           Optional
         </Badge>
       )}
       <StepDetails step={step} />
 
       {isLink && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={`Dismiss "${step.label}"`}
-              className={cn(iconButtonClass, "ml-auto")}
-              onClick={() => onDismiss(step)}
-            >
-              <Icon name="fi-rr-cross-small" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">Dismiss</TooltipContent>
-        </Tooltip>
+        <button
+          type="button"
+          aria-label={`Skip "${step.label}"`}
+          className="relative z-10 ml-auto shrink-0 cursor-pointer rounded-md px-2 py-1 text-ui text-muted-foreground transition-colors duration-fast ease-out hover:bg-surface-hover active:bg-surface-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+          onClick={() => onDismiss(step)}
+        >
+          Skip
+        </button>
       )}
     </li>
   )
@@ -129,44 +142,43 @@ interface OnboardingChecklistCardProps {
 }
 
 /**
- * The checklist itself, without data fetching. A lavender panel with a brand
- * border so it stands out from the white cards below it, with one short row
- * per step.
+ * The checklist itself, without data fetching: a white card with the title,
+ * a done-count pill, a one-line intro and one bordered row per step (the rows
+ * are a design exception to "no cards inside cards").
  */
 export function OnboardingChecklistCard({ checklist, onStepOpen, onStepDismiss }: OnboardingChecklistCardProps) {
   const titleId = useId()
   const { steps, doneCount, totalCount } = checklist
+  const nextStepId = steps.find((s) => !s.done)?.id
   return (
     <section
       aria-labelledby={titleId}
-      className="animate-enter rounded-lg border border-brand-primary/30 bg-brand-primary/5 px-4 pb-3 pt-4"
+      className="animate-enter rounded-2xl border border-border-subtle bg-card px-8 pt-7 pb-8"
     >
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 px-2">
-        <h2 id={titleId} className="text-base font-subtitle text-foreground">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <h2 id={titleId} className="text-lg font-semibold text-foreground">
           Finish setting up your project
         </h2>
-        <div className="flex shrink-0 items-center gap-3">
-          <span className="text-ui text-text-muted tabular-nums">
-            {doneCount} of {totalCount} done
-          </span>
-          <div
-            role="progressbar"
-            aria-label="Setup progress"
-            aria-valuemin={0}
-            aria-valuemax={totalCount}
-            aria-valuenow={doneCount}
-            className="h-1.5 w-24 overflow-hidden rounded-full bg-brand-primary/20"
-          >
-            <div
-              className="h-full w-full origin-left rounded-full bg-brand-primary transition-transform duration-slow ease-out"
-              style={{ transform: `scaleX(${totalCount > 0 ? doneCount / totalCount : 0})` }}
-            />
-          </div>
-        </div>
+        <span
+          role="img"
+          aria-label={`${doneCount} of ${totalCount} done`}
+          className="rounded-md bg-badge-neutral-bg px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground"
+        >
+          {doneCount} / {totalCount}
+        </span>
       </div>
-      <ol className="mt-2">
+      <p className="mt-1 text-sm text-muted-foreground">
+        Follow the steps below to get your project ready for support requests.
+      </p>
+      <ol className="mt-5 flex flex-col gap-2">
         {steps.map((step) => (
-          <StepRow key={step.id} step={step} onOpen={onStepOpen} onDismiss={onStepDismiss} />
+          <StepRow
+            key={step.id}
+            step={step}
+            isNext={step.id === nextStepId}
+            onOpen={onStepOpen}
+            onDismiss={onStepDismiss}
+          />
         ))}
       </ol>
     </section>
