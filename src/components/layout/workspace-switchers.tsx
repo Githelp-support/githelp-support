@@ -25,10 +25,7 @@ type Project = Database["public"]["Tables"]["projects"]["Row"]
 const sizeRadiusMap: Record<string, string> = {
   "w-5 h-5": SQUIRCLE_RADIUS[20],
   "w-[22px] h-[22px]": SQUIRCLE_RADIUS[22],
-  // The 28px tile and avatar exist only in the expanded sidebar rows. They are
-  // not squircles: they take the nested radius of the row container, so the
-  // corners are concentric (row rounded-md 6px, tile 4px inside: 6 - 4 = 2px).
-  "w-7 h-7": "rounded-xs",
+  "w-7 h-7": SQUIRCLE_RADIUS[28],
   "w-6 h-6": SQUIRCLE_RADIUS[24],
   "w-8 h-8": SQUIRCLE_RADIUS[32],
 }
@@ -117,10 +114,9 @@ type SwitcherVariant = "control" | "row"
 // one vertical axis and every label starts at the same x. The tile and avatar
 // are wider than the slot and overflow it evenly on both sides, which keeps
 // them centred on that axis: the 28px tile sits 4px from the row's left, top
-// and bottom edges, and its corners are concentric with the row's: the row is
-// rounded-md (6px), so the tile is rounded-xs (6 - 4 = 2px, see sizeRadiusMap).
-// The row is a container with a subtle stroke, filled with the sidebar surface
-// around it; the project row overrides that with the white card surface.
+// and bottom edges. The row is a container with a subtle stroke, filled with
+// the sidebar surface around it; the project row overrides that with the white
+// card surface.
 const ROW_TRIGGER_CLASS =
   "flex h-9 w-full min-w-0 items-center gap-3 rounded-md border border-border-subtle bg-sidebar px-2.25 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
 const ROW_SLOT_CLASS = "flex h-4 w-4 shrink-0 items-center justify-center"

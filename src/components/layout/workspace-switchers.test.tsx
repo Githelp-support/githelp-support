@@ -205,8 +205,6 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
       expect(trigger.className).toContain("border-border-subtle")
       expect(trigger.className).toContain(trigger === project ? "bg-card" : "bg-sidebar")
       expect(trigger.className).not.toContain(trigger === project ? "bg-sidebar" : "bg-card")
-      // The 28px tile/avatar takes the row's nested radius (6 - 4 = 2px).
-      expect(trigger.children[0].firstElementChild!.className).toContain("rounded-xs")
       expect(trigger.querySelector(".fi-rr-angles-up-down")).toBeNull()
       expect(trigger.querySelectorAll(".fi-rr-angle-small-down")).toHaveLength(1)
       // Icon slot, label, selector: the selector is the last child (right-aligned).
@@ -215,13 +213,12 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
       expect(trigger.children[1].className).toContain("font-medium")
       expect(trigger.children[1].className).toContain("text-sidebar-foreground")
     }
-    // The role tile: white tile with the role's icon in the foreground colour.
+    // The role tile: white squircle with the role's icon in the foreground colour.
     const tile = role.querySelector('[data-slot="role-icon"]')!
     expect(tile.className).toContain("bg-card")
     expect(tile.className).toContain("text-foreground")
-    // In the row it takes the row's nested radius, not the squircle, with a 14px glyph.
-    expect(tile.className).toContain("rounded-xs")
-    expect(tile.className).not.toContain("rounded-[")
+    // In the row it keeps the squircle, with a 14px glyph.
+    expect(tile.className).not.toContain("rounded-xs")
     expect(tile.querySelector("svg")!.getAttribute("class")).toContain("size-3.5")
     // The Githelp maintainer glyph, not a Flaticon stand-in.
     expect(tile.querySelector('svg[data-role-glyph="admin"]')).not.toBeNull()
