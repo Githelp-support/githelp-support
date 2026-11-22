@@ -45,7 +45,7 @@ export default function HelperPayoutPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payout" subtitle="Set up payout details for support" />
-        <main className="flex-1 overflow-auto px-14 pt-2 pb-6">
+        <main className="flex-1 overflow-auto px-15.5 pt-2 pb-10">
           <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to view and edit your payout details.</p>
           </div>
@@ -58,7 +58,7 @@ export default function HelperPayoutPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payout" subtitle="Set up payout details for support" />
-        <main className="flex-1 overflow-auto px-14 pt-2 pb-6">
+        <main className="flex-1 overflow-auto px-15.5 pt-2 pb-10">
           <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-sm text-left pl-2 text-muted-foreground">You are not registered as a helper in this project.</p>
           </div>
@@ -71,7 +71,7 @@ export default function HelperPayoutPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payout" subtitle="Set up payout details for support" />
-        <main className="flex-1 overflow-auto px-14 pt-2 pb-6">
+        <main className="flex-1 overflow-auto px-15.5 pt-2 pb-10">
           <ListSkeleton rows={4} avatar={false} badge={false} className="max-w-3xl divide-y-0" />
         </main>
       </div>
@@ -84,7 +84,7 @@ export default function HelperPayoutPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Payout" subtitle="Set up payout details for support" />
 
-      <main className="flex-1 overflow-auto px-14 pt-2 pb-6">
+      <main className="flex-1 overflow-auto px-15.5 pt-2 pb-10">
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="bg-card rounded-lg py-6 pr-6">
             <div className="flex items-center gap-2">

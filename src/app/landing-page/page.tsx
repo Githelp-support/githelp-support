@@ -101,7 +101,7 @@ export default function LandingPageSettings() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Landing page" subtitle="Customize your landing page branding and resources" />
-      <main className="flex-1 px-8 pb-6 overflow-auto">
+      <main className="flex-1 px-15.5 pb-10 overflow-auto">
         <div className="max-w-4xl">
 
           <div className="bg-background rounded-lg p-6 mb-1">

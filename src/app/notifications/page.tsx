@@ -62,7 +62,7 @@ export default function NotificationsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Notifications" subtitle="Everything that needs your attention" />
 
-      <main className="flex-1 overflow-auto px-14 py-6">
+      <main className="flex-1 overflow-auto px-15.5 pt-6 pb-10">
         <div className="max-w-3xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
