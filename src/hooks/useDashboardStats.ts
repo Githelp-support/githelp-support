@@ -68,7 +68,7 @@ export function useDashboardStats(
             // Get all (non-deleted) tickets for the project
             const { data: tickets } = await supabase
                 .from("tickets")
-                .select("id, status, created_at, completed_at, cancelled_at")
+                .select("id, status, guest, created_at, completed_at, cancelled_at")
                 .eq("project_id", projectId)
                 .is("deleted_at", null)
                 .or(VISIBLE_TICKETS_OR_FILTER);
