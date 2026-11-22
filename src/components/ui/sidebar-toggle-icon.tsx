@@ -4,11 +4,12 @@ import { cn } from "@/lib/utils"
 
 /**
  * The sidebar collapse/expand glyph: a panel outline with the rail on the left.
- * Drawn in `currentColor` on a 24-unit grid and sized like the sidebar menu
- * icons: a 16px box (`size-4`) with the glyph 14px wide, as `Icon` draws its
- * glyph at 7/8 of the box. The glyph spans 19.75 units including its stroke, so
- * the viewBox is cropped to 22.5 units (19.75 / 22.5 × 16 ≈ 14). The size
- * lives here so every toggle is identical; do not override it per call site.
+ * Drawn in `currentColor` on a 24-unit grid, 20% larger than the sidebar menu
+ * icons: a 19px box (`size-4.75`, 16px × 1.2 to the nearest px) with the glyph
+ * about 17px wide, keeping the 7/8 glyph-to-box ratio `Icon` uses. The glyph
+ * spans 19.75 units including its stroke, so the viewBox is cropped to 22.5
+ * units (19.75 / 22.5 × 19 ≈ 17). The size lives here so every toggle is
+ * identical; do not override it per call site.
  * Decorative by default (`aria-hidden`). `mirrored` flips it horizontally so
  * the rail sits on the right, for the right-hand sidebar.
  */
@@ -27,7 +28,7 @@ function SidebarToggleIcon({
       strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={cn("size-4 shrink-0", mirrored && "-scale-x-100", className)}
+      className={cn("size-4.75 shrink-0", mirrored && "-scale-x-100", className)}
       {...props}
     >
       <rect x="3" y="4.5" width="18" height="15" rx="3.5" />
