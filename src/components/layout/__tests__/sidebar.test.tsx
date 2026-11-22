@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 const usePathname = vi.fn()
@@ -451,6 +451,51 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(inbox.querySelector('[data-slot="inbox-count"]')).toBeNull()
     fireEvent.click(inbox)
     expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
+  })
+
+  it("closes the Inbox popup when the role changes while the Sidebar stays mounted", async () => {
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "helper" }, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/helper/overview")
+    const { rerender } = renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox" })
+    fireEvent.click(inbox)
+    expect(inbox).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toHaveAttribute("data-state", "open")
+
+    // Role switch: the AppShell keeps the Sidebar mounted and lands on the new role's home.
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "admin" }, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/")
+    rerender(
+      <TooltipProvider>
+        <Sidebar />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getByRole("button", { name: "Inbox" })).toHaveAttribute("aria-expanded", "false")
+    // The panel stays mounted (data-state="closed") for its exit animation, then unmounts.
+    const closing = screen.queryByRole("dialog", { name: "Notifications" })
+    if (closing) expect(closing).toHaveAttribute("data-state", "closed")
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Notifications" })).not.toBeInTheDocument())
+  })
+
+  it("keeps the Inbox popup open when only the pathname changes within the same role", () => {
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "helper" }, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/helper/overview")
+    const { rerender } = renderSidebar()
+
+    fireEvent.click(screen.getByRole("button", { name: "Inbox" }))
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toHaveAttribute("data-state", "open")
+
+    usePathname.mockReturnValue("/helper/support/resources")
+    rerender(
+      <TooltipProvider>
+        <Sidebar />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getByRole("button", { name: "Inbox" })).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toHaveAttribute("data-state", "open")
   })
 
   it("forceExpanded (mobile sheet): the Inbox links to the notifications page", () => {

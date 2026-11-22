@@ -340,6 +340,11 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   // into a sub-page must expand its parent like a click on the sub-item does.
   const [expansionKey, setExpansionKey] = useState<{ role: typeof user.role; pathname: string | null } | null>(null)
   if (!expansionKey || expansionKey.role !== user.role || expansionKey.pathname !== pathname) {
+    // The Sidebar is mounted once (AppShell), so an open Inbox popup would
+    // otherwise survive a role switch and sit over the new role's page.
+    // Close it on a role change only (not on the first render, and not on
+    // navigation within the same role).
+    if (expansionKey && expansionKey.role !== user.role) setIsInboxOpen(false)
     setExpansionKey({ role: user.role, pathname })
     // Without an active sub-page the current expansion is kept: it is either
     // what the user opened or what was restored from the last visit (names
