@@ -584,7 +584,7 @@ export default function ReportsSupportPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               <DropdownMenuItem
                                 title={`Download the ${row.period} project report as PDF`}
                                 onSelect={() => exportPdf(row.period)}
@@ -713,7 +713,7 @@ export default function ReportsSupportPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               {count > 1 ? (
                                 <DropdownMenuItem title="Each charge has its own Stripe receipt" onSelect={() => toggle(row.id)}>
                                   <Icon name="fi-rr-arrow-up-right-from-square" />
@@ -877,7 +877,7 @@ export default function ReportsSupportPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               <DropdownMenuItem
                                 title={`Download all of ${row.helper}'s transactions in ${row.period} as one PDF`}
                                 onSelect={() => exportPdf(null, helperMonthExport(row))}

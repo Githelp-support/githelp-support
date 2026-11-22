@@ -95,9 +95,9 @@ export function CustomerTicketSidebarFooter({
       {/* Active Tickets — latest active tickets for this user */}
       <div>
         <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-        <div className={`-mx-3 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+        <div className={`-mx-4 ${activeTickets.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
           {activeTickets.length === 0 ? (
-            <p className="text-ui text-muted-foreground px-3">No active tickets</p>
+            <p className="text-ui text-muted-foreground px-4">No active tickets</p>
           ) : (
             activeTickets.map((item) => (
               <Link
@@ -109,7 +109,7 @@ export function CustomerTicketSidebarFooter({
                     : "bg-background border-border hover:bg-muted"
                 }`}
               >
-                <div className="p-3">
+                <div className="px-4 py-3">
                   <div className="flex items-start gap-3">
                     {item.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element

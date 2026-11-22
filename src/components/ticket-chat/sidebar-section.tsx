@@ -46,9 +46,9 @@ export function SidebarSectionHeading({
   )
 }
 
-/** Full-bleed separator between sidebar sections (cancels the sidebar's px-3). */
+/** Full-bleed separator between sidebar sections (cancels the sidebar's px-4). */
 export function SidebarDivider() {
-  return <div className="border-t border-border my-6 -mx-3" />
+  return <div className="border-t border-border my-6 -mx-4" />
 }
 
 /** Placeholder for an empty section ("-" / "Loading..."). */

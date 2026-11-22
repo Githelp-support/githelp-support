@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { CategoryBadge } from "@/components/ui/ticket-badges"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { Icon } from "@/components/ui/icon"
 import {
@@ -712,7 +713,7 @@ export default function HelpersPage() {
                                   <Icon name="fi-rr-menu-dots-vertical" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui">
                                 <DropdownMenuItem onSelect={() => void handleCopyInviteLink(invite.invite_url)}>
                                   <Icon name="fi-rr-copy" />
                                   Copy invitation link
@@ -764,11 +765,12 @@ export default function HelpersPage() {
                           <span className="text-sm text-text-heading">{helper.githubAccount || "-"}</span>
                         </div>
                         <div className="col-span-2">
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted text-ui px-3 py-1">
-                            {helper.category
-                              ? mapCategoryToLabel[helper.category as keyof typeof mapCategoryToLabel]
-                              : ""}
-                          </Badge>
+                          {helper.category && (
+                            <CategoryBadge
+                              category={helper.category}
+                              label={mapCategoryToLabel[helper.category as keyof typeof mapCategoryToLabel]}
+                            />
+                          )}
                         </div>
                         <div className="col-span-3 flex items-center justify-end space-x-2">
                           {helper.isRegistered ? (
@@ -795,9 +797,9 @@ export default function HelpersPage() {
                                 <Icon name="fi-rr-menu-dots-vertical" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui">
                               <DropdownMenuItem
-                                variant="destructive"
+                                className="text-muted-foreground focus:bg-surface-hover focus:text-foreground"
                                 disabled={!isAdmin}
                                 onSelect={() => setHelperToRemove({ id: helper.id, name: helper.name })}
                               >

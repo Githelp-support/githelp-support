@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
@@ -15,6 +14,7 @@ import { FormField } from "@/components/ui/form-field"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
 import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ProfileAvatarEditor } from "@/components/settings/profile-avatar-editor"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -115,11 +115,24 @@ export default function ProfileSettingsPage() {
 
   const isLoading = currentHelperLoading || (!!projectId && !!helperId && helperLoading)
 
+  // Users without a helper profile still get the photo control
+  const userProfileHeader = user.id ? (
+    <ProfileAvatarEditor
+      userId={user.id}
+      name={user.name}
+      avatarUrl={user.avatarUrl ?? null}
+      className="mb-8"
+    >
+      <h1 className="text-base font-subtitle text-foreground">{user.name}</h1>
+    </ProfileAvatarEditor>
+  ) : null
+
   if (!projectId) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="Helper profile for the selected project" />
         <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
+          {userProfileHeader}
           <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to view and edit your helper profile.</p>
           </div>
@@ -133,6 +146,7 @@ export default function ProfileSettingsPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="Helper profile for the selected project" />
         <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
+          {userProfileHeader}
           <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-sm text-muted-foreground">You are not registered as a helper in this project.</p>
           </div>
@@ -153,7 +167,7 @@ export default function ProfileSettingsPage() {
   }
 
   const displayName = helperData.user?.name || "Unknown"
-  const displayAvatar = (displayName || "U")[0].toUpperCase()
+  const profileName = <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -162,16 +176,18 @@ export default function ProfileSettingsPage() {
       <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
         <div className="max-w-3xl">
           {/* Profile header */}
-          <div className="flex items-center gap-4 mb-8">
-            <div
-              className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
-              style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
-            >
-              {displayAvatar}
-            </div>
-            <div className="flex items-center gap-4">
-              <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
-            </div>
+          <div className="mb-8">
+            {user.id ? (
+              <ProfileAvatarEditor
+                userId={user.id}
+                name={displayName}
+                avatarUrl={helperData.user?.avatar_url ?? user.avatarUrl ?? null}
+              >
+                {profileName}
+              </ProfileAvatarEditor>
+            ) : (
+              profileName
+            )}
           </div>
 
           <div className="divide-y divide-border-subtle">

@@ -660,7 +660,7 @@ export default function HelperReportsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               {count > 1 ? (
                                 <DropdownMenuItem
                                   title="Each payout has its own statement"
@@ -890,7 +890,7 @@ export default function HelperReportsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           {/* Portalled, but React events still bubble to the row. */}
-                          <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                          <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                             <DropdownMenuItem
                               title={`Download the ${row.period} payout report as PDF`}
                               onSelect={() => exportPdf(row.period)}

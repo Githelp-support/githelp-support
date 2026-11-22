@@ -4,7 +4,6 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Icon } from "@/components/ui/icon"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -12,7 +11,7 @@ import { useUser } from "@/contexts/user-context"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
 import { useUserPayments, formatAmount } from "@/hooks/usePayments"
 import { useUserRecentTicketInteractions } from "@/hooks/useUserRecentTicketInteractions"
-import { getTicketStatusBadgeClass } from "@/lib/status-colors"
+import { TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { monthLabel, toUserPaymentRow } from "@/lib/user-payment-reports"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -247,9 +246,7 @@ export default function UserOverviewPage() {
                           </div>
                         </div>
                         <div className="col-span-3">
-                          <Badge className={getTicketStatusBadgeClass(ticket.status)}>
-                            {ticket.status}
-                          </Badge>
+                          <TicketStatusBadge status={ticket.status} />
                         </div>
                         <div className="col-span-3">
                           <div className="text-sm text-muted-foreground">

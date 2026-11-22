@@ -8,7 +8,7 @@ import { useAccountRoles } from "@/hooks/useAccountRoles"
 import { homeRouteForRole } from "@/lib/roles"
 import { safeInternalPathOrNull } from "@/lib/safe-redirect"
 import type { UserRole } from "@/contexts/user-context"
-import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 
 /**
  * Post sign-in hand-off. Sign-in used to show an "I am acting as" chooser
@@ -50,8 +50,8 @@ export default function RolePage() {
   }, [isLoading, roles, redirect, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-page-muted">
-      <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-page-muted" role="status" aria-busy="true">
+      <Loader />
     </div>
   )
 }
