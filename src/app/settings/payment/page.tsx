@@ -446,9 +446,9 @@ export default function PaymentSettingsPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden [&>header]:pl-14">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="Configure what users pay for support, and how each payment is split between your project and its helpers." />
-      <main className="flex-1 px-8 py-6 overflow-y-auto">
+      <main className="flex-1 px-8 pt-3.5 pb-6 overflow-y-auto">
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="flex gap-1 pl-6">
@@ -474,8 +474,8 @@ export default function PaymentSettingsPage() {
               Helper
             </button>
           </div>
-          {/* Full-width line below tabs */}
-          <div className="h-px bg-border -mx-8"></div>
+          {/* Line below tabs, aligned with the content gutters */}
+          <div className="h-px bg-border mx-6"></div>
         </div>
 
         <div className="max-w-5xl">
@@ -637,7 +637,7 @@ export default function PaymentSettingsPage() {
                               value="ticket"
                               checked={contractType === "ticket"}
                               onChange={(e) => setContractType(e.target.value as "ticket")}
-                              className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                              className="w-4 h-4 accent-brand-primary text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                             />
                             <span className="text-sm text-muted-foreground">By the ticket</span>
                           </label>
@@ -648,7 +648,7 @@ export default function PaymentSettingsPage() {
                               value="outside"
                               checked={contractType === "outside"}
                               onChange={(e) => setContractType(e.target.value as "outside")}
-                              className="w-4 h-4 text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                              className="w-4 h-4 accent-brand-primary text-brand-primary border-border-control focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                             />
                             <span className="text-sm text-muted-foreground">Payment outside Githelp</span>
                           </label>

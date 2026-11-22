@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 const usePathname = vi.fn()
@@ -166,6 +166,72 @@ describe("Sidebar — user-role menu order", () => {
     expect(screen.getByText("Tickets").className).not.toContain(
       "text-brand-primary",
     )
+  })
+})
+
+describe("Sidebar — helper-role menu", () => {
+  const helperUser = { ...signedInUser, role: "helper" }
+
+  beforeEach(() => {
+    useUser.mockReturnValue({ user: helperUser, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/helper/overview")
+  })
+
+  it("shows Support after Overview with only Chat and Resources", () => {
+    const { container } = render(<Sidebar />)
+
+    const nav = container.querySelector("nav")
+    const topLevelLabels = Array.from(nav!.firstElementChild!.children).map(
+      (el) => el.querySelector("a, button, [role='button']")?.textContent?.trim(),
+    )
+    expect(topLevelLabels).toEqual(["Inbox", "Overview", "Support", "Tickets", "Reports", "Settings"])
+
+    const subMenu = screen.getByText("Chat").closest("[data-state]")!
+    expect(Array.from(subMenu.querySelectorAll("a")).map((a) => a.textContent?.trim())).toEqual([
+      "Chat",
+      "Resources",
+    ])
+    expect(screen.getByText("Chat").closest("a")).toHaveAttribute("href", "/helper/support/chat")
+    expect(screen.getByText("Resources").closest("a")).toHaveAttribute("href", "/helper/support/resources")
+    expect(screen.queryByText("Rates and details")).not.toBeInTheDocument()
+    expect(screen.queryByText("About support")).not.toBeInTheDocument()
+
+    // Tickets uses the list icon, so it no longer duplicates the Support icon.
+    expect(screen.getByText("Tickets").querySelector(".fi-rr-list")).not.toBeNull()
+    expect(screen.getByText("Tickets").querySelector(".fi-rr-comments")).toBeNull()
+  })
+
+  it("marks Chat active and expands Support on a ticket chat, carrying the ticket to Resources", () => {
+    usePathname.mockReturnValue("/helper/tickets/abc")
+
+    render(<Sidebar />)
+
+    const chatRow = screen.getByText("Chat")
+    expect(chatRow).toHaveAttribute("data-active", "true")
+    expect(chatRow.className).toContain("text-brand-primary")
+    expect(chatRow.closest("[data-state]")).toHaveAttribute("data-state", "open")
+    expect(screen.getByText("Resources")).toHaveAttribute("data-active", "false")
+    expect(screen.getByText("Resources").closest("a")).toHaveAttribute(
+      "href",
+      "/helper/support/resources?ticket=abc",
+    )
+  })
+
+  it("opens Support on a helper support sub-page", () => {
+    usePathname.mockReturnValue("/helper/support/resources")
+
+    render(<Sidebar />)
+
+    expect(screen.getByText("Resources")).toHaveAttribute("data-active", "true")
+    expect(screen.getByText("Resources").closest("[data-state]")).toHaveAttribute("data-state", "open")
+  })
+
+  it("renders 'Open project page' when projectPageHref is passed", () => {
+    render(<Sidebar projectPageHref="/support/acme" />)
+
+    const link = screen.getByText("Open project page").closest("a")
+    expect(link).toHaveAttribute("href", "/support/acme")
+    expect(link).toHaveAttribute("target", "_blank")
   })
 })
 
@@ -385,6 +451,51 @@ describe("Sidebar — header, project row and profile block", () => {
     expect(inbox.querySelector('[data-slot="inbox-count"]')).toBeNull()
     fireEvent.click(inbox)
     expect(screen.getByRole("dialog", { name: "Notifications" })).toBeInTheDocument()
+  })
+
+  it("closes the Inbox popup when the role changes while the Sidebar stays mounted", async () => {
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "helper" }, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/helper/overview")
+    const { rerender } = renderSidebar()
+
+    const inbox = screen.getByRole("button", { name: "Inbox" })
+    fireEvent.click(inbox)
+    expect(inbox).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toHaveAttribute("data-state", "open")
+
+    // Role switch: the AppShell keeps the Sidebar mounted and lands on the new role's home.
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "admin" }, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/")
+    rerender(
+      <TooltipProvider>
+        <Sidebar />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getByRole("button", { name: "Inbox" })).toHaveAttribute("aria-expanded", "false")
+    // The panel stays mounted (data-state="closed") for its exit animation, then unmounts.
+    const closing = screen.queryByRole("dialog", { name: "Notifications" })
+    if (closing) expect(closing).toHaveAttribute("data-state", "closed")
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Notifications" })).not.toBeInTheDocument())
+  })
+
+  it("keeps the Inbox popup open when only the pathname changes within the same role", () => {
+    useUser.mockReturnValue({ user: { ...signedInUser, role: "helper" }, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/helper/overview")
+    const { rerender } = renderSidebar()
+
+    fireEvent.click(screen.getByRole("button", { name: "Inbox" }))
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toHaveAttribute("data-state", "open")
+
+    usePathname.mockReturnValue("/helper/support/resources")
+    rerender(
+      <TooltipProvider>
+        <Sidebar />
+      </TooltipProvider>,
+    )
+
+    expect(screen.getByRole("button", { name: "Inbox" })).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toHaveAttribute("data-state", "open")
   })
 
   it("forceExpanded (mobile sheet): the Inbox links to the notifications page", () => {

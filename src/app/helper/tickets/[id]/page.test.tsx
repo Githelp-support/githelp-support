@@ -71,6 +71,7 @@ vi.mock("@/hooks/useHelperTickets", () => ({
   useAdminActiveTicketsSidebar: mocks.useAdminActiveTicketsSidebar,
 }))
 vi.mock("@/hooks/useTicketAttachments", () => ({ useTicketAttachmentUpload: mocks.useTicketAttachmentUpload }))
+vi.mock("@/components/layout/app-shell", () => ({ useSetProjectPageHref: vi.fn() }))
 vi.mock("@/components/layout/header", () => ({
   Header: ({ title, actions, inlineRightContent }: { title: string; actions?: React.ReactNode; inlineRightContent?: React.ReactNode }) => (
     <header>

@@ -31,16 +31,18 @@ interface HeaderProps {
   actions?: ReactNode
   /**
    * `chat` is the compact ticket-chat header: a 60px row with 20px gutters,
-   * everything centred on one line and a 16px semibold title. Opt-in; every
-   * other page keeps `default`.
+   * everything centred on one line, a 16px semibold title and a hairline
+   * below (the default header has none). Opt-in; every other page keeps
+   * `default`.
    */
   variant?: "default" | "chat"
 }
 
 /**
  * The standard page header: title, optional subtitle and right-aligned actions,
- * sticky under the TopBar with a hairline below. Pages render it themselves
- * because it carries page-specific props; the Sidebar comes from AppShell.
+ * sticky under the TopBar, with no divider and a 56px inset. Pages render it
+ * themselves because it carries page-specific props; the Sidebar comes from
+ * AppShell.
  */
 export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle, actions, variant = "default" }: HeaderProps) {
   const isChat = variant === "chat"
@@ -81,8 +83,8 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     <header
       ref={headerRef}
       className={cn(
-        "sticky top-0 z-30 shrink-0 border-b border-border-subtle",
-        isChat ? "flex h-15 items-center px-5" : "px-8 py-5",
+        "sticky top-0 z-30 shrink-0",
+        isChat ? "flex h-15 items-center border-b border-border-subtle px-5" : "px-14 py-5",
         !backgroundColor && "bg-background",
         className,
       )}

@@ -565,6 +565,9 @@ export function TicketChat(props: TicketChatProps) {
             showBackButton={showBackButton}
             leadingIcon={headerLeadingIcon}
             backgroundColor={headerBackgroundColor}
+            // The chat variant draws its own hairline; the default variant
+            // (the /support project header) has none, so keep one here.
+            className="border-b border-border-subtle"
             inlineRightContent={ticketId ? <TicketIdPill id={ticketId} /> : undefined}
             actions={
               <>

@@ -9,10 +9,14 @@ import { clearAllSupportDrafts } from "@/lib/support-draft"
  *
  * Users land on the Support page (`/support/chat`), which without params
  * redirects to their most recent active ticket or shows the project chooser.
+ *
+ * Helpers land on Support/Chat (`/helper/support/chat`), which redirects to
+ * the last ticket the helper interacted with, or to `/tickets` when that
+ * ticket is ended or none exists.
  */
 export function homeRouteForRole(role: UserRole): string {
   if (role === "admin") return "/"
-  if (role === "helper") return "/helper/overview"
+  if (role === "helper") return "/helper/support/chat"
   return "/support/chat"
 }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/layout/header"
+import { useSetProjectPageHref } from "@/components/layout/app-shell"
 import { formatDateTime } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -197,6 +198,14 @@ export default function TicketDetailPage() {
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
+  // Publish the sidebar's "Open project page" link for the ticket's project.
+  useSetProjectPageHref(
+    project?.slug
+      ? `/support/${encodeURIComponent(project.slug)}`
+      : projectId
+        ? `/support?project=${encodeURIComponent(projectId)}`
+        : undefined
+  )
   const { data: projectRole } = useProjectRole(projectId || undefined)
   const isAdmin = projectRole === "admin"
   const addSelfAsHelper = useAddSelfAsHelper()

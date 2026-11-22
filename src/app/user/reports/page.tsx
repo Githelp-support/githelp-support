@@ -336,7 +336,7 @@ export default function UserReportsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Reports and Payments" subtitle="Keep track of your support spending and payments." />
 
-      <main className="flex-1 overflow-auto px-8 py-6 space-y-6">
+      <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6 space-y-6">
         {!isAuthenticated && !userLoading && (
           <Card>
             <CardContent className="p-6">
@@ -382,7 +382,7 @@ export default function UserReportsPage() {
                   Payments
                 </button>
               </div>
-              <div className="h-px bg-border -mx-6" />
+              <div className="h-px bg-border" />
             </div>
 
             {/* Filters */}
