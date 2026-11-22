@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import TicketDetailPage from "./page"
 
 Element.prototype.scrollIntoView = vi.fn()
@@ -90,6 +91,17 @@ vi.mock("@/components/ticket-chat/end-session-request", () => ({ EndSessionReque
 vi.mock("@/components/drawers/end-ticket-drawer", () => ({ EndTicketDrawer: () => null }))
 vi.mock("@/components/drawers/log-time-drawer", () => ({ LogTimeDrawer: () => null }))
 
+// The page calls useQueryClient() to invalidate ticket queries, so it needs a
+// client in context even though every data hook is mocked.
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <TicketDetailPage />
+    </QueryClientProvider>
+  )
+}
+
 describe("helper ticket page frame", () => {
   beforeEach(() => {
     mocks.useParams.mockReturnValue({ id: "t1" })
@@ -129,7 +141,7 @@ describe("helper ticket page frame", () => {
   })
 
   it("lays the chat column and the right panel out side by side in one row", () => {
-    const { container } = render(<TicketDetailPage />)
+    const { container } = renderPage()
 
     const header = screen.getByRole("heading", { name: "Ticket with Testhelp" })
     const panelHeading = screen.getByText(/people in this chat/i)
@@ -145,7 +157,7 @@ describe("helper ticket page frame", () => {
   })
 
   it("lets the chat column shrink below its content width on narrow screens", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     // <main> is a flex row; without min-w-0 its column keeps its min-content
     // width and runs past the viewport on phones.
     const column = screen.getByRole("main").firstElementChild as HTMLElement
@@ -153,14 +165,14 @@ describe("helper ticket page frame", () => {
   })
 
   it("keeps the ticket id on one line and drops it below xl so the title keeps its room", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     const id = screen.getByText("ID: t1")
     expect(id.className).toMatch(/whitespace-nowrap/)
     expect(id.className).toMatch(/max-xl:hidden/)
   })
 
   it("pads the top of the panel sheet below lg, where the collapse toggle is hidden", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     const scroller = screen.getByText(/people in this chat/i).closest(".overflow-y-auto") as HTMLElement
     expect(scroller.className).toMatch(/max-lg:pt-4/)
   })
