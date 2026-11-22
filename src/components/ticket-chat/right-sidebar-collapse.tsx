@@ -57,8 +57,8 @@ export function RightSidebarCollapseToggle({
       <Button
         variant="ghost"
         size="sm"
-        // Expanded: pull the 32px button left by its 8px icon inset so the
-        // 16px glyph lines up with the sidebar content's px-4 edge.
+        // Expanded: pull the 32px button left by 8px so the 18px glyph (7px
+        // inset) lines up with the sidebar content's px-4 edge, to within 1px.
         aria-label={isCollapsed ? "Expand details panel" : "Collapse details panel"}
         className={`${isCollapsed ? "" : "-ml-2 "}h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30`}
         onClick={() => onToggle(!isCollapsed)}
