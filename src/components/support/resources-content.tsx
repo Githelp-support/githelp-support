@@ -20,6 +20,8 @@ interface ResourcesContentProps {
   resourcesLoading: boolean
   /** Show the "how support works" FAQ card. Hidden on the helper's Resources page. */
   showFaqs?: boolean
+  /** Render the empty state inside an outlined, centred container (user and helper portal pages). */
+  outlinedEmptyState?: boolean
 }
 
 const FAQS = [
@@ -54,7 +56,13 @@ const FAQS = [
  * "Resources" tab content — shared between the public /support page tabs and
  * the user-portal /support/resources route.
  */
-export function ResourcesContent({ projectName, resources, resourcesLoading, showFaqs = true }: ResourcesContentProps) {
+export function ResourcesContent({
+  projectName,
+  resources,
+  resourcesLoading,
+  showFaqs = true,
+  outlinedEmptyState = false,
+}: ResourcesContentProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredFaqs = FAQS.filter((faq) => faq.question.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -66,7 +74,15 @@ export function ResourcesContent({ projectName, resources, resourcesLoading, sho
       {resourcesLoading ? (
         <ListSkeleton rows={3} avatar={false} badge={false} className="max-w-xl divide-y-0 [&>div]:px-0" />
       ) : resources.length === 0 ? (
-        <EmptyState icon="fi-rr-folder-open" title="No resources available yet." className="items-start px-0 text-left" />
+        <EmptyState
+          icon="fi-rr-folder-open"
+          title="No resources available yet."
+          className={
+            outlinedEmptyState
+              ? "w-full max-w-191.5 min-h-42.5 rounded-lg border border-border-subtle py-0"
+              : "items-start px-0 text-left"
+          }
+        />
       ) : (
         <div className="flex flex-wrap gap-3">
           {resources.map((resource) => (

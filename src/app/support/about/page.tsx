@@ -35,10 +35,10 @@ export default function UserSupportAboutPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
-      <Header title="About support" className="max-md:px-6" />
+      <Header title="About support" className="max-md:px-6 bg-bg-subtle" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto py-12 px-6 md:px-18">
+        <div className="max-w-7xl mx-auto pt-6 pb-12 px-6 md:px-18">
           <AboutSupportContent projectName={projectName} />
         </div>
       </main>
