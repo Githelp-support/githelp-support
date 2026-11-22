@@ -96,10 +96,10 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
         <h3 className="text-ui font-semibold text-foreground mb-3">
           Email
         </h3>
-        <div className="space-y-0 divide-y divide-border-subtle">
+        <div className="divide-y divide-border-subtle rounded-lg border border-border-subtle">
           {emailGroups.map((group) => (
-            <div key={group.key} className="flex items-center justify-between py-3">
-              <div className="pl-1.5">
+            <div key={group.key} className="flex items-center justify-between gap-4 px-4 py-4">
+              <div>
                 <Label
                   htmlFor={`email-${group.key}`}
                   className="text-sm text-muted-foreground cursor-pointer"

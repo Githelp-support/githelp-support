@@ -370,7 +370,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Helper Details" aboveTitle={backLink} />
-        <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+        <main className="flex-1 overflow-y-auto bg-background px-14 py-6 space-y-6">
           <ListSkeleton rows={4} className="rounded-lg border border-border-subtle" />
         </main>
       </div>
@@ -381,7 +381,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Helper Details" aboveTitle={backLink} />
-        <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+        <main className="flex-1 overflow-y-auto bg-background px-14 py-6 space-y-6">
           <div>Helper not found</div>
         </main>
       </div>
@@ -405,7 +405,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Helper Details" aboveTitle={backLink} />
 
-      <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+      <main className="flex-1 overflow-y-auto bg-background px-14 py-6 space-y-6">
         {/* Profile header + Contact information */}
         <Card className="border-0 py-0">
           <CardContent className="px-0 py-8 space-y-5">

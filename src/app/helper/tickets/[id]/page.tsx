@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/layout/header"
+import { useSetProjectPageHref } from "@/components/layout/app-shell"
 import { formatDateTime } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -185,6 +186,14 @@ export default function TicketDetailPage() {
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
+  // Publish the sidebar's "Open project page" link for the ticket's project.
+  useSetProjectPageHref(
+    project?.slug
+      ? `/support/${encodeURIComponent(project.slug)}`
+      : projectId
+        ? `/support?project=${encodeURIComponent(projectId)}`
+        : undefined
+  )
   const { data: projectRole } = useProjectRole(projectId || undefined)
   const isAdmin = projectRole === "admin"
   const addSelfAsHelper = useAddSelfAsHelper()
@@ -885,7 +894,7 @@ export default function TicketDetailPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
         <div className="relative z-10">
-          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" />
+          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" className="border-b border-border-subtle" />
         </div>
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -918,6 +927,7 @@ export default function TicketDetailPage() {
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             titleClassName="text-xl"
+            className="border-b border-border-subtle"
             inlineRightContent={
               <span className="flex items-center gap-2">
                 <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>

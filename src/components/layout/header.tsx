@@ -33,8 +33,9 @@ interface HeaderProps {
 
 /**
  * The standard page header: title, optional subtitle and right-aligned actions,
- * sticky under the TopBar with a hairline below. Pages render it themselves
- * because it carries page-specific props; the Sidebar comes from AppShell.
+ * sticky under the TopBar, with no divider and a 56px inset. Pages render it
+ * themselves because it carries page-specific props; the Sidebar comes from
+ * AppShell.
  */
 export function Header({ title, subtitle, showBackButton = false, backButtonText, backButtonHref, info, inlineRightContent, leadingIcon, className, backgroundColor, titleClassName, aboveTitle, actions }: HeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
@@ -74,7 +75,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
     <header
       ref={headerRef}
       className={cn(
-        "sticky top-0 z-30 shrink-0 border-b border-border-subtle px-8 py-5",
+        "sticky top-0 z-30 shrink-0 px-14 py-5",
         !backgroundColor && "bg-background",
         className,
       )}

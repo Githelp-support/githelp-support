@@ -100,11 +100,11 @@ export default function LandingPageSettings() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <Header title="Landing page" subtitle="Customize your landing page branding and resources" className="pl-14" />
-      <main className="flex-1 px-8 py-6 overflow-auto">
+      <Header title="Landing page" subtitle="Customize your landing page branding and resources" />
+      <main className="flex-1 px-8 pb-6 overflow-auto">
         <div className="max-w-4xl">
 
-          <div className="bg-background rounded-lg p-6 mb-3">
+          <div className="bg-background rounded-lg p-6 mb-1">
             <h2 className="text-base font-subtitle text-foreground mb-5">Your support page</h2>
             <p className="text-sm leading-normal tracking-tight text-text-muted">Share this link with your users to access support</p>
             <div className="flex items-center gap-2 mt-3">
@@ -145,7 +145,7 @@ export default function LandingPageSettings() {
           </div>
 
           {/* Resources Section */}
-          <div className="space-y-3">
+          <div className="space-y-1">
             {/* Add Resource Section */}
               <div className="bg-background rounded-lg p-6">
                 <h2 className="text-base font-subtitle text-foreground mb-5">Add resource</h2>
@@ -192,7 +192,7 @@ export default function LandingPageSettings() {
                 {resourcesLoading ? (
                   <ListSkeleton rows={3} avatar={false} badge={false} className="divide-y-0 [&>div]:px-0" />
                 ) : resources.length === 0 ? (
-                  <EmptyState size="sm" icon="fi-rr-folder-open" title="No resources added yet" description="Links you add here show on the support page." />
+                  <EmptyState size="sm" icon="fi-rr-folder-open" className="rounded-lg border border-border-subtle" title="No resources added yet" description="Links you add here show on the support page." />
                 ) : (
                   <div className="space-y-3">
                     {resources.map((resource) => (

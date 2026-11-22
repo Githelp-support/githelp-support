@@ -351,6 +351,7 @@ export function TicketChat(props: TicketChatProps) {
             showBackButton={showBackButton}
             leadingIcon={headerLeadingIcon}
             backgroundColor={headerBackgroundColor}
+            className="border-b border-border-subtle"
             inlineRightContent={
               headerSubtitle ? (
                 <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80">{headerSubtitle}</span>
