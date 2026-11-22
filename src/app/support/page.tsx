@@ -22,6 +22,8 @@ import { signInHref } from "@/lib/sign-in-href"
 import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft } from "@/lib/support-draft"
 import { PublicSupportSidebar } from "@/components/layout/public-support-sidebar"
 import { MobileSidebarSheet, useMobileNav } from "@/components/layout/mobile-nav"
+import { composerPlaceholder } from "@/components/ticket-chat/chat-input"
+import { formatChatTime } from "@/lib/chat-thread"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
@@ -44,7 +46,7 @@ import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
-import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
+import { useCustomerTicketSidebar, toChatParticipants, hasHelperJoined } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { getAvatarColorHexForId } from "@/lib/constants"
@@ -297,7 +299,12 @@ export default function SupportPage() {
   )
 
 
-  const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
+  // One instant for the synthetic messages: full timestamp for the thread
+  // builder, time only for the intro.
+  const { nowFormatted, nowTime } = useMemo(() => {
+    const now = new Date()
+    return { nowFormatted: formatChatTimestamp(now), nowTime: formatChatTime(now) }
+  }, [])
 
   // Thread: disclaimer → claimed banner → (pending first message) → persisted
   // messages → session summary once ended. Shared with /support/chat.
@@ -619,7 +626,7 @@ export default function SupportPage() {
       projectLogo={projectLogo}
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
-      timestamp={nowFormatted}
+      timestamp={nowTime}
       rates={rates}
       isFree={isFreeSupport(effectivePricing)}
       isAuthenticated={isAuthenticated}
@@ -757,11 +764,13 @@ export default function SupportPage() {
             messages={chatMessages}
             participants={chatParticipants}
             participantsLoading={participantsLoading}
+            helperJoined={!!claimer || hasHelperJoined(participants, [sessionUserId, liveTicket?.created_by])}
             message={message}
             onMessageChange={setMessage}
             onSend={handleSendMessage}
             sendDisabled={!message.trim() || createTicket.isPending}
             sending={isSending}
+            composerPlaceholder={composerPlaceholder(project ?? { name: projectName })}
             isEnded={ticketEnded}
             paymentStatus={paymentStatus.status}
             // Signed-out visitors get the composer: the first send starts a

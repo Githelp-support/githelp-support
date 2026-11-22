@@ -22,6 +22,18 @@ export function formatDate(value: string | Date): string {
   return `${day}.${month}.${date.getFullYear()}`
 }
 
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+/**
+ * "15 Nov 2026" — for the chat's Active tickets list ONLY. This is a
+ * task-mandated exception to the dd.mm.yyyy rule; every other list and
+ * timestamp keeps `formatDate` / `formatDateTime`.
+ */
+export function formatDateMedium(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  return `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}`
+}
+
 /** dd.mm.yyyy, HH:MM — the timestamp format for chat messages and ticket lists. */
 export function formatDateTime(value: string | Date): string {
   const date = value instanceof Date ? value : new Date(value)

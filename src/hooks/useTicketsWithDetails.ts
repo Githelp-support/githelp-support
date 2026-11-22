@@ -118,6 +118,13 @@ export interface UserActiveTicketSidebarItem {
     title: string;
     subtitle: string;
     date: string;
+    /** Ticket title, or the first message when the title is empty ("—" when neither exists). Untruncated: the list truncates with CSS. */
+    subject: string;
+    projectName: string;
+    /** First 8 characters of the ticket id. */
+    shortId: string;
+    /** Raw ISO `created_at`; `date` is the same instant as dd.mm.yyyy. */
+    createdAt: string;
     avatarUrl: string | null;
     avatarInitial: string;
     current: boolean;
@@ -275,6 +282,10 @@ export function useUserActiveTicketsSidebar(
                     id: t.id,
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
+                    subject: t.title?.trim() || firstMsg.trim() || "—",
+                    projectName,
+                    shortId: t.id.slice(0, 8),
+                    createdAt: t.created_at,
                     date: formatDate(t.created_at),
                     avatarUrl: projectLogo,
                     avatarInitial: projectName[0]?.toUpperCase() ?? "?",
