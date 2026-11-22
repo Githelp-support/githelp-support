@@ -154,38 +154,6 @@ describe("ProjectSwitcher — Private context (acting as User)", () => {
     expect(screen.getByRole("button", { name: "Private" })).toBeInTheDocument()
     expect(screen.queryByText("Private")).not.toBeInTheDocument()
   })
-
-  it("row variant: the role tile and the Private tile are the same white bordered tile", () => {
-    renderWithTooltips(
-      <>
-        <RoleSwitcher variant="row" />
-        <ProjectSwitcher variant="row" />
-      </>,
-    )
-
-    const roleTile = screen
-      .getByRole("button", { name: /user/i })
-      .querySelector('[data-slot="role-icon"]')!
-    const privateTrigger = screen.getByRole("button", { name: /private/i })
-    const privateTile = privateTrigger.querySelector('[data-slot="private-context-icon"]')!
-
-    for (const tile of [roleTile, privateTile]) {
-      const classes = tile.className.split(/\s+/)
-      for (const expected of ["bg-card", "border", "border-border-subtle", "rounded-md", "w-6", "h-6"]) {
-        expect(classes).toContain(expected)
-      }
-    }
-    // Identical container: only the glyph inside differs.
-    expect(privateTile.className).toBe(roleTile.className)
-    // The lock no longer sits on the grey fill.
-    expect(privateTile.className).not.toContain("bg-muted")
-    expect(privateTile.querySelector(".fi-rr-lock")).not.toBeNull()
-
-    // The Private row has the same geometry as the role row.
-    expect(privateTrigger.className).toContain("h-10")
-    expect(privateTrigger.className).toContain("bg-card")
-    expect(privateTrigger.className).toContain("rounded-lg")
-  })
 })
 
 describe("ProjectSwitcher — project context (admin / helper)", () => {
@@ -230,26 +198,22 @@ describe("ProjectSwitcher — project context (admin / helper)", () => {
     const role = screen.getByRole("button", { name: /admin/i })
     const project = screen.getByRole("button", { name: /alpha/i })
     for (const trigger of [role, project]) {
-      expect(trigger.className).toContain("h-10")
-      expect(trigger.className).toContain("rounded-lg")
+      expect(trigger.className).toContain("h-9")
       expect(trigger.className).toContain("hover:bg-surface-hover")
-      // Subtle stroke on a white (card) fill.
+      // Subtle stroke, filled with the sidebar surface around it.
       expect(trigger.className).toContain("border-border-subtle")
-      expect(trigger.className).toContain("bg-card")
+      expect(trigger.className).toContain("bg-sidebar")
       expect(trigger.querySelector(".fi-rr-angles-up-down")).toBeNull()
       expect(trigger.querySelectorAll(".fi-rr-angle-small-down")).toHaveLength(1)
       // Icon slot, label, selector: the selector is the last child (right-aligned).
       expect(trigger.children).toHaveLength(3)
-      expect(trigger.children[0].className).toContain("w-6")
+      expect(trigger.children[0].className).toContain("w-4")
       expect(trigger.children[1].className).toContain("font-medium")
-      expect(trigger.children[1].className).toContain("text-sm")
-      expect(trigger.children[1].className).toContain("text-foreground")
+      expect(trigger.children[1].className).toContain("text-sidebar-foreground")
     }
-    // The role tile: white bordered 24px tile with the role's icon in the foreground colour.
+    // The role tile: white squircle with the role's icon in the foreground colour.
     const tile = role.querySelector('[data-slot="role-icon"]')!
     expect(tile.className).toContain("bg-card")
-    expect(tile.className).toContain("rounded-md")
-    expect(tile.className).toContain("border-border-subtle")
     expect(tile.className).toContain("text-foreground")
     // The Githelp maintainer glyph, not a Flaticon stand-in.
     expect(tile.querySelector('svg[data-role-glyph="admin"]')).not.toBeNull()

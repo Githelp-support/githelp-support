@@ -30,14 +30,6 @@ const sizeRadiusMap: Record<string, string> = {
   "w-8 h-8": SQUIRCLE_RADIUS[32],
 }
 
-// Icon tile of the sidebar picker rows (`variant="row"`): 24px, white, with the
-// row's own subtle stroke and the control radius instead of the squircle. Shared
-// by the role tile and the private-context tile so both pickers look identical;
-// the project logo in the row takes the same size and radius.
-const ROW_TILE_SIZE = "w-6 h-6"
-const ROW_TILE_RADIUS = "rounded-md"
-const ROW_TILE_CLASS = `${ROW_TILE_SIZE} ${ROW_TILE_RADIUS} shrink-0 flex items-center justify-center border border-border-subtle bg-card text-foreground`
-
 // Project Logo Component with Avatar Placeholder.
 // See sidebar.tsx for the full rationale on keying the Radix Avatar Root.
 const ProjectLogo = ({
@@ -45,17 +37,14 @@ const ProjectLogo = ({
   projectName,
   size = "w-6 h-6",
   primaryColor,
-  row = false,
 }: {
   logoUrl: string | null | undefined
   projectName: string
   size?: string
   primaryColor?: string | null
-  /** Sidebar picker row: the control radius instead of the squircle. */
-  row?: boolean
 }) => {
   const firstLetter = projectName?.[0]?.toUpperCase() || "?"
-  const radius = row ? ROW_TILE_RADIUS : sizeRadiusMap[size] || squircleRadiusClass(0)
+  const radius = sizeRadiusMap[size] || squircleRadiusClass(0)
   const hasLogo = typeof logoUrl === "string" && logoUrl.length > 0
 
   return (
@@ -72,15 +61,9 @@ const ProjectLogo = ({
 }
 
 // Avatar-sized stand-in for the private user context in the project control.
-// In the sidebar picker row it is the shared white bordered tile.
-const PrivateContextIcon = ({ size, row = false }: { size: string; row?: boolean }) => (
+const PrivateContextIcon = ({ size }: { size: string }) => (
   <span
-    data-slot="private-context-icon"
-    className={
-      row
-        ? ROW_TILE_CLASS
-        : `${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`
-    }
+    className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
   >
     <Icon name="fi-rr-lock" size={3.5} />
   </span>
@@ -125,17 +108,19 @@ function ProjectLogoWithBranding({
 
 type SwitcherVariant = "control" | "row"
 
-// Sidebar switcher rows: a 40px-high white container with the subtle stroke and
-// the card radius (8px), 8px of padding inside the stroke, a 24px icon tile and
-// a 10px gap to the 14px label; the chevron is right-aligned. The slot is the
-// tile's own size, so nothing overflows it. The tile is no longer centred on the
-// 16px nav icon axis (it starts 9px from the row's edge and is 24px wide); that
-// offset from the logo and the nav icons is intended.
+// Sidebar switcher rows share the nav item geometry: 36px high, 10px from the
+// edge to the icon slot (9px padding inside the 1px stroke), a 16px icon slot
+// and a 12px gap, so the role tile, the project avatar and the nav icons sit on
+// one vertical axis and every label starts at the same x. The tile and avatar
+// are wider than the slot and overflow it evenly on both sides, which keeps
+// them centred on that axis: the 28px tile sits 4px from the row's left, top
+// and bottom edges. The row is a container with a subtle stroke,
+// filled with the sidebar surface around it.
 const ROW_TRIGGER_CLASS =
-  "flex h-10 w-full min-w-0 items-center gap-2.5 rounded-lg border border-border-subtle bg-card px-2 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-const ROW_SLOT_CLASS = "flex h-6 w-6 shrink-0 items-center justify-center"
+  "flex h-9 w-full min-w-0 items-center gap-3 rounded-md border border-border-subtle bg-sidebar px-2.25 cursor-pointer transition-colors duration-fast ease-out hover:bg-surface-hover data-[state=open]:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+const ROW_SLOT_CLASS = "flex h-4 w-4 shrink-0 items-center justify-center"
 const ROW_LABEL_CLASS =
-  "min-w-0 flex-1 truncate text-left font-sans text-sm font-medium text-foreground"
+  "min-w-0 flex-1 truncate text-left font-sans text-ui font-medium text-sidebar-foreground"
 
 const SelectorIcon = () => (
   <Icon name="fi-rr-angle-small-down" className="shrink-0 text-text-tertiary" />
@@ -177,24 +162,11 @@ const ROLE_GLYPH_SIZE: Record<string, string> = {
 }
 
 // Role tile: the project avatar's squircle container, white with a dark glyph.
-// The hairline keeps the white tile readable on the near-white sidebar. In the
-// sidebar picker row it is the shared white bordered tile instead.
-const RoleIcon = ({
-  role,
-  size = "w-[22px] h-[22px]",
-  row = false,
-}: {
-  role: UserRole
-  size?: string
-  row?: boolean
-}) => (
+// The hairline keeps the white tile readable on the near-white sidebar.
+const RoleIcon = ({ role, size = "w-[22px] h-[22px]" }: { role: UserRole; size?: string }) => (
   <span
     data-slot="role-icon"
-    className={
-      row
-        ? ROW_TILE_CLASS
-        : `${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center border border-border-avatar bg-card text-foreground`
-    }
+    className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center border border-border-avatar bg-card text-foreground`}
   >
     {ROLE_GLYPHS[role] ? (
       <svg
@@ -256,7 +228,7 @@ export function RoleSwitcher({
       ) : variant === "row" ? (
         <DropdownMenuTrigger className={ROW_TRIGGER_CLASS}>
           <span className={ROW_SLOT_CLASS}>
-            <RoleIcon role={user.role} size={ROW_TILE_SIZE} row />
+            <RoleIcon role={user.role} size="w-7 h-7" />
           </span>
           <span className={ROW_LABEL_CLASS}>{getRoleDisplayName(user.role)}</span>
           <SelectorIcon />
@@ -330,8 +302,7 @@ function SwitcherTrigger({
   variant: SwitcherVariant
   className?: string
   name: string
-  /** `row` is true for the sidebar picker row, which uses the shared row tile. */
-  logo: (size: string, row?: boolean) => ReactElement
+  logo: (size: string) => ReactElement
 }) {
   if (collapsed) {
     return (
@@ -354,7 +325,7 @@ function SwitcherTrigger({
     return (
       <DropdownMenuTrigger asChild>
         <button type="button" className={cn(ROW_TRIGGER_CLASS, className)}>
-          <span className={ROW_SLOT_CLASS}>{logo(ROW_TILE_SIZE, true)}</span>
+          <span className={ROW_SLOT_CLASS}>{logo("w-7 h-7")}</span>
           <span className={ROW_LABEL_CLASS}>{name}</span>
           <SelectorIcon />
         </button>
@@ -425,7 +396,7 @@ export function ProjectSwitcher({
           variant={variant}
           className={className}
           name="Private"
-          logo={(size, row) => <PrivateContextIcon size={size} row={row} />}
+          logo={(size) => <PrivateContextIcon size={size} />}
         />
         <DropdownMenuContent
           {...contentPosition}
@@ -470,7 +441,7 @@ export function ProjectSwitcher({
       <div
         className={cn(
           variant === "row"
-            ? "flex h-10 items-center rounded-lg border border-border-subtle bg-card px-2"
+            ? "flex h-9 items-center rounded-md border border-border-subtle bg-sidebar px-2.25"
             : "flex items-center justify-center px-3 h-9 bg-bg-subtle border border-border-subtle rounded-lg",
           className,
         )}
@@ -489,13 +460,12 @@ export function ProjectSwitcher({
         variant={variant}
         className={className}
         name={selectedProject?.name || "Select Project"}
-        logo={(size, row) => (
+        logo={(size) => (
           <ProjectLogo
             logoUrl={selectedProject ? (selectedProjectBranding?.logo_url ?? null) : null}
             projectName={selectedProject?.name || ""}
             size={size}
             primaryColor={selectedProjectBranding?.primary_color}
-            row={row}
           />
         )}
       />
