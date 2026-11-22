@@ -43,7 +43,7 @@ export default function UserSupportRatesPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
-      <Header title="Rates and details" className="max-md:px-6" />
+      <Header title="Rates and details" className="max-md:px-6 bg-bg-subtle" />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto py-8 px-6 md:py-12 md:px-18">

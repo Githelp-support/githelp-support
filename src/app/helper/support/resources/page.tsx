@@ -43,7 +43,7 @@ export default function HelperSupportResourcesPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
-      <Header title="Resources" />
+      <Header title="Resources" className="bg-bg-subtle" />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto py-12 px-6 md:px-18">
@@ -53,6 +53,7 @@ export default function HelperSupportResourcesPage() {
               resources={resources}
               resourcesLoading={resourcesLoading}
               showFaqs={false}
+              outlinedEmptyState
             />
           ) : (
             <EmptyState
