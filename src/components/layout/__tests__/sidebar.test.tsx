@@ -169,6 +169,72 @@ describe("Sidebar — user-role menu order", () => {
   })
 })
 
+describe("Sidebar — helper-role menu", () => {
+  const helperUser = { ...signedInUser, role: "helper" }
+
+  beforeEach(() => {
+    useUser.mockReturnValue({ user: helperUser, setProjectRole: vi.fn() })
+    usePathname.mockReturnValue("/helper/overview")
+  })
+
+  it("shows Support after Overview with only Chat and Resources", () => {
+    const { container } = render(<Sidebar />)
+
+    const nav = container.querySelector("nav")
+    const topLevelLabels = Array.from(nav!.firstElementChild!.children).map(
+      (el) => el.querySelector("a, button, [role='button']")?.textContent?.trim(),
+    )
+    expect(topLevelLabels).toEqual(["Inbox", "Overview", "Support", "Tickets", "Reports", "Settings"])
+
+    const subMenu = screen.getByText("Chat").closest("[data-state]")!
+    expect(Array.from(subMenu.querySelectorAll("a")).map((a) => a.textContent?.trim())).toEqual([
+      "Chat",
+      "Resources",
+    ])
+    expect(screen.getByText("Chat").closest("a")).toHaveAttribute("href", "/helper/support/chat")
+    expect(screen.getByText("Resources").closest("a")).toHaveAttribute("href", "/helper/support/resources")
+    expect(screen.queryByText("Rates and details")).not.toBeInTheDocument()
+    expect(screen.queryByText("About support")).not.toBeInTheDocument()
+
+    // Tickets uses the list icon, so it no longer duplicates the Support icon.
+    expect(screen.getByText("Tickets").querySelector(".fi-rr-list")).not.toBeNull()
+    expect(screen.getByText("Tickets").querySelector(".fi-rr-comments")).toBeNull()
+  })
+
+  it("marks Chat active and expands Support on a ticket chat, carrying the ticket to Resources", () => {
+    usePathname.mockReturnValue("/helper/tickets/abc")
+
+    render(<Sidebar />)
+
+    const chatRow = screen.getByText("Chat")
+    expect(chatRow).toHaveAttribute("data-active", "true")
+    expect(chatRow.className).toContain("text-brand-primary")
+    expect(chatRow.closest("[data-state]")).toHaveAttribute("data-state", "open")
+    expect(screen.getByText("Resources")).toHaveAttribute("data-active", "false")
+    expect(screen.getByText("Resources").closest("a")).toHaveAttribute(
+      "href",
+      "/helper/support/resources?ticket=abc",
+    )
+  })
+
+  it("opens Support on a helper support sub-page", () => {
+    usePathname.mockReturnValue("/helper/support/resources")
+
+    render(<Sidebar />)
+
+    expect(screen.getByText("Resources")).toHaveAttribute("data-active", "true")
+    expect(screen.getByText("Resources").closest("[data-state]")).toHaveAttribute("data-state", "open")
+  })
+
+  it("renders 'Open project page' when projectPageHref is passed", () => {
+    render(<Sidebar projectPageHref="/support/acme" />)
+
+    const link = screen.getByText("Open project page").closest("a")
+    expect(link).toHaveAttribute("href", "/support/acme")
+    expect(link).toHaveAttribute("target", "_blank")
+  })
+})
+
 describe("Sidebar — guest (anonymous support visitor)", () => {
   it("shows only the public support items: no Overview, Tickets, Reports or Settings", () => {
     usePathname.mockReturnValue("/support/chat")

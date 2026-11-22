@@ -56,6 +56,87 @@ function bump(map: Map<string, number>, ticketId: string | null | undefined, ts:
     if (prev === undefined || ms > prev) map.set(ticketId, ms);
 }
 
+/** A ticket row with the epoch ms of the helper's last interaction with it. */
+export type RankedHelperTicket = { ticket: TicketRow; ms: number };
+
+/**
+ * Every ticket the helper interacted with, most recent interaction first (see
+ * useHelperRecentTicketInteractions for what counts as an interaction), plus
+ * the helper's own participant row per ticket. Shared by
+ * useHelperRecentTicketInteractions and useHelperLastInteractedTicket.
+ */
+export async function fetchHelperTicketsByLastInteraction(userId: string): Promise<{
+    ranked: RankedHelperTicket[];
+    participantByTicket: Map<string, ParticipantRow>;
+}> {
+    // (a) messages the helper sent.
+    const { data: messages, error: messagesError } = await supabase
+        .from("tickets_messages")
+        .select("ticket_id, created_at")
+        .eq("sender_id", userId)
+        .is("deleted_at", null);
+    if (messagesError) throw messagesError;
+
+    // (b) tickets the helper joined / claimed.
+    const { data: participants, error: participantsError } = await supabase
+        .from("tickets_participants")
+        .select("ticket_id, created_at, claimed, last_read_message_id")
+        .eq("participant_id", userId);
+    if (participantsError) throw participantsError;
+
+    // (d) time entries the helper logged. tickets_time_entries.helper_id is
+    // projects_helpers.helper_id, so filter through the helper's auth user.
+    const { data: timeEntries, error: timeEntriesError } = await supabase
+        .from("tickets_time_entries")
+        .select("ticket_id, created_at, helper:projects_helpers!inner(user_id)")
+        .eq("helper.user_id", userId);
+    if (timeEntriesError) throw timeEntriesError;
+
+    const lastInteraction = new Map<string, number>();
+    const participantByTicket = new Map<string, ParticipantRow>();
+
+    (messages || []).forEach((m: any) => bump(lastInteraction, m.ticket_id, m.created_at));
+    ((participants || []) as unknown as ParticipantRow[]).forEach((p) => {
+        participantByTicket.set(p.ticket_id, p);
+        bump(lastInteraction, p.ticket_id, p.created_at);
+    });
+    (timeEntries || []).forEach((e: any) => bump(lastInteraction, e.ticket_id, e.created_at));
+
+    // None of the sources return the ticket row itself: fetch them all.
+    const ticketsById = new Map<string, TicketRow>();
+    const missingIds = [...lastInteraction.keys()].filter((id) => !ticketsById.has(id));
+    if (missingIds.length) {
+        const { data: ticketRows, error: ticketsError } = await supabase
+            .from("tickets")
+            .select(TICKET_COLUMNS)
+            .in("id", missingIds)
+            .is("deleted_at", null);
+        if (ticketsError) throw ticketsError;
+        ((ticketRows || []) as unknown as TicketRow[]).forEach((t) => ticketsById.set(t.id, t));
+    }
+
+    // (c) closing / request timestamps on the tickets the helper participates in.
+    participantByTicket.forEach((_p, ticketId) => {
+        const t = ticketsById.get(ticketId);
+        if (!t) return;
+        bump(lastInteraction, t.id, t.completed_at);
+        bump(lastInteraction, t.id, t.cancelled_at);
+        if (t.end_requested_by === userId) {
+            bump(lastInteraction, t.id, t.end_requested_at);
+        }
+        if (t.time_review_requested_by === userId) {
+            bump(lastInteraction, t.id, t.time_review_requested_at);
+        }
+    });
+
+    const ranked = [...lastInteraction.entries()]
+        .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible tickets
+        .sort((a, b) => b[1] - a[1])
+        .map(([id, ms]) => ({ ticket: ticketsById.get(id)!, ms }));
+
+    return { ranked, participantByTicket };
+}
+
 /**
  * The `limit` tickets the helper most recently interacted with, ordered by the
  * timestamp of their LAST interaction (descending). An interaction is any of:
@@ -77,71 +158,8 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
         queryFn: async (): Promise<HelperRecentTicketInteraction[]> => {
             if (!userId) return [];
 
-            // (a) messages the helper sent.
-            const { data: messages, error: messagesError } = await supabase
-                .from("tickets_messages")
-                .select("ticket_id, created_at")
-                .eq("sender_id", userId)
-                .is("deleted_at", null);
-            if (messagesError) throw messagesError;
-
-            // (b) tickets the helper joined / claimed.
-            const { data: participants, error: participantsError } = await supabase
-                .from("tickets_participants")
-                .select("ticket_id, created_at, claimed, last_read_message_id")
-                .eq("participant_id", userId);
-            if (participantsError) throw participantsError;
-
-            // (d) time entries the helper logged. tickets_time_entries.helper_id is
-            // projects_helpers.helper_id, so filter through the helper's auth user.
-            const { data: timeEntries, error: timeEntriesError } = await supabase
-                .from("tickets_time_entries")
-                .select("ticket_id, created_at, helper:projects_helpers!inner(user_id)")
-                .eq("helper.user_id", userId);
-            if (timeEntriesError) throw timeEntriesError;
-
-            const lastInteraction = new Map<string, number>();
-            const participantByTicket = new Map<string, ParticipantRow>();
-
-            (messages || []).forEach((m: any) => bump(lastInteraction, m.ticket_id, m.created_at));
-            ((participants || []) as unknown as ParticipantRow[]).forEach((p) => {
-                participantByTicket.set(p.ticket_id, p);
-                bump(lastInteraction, p.ticket_id, p.created_at);
-            });
-            (timeEntries || []).forEach((e: any) => bump(lastInteraction, e.ticket_id, e.created_at));
-
-            // None of the sources return the ticket row itself: fetch them all.
-            const ticketsById = new Map<string, TicketRow>();
-            const missingIds = [...lastInteraction.keys()].filter((id) => !ticketsById.has(id));
-            if (missingIds.length) {
-                const { data: ticketRows, error: ticketsError } = await supabase
-                    .from("tickets")
-                    .select(TICKET_COLUMNS)
-                    .in("id", missingIds)
-                    .is("deleted_at", null);
-                if (ticketsError) throw ticketsError;
-                ((ticketRows || []) as unknown as TicketRow[]).forEach((t) => ticketsById.set(t.id, t));
-            }
-
-            // (c) closing / request timestamps on the tickets the helper participates in.
-            participantByTicket.forEach((_p, ticketId) => {
-                const t = ticketsById.get(ticketId);
-                if (!t) return;
-                bump(lastInteraction, t.id, t.completed_at);
-                bump(lastInteraction, t.id, t.cancelled_at);
-                if (t.end_requested_by === userId) {
-                    bump(lastInteraction, t.id, t.end_requested_at);
-                }
-                if (t.time_review_requested_by === userId) {
-                    bump(lastInteraction, t.id, t.time_review_requested_at);
-                }
-            });
-
-            const topTickets = [...lastInteraction.entries()]
-                .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible tickets
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, limit)
-                .map(([id, ms]) => ({ ticket: ticketsById.get(id)!, ms }));
+            const { ranked, participantByTicket } = await fetchHelperTicketsByLastInteraction(userId);
+            const topTickets = ranked.slice(0, limit);
 
             if (!topTickets.length) return [];
 
