@@ -52,6 +52,7 @@ export default function HelperSupportResourcesPage() {
               projectName={projectName}
               resources={resources}
               resourcesLoading={resourcesLoading}
+              showFaqs={false}
             />
           ) : (
             <EmptyState
