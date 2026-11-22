@@ -159,7 +159,7 @@ export default function ProfileSettingsPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="Helper profile" />
-        <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
+        <main className="flex-1 overflow-auto px-8 pt-3.5 pb-6">
           <ListSkeleton rows={4} avatar={false} badge={false} className="max-w-3xl divide-y-0" />
         </main>
       </div>

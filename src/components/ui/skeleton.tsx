@@ -63,7 +63,7 @@ function PageSkeleton({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("animate-fade-in flex flex-1 min-h-0 flex-col overflow-hidden", className)}
       {...props}
     >
-      <div className="px-14 py-5">
+      <div className="px-8 py-5">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="mt-2.5 h-3.5 w-72" />
       </div>

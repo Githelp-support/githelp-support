@@ -60,7 +60,7 @@ export default function HelperPayoutPage() {
         <Header title="Payout" subtitle="Set up payout details for support" />
         <main className="flex-1 overflow-auto px-14 pt-2 pb-6">
           <div className="max-w-3xl divide-y divide-border-subtle">
-            <p className="text-sm text-left pl-2 text-muted-foreground">You are not registered as a helper in this project.</p>
+            <p className="text-sm text-left text-muted-foreground">You are not registered as a helper in this project.</p>
           </div>
         </main>
       </div>
@@ -71,7 +71,7 @@ export default function HelperPayoutPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Payout" subtitle="Set up payout details for support" />
-        <main className="flex-1 overflow-auto px-14 pt-2 pb-6">
+        <main className="flex-1 overflow-auto px-8 pt-2 pb-6">
           <ListSkeleton rows={4} avatar={false} badge={false} className="max-w-3xl divide-y-0" />
         </main>
       </div>

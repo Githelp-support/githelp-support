@@ -167,7 +167,7 @@ export default function SLAsPage() {
               </button>
             </div>
             {/* Full-width line below tabs */}
-            <div className="h-px bg-border -mx-6"></div>
+            <div className="h-px bg-border"></div>
           </div>
 
           {/* Search and Create button */}

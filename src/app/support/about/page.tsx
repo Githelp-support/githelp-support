@@ -38,7 +38,7 @@ export default function UserSupportAboutPage() {
       <Header title="About support" className="max-md:px-6" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto py-12 px-6 md:px-18">
+        <div className="max-w-7xl mx-auto py-12 px-6 md:px-14">
           <AboutSupportContent projectName={projectName} />
         </div>
       </main>

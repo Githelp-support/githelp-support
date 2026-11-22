@@ -55,7 +55,7 @@ export default function HelperPayoutStatementPage() {
         </div>
 
         <main className="flex-1 overflow-auto px-14 py-6 print:overflow-visible print:p-0">
-          <div className="max-w-3xl mx-auto space-y-4">
+          <div className="max-w-3xl print:mx-auto space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap print:hidden">
               <Button asChild variant="outline" size="sm" className="text-muted-foreground border-border bg-transparent">
                 <Link href="/helper/reports">

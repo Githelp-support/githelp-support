@@ -41,7 +41,7 @@ export default function UserSupportResourcesPage() {
       <Header title="Resources" className="max-md:px-6" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto py-12 px-6 md:px-18">
+        <div className="max-w-7xl mx-auto py-12 px-6 md:px-14">
           <ResourcesContent
             projectName={projectName}
             resources={resources}
