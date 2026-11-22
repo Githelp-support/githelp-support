@@ -46,7 +46,7 @@ export default function HelperSupportResourcesPage() {
       <Header title="Resources" className="bg-bg-subtle" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto py-12 px-6 md:px-18">
+        <div className="max-w-7xl mx-auto pt-6 pb-12 px-6 md:px-18">
           {projectId ? (
             <ResourcesContent
               projectName={projectName}
