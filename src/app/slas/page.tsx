@@ -128,7 +128,7 @@ export default function SLAsPage() {
         />
 
         {/* Content */}
-        <main className="flex-1 px-8 py-6 overflow-y-auto">
+        <main className="flex-1 px-14 pt-3.5 pb-6 overflow-y-auto">
           {/* Filter tabs */}
           <div className="mb-6">
             <div className="flex gap-1">
