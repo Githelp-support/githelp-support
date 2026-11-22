@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
 
 export type HelperRecentTicketStatus = "Completed" | "Claimed" | "Unclaimed";
 
@@ -106,11 +107,14 @@ export async function fetchHelperTicketsByLastInteraction(userId: string): Promi
     const ticketsById = new Map<string, TicketRow>();
     const missingIds = [...lastInteraction.keys()].filter((id) => !ticketsById.has(id));
     if (missingIds.length) {
-        const { data: ticketRows, error: ticketsError } = await supabase
-            .from("tickets")
-            .select(TICKET_COLUMNS)
-            .in("id", missingIds)
-            .is("deleted_at", null);
+        // Abandoned guest tickets are left out, so they drop from the ranking below.
+        const { data: ticketRows, error: ticketsError } = await excludeAbandonedGuestTickets(
+            supabase
+                .from("tickets")
+                .select(TICKET_COLUMNS)
+                .in("id", missingIds)
+                .is("deleted_at", null)
+        );
         if (ticketsError) throw ticketsError;
         ((ticketRows || []) as unknown as TicketRow[]).forEach((t) => ticketsById.set(t.id, t));
     }
@@ -130,7 +134,7 @@ export async function fetchHelperTicketsByLastInteraction(userId: string): Promi
     });
 
     const ranked = [...lastInteraction.entries()]
-        .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible tickets
+        .filter(([id]) => ticketsById.has(id)) // drop deleted / inaccessible / abandoned guest tickets
         .sort((a, b) => b[1] - a[1])
         .map(([id, ms]) => ({ ticket: ticketsById.get(id)!, ms }));
 

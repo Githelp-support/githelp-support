@@ -16,6 +16,11 @@ interface TicketUnavailableNoticeProps {
   onLink?: () => void
   /** A saved guest conversation expired before it was linked (60 minutes). */
   expired?: boolean
+  /**
+   * A guest conversation that can no longer be re-opened: the guest left more
+   * than 30 minutes ago, or the ticket was removed.
+   */
+  guestExpired?: boolean
 }
 
 /**
@@ -30,6 +35,7 @@ export function TicketUnavailableNotice({
   deferred = false,
   onLink,
   expired = false,
+  guestExpired = false,
 }: TicketUnavailableNoticeProps) {
   if (linking) {
     return (
@@ -48,6 +54,21 @@ export function TicketUnavailableNotice({
             Link conversation
           </Button>
         )}
+      </div>
+    )
+  }
+  if (guestExpired) {
+    return (
+      <div className="bg-card rounded-lg p-8 shadow-sm border border-border-subtle">
+        <h1 className="text-2xl font-medium text-foreground mb-2">This conversation is no longer available</h1>
+        <p className="text-muted-foreground">
+          Guest conversations can be re-opened for 30 minutes after you leave. Start a new conversation to get help.
+        </p>
+        <p className="mt-4">
+          <Link href={newConversationHref} className="text-brand-primary font-medium hover:underline">
+            Start a new conversation
+          </Link>
+        </p>
       </div>
     )
   }

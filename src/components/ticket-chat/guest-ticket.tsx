@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { getPostgresHint } from "@/lib/functions-error"
 import { guestLabel, type GuestIdentity } from "@/lib/guest-label"
 import { cn } from "@/lib/utils"
 
@@ -97,4 +98,35 @@ export function VisitorLeftAction({ onStartNewConversation }: { onStartNewConver
       </Button>
     </div>
   )
+}
+
+/**
+ * Helper-side action on the `guest_abandoned` system message: formally end the
+ * ticket the guest walked away from (`end_abandoned_guest_ticket`). Shown only
+ * while `isGuestAbandoned` holds, so it goes away when the guest returns.
+ */
+export function GuestAbandonedAction({ onEndTicket, pending }: { onEndTicket: () => void; pending?: boolean }) {
+  return (
+    <div className="mt-2" data-slot="guest-abandoned-action">
+      <Button type="button" variant="lavender" loading={pending} className="cursor-pointer" onClick={onEndTicket}>
+        End ticket
+      </Button>
+    </div>
+  )
+}
+
+export const GUEST_BACK_IN_CHAT_COPY = "The guest is back in the chat."
+export const END_ABANDONED_GENERIC_ERROR_COPY = "Couldn't end the ticket. Please try again."
+
+/**
+ * What to do when `end_abandoned_guest_ticket` fails, from its Postgres hint:
+ * - `guest_ticket_not_abandoned`: the guest came back; say so and refetch;
+ * - `ticket_closed`: someone already ended it; just refetch to show that;
+ * - `guest_ticket_not_found` and anything else: generic error.
+ */
+export function endAbandonedGuestTicketErrorAction(error: unknown): { message: string | null; refetch: boolean } {
+  const hint = getPostgresHint(error)
+  if (hint === "guest_ticket_not_abandoned") return { message: GUEST_BACK_IN_CHAT_COPY, refetch: true }
+  if (hint === "ticket_closed") return { message: null, refetch: true }
+  return { message: END_ABANDONED_GENERIC_ERROR_COPY, refetch: false }
 }

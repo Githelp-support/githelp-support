@@ -9,6 +9,7 @@ import {
   OWN_GUEST_ID_KEY,
   clearSavedGuestSession,
   isFinalAdoptionError,
+  isGuestConversationUnavailable,
   prepareGuestAdoption,
   readSavedGuestSession,
   refreshSavedGuestAdoption,
@@ -28,6 +29,7 @@ import {
   acquireGuestAdoptionLock,
   isGuestAdoptionLockedByOther,
   wasGuestAdoptionExpired,
+  wasGuestConversationUnavailable,
   releaseGuestAdoptionLock,
   resetGuestAdoptionConfirmation,
 } from "../guest-adoption-storage"
@@ -236,6 +238,8 @@ describe("saving the guest session (ownGuestId gating)", () => {
 
 describe("isFinalAdoptionError", () => {
   it("clears for definitive 4xx answers, keeps for network / 5xx / throttling", () => {
+    expect(isFinalAdoptionError({ code: "guest_ticket_expired", status: 500 })).toBe(true)
+    expect(isFinalAdoptionError({ code: "guest_ticket_deleted" })).toBe(true)
     expect(isFinalAdoptionError(fnError("invalid_guest_token", 400))).toBe(true)
     expect(isFinalAdoptionError(fnError("sign_in_required", 403))).toBe(true)
     expect(isFinalAdoptionError(fnError(null, 404))).toBe(true)
@@ -322,9 +326,53 @@ describe("runGuestAdoptionFlow", () => {
     const invoke = fnMock({ preview: previewOk([]) })
     const confirm = vi.fn(yes)
     const result = await runGuestAdoptionFlow({ client: makeClient({ user: REAL, invoke }) as never, storage, confirm })
-    expect(result).toEqual({ status: "none" })
+    // Final: the conversation expired or was deleted, the chat says so.
+    expect(result).toEqual({ status: "none", unavailable: true })
+    expect(isGuestConversationUnavailable(result)).toBe(true)
     expect(confirm).not.toHaveBeenCalled()
     expect(storage.map.has(GUEST_ADOPTION_KEY)).toBe(false)
+    expect(wasGuestConversationUnavailable(storage)).toBe(true)
+  })
+
+  it.each(["guest_ticket_expired", "guest_ticket_deleted", "guest_ticket_not_found"])(
+    "%s is final whatever the HTTP status: key cleared, no retry, 'no longer available'",
+    async (code) => {
+      const storage = memoryStorage()
+      saveGuestSession(savedNow({ confirmed: true, confirmed_by: "real-1" }), storage)
+      const invoke = fnMock({ adopt: { data: null, error: fnError(code, 500) } })
+      const result = await runGuestAdoptionFlow({ client: makeClient({ user: REAL, invoke }) as never, storage, confirm: yes })
+      expect(result).toMatchObject({ status: "failed", code, retryable: false, unavailable: true })
+      expect(isGuestConversationUnavailable(result)).toBe(true)
+      expect(invoke).toHaveBeenCalledTimes(1)
+      expect(storage.map.has(GUEST_ADOPTION_KEY)).toBe(false)
+      expect(wasGuestConversationUnavailable(storage)).toBe(true)
+    },
+  )
+
+  it("an expired conversation found by the preview is final too (no dialog)", async () => {
+    const storage = memoryStorage()
+    saveGuestSession(savedNow(), storage)
+    const invoke = fnMock({ preview: { data: null, error: fnError("guest_ticket_expired", 410) } })
+    const confirm = vi.fn(yes)
+    const result = await runGuestAdoptionFlow({ client: makeClient({ user: REAL, invoke }) as never, storage, confirm })
+    expect(result).toMatchObject({ status: "failed", retryable: false, unavailable: true })
+    expect(confirm).not.toHaveBeenCalled()
+    expect(storage.map.has(GUEST_ADOPTION_KEY)).toBe(false)
+  })
+
+  it("other outcomes are not 'no longer available'", async () => {
+    const storage = memoryStorage()
+    expect(isGuestConversationUnavailable({ status: "none" })).toBe(false)
+    expect(isGuestConversationUnavailable({ status: "failed", code: "invalid_guest_token", message: "x", retryable: false })).toBe(false)
+    expect(isGuestConversationUnavailable({ status: "adopted", adoptedTicketIds: ["t1"], openTicketIds: [] })).toBe(false)
+    expect(wasGuestConversationUnavailable(storage)).toBe(false)
+    // The marker lasts an hour and goes when a new guest session is saved.
+    const t0 = Date.parse("2026-11-22T10:00:00.000Z")
+    storage.map.set("githelp.guestConversationUnavailableAt", String(t0))
+    expect(wasGuestConversationUnavailable(storage, () => t0 + 59 * 60 * 1000)).toBe(true)
+    expect(wasGuestConversationUnavailable(storage, () => t0 + 61 * 60 * 1000)).toBe(false)
+    saveGuestSession(savedNow(), storage)
+    expect(storage.map.has("githelp.guestConversationUnavailableAt")).toBe(false)
   })
 
   it("remembers the confirmation: a retry after a 5xx skips the preview and the dialog", async () => {

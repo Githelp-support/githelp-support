@@ -49,7 +49,8 @@ export interface GuestOpenTicket {
  * their open guest ticket — a guest has at most one). Used to resume the
  * conversation after a reload / sign-in and when ticket creation hits
  * `guest_open_ticket_exists`. Never throws; null when there is none or the
- * lookup fails.
+ * lookup fails. Cancelled tickets are excluded: a guest coming back to a
+ * ticket closed as "visitor left" goes through `findResumableGuestTicket`.
  */
 export async function findOpenTicket(
   userId: string,
@@ -82,6 +83,29 @@ export function findGuestOpenTicket(
   projectId: string | null,
   client: Pick<SupabaseClient, "from"> = supabase,
 ): Promise<GuestOpenTicket | null> {
+  return findOpenTicket(guestId, projectId, { guestOnly: true }, client)
+}
+
+/**
+ * A returning guest's conversation on this project. `touch`
+ * (`touch_guest_ticket`) runs first and is awaited: within 30 minutes of the
+ * guest leaving, the backend reopens a ticket it had closed as "visitor
+ * left", so the lookup then finds it as a normal open ticket. After those 30
+ * minutes the ticket stays out of reach and this is null (fresh composer).
+ * A failed touch never blocks the lookup. Never throws.
+ */
+export async function findResumableGuestTicket(
+  guestId: string,
+  projectId: string,
+  touch: () => Promise<unknown>,
+  client: Pick<SupabaseClient, "from"> = supabase,
+): Promise<GuestOpenTicket | null> {
+  if (!guestId || !projectId) return null
+  try {
+    await touch()
+  } catch {
+    // Presence is best effort; an open ticket is still found below.
+  }
   return findOpenTicket(guestId, projectId, { guestOnly: true }, client)
 }
 

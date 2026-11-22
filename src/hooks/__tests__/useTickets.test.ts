@@ -30,6 +30,7 @@ function mockChain(resolveWith: { data: unknown; error: unknown }) {
         is: vi.fn().mockReturnThis(),
         order: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
         then: undefined as unknown,
     };
     // Make the chain thenable so await works
@@ -41,6 +42,26 @@ function mockChain(resolveWith: { data: unknown; error: unknown }) {
 describe("useTickets", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    it("leaves abandoned guest tickets out of the list query", async () => {
+        const chain = mockChain({ data: [], error: null });
+        vi.mocked(supabase.from).mockReturnValue(
+            chain as unknown as ReturnType<typeof supabase.from>,
+        );
+
+        const { result } = renderHook(() => useTickets("proj-1"), {
+            wrapper: makeWrapper(),
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+        expect(chain.or).toHaveBeenCalledTimes(1);
+        expect(chain.or).toHaveBeenCalledWith(
+            "guest.eq.false,status.neq.cancelled",
+        );
+        // Soft-deleted rows are still excluded as before.
+        expect(chain.is).toHaveBeenCalledWith("deleted_at", null);
     });
 
     it("is disabled and returns no data when projectId is not provided", () => {

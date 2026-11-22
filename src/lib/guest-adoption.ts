@@ -18,6 +18,7 @@ import {
   clearOwnGuestId,
   clearSavedGuestSession,
   defaultStorage,
+  markGuestConversationUnavailable,
   readOwnGuestId,
   readSavedGuestSession,
   saveGuestSession,
@@ -77,7 +78,12 @@ export interface AdoptedOpenTicket {
 }
 
 export type GuestAdoptionResult =
-  | { status: "none" }
+  /**
+   * Nothing was linked. `unavailable`: there was a saved guest session, but
+   * its conversation is gone (expired or deleted) — final, see
+   * `isGuestConversationUnavailable`.
+   */
+  | { status: "none"; unavailable?: boolean }
   | {
       status: "adopted"
       adoptedTicketIds: string[]
@@ -99,6 +105,8 @@ export type GuestAdoptionResult =
       message: string
       /** Network / 5xx: the key was kept so a later visit retries. */
       retryable: boolean
+      /** The guest conversation expired or was deleted (final). */
+      unavailable?: boolean
     }
 
 type AdoptionClient = Pick<SupabaseClient, "auth" | "functions"> & Partial<Pick<SupabaseClient, "from">>
@@ -251,8 +259,28 @@ function isAccountChanged(error: unknown): boolean {
   return (error as { code?: unknown } | null)?.code === "account_changed"
 }
 
+/**
+ * The guest's conversation is out of reach for good: the guest left more
+ * than 30 minutes ago (`guest_ticket_expired`) or the ticket was deleted.
+ */
+const UNAVAILABLE_ADOPTION_CODES = new Set(["guest_ticket_expired", "guest_ticket_deleted", "guest_ticket_not_found"])
+
 /** Definitive answers: the saved guest session can never be adopted. */
-const FINAL_ADOPTION_CODES = new Set(["invalid_guest_token", "sign_in_required"])
+const FINAL_ADOPTION_CODES = new Set(["invalid_guest_token", "sign_in_required", ...UNAVAILABLE_ADOPTION_CODES])
+
+/** The adoption failed because the conversation expired or was deleted. */
+export function isUnavailableAdoptionError(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code
+  return typeof code === "string" && UNAVAILABLE_ADOPTION_CODES.has(code)
+}
+
+/**
+ * The flow ended for good because the guest conversation no longer exists
+ * for the visitor: show "This conversation is no longer available".
+ */
+export function isGuestConversationUnavailable(result: GuestAdoptionResult): boolean {
+  return (result.status === "none" || result.status === "failed") && result.unavailable === true
+}
 
 /**
  * Whether an adoption failure is definitive (clear the key) or transient
@@ -332,13 +360,17 @@ function failureResult(deps: AdoptionDeps, saved: SavedGuestSession, error: unkn
     return { status: "none" }
   }
   const final = isFinalAdoptionError(error)
+  const unavailable = isUnavailableAdoptionError(error)
   console.error("Guest ticket adoption failed:", error)
   if (final) clearSavedGuestSession(storage)
+  // Expired or deleted: nothing to retry; the chat shows "no longer available".
+  if (unavailable) markGuestConversationUnavailable(storage, deps.now)
   return {
     status: "failed",
     code: (error as { code?: string | null } | null)?.code ?? null,
     message: error instanceof Error ? error.message : "Could not move your guest conversation",
     retryable: !final,
+    ...(unavailable ? { unavailable: true } : {}),
   }
 }
 
@@ -510,9 +542,12 @@ async function runFlow(deps: FlowDeps, attempt = 0): Promise<GuestAdoptionResult
   if (preview.status !== "preview") return preview
   if (!preview.confirmed) {
     if (preview.tickets.length === 0) {
-      // Nothing to link: drop the key silently.
+      // Nothing to link (the guest's conversation expired or was deleted, or
+      // there never was one): final. Drop the key without a prompt; a chat
+      // still pointing at that conversation shows "no longer available".
       clearSavedGuestSession(storage)
-      return { status: "none" }
+      markGuestConversationUnavailable(storage, deps.now)
+      return { status: "none", unavailable: true }
     }
     await waitUntilVisible(isVisible)
     const choice = await confirm(preview.tickets, preview.account).catch((): GuestAdoptionChoice => "superseded")

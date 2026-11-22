@@ -14,11 +14,12 @@ import { useState, useEffect, useMemo, useRef } from "react"
 import { usePathname, useSearchParams, useRouter } from "next/navigation"
 import { GuestBanner } from "@/components/support/guest-banner"
 import { TicketUnavailableNotice } from "@/components/support/ticket-unavailable-notice"
-import { wasGuestAdoptionExpired } from "@/lib/guest-adoption-storage"
+import { wasGuestAdoptionExpired, wasGuestConversationUnavailable } from "@/lib/guest-adoption-storage"
 import { clearSupportDraft, registerSupportDraftSource, saveSupportDraft, takeSupportDraft } from "@/lib/support-draft"
 import { startGuestSignIn } from "@/lib/guest-adoption"
 import { ensureSupportSession, findGuestOpenTicket, isOwnGuestSession } from "@/lib/guest-session"
-import { useResumableGuestTicket } from "@/hooks/useResumableGuestTicket"
+import { invalidateGuestTicketQueries, useResumableGuestTicket } from "@/hooks/useResumableGuestTicket"
+import { touchGuestTicketsNow } from "@/hooks/useGuestPresence"
 import { useGuestAdoptionRetry } from "@/hooks/useGuestAdoptionRetry"
 import { GUEST_OPEN_TICKET_ELSEWHERE_MESSAGE, guestTicketCreateAction } from "@/lib/guest-ticket-errors"
 import { chooseSupportSignInRedirect, setSupportSignInRedirect } from "@/lib/support-sign-in-redirect"
@@ -79,7 +80,7 @@ export default function UserSupportChatPage() {
   const pathname = usePathname()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { user, setProjectRole } = useUser()
+  const { user, setProjectRole, isLoading: userLoading } = useUser()
   // Guests (anonymous session, see user-context) chat without an account:
   // `user.id` stays undefined for them, `guestId` carries their auth id.
   const sessionUserId = user?.id ?? user?.guestId
@@ -160,17 +161,67 @@ export default function UserSupportChatPage() {
   // ticket (after a reload) instead of an empty composer — a guest can't
   // open a second one. Signed-in users may open several tickets, so they
   // are never bounced (their post-sign-in redirect carries ?ticket=).
+  // The lookup first reports the guest as back (touch_guest_ticket), which
+  // reopens a ticket closed because they left less than 30 minutes ago.
   const { data: resumableTicket } = useResumableGuestTicket(
     !ticketIdParam && !createdTicketId ? user?.guestId : undefined,
     isGuest,
     effectiveProjectId || undefined,
   )
+  /** Ticket the lookup above resumed: it has already been touched. */
+  const resumedTicketIdRef = useRef<string | null>(null)
   useEffect(() => {
     if (!resumableTicket || ticketIdParam) return
+    resumedTicketIdRef.current = resumableTicket.id
     router.replace(
       `/support/chat?ticket=${encodeURIComponent(resumableTicket.id)}&project=${encodeURIComponent(resumableTicket.project_id)}`,
     )
   }, [resumableTicket, ticketIdParam, router])
+
+  // A guest coming back to /support/chat?ticket=X: report them as back and
+  // wait for it before showing the ticket. Within 30 minutes of leaving, the
+  // backend reopens a ticket it closed as "visitor left" (status back to
+  // 'available'), so it continues as a normal open conversation without the
+  // visitor_left notice. Not for a ticket created in this session.
+  const reentryTicketId = isGuest && ticketIdParam && ticketIdParam !== createdTicketId ? ticketIdParam : null
+  const [reenteredTicketId, setReenteredTicketId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!reentryTicketId) return
+    let cancelled = false
+    void (async () => {
+      if (resumedTicketIdRef.current !== reentryTicketId) await touchGuestTicketsNow(reentryTicketId)
+      await Promise.all([
+        invalidateGuestTicketQueries(queryClient, reentryTicketId),
+        queryClient.invalidateQueries({ queryKey: ["resumable-ticket"] }).catch(() => undefined),
+      ])
+      if (!cancelled) setReenteredTicketId(reentryTicketId)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [reentryTicketId, queryClient])
+  const reentryPending = !!reentryTicketId && reenteredTicketId !== reentryTicketId
+  // The guest's ticket can't be read any more: they left more than 30 minutes
+  // ago (RLS), or it was removed.
+  const guestExpiredTicketId =
+    reentryTicketId && !reentryPending && !existingTicketLoading && !existingTicket?.id ? reentryTicketId : null
+  // Drop what still points at that ticket, so the composer starts fresh.
+  const [clearedExpiredTicketId, setClearedExpiredTicketId] = useState<string | null>(null)
+  if (guestExpiredTicketId && guestExpiredTicketId !== clearedExpiredTicketId) {
+    setClearedExpiredTicketId(guestExpiredTicketId)
+    if (ticketId === guestExpiredTicketId) {
+      setTicketId("")
+      setTicketCreated(false)
+      setPendingFirstMessage(null)
+    }
+  }
+  useEffect(() => {
+    if (!guestExpiredTicketId) return
+    if (resumedTicketIdRef.current === guestExpiredTicketId) resumedTicketIdRef.current = null
+    queryClient.removeQueries({ queryKey: ["resumable-ticket"] })
+    queryClient.removeQueries({ queryKey: ["ticket", guestExpiredTicketId] })
+    queryClient.removeQueries({ queryKey: ["ticket-messages", guestExpiredTicketId] })
+  }, [guestExpiredTicketId, queryClient])
   const projectPageHref = project?.slug
     ? `/support/${encodeURIComponent(project.slug)}`
     : effectiveProjectId
@@ -372,7 +423,8 @@ export default function UserSupportChatPage() {
   // Sign-in returns to this conversation (with ?ticket=); the sidebar and top
   // bar use the same target.
   const guestSignInRedirect = chooseSupportSignInRedirect({
-    ticketId: ticketIdParam || createdTicketId || ticketId || null,
+    // An expired guest ticket is not a conversation to come back to.
+    ticketId: guestExpiredTicketId ? null : ticketIdParam || createdTicketId || ticketId || null,
     projectId: effectiveProjectId || null,
     fallback: currentHref,
   })
@@ -693,7 +745,10 @@ export default function UserSupportChatPage() {
   // A ticket created in this session is already on screen; don't swap it for
   // the loading/not-found screens while its ?ticket= lookup catches up.
   const openingOtherTicket = !!ticketIdParam && ticketIdParam !== createdTicketId
-  if (openingOtherTicket && existingTicketLoading) {
+  // Also while the session is still being read and while a returning guest's
+  // ticket is being reopened, so neither "not found" nor a stale
+  // "visitor left" state flashes first.
+  if (openingOtherTicket && (existingTicketLoading || userLoading || reentryPending)) {
     return (
       <PageSkeleton />
     )
@@ -710,6 +765,13 @@ export default function UserSupportChatPage() {
             onLink={adoptionRetry.linkNow}
             // The guest conversation's key ran out before it was linked.
             expired={isAuthenticated && !adoptionRetry.linking && wasGuestAdoptionExpired()}
+            // A guest back after more than 30 minutes (or the ticket was
+            // removed), or linking found the conversation gone.
+            guestExpired={
+              !!guestExpiredTicketId ||
+              adoptionRetry.unavailable ||
+              (isAuthenticated && !adoptionRetry.linking && wasGuestConversationUnavailable())
+            }
             newConversationHref={
               projectIdParam ? `/support/chat?project=${encodeURIComponent(projectIdParam)}` : "/support/chat"
             }

@@ -57,6 +57,11 @@ function setupSupabase(fx: Fixture) {
             (tables[table] ?? []).filter((row) =>
                 filters.every((f) => {
                     const value = row[f.col];
+                    if (f.op === "or") {
+                        // Only the abandoned-guest-ticket filter is modelled here.
+                        if (f.col !== "guest.eq.false,status.neq.cancelled") throw new Error(`unexpected or(): ${f.col}`);
+                        return !(row.guest === true) || row.status !== "cancelled";
+                    }
                     if (f.op === "in") return (f.val as unknown[]).includes(value);
                     return value === f.val;
                 })
@@ -71,6 +76,7 @@ function setupSupabase(fx: Fixture) {
         builder.eq = chain("eq");
         builder.is = chain("is");
         builder.in = chain("in");
+        builder.or = chain("or");
         builder.then = (
             onFulfilled: (v: { data: unknown[]; error: null }) => unknown,
             onRejected?: (e: unknown) => unknown

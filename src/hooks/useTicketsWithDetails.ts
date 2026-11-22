@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
+import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
 import { supabase } from "@/lib/supabase/client";
 
 export interface TicketWithDetails {
@@ -52,6 +53,9 @@ export function useTicketsWithDetails(projectId?: string) {
             if (projectId) {
                 query = query.eq("project_id", projectId);
             }
+
+            // Helper/admin list: never show abandoned guest tickets.
+            query = excludeAbandonedGuestTickets(query);
 
             const { data, error } = await query;
 

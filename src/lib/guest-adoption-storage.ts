@@ -140,8 +140,43 @@ export function clearGuestAdoptionExpired(storage: StorageLike | null = defaultS
   if (!storage) return
   try {
     storage.removeItem(GUEST_ADOPTION_EXPIRED_KEY)
+    storage.removeItem(GUEST_CONVERSATION_UNAVAILABLE_KEY)
   } catch {
     // ignore
+  }
+}
+
+/**
+ * Set when linking a guest conversation ended for good because the
+ * conversation itself is gone (the guest left more than 30 minutes ago, or
+ * the ticket was deleted), so the chat can say "no longer available" instead
+ * of "Ticket not found". Cleared with the expiry marker above.
+ */
+export const GUEST_CONVERSATION_UNAVAILABLE_KEY = "githelp.guestConversationUnavailableAt"
+const UNAVAILABLE_NOTICE_MS = 60 * 60 * 1000
+
+export function markGuestConversationUnavailable(
+  storage: StorageLike | null = defaultStorage(),
+  now: () => number = Date.now,
+): void {
+  if (!storage) return
+  try {
+    storage.setItem(GUEST_CONVERSATION_UNAVAILABLE_KEY, String(now()))
+  } catch {
+    // ignore
+  }
+}
+
+export function wasGuestConversationUnavailable(
+  storage: StorageLike | null = defaultStorage(),
+  now: () => number = Date.now,
+): boolean {
+  if (!storage) return false
+  try {
+    const at = Number(storage.getItem(GUEST_CONVERSATION_UNAVAILABLE_KEY))
+    return Number.isFinite(at) && at > 0 && now() - at < UNAVAILABLE_NOTICE_MS
+  } catch {
+    return false
   }
 }
 

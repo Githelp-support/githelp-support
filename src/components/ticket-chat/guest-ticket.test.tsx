@@ -6,8 +6,11 @@ import { GuestName } from "@/components/ui/guest-name"
 import { guestLabel } from "@/lib/guest-label"
 import {
   ClaimTicketButton,
+  END_ABANDONED_GENERIC_ERROR_COPY,
   GUEST_CLAIM_BLOCKED_COPY,
+  GuestAbandonedAction,
   VisitorLeftAction,
+  endAbandonedGuestTicketErrorAction,
   ticketCreatorDisplayName,
 } from "./guest-ticket"
 import {
@@ -18,6 +21,7 @@ import {
   buildCustomerThreadMessages,
   guestSystemMessageCopy,
   hasVisitorLeft,
+  isGuestAbandoned,
 } from "@/lib/customer-chat-messages"
 
 describe("ClaimTicketButton", () => {
@@ -182,6 +186,59 @@ describe("guest system messages", () => {
     render(<VisitorLeftAction onStartNewConversation={onStart} />)
     fireEvent.click(screen.getByRole("button", { name: "Start a new conversation" }))
     expect(onStart).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("GuestAbandonedAction", () => {
+  const sys = (kind: string) => ({ sender_type: "system", metadata: { kind } })
+
+  it("ends the ticket on click", () => {
+    const onEnd = vi.fn()
+    render(<GuestAbandonedAction onEndTicket={onEnd} />)
+    const button = screen.getByRole("button", { name: "End ticket" })
+    expect(button).toBeEnabled()
+    fireEvent.click(button)
+    expect(onEnd).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows the spinner and blocks a second click while the request runs", () => {
+    const onEnd = vi.fn()
+    render(<GuestAbandonedAction onEndTicket={onEnd} pending />)
+    const button = screen.getByRole("button", { name: "End ticket" })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute("aria-busy", "true")
+    fireEvent.click(button)
+    expect(onEnd).not.toHaveBeenCalled()
+  })
+
+  it("is only rendered while the guest is away", () => {
+    // The page renders the action while isGuestAbandoned holds.
+    const Thread = ({ messages, status }: { messages: ReturnType<typeof sys>[]; status: string }) =>
+      isGuestAbandoned(messages, status) ? <GuestAbandonedAction onEndTicket={vi.fn()} /> : null
+    const { rerender } = render(<Thread messages={[sys("guest_abandoned")]} status="available" />)
+    expect(screen.getByRole("button", { name: "End ticket" })).toBeInTheDocument()
+    // guest_returned arrives over realtime.
+    rerender(<Thread messages={[sys("guest_abandoned"), sys("guest_returned")]} status="available" />)
+    expect(screen.queryByRole("button", { name: "End ticket" })).not.toBeInTheDocument()
+    // Ended: the ticket is completed.
+    rerender(<Thread messages={[sys("guest_abandoned")]} status="completed" />)
+    expect(screen.queryByRole("button", { name: "End ticket" })).not.toBeInTheDocument()
+  })
+
+  it("maps the RPC error hints", () => {
+    expect(endAbandonedGuestTicketErrorAction({ hint: "guest_ticket_not_abandoned" })).toEqual({
+      message: "The guest is back in the chat.",
+      refetch: true,
+    })
+    expect(endAbandonedGuestTicketErrorAction({ hint: "ticket_closed" })).toEqual({ message: null, refetch: true })
+    expect(endAbandonedGuestTicketErrorAction({ hint: "guest_ticket_not_found" })).toEqual({
+      message: END_ABANDONED_GENERIC_ERROR_COPY,
+      refetch: false,
+    })
+    expect(endAbandonedGuestTicketErrorAction(new Error("network"))).toEqual({
+      message: END_ABANDONED_GENERIC_ERROR_COPY,
+      refetch: false,
+    })
   })
 })
 

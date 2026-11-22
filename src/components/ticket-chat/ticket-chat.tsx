@@ -70,6 +70,9 @@ export type SystemMessageKind =
   // because the visitor left / the visitor signed in (adopt-guest-tickets).
   | "visitor_left"
   | "guest_signed_in"
+  // Helper-only notes: the guest closed the chat window / came back.
+  | "guest_abandoned"
+  | "guest_returned"
 
 export type TicketChatMessage = {
   id: string
