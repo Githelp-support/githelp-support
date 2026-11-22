@@ -20,7 +20,8 @@ import {
 import { useHelpers } from "@/hooks/useHelpers"
 import { useCreateProjectInvite } from "@/hooks/useProject"
 import { useProjectAdmins, usePromoteToAdmin } from "@/hooks/useProjectAdmins"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
+import { SQUIRCLE_RADIUS } from "@/lib/constants"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { toast } from "sonner"
 
 export default function ProjectSettingsPage() {
@@ -150,15 +151,11 @@ export default function ProjectSettingsPage() {
     }
   }
 
-  const getInitials = (name: string | null, email: string | null) => {
-    return (name || email || "?").trim().charAt(0).toUpperCase() || "?"
-  }
-
   if (!projectId) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Project Settings" subtitle="Manage keywords and help categories" />
-        <main className="flex-1 px-8 py-6 overflow-y-auto">
+        <main className="flex-1 px-14 pt-2 pb-6 overflow-y-auto">
           <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to manage its keywords and help categories.</p>
           </div>
@@ -170,7 +167,7 @@ export default function ProjectSettingsPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Project Settings" subtitle="Manage keywords and help categories for your project" />
-      <main className="flex-1 px-8 py-6 overflow-y-auto">
+      <main className="flex-1 px-14 pt-2 pb-6 overflow-y-auto">
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-4xl space-y-4">
             {/* Admins */}
@@ -194,12 +191,12 @@ export default function ProjectSettingsPage() {
                   <div className="divide-y divide-border rounded-md border border-border overflow-hidden mb-9">
                     {admins.map((admin) => (
                       <div key={admin.user_id} className="flex items-center gap-3 px-4 py-3 bg-card">
-                        <div
-                          className={`w-9 h-9 ${SQUIRCLE_RADIUS[36]} flex items-center justify-center text-sm font-medium text-foreground`}
-                          style={{ backgroundColor: getAvatarColorHexForId(admin.user_id) }}
-                        >
-                          {getInitials(admin.name, admin.email)}
-                        </div>
+                        <ProfileAvatar
+                          id={admin.user_id}
+                          name={admin.name || admin.email}
+                          avatarUrl={admin.avatar_url}
+                          className={`w-9 h-9 ${SQUIRCLE_RADIUS[36]}`}
+                        />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-foreground truncate">
                             {admin.name || admin.email || "Unknown"}

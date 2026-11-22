@@ -451,7 +451,7 @@ export default function ReportsSupportPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Reports and Payouts" subtitle="Your project's income per ticket, and what has been paid out to helpers." />
 
-      <main className="flex-1 px-8 py-6 overflow-y-auto">
+      <main className="flex-1 px-14 pt-3.5 pb-6 overflow-y-auto">
         <div className="space-y-6">
           <div className="mb-6">
             <div className="flex gap-1">
@@ -459,7 +459,7 @@ export default function ReportsSupportPage() {
               {tabButton("tickets", "Tickets")}
               {tabButton("helpers", "Helpers")}
             </div>
-            <div className="h-px bg-border -mx-6" />
+            <div className="h-px bg-border" />
           </div>
 
           <div className="flex gap-2 mb-6">
@@ -584,7 +584,7 @@ export default function ReportsSupportPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               <DropdownMenuItem
                                 title={`Download the ${row.period} project report as PDF`}
                                 onSelect={() => exportPdf(row.period)}
@@ -713,7 +713,7 @@ export default function ReportsSupportPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               {count > 1 ? (
                                 <DropdownMenuItem title="Each charge has its own Stripe receipt" onSelect={() => toggle(row.id)}>
                                   <Icon name="fi-rr-arrow-up-right-from-square" />
@@ -877,7 +877,7 @@ export default function ReportsSupportPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               <DropdownMenuItem
                                 title={`Download all of ${row.helper}'s transactions in ${row.period} as one PDF`}
                                 onSelect={() => exportPdf(null, helperMonthExport(row))}

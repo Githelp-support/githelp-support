@@ -18,6 +18,8 @@ interface ResourcesContentProps {
   projectName: string
   resources: SupportResource[]
   resourcesLoading: boolean
+  /** Show the "how support works" FAQ card. Hidden on the helper's Resources page. */
+  showFaqs?: boolean
 }
 
 const FAQS = [
@@ -52,14 +54,14 @@ const FAQS = [
  * "Resources" tab content — shared between the public /support page tabs and
  * the user-portal /support/resources route.
  */
-export function ResourcesContent({ projectName, resources, resourcesLoading }: ResourcesContentProps) {
+export function ResourcesContent({ projectName, resources, resourcesLoading, showFaqs = true }: ResourcesContentProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredFaqs = FAQS.filter((faq) => faq.question.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
     <div className="space-y-8">
-      <h2 className="text-title font-normal text-text-secondary mb-8">{projectName}&apos;s resources</h2>
+      <h2 className="text-xl font-book text-text-secondary mb-8">{projectName}&apos;s resources</h2>
 
       {resourcesLoading ? (
         <ListSkeleton rows={3} avatar={false} badge={false} className="max-w-xl divide-y-0 [&>div]:px-0" />
@@ -81,6 +83,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
         </div>
       )}
 
+      {showFaqs && (
       <Card className="max-w-3xl">
         <CardContent className="p-0">
           <div className="px-6 py-6">
@@ -118,6 +121,7 @@ export function ResourcesContent({ projectName, resources, resourcesLoading }: R
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }

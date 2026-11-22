@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex h-5 items-center justify-center rounded-md border px-2 text-xs font-medium w-fit whitespace-nowrap shrink-0 tabular-nums [&>svg]:size-3 [&>i]:[--icon-size:0.75rem] gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex h-5 items-center justify-center rounded-md border px-2 text-xs font-normal w-fit whitespace-nowrap shrink-0 tabular-nums [&>svg]:size-3 [&>i]:[--icon-size:0.75rem] gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
   {
     variants: {
       variant: {
@@ -17,6 +17,17 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        type: "border-transparent bg-badge-neutral-bg text-badge-neutral-text",
+        category:
+          "border-badge-outline-border bg-badge-outline-bg text-badge-outline-text",
+        info: "border-transparent bg-badge-info-bg text-badge-info-text",
+        success: "border-transparent bg-badge-success-bg text-badge-success-text",
+        // Claimed / In Progress: same fill as `type`.
+        neutral: "border-transparent bg-badge-neutral-bg text-badge-neutral-text",
+        // Cancelled.
+        subdued: "border-transparent bg-badge-neutral-bg text-badge-muted-text",
+        urgent:
+          "border-transparent bg-badge-strong-bg text-badge-strong-text font-semibold",
       },
     },
     defaultVariants: {

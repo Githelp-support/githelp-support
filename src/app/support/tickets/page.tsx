@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NewTicketModal } from "@/components/modals/new-ticket-modal"
 import { useUserTickets } from "@/hooks/useTicketsWithDetails"
-import { getTicketStatusBadgeClass } from "@/lib/status-colors"
+import { TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { Icon } from "@/components/ui/icon"
 import { SQUIRCLE_RADIUS } from "@/lib/constants"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -180,7 +180,7 @@ export default function SupportTicketsPage() {
           subtitle="View and manage your support requests"
         />
 
-        <main className="flex-1 overflow-y-auto px-8 py-6 space-y-6 bg-background">
+        <main className="flex-1 overflow-y-auto px-14 py-6 space-y-6 bg-background">
           <p className="text-sm text-muted-foreground">
             {isAuthenticated
               ? `${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}`
@@ -380,17 +380,12 @@ export default function SupportTicketsPage() {
                               </div>
                             </div>
                             <div className="col-span-2">
-                              <Badge
-                                variant="secondary"
-                                className="bg-muted text-muted-foreground text-xs"
-                              >
+                              <Badge variant="type">
                                 {ticket.type}
                               </Badge>
                             </div>
                             <div className="col-span-2">
-                              <Badge className={`text-xs ${getTicketStatusBadgeClass(ticket.displayStatus)}`}>
-                                {ticket.displayStatus}
-                              </Badge>
+                              <TicketStatusBadge status={ticket.displayStatus} />
                             </div>
                             <div className="col-span-3">
                               <div className="text-sm text-muted-foreground">

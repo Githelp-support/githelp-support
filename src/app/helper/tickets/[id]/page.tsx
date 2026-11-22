@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/layout/header"
+import { useSetProjectPageHref } from "@/components/layout/app-shell"
 import { formatDateTime } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -43,8 +44,10 @@ import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
-import { ClaimTicketButton, GuestTicketBadge, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
-import { guestSystemMessageCopy } from "@/lib/customer-chat-messages"
+import { ClaimTicketButton, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
+import { helperSystemMessageCopy } from "@/lib/customer-chat-messages"
+import { GuestName } from "@/components/ui/guest-name"
+import { guestLabel } from "@/lib/guest-label"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
@@ -94,8 +97,6 @@ interface Message {
   metadata?: TimeReviewMessageMetadata
 }
 
-const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "Ticket claimed and payment authorized - you can now start tracking time."
-
 /** Toast for a failed capture: only card problems mention updating the card. */
 function notifyCaptureError(error: Error, cardHint: string) {
   const code = (error as { code?: string }).code
@@ -140,6 +141,15 @@ export default function TicketDetailPage() {
   // can claim / log time / bill until they do. Realtime clears the flag after
   // adoption (adopt-guest-tickets), which re-enables the claim button.
   const isGuestTicket = !!(ticket as { guest?: boolean } | null | undefined)?.guest
+  // Name shown for the guest who opened the ticket: their email if we have
+  // one, else "Guest · " + a short code from their (anonymous) user id.
+  const creatorGuestId = ticket?.created_by ?? null
+  const creatorGuestEmail = ticketDetails?.user?.email ?? null
+  const creatorGuest = useMemo(
+    () => (isGuestTicket ? guestLabel({ id: creatorGuestId, email: creatorGuestEmail }) : null),
+    [isGuestTicket, creatorGuestId, creatorGuestEmail],
+  )
+  const isGuestCreator = (id: string | null | undefined) => !!creatorGuest && !!id && id === creatorGuestId
   // Fetch payment settings (the payment gate needs them: free support opens it)
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
   // Billing uses the prices snapshotted when the ticket was opened; prefer them over
@@ -176,6 +186,14 @@ export default function TicketDetailPage() {
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
+  // Publish the sidebar's "Open project page" link for the ticket's project.
+  useSetProjectPageHref(
+    project?.slug
+      ? `/support/${encodeURIComponent(project.slug)}`
+      : projectId
+        ? `/support?project=${encodeURIComponent(projectId)}`
+        : undefined
+  )
   const { data: projectRole } = useProjectRole(projectId || undefined)
   const isAdmin = projectRole === "admin"
   const addSelfAsHelper = useAddSelfAsHelper()
@@ -411,13 +429,11 @@ export default function TicketDetailPage() {
       messagesData.map((msg): Message => ({
         id: msg.id,
         sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
-        // The stored payment_authorized text is worded for the customer; helpers/admins get their own.
+        // The stored payment_authorized / payment_required texts are worded for the customer; helpers/admins get their own.
         content:
-          msg.sender_type === "system" && (msg.metadata as { kind?: string } | null | undefined)?.kind === "payment_authorized"
-            ? HELPER_PAYMENT_AUTHORIZED_MESSAGE
-            : (msg.sender_type === "system"
-                ? guestSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind, "helper")
-                : null) ?? msg.content,
+          (msg.sender_type === "system"
+            ? helperSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind)
+            : null) ?? msg.content,
         timestamp: formatDateTime(msg.created_at),
         avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
         senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
@@ -878,7 +894,7 @@ export default function TicketDetailPage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
         <div className="relative z-10">
-          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" />
+          <Header title="Ticket" showBackButton={true} titleClassName="text-xl" className="border-b border-border-subtle" />
         </div>
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-6 py-12">
@@ -911,10 +927,10 @@ export default function TicketDetailPage() {
             title={`Ticket with ${project?.name || 'Support'}`}
             showBackButton={true}
             titleClassName="text-xl"
+            className="border-b border-border-subtle"
             inlineRightContent={
               <span className="flex items-center gap-2">
                 <span className="text-ui font-normal font-mono tabular-nums text-muted-foreground/80 whitespace-nowrap max-xl:hidden">ID: {ticketId}</span>
-                {isGuestTicket && <GuestTicketBadge />}
               </span>
             }
             actions={
@@ -958,13 +974,18 @@ export default function TicketDetailPage() {
                     id={firstIssueMessage.senderId}
                     name={firstIssueMessage.senderName ?? "U"}
                     avatarUrl={firstIssueMessage.senderAvatarUrl ?? null}
+                    guest={isGuestTicket}
                     size="sm"
                     radius="9.625px"
                   />
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm text-foreground font-medium">{firstIssueMessage.senderName}</span>
+                        {creatorGuest ? (
+                          <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-sm" />
+                        ) : (
+                          <span className="text-sm text-foreground font-medium">{firstIssueMessage.senderName}</span>
+                        )}
                         <span
                           className="text-xs"
                           style={{
@@ -1010,7 +1031,7 @@ export default function TicketDetailPage() {
                         <h4 className="font-medium text-foreground mb-2">Type of help</h4>
                         <div className="flex gap-2 flex-wrap">
                           {ticketDetails.help_categories.map((c) => (
-                            <Badge key={`${c.value}-${c.type}`} variant="secondary" className="bg-muted text-muted-foreground capitalize">
+                            <Badge key={`${c.value}-${c.type}`} variant="type" className="capitalize">
                               {c.type !== "default" ? c.type : c.value}
                             </Badge>
                           ))}
@@ -1113,6 +1134,7 @@ export default function TicketDetailPage() {
                               id={msg.senderId}
                               name={msg.senderName ?? msg.avatar ?? "U"}
                               avatarUrl={msg.senderAvatarUrl ?? null}
+                              guest={msg.sender === "user" && isGuestCreator(msg.senderId)}
                               size="sm"
                               radius="9.625px"
                             />
@@ -1120,7 +1142,11 @@ export default function TicketDetailPage() {
                           <div className="flex-1">
                             {msg.sender !== "system" && (
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
+                                {creatorGuest && msg.sender === "user" && isGuestCreator(msg.senderId) ? (
+                                  <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-sm" />
+                                ) : (
+                                  <span className="text-sm text-foreground font-medium">{msg.senderName}</span>
+                                )}
                                 <span
                                   className="text-xs"
                                   style={{
@@ -1374,7 +1400,7 @@ export default function TicketDetailPage() {
         <RightSidebarCollapseToggle isCollapsed={isCollapsed} onToggle={setCollapsed} />
 
         {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto px-3 pb-6 max-lg:pt-4">
+        <div className="flex-1 overflow-y-auto px-4 pb-6 max-lg:pt-4">
           {/* People in Chat */}
           <div>
             <SidebarSectionHeading>People in this chat</SidebarSectionHeading>
@@ -1390,11 +1416,16 @@ export default function TicketDetailPage() {
                         id={participant.user?.id ?? participant.participant_id}
                         name={participant.user?.name ?? "Unknown"}
                         avatarUrl={participant.user?.avatar_url ?? null}
+                        guest={isGuestCreator(participant.participant_id)}
                         size="md"
                       />
-                      <span className="text-ui text-muted-foreground">
-                        {isCurrentUser ? "You" : participant.user?.name ?? "Unknown"}
-                      </span>
+                      {creatorGuest && !isCurrentUser && isGuestCreator(participant.participant_id) ? (
+                        <GuestName label={creatorGuest.label} full={creatorGuest.full} className="text-ui" />
+                      ) : (
+                        <span className="text-ui text-muted-foreground">
+                          {isCurrentUser ? "You" : participant.user?.name ?? "Unknown"}
+                        </span>
+                      )}
                     </div>
                   )
                 })}
@@ -1525,9 +1556,9 @@ export default function TicketDetailPage() {
           {/* Active Tickets — 3 latest claimed by this helper */}
           <div>
             <SidebarSectionHeading>Active tickets ({activeTicketsCount})</SidebarSectionHeading>
-            <div className={`-mx-3 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
+            <div className={`-mx-4 ${activeTicketsSidebar.length > 1 ? "max-h-72 overflow-y-auto" : ""}`}>
               {activeTicketsSidebar.length === 0 ? (
-                <p className="text-ui text-muted-foreground px-3">No active tickets</p>
+                <p className="text-ui text-muted-foreground px-4">No active tickets</p>
               ) : (
                 activeTicketsSidebar.map((item) => (
                   <NextLink
@@ -1539,7 +1570,7 @@ export default function TicketDetailPage() {
                         : "bg-background border-border hover:bg-muted"
                     }`}
                   >
-                    <div className="p-3">
+                    <div className="px-4 py-3">
                       <div className="flex items-start gap-3">
                         <ProfileAvatar
                           id={item.creatorId}

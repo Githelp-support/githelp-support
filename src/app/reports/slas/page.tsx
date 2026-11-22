@@ -302,7 +302,7 @@ export default function ReportsSLAsPage() {
         subtitle="Keep track of reports and transactions for your SLAs."
       />
 
-      <main className="flex-1 px-8 py-6 overflow-y-auto">
+      <main className="flex-1 px-14 pt-3.5 pb-6 overflow-y-auto">
         {/* Tab Navigation */}
         <div className="mb-6">
           <div className="flex gap-1">
@@ -327,8 +327,8 @@ export default function ReportsSLAsPage() {
               Tickets
             </button>
           </div>
-          {/* Full-width line below tabs */}
-          <div className="h-px bg-border -mx-6"></div>
+          {/* Line below tabs, aligned with the content gutters */}
+          <div className="h-px bg-border"></div>
         </div>
 
         <div className="max-w-7xl space-y-6">

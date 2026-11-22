@@ -194,7 +194,10 @@ export default function UserSupportChatPage() {
   const { data: paymentSettings, isLoading: paymentSettingsLoading } = useProjectPaymentSettings(effectiveProjectId)
   // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
   const ticketPricingSnapshot = (existingTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
-  const effectivePricing = ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings
+  const effectivePricing = useMemo(
+    () => (ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings),
+    [paymentSettings, ticketPricingSnapshot],
+  )
   const paymentStatus = useTicketPaymentStatus(existingTicket?.id ?? null, {
     slaId,
     isFree: isFreeSupport(effectivePricing),
@@ -471,7 +474,8 @@ export default function UserSupportChatPage() {
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
       ticketStatus: existingTicket?.status ?? null,
-      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
+      isFree: isFreeSupport(effectivePricing),
+      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
       avgResponseSeconds,
     })
     // A guest ticket closed because the visitor left carries its own
@@ -503,6 +507,7 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
+    effectivePricing,
     avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
@@ -905,6 +910,7 @@ export default function UserSupportChatPage() {
     existingTicket?.created_by && creatorUser
       ? { id: existingTicket.created_by, name: creatorUser.name, avatar_url: creatorUser.avatar_url }
       : null,
+    isGuest,
   )
 
   return (
@@ -914,7 +920,7 @@ export default function UserSupportChatPage() {
         headerTitle={`Ticket with ${projectName}`}
         headerTitleClassName="text-xl"
         headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
-        showBackButton={false}
+        showBackButton={true}
         intro={
           <CustomerChatIntro
             projectId={effectiveProjectId}

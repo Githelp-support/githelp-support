@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { CategoryBadge } from "@/components/ui/ticket-badges"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/header"
 import { useHelper, useUpdateUserProfile } from "@/hooks/useHelpers"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { supabase } from "@/lib/supabase/client"
 import {
   useProjectKeywords,
@@ -23,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { linkGitHubIdentity } from "@/lib/supabase/auth"
 import { useUnsavedChangesGuard } from "@/contexts/unsaved-changes-context"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ProfileAvatarEditor } from "@/components/settings/profile-avatar-editor"
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg
@@ -170,7 +170,7 @@ export default function HelperProfilePage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="Helper profile for the selected project" />
-        <main className="flex-1 overflow-auto px-8 py-6">
+        <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
           <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-muted-foreground">Select a project to view and edit your helper profile.</p>
           </div>
@@ -183,7 +183,7 @@ export default function HelperProfilePage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="Helper profile for the selected project" />
-        <main className="flex-1 overflow-auto px-8 py-6">
+        <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
           <div className="max-w-3xl divide-y divide-border-subtle">
             <p className="text-sm text-left pl-2 text-muted-foreground">You are not registered as a helper in this project.</p>
           </div>
@@ -196,7 +196,7 @@ export default function HelperProfilePage() {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="My profile" subtitle="Helper profile" />
-        <main className="flex-1 overflow-auto px-8 py-6">
+        <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
           <ListSkeleton rows={4} avatar={false} badge={false} className="max-w-3xl divide-y-0" />
         </main>
       </div>
@@ -204,31 +204,35 @@ export default function HelperProfilePage() {
   }
 
   const displayName = helperData.user?.name || "Unknown"
-  const displayAvatar = (displayName || "U")[0].toUpperCase()
+  const profileName = (
+    <div className="flex items-center gap-4">
+      <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
+      <CategoryBadge category={category} label={categoryLabel} />
+    </div>
+  )
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="My profile" subtitle="View and edit your helper details" />
 
-      <main className="flex-1 overflow-auto px-8 py-6">
+      <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6">
         <div className="max-w-3xl">
           {/* Profile header */}
-          <div className="flex items-center gap-4 mb-8">
-            <div
-              className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
-              style={{ backgroundColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id) }}
-            >
-              {displayAvatar}
-            </div>
-            <div className="flex items-center gap-4">
-              <h1 className="text-base font-subtitle text-foreground">{displayName}</h1>
-              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                {categoryLabel}
-              </Badge>
-            </div>
+          <div className="mb-8">
+            {user.id ? (
+              <ProfileAvatarEditor
+                userId={user.id}
+                name={displayName}
+                avatarUrl={helperData.user?.avatar_url ?? user.avatarUrl ?? null}
+              >
+                {profileName}
+              </ProfileAvatarEditor>
+            ) : (
+              profileName
+            )}
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-4">
           {/* Editable contact information */}
           <Card className="border-0 py-0">
             <CardContent className="py-6 px-0">
@@ -298,9 +302,7 @@ export default function HelperProfilePage() {
               <h2 className="text-base font-subtitle text-foreground">Helper category</h2>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-sm font-medium">
-                {categoryLabel}
-              </Badge>
+              <CategoryBadge category={category} label={categoryLabel} />
               <p className="text-sm text-muted-foreground">
                 Your category decides your share of each ticket and is set by the project&apos;s admins. Ask them if it
                 should change.

@@ -1,5 +1,19 @@
 import { describe, it, expect } from "vitest"
-import { pickProjectForRole } from "./roles"
+import { homeRouteForRole, pickProjectForRole } from "./roles"
+
+describe("homeRouteForRole", () => {
+  it("sends admins to the dashboard", () => {
+    expect(homeRouteForRole("admin")).toBe("/")
+  })
+
+  it("sends helpers to Support/Chat", () => {
+    expect(homeRouteForRole("helper")).toBe("/helper/support/chat")
+  })
+
+  it("sends users to the Support page", () => {
+    expect(homeRouteForRole("user")).toBe("/support/chat")
+  })
+})
 
 describe("pickProjectForRole", () => {
   it("prefers the project last used in that role", () => {

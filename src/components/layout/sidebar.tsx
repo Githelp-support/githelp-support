@@ -1,6 +1,7 @@
 "use client"
 
 import { Icon } from "@/components/ui/icon"
+import { SidebarToggleIcon } from "@/components/ui/sidebar-toggle-icon"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -12,11 +13,22 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
 import { isSupportRoute } from "@/lib/sign-in-href"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Logo } from "@/components/brand/logo"
+import { RoleSwitcher, ProjectSwitcher } from "@/components/layout/workspace-switchers"
+import { useWorkspaceSwitcher } from "@/hooks/useWorkspaceSwitcher"
+import { NotificationsPanel } from "@/components/layout/notifications-panel"
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  type Notification,
+} from "@/hooks/useNotifications"
+import { cn } from "@/lib/utils"
 import { Fragment, type ReactElement } from "react"
 
 interface SidebarProps {
@@ -43,9 +55,58 @@ const FlaticonIcon = ({ iconClass, className }: { iconClass: string; className?:
   )
 }
 
+// Menu icons sit one step lighter than their label at rest (`text-tertiary`
+// against the `text-muted` label, still above 4.5:1 on the sidebar surface), so
+// the label carries the hierarchy. The row sets `--nav-icon`; on hover it
+// resolves to `currentColor`, and active rows never set it, so the icon then
+// follows the label colour (foreground on hover, brand purple when active).
+const NAV_ICON_REST = "[--nav-icon:var(--text-tertiary)] hover:[--nav-icon:currentColor]"
+const NAV_ROW_REST = `font-book text-text-muted hover:bg-surface-hover hover:text-foreground ${NAV_ICON_REST}`
+const NAV_ICON_CLASS =
+  "flex h-4 w-4 shrink-0 items-center justify-center text-base text-[color:var(--nav-icon,currentColor)] transition-colors duration-fast ease-out"
+
+// The inbox glyph is an open tray: its box is empty at the top, so the drawn
+// part sits below the label's optical centre. Nudge only the glyph up by 1px
+// (a transform, so the row's layout and the label spacing are unchanged).
+const INBOX_ICON_NUDGE = "-translate-y-px"
+
 // Sub-pages of the user-role "Support" parent item. Exact paths only —
 // /support/tickets belongs to the top-level "Tickets" item and must NOT
 // expand "Support".
+// Which sub-menus are open is remembered between visits.
+const EXPANDED_STORAGE_KEY = "sidebar:expanded"
+
+const readStoredExpanded = (): string[] => {
+  if (typeof window === "undefined") return []
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(EXPANDED_STORAGE_KEY) ?? "[]")
+    return Array.isArray(parsed) ? parsed.filter((name): name is string => typeof name === "string") : []
+  } catch {
+    return []
+  }
+}
+
+// Scrolls `scroller` (and nothing else) by the smallest amount that brings
+// `el` fully inside it, clear of the overflow fades (the scroller's
+// scroll-padding). Instant: no smooth scrolling.
+const scrollIntoNearest = (scroller: HTMLElement, el: Element) => {
+  const style = window.getComputedStyle(scroller)
+  const padTop = parseFloat(style.scrollPaddingTop) || 0
+  const padBottom = parseFloat(style.scrollPaddingBottom) || 0
+  const box = scroller.getBoundingClientRect()
+  const rect = el.getBoundingClientRect()
+  if (rect.top < box.top + padTop) {
+    scroller.scrollTop -= box.top + padTop - rect.top
+  } else if (rect.bottom > box.bottom - padBottom) {
+    scroller.scrollTop += rect.bottom - (box.bottom - padBottom)
+  }
+}
+
+// A helper's ticket chat lives at /helper/tickets/<id>; in the helper menu it
+// belongs to the "Chat" sub-item of "Support".
+const HELPER_TICKET_PREFIX = "/helper/tickets/"
+const HELPER_CHAT_PATH = "/helper/support/chat"
+
 const SUPPORT_SUB_PATHS = [
   "/support/chat",
   "/support/rates",
@@ -76,8 +137,17 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
     if (pathname?.startsWith("/helper/settings/")) return ["Settings"]
     if (pathname?.startsWith("/user/settings/")) return ["Settings"]
     if (pathname && SUPPORT_SUB_PATHS.includes(pathname)) return ["Support"]
-    return []
+    if (pathname?.startsWith("/helper/support/")) return ["Support"]
+    // No active sub-page: restore what was open on the last visit.
+    return readStoredExpanded()
   })
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(expandedItems))
+    } catch {
+      // Ignore localStorage write errors.
+    }
+  }, [expandedItems])
   // Persist collapsed state across reloads. Read localStorage synchronously
   // in the initializer so the first client render already has the right
   // width. On the server `window` is undefined so we fall back to `false`;
@@ -94,6 +164,30 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   const isCollapsed = forceExpanded ? false : storedCollapsed
   const { user } = useUser()
   const isAuthenticated = !!user?.id
+  // Guarded sign-out (prompts on unsaved changes), shared with the TopBar.
+  const { signOut } = useWorkspaceSwitcher()
+
+  // Inbox (notifications). The realtime subscription and its toasts stay in
+  // the TopBar, which is mounted once; the sidebar only reads the list.
+  const [isInboxOpen, setIsInboxOpen] = useState(false)
+  const inboxButtonRef = useRef<HTMLButtonElement>(null)
+  const { data: notificationsData } = useNotifications()
+  const markNotificationRead = useMarkNotificationRead()
+  const markAllRead = useMarkAllNotificationsRead()
+  const notifications: Notification[] = notificationsData || []
+  const unreadCount = notifications.filter((n) => !n.is_read).length
+  const unreadLabel = unreadCount > 9 ? "9+" : String(unreadCount)
+
+  const setCollapsed = (next: boolean) => {
+    setIsCollapsed(next)
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("sidebar:collapsed", String(next))
+      } catch {
+        // Ignore localStorage write errors.
+      }
+    }
+  }
 
   // Collapsed rows have no visible label: show it in a tooltip to the right.
   const withTooltip = (label: string, node: ReactElement) =>
@@ -144,9 +238,32 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
     },
   ]
 
+  // The ticket a helper has open (/helper/tickets/<id>), or "" anywhere else.
+  const helperTicketId =
+    user.role === "helper" && pathname?.startsWith(HELPER_TICKET_PREFIX)
+      ? pathname.slice(HELPER_TICKET_PREFIX.length).split("/")[0]
+      : ""
+  // Whether a sub-item (path portion of its href) is the current page.
+  const isSubPathActive = (subPath: string) =>
+    pathname === subPath || (helperTicketId !== "" && subPath === HELPER_CHAT_PATH)
+
   const helperNavigationItems: NavigationItem[] = [
     { name: "Overview", href: "/helper/overview", icon: "fi-rr-apps" },
-    { name: "Tickets", href: "/tickets", icon: "fi-rr-comments" },
+    {
+      name: "Support",
+      href: "#",
+      icon: "fi-rr-comments",
+      subItems: [
+        { name: "Chat", href: HELPER_CHAT_PATH, icon: "fi-rr-comments" },
+        {
+          name: "Resources",
+          // From a ticket chat, carry the ticket so Resources resolves the same project.
+          href: `/helper/support/resources${helperTicketId ? `?ticket=${encodeURIComponent(helperTicketId)}` : ""}`,
+          icon: "fi-rr-folder",
+        },
+      ],
+    },
+    { name: "Tickets", href: "/tickets", icon: "fi-rr-list" },
     { name: "Reports", href: "/helper/reports", icon: "fi-rr-document" },
     {
       name: "Settings",
@@ -224,14 +341,17 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
   const [expansionKey, setExpansionKey] = useState<{ role: typeof user.role; pathname: string | null } | null>(null)
   if (!expansionKey || expansionKey.role !== user.role || expansionKey.pathname !== pathname) {
     setExpansionKey({ role: user.role, pathname })
-    let next: string[] = []
+    // Without an active sub-page the current expansion is kept: it is either
+    // what the user opened or what was restored from the last visit (names
+    // that are not in this role's menu are simply never rendered).
+    let next: string[] = expandedItems
     for (const item of navigationItems) {
       if (!item.subItems) continue
       const matched = item.subItems.some((sub) => {
         // Sub-item hrefs may carry preserved query params (e.g. the Support
         // sub-pages); match on the path portion only.
         const subPath = sub.href.split("?")[0]
-        return pathname === subPath || (pathname?.startsWith(subPath + "/") ?? false)
+        return isSubPathActive(subPath) || (pathname?.startsWith(subPath + "/") ?? false)
       })
       if (matched) {
         next = [item.name]
@@ -260,59 +380,163 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
 
   // Sub-item hrefs may carry preserved query params (e.g. the Support
   // sub-pages); compare against the path portion only.
-  const isSubItemActive = (href: string) => pathname === href.split("?")[0]
+  const isSubItemActive = (href: string) => isSubPathActive(href.split("?")[0])
+
+  // The menu between the switchers and the bottom items scrolls on its own.
+  // `overflow` tracks whether there is more above / below, for the edge fades.
+  const scrollerRef = useRef<HTMLElement>(null)
+  const scrollContentRef = useRef<HTMLDivElement>(null)
+  const [overflow, setOverflow] = useState({ above: false, below: false })
+  const updateOverflow = () => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    const above = scroller.scrollTop > 1
+    const below = scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1
+    setOverflow((prev) => (prev.above === above && prev.below === below ? prev : { above, below }))
+  }
+
+  // On load (and when the route or role changes the menu) bring the active
+  // item into view if it is outside the visible part of the list. A sub-menu
+  // that is still opening changes the list height, so the reveal is repeated
+  // on resize for a short while; after that the user's scroll position wins.
+  const revealPendingRef = useRef(false)
+  const revealActiveItem = () => {
+    const scroller = scrollerRef.current
+    const active = scroller?.querySelector('[data-active="true"]')
+    if (scroller && active) scrollIntoNearest(scroller, active)
+  }
+  useLayoutEffect(() => {
+    revealPendingRef.current = true
+    revealActiveItem()
+    const timer = window.setTimeout(() => {
+      revealPendingRef.current = false
+    }, 500)
+    return () => window.clearTimeout(timer)
+  }, [pathname, user.role, isCollapsed])
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    const content = scrollContentRef.current
+    if (!scroller || !content || typeof ResizeObserver === "undefined") return
+    // Fires once on observe, then whenever the window or the list changes height.
+    const observer = new ResizeObserver(() => {
+      if (revealPendingRef.current) revealActiveItem()
+      updateOverflow()
+    })
+    observer.observe(scroller)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [])
+
+  // Keyboard focus moving into the list scrolls the focused item clear of the fades.
+  const handleNavFocus = (e: FocusEvent<HTMLElement>) => {
+    let viaKeyboard = true
+    try {
+      viaKeyboard = e.target.matches(":focus-visible")
+    } catch {
+      // :focus-visible unsupported: treat every focus as keyboard focus.
+    }
+    if (viaKeyboard) scrollIntoNearest(e.currentTarget, e.target)
+  }
+
+  const profileAvatar = (
+    <ProfileAvatar id={user.id} name={user.name} avatarUrl={user.avatarUrl} size="sm" />
+  )
+
+  const signOutItem = (
+    <DropdownMenuItem className="cursor-pointer" onSelect={() => signOut()}>
+      <Icon name="fi-rr-sign-out-alt" />
+      Sign out
+    </DropdownMenuItem>
+  )
 
   return (
     <div
       suppressHydrationWarning
       // `self-stretch` (not `h-full`) sizes the sidebar from the AppShell row's
       // laid-out height (a `flex-1 min-h-0` chain, where percentage heights don't
-      // resolve), so it always fills the area below the TopBar and the profile
-      // block stays pinned to the bottom.
+      // resolve). The row fills the whole screen (the TopBar sits in the content
+      // column beside the sidebar, not above it), so the sidebar spans from the
+      // very top to the bottom and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className={`${isCollapsed ? "justify-center px-0" : "justify-end px-4"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
-        {!isCollapsed ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            onClick={() => {
-              setIsCollapsed(true)
-              if (typeof window !== "undefined") {
-                try {
-                  window.localStorage.setItem("sidebar:collapsed", "true")
-                } catch {
-                  // Ignore localStorage write errors.
-                }
-              }
-            }}
-          >
-            <Icon name="fi-rr-angle-double-small-left" size={5} />
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            onClick={() => {
-              setIsCollapsed(false)
-              if (typeof window !== "undefined") {
-                try {
-                  window.localStorage.setItem("sidebar:collapsed", "false")
-                } catch {
-                  // Ignore localStorage write errors.
-                }
-              }
-            }}
-          >
-            <Icon name="fi-rr-angle-small-right" size={5} />
-          </Button>
-        )}
-      </div>
+      {isCollapsed ? (
+        <>
+          {/* Header row: same height as the mobile TopBar, with 5px extra space below it. */}
+          <div className="mb-1.25 flex h-15 shrink-0 items-center justify-center px-4">
+            {withTooltip(
+              "Expand sidebar",
+              <button
+                type="button"
+                aria-label="Expand sidebar"
+                onClick={() => setCollapsed(false)}
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+              >
+                <Logo />
+              </button>,
+            )}
+          </div>
+          {/* Guests have no role or project. Each switcher centres its own
+              icon-only trigger: the role tile, then the project logo. */}
+          {isAuthenticated && (
+            <div className="flex shrink-0 flex-col gap-3 px-4 pb-4">
+              <RoleSwitcher variant="row" collapsed />
+              <ProjectSwitcher collapsed />
+            </div>
+          )}
+        </>
+      ) : (
+        // Logo row with the collapse control, then the role row and the project
+        // row below it. The logo sits in the same 16px icon slot as the rows
+        // below, so the logo, the role tile, the project avatar and the nav
+        // icons share one axis. The logo row is centred on the mobile TopBar's
+        // height (14px + 32px + 14px); the sheet's Close button sits beside it.
+        <div
+          className={cn(
+            // 28px from the logo row to the role row, 12px between the two
+            // switchers, and 16px down to the hairline (the same 16px sits
+            // between the hairline and the Inbox).
+            "flex shrink-0 flex-col gap-3 px-4 pt-3.5",
+            // Guests only get the logo: keep the old header height above the Sign in card.
+            isAuthenticated ? "pb-4" : "mb-1.25 h-15",
+          )}
+        >
+          <div className={cn("flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5", isAuthenticated && "mb-4")}>
+            <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
+              <Logo />
+            </span>
+            {!forceExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Collapse sidebar"
+                className="h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                onClick={() => setCollapsed(true)}
+              >
+                <SidebarToggleIcon />
+              </Button>
+            )}
+          </div>
+          {isAuthenticated && (
+            <>
+              <RoleSwitcher variant="row" />
+              <ProjectSwitcher variant="row" />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Hairline between the switchers and the menu, inset to the rows' padding. */}
+      {isAuthenticated && (
+        <div
+          aria-hidden="true"
+          data-slot="sidebar-switcher-divider"
+          className={cn("h-px shrink-0 bg-sidebar-border", isCollapsed ? "mx-4" : "mx-6.5")}
+        />
+      )}
 
       {!isCollapsed && !isAuthenticated && (
-        <div className="px-3 pb-3 shrink-0">
+        <div className="px-4 pb-3 shrink-0">
           <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
             <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
               <SignInLink
@@ -330,13 +554,91 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         </div>
       )}
 
-      <nav aria-label="Main" className="flex-1 px-3 pb-3 overflow-hidden min-h-0">
-        <div className="space-y-1">
+      {/* Middle region: the only part of the sidebar that scrolls. The wrapper is
+          a size container, so the list keeps the sidebar's width minus the two
+          16px gutters whether or not a scrollbar takes space on the right. */}
+      <div data-slot="sidebar-scroll" className="@container relative flex min-h-0 flex-1 flex-col">
+      <nav
+        ref={scrollerRef}
+        aria-label="Main"
+        onScroll={updateOverflow}
+        onFocus={handleNavFocus}
+        className={cn(
+          "scrollbar-subtle min-h-0 flex-1 overflow-x-hidden overflow-y-auto scroll-py-6 pb-3 pl-4",
+          // The 16px between the hairline and the Inbox scrolls with the list.
+          isAuthenticated && "pt-4",
+        )}
+      >
+        <div ref={scrollContentRef} className="w-[calc(100cqw-2rem)] space-y-1">
+          {isAuthenticated && (
+            <div>
+              {forceExpanded ? (
+                // Mobile sheet: the sheet is modal, so the Inbox opens the full
+                // notifications page (the sheet closes on navigation).
+                <Link
+                  href="/notifications"
+                  data-active={pathname === "/notifications"}
+                  className={cn(
+                    "flex items-center gap-3 h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
+                    pathname === "/notifications"
+                      ? "bg-brand-primary/[0.08] font-medium text-brand-primary"
+                      : NAV_ROW_REST,
+                  )}
+                >
+                  <span className={NAV_ICON_CLASS}>
+                    <FlaticonIcon iconClass="fi-rr-inbox" className={INBOX_ICON_NUDGE} />
+                  </span>
+                  <span className="flex-1">Inbox</span>
+                  {unreadCount > 0 && (
+                    <span
+                      data-slot="inbox-count"
+                      className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-brand-primary px-1 text-2xs font-medium tabular-nums text-brand-foreground"
+                    >
+                      {unreadLabel}
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                withTooltip(
+                  "Inbox",
+                  <button
+                    ref={inboxButtonRef}
+                    type="button"
+                    aria-label={unreadCount > 0 ? `Inbox, ${unreadLabel} unread` : "Inbox"}
+                    aria-expanded={isInboxOpen}
+                    onClick={() => setIsInboxOpen((prev) => !prev)}
+                    className={cn(
+                      "relative w-full flex items-center h-9 px-2.5 rounded-md text-ui cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
+                      isCollapsed ? "justify-center" : "gap-3",
+                    )}
+                  >
+                    <span className={NAV_ICON_CLASS}>
+                      <FlaticonIcon iconClass="fi-rr-inbox" className={INBOX_ICON_NUDGE} />
+                    </span>
+                    {!isCollapsed && <span className="flex-1 text-left">Inbox</span>}
+                    {/* The unread count shows only above zero: at the far right
+                        when expanded, as a corner badge when collapsed. */}
+                    {unreadCount > 0 && (
+                      <span
+                        data-slot="inbox-count"
+                        className={cn(
+                          "flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-brand-primary px-1 text-2xs font-medium tabular-nums text-brand-foreground",
+                          isCollapsed && "absolute right-1 top-0",
+                        )}
+                      >
+                        {unreadLabel}
+                      </span>
+                    )}
+                  </button>,
+                )
+              )}
+            </div>
+          )}
           {navigationItems.map((item) => {
             const isActive = isItemActive(item)
             const isExpanded = expandedItems.includes(item.name)
             const activeClasses = "bg-brand-primary/[0.08] font-medium text-brand-primary"
-            const inactiveClasses = "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+            const inactiveClasses = NAV_ROW_REST
             // Whether any sub-item under this parent matches the current path —
             // used in collapsed mode to highlight the parent icon since the
             // sub-items themselves are hidden behind a dropdown.
@@ -355,11 +657,12 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                         <button
                           type="button"
                           aria-label={item.name}
-                          className={`w-full flex items-center justify-center h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                          data-active={hasActiveSubItem}
+                          className={`w-full flex items-center justify-center h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                             hasActiveSubItem ? activeClasses : inactiveClasses
                           }`}
                         >
-                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                          <span className={NAV_ICON_CLASS}>
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                         </button>
@@ -396,7 +699,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                   ) : (
                     <div>
                       <div
-                        className={`w-full flex items-center gap-3 h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                        className={`w-full flex items-center gap-3 h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                           isActive ? activeClasses : inactiveClasses
                         }`}
                       >
@@ -414,7 +717,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                           }}
                           className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
                         >
-                          <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                          <span className={NAV_ICON_CLASS}>
                             <FlaticonIcon iconClass={item.icon} />
                           </span>
                           <span>{item.name}</span>
@@ -446,15 +749,16 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                               Clamped to start/end at the center of the first/last dot. */}
                           <span
                             aria-hidden="true"
-                            className="pointer-events-none absolute left-[18px] top-4 bottom-4 w-px -translate-x-1/2 bg-border-subtle"
+                            className="pointer-events-none absolute left-[18px] top-4.5 bottom-4.5 w-px -translate-x-1/2 bg-border-subtle"
                           />
                           {item.subItems.map((subItem) => {
                             const isSubActive = isSubItemActive(subItem.href)
                             return (
                               <Link key={subItem.name} href={subItem.href} className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40">
                                 <div
-                                  className={`relative flex items-center h-8 pl-9 pr-2.5 rounded-md text-ui transition-colors duration-fast ease-out ${
-                                    isSubActive ? activeClasses : "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+                                  data-active={isSubActive}
+                                  className={`relative flex items-center h-9 pl-9 pr-2.5 rounded-md text-ui transition-colors duration-fast ease-out ${
+                                    isSubActive ? activeClasses : NAV_ROW_REST
                                   }`}
                                 >
                                   {/* Sub-category marker, centered on the vertical line */}
@@ -479,11 +783,12 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
                     item.name,
                   <Link href={item.href} onClick={() => setExpandedItems([])}>
                     <div
-                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                      data-active={isActive}
+                      className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-9 px-2.5 rounded-md text-ui transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                         isActive ? activeClasses : inactiveClasses
                       }`}
                     >
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+                      <span className={NAV_ICON_CLASS}>
                         <FlaticonIcon iconClass={item.icon} />
                       </span>
                       {!isCollapsed && item.name}
@@ -496,8 +801,30 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           })}
         </div>
       </nav>
+        {/* Overflow hints: a fade at an edge only while there is more in that direction. */}
+        <div
+          aria-hidden="true"
+          data-slot="sidebar-fade-top"
+          data-visible={overflow.above}
+          className={cn(
+            "pointer-events-none absolute inset-x-0 top-0 h-6 bg-linear-to-b from-sidebar to-transparent transition-opacity duration-fast ease-out",
+            overflow.above ? "opacity-100" : "opacity-0",
+          )}
+        />
+        <div
+          aria-hidden="true"
+          data-slot="sidebar-fade-bottom"
+          data-visible={overflow.below}
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-sidebar to-transparent transition-opacity duration-fast ease-out",
+            overflow.below ? "opacity-100" : "opacity-0",
+          )}
+        />
+      </div>
 
-      <div className="px-3 py-2.5 border-t border-sidebar-border space-y-1 shrink-0">
+      {/* Inset line above the bottom items. */}
+      <div aria-hidden="true" className="mx-4 h-px shrink-0 bg-sidebar-border" />
+      <div className="px-4 py-2.5 space-y-1 shrink-0">
         {projectPageHref &&
           withTooltip(
             "Open project page",
@@ -505,9 +832,12 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
             href={projectPageHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+            className={cn(
+              "flex items-center h-9 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 font-book text-text-muted hover:bg-surface-hover hover:text-foreground " + NAV_ICON_REST,
+              isCollapsed ? "justify-center" : "gap-3",
+            )}
           >
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+            <span className={NAV_ICON_CLASS}>
               <FlaticonIcon iconClass="fi-rr-browser" />
             </span>
             {!isCollapsed && "Open project page"}
@@ -515,8 +845,8 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
           )}
         {bottomItems.map((item) => {
           const isActive = pathname === item.href
-          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-8 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
-            isActive ? "bg-brand-primary/[0.08] font-medium text-brand-primary" : "font-book text-text-muted hover:bg-surface-hover hover:text-foreground"
+          const className = `flex items-center ${isCollapsed ? "justify-center" : "gap-3"} h-9 px-2.5 text-ui rounded-md cursor-pointer transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+            isActive ? "bg-brand-primary/[0.08] font-medium text-brand-primary" : NAV_ROW_REST
           }`
           return (
             <Fragment key={item.name}>
@@ -526,7 +856,7 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
               href={item.href}
               className={className}
             >
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center text-base">
+              <span className={NAV_ICON_CLASS}>
                 <FlaticonIcon iconClass={item.icon} />
               </span>
               {!isCollapsed && item.name}
@@ -537,24 +867,68 @@ export function Sidebar({ className, projectPageHref, forceExpanded = false }: S
         })}
       </div>
 
-      <div className="px-3 py-2.5 border-t border-sidebar-border shrink-0">
-        <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
-          <ProfileAvatar
-            id={user.id}
-            name={user.name}
-            avatarUrl={user.avatarUrl}
-            size="sm"
-          />
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</div>
-              <div className="text-xs font-medium text-muted-foreground truncate">
-                Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </div>
-            </div>
-          )}
-        </div>
+      <div className="px-4 py-2.5 border-t border-sidebar-border shrink-0">
+        {isCollapsed ? (
+          <div className="flex items-center justify-center px-2 py-1.5">
+            {isAuthenticated ? (
+              // Collapsed: the avatar opens the account menu so Sign out stays reachable.
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Account menu"
+                    className="flex shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors duration-fast ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                  >
+                    {profileAvatar}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="end" sideOffset={8} className="w-40">
+                  {signOutItem}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              profileAvatar
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 px-2 py-1.5 rounded-md">
+            {profileAvatar}
+            <div className="flex-1 min-w-0 text-sm font-medium text-sidebar-foreground truncate">{user.name}</div>
+            {isAuthenticated && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Account menu"
+                    className="h-7 w-7 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                  >
+                    <Icon name="fi-rr-angle-small-down" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="end" className="w-40">
+                  {signOutItem}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
       </div>
+
+      {isAuthenticated && !forceExpanded && (
+        <NotificationsPanel
+          isOpen={isInboxOpen}
+          onClose={() => setIsInboxOpen(false)}
+          notifications={notifications}
+          onMarkAllAsRead={() => markAllRead.mutateAsync()}
+          // Navigation is handled inside the panel; this only marks the row read.
+          onNotificationClick={(notification) => {
+            if (!notification.is_read) void markNotificationRead.mutateAsync(notification.id)
+          }}
+          anchorRef={inboxButtonRef}
+          placement="right"
+        />
+      )}
     </div>
   )
 }

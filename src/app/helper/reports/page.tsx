@@ -406,7 +406,7 @@ export default function HelperReportsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Reports and Payouts" subtitle="Keep track of reports and transactions" />
 
-      <main className="flex-1 overflow-auto px-8 py-6 space-y-6">
+      <main className="flex-1 overflow-auto px-14 pt-3.5 pb-6 space-y-6">
         {/* Tab Navigation */}
         <div className="mb-6">
           <div className="flex gap-1">
@@ -433,7 +433,7 @@ export default function HelperReportsPage() {
               Payouts
             </button>
           </div>
-          <div className="h-px bg-border -mx-6" />
+          <div className="h-px bg-border" />
         </div>
 
         {/* Filters */}
@@ -660,7 +660,7 @@ export default function HelperReportsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               {count > 1 ? (
                                 <DropdownMenuItem
                                   title="Each payout has its own statement"
@@ -890,7 +890,7 @@ export default function HelperReportsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           {/* Portalled, but React events still bubble to the row. */}
-                          <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                          <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                             <DropdownMenuItem
                               title={`Download the ${row.period} payout report as PDF`}
                               onSelect={() => exportPdf(row.period)}

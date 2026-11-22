@@ -44,10 +44,10 @@ describe("Card", () => {
 })
 
 describe("Badge", () => {
-  it("is h-5 px-2 text-xs/500 with the rounded-md shape", () => {
+  it("is h-5 px-2 text-xs/400 with the rounded-md shape", () => {
     render(<Badge>Open</Badge>)
     const cls = screen.getByText("Open").className
-    for (const t of ["h-5", "px-2", "text-xs", "font-medium", "rounded-md"]) {
+    for (const t of ["h-5", "px-2", "text-xs", "font-normal", "rounded-md"]) {
       expect(cls, t).toMatch(new RegExp(`\\b${t}\\b`))
     }
   })

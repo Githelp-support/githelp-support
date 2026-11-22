@@ -1,7 +1,8 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { guestLabel, type GuestIdentity } from "@/lib/guest-label"
 import { cn } from "@/lib/utils"
 
 /**
@@ -12,58 +13,77 @@ import { cn } from "@/lib/utils"
  */
 
 export const GUEST_CLAIM_BLOCKED_COPY =
-  "The visitor needs to sign in before this ticket can be claimed. You can still reply."
+  "The user needs to sign in before this ticket can be claimed. You can still reply."
 
-/** Display name for a ticket creator: guests show as "Guest". */
-export function ticketCreatorDisplayName(name: string | null | undefined, isGuest: boolean, fallback = "User"): string {
-  if (isGuest) return "Guest"
+/**
+ * Display name for a ticket creator. Guests show their email, else
+ * "Guest · " + a short code from their id, else "Guest" (see `guestLabel`).
+ */
+export function ticketCreatorDisplayName(
+  name: string | null | undefined,
+  isGuest: boolean,
+  fallback = "User",
+  guest?: GuestIdentity | null,
+): string {
+  if (isGuest) return guestLabel(guest).label
   return name?.trim() || fallback
-}
-
-export function GuestTicketBadge({ className }: { className?: string }) {
-  return (
-    <Badge
-      variant="outline"
-      data-slot="guest-ticket-badge"
-      className={cn(
-        "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100",
-        className,
-      )}
-      title="Opened by a visitor who hasn't signed in yet"
-    >
-      Not signed in
-    </Badge>
-  )
 }
 
 interface ClaimTicketButtonProps {
   isGuest: boolean
   pending?: boolean
   onClaim: () => void
-  /** Show the explanation under the button (detail panel) or only as a tooltip (toolbar). */
+  /** Also show the explanation under the button (detail panel); the toolbar keeps the tooltip only. */
   showExplanation?: boolean
   className?: string
 }
 
-/** "Claim ticket", disabled with an explanation while the ticket is a guest ticket. */
+/**
+ * "Claim ticket", disabled while the ticket is a guest ticket. The reason is
+ * shown under the button (unless `showExplanation` is false) and as a
+ * tooltip: the Button primitive sets `disabled:pointer-events-none`, so a
+ * disabled button never sees hover; a focusable wrapper is the trigger instead,
+ * which also lets keyboard users reach the explanation.
+ */
 export function ClaimTicketButton({ isGuest, pending, onClaim, showExplanation = true, className }: ClaimTicketButtonProps) {
+  const label = pending ? "Claiming…" : "Claim ticket"
+
+  if (!isGuest) {
+    return (
+      <Button onClick={onClaim} disabled={pending} variant="lavender" className={cn("cursor-pointer w-fit", className)}>
+        {label}
+      </Button>
+    )
+  }
+
+  const button = (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          tabIndex={0}
+          aria-describedby={showExplanation ? "guest-claim-explanation" : undefined}
+          className={cn(
+            "inline-flex w-fit rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40",
+            !showExplanation && className,
+          )}
+        >
+          <Button disabled variant="lavender" className="w-fit">
+            {label}
+          </Button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{GUEST_CLAIM_BLOCKED_COPY}</TooltipContent>
+    </Tooltip>
+  )
+
+  if (!showExplanation) return button
+
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <Button
-        onClick={onClaim}
-        disabled={pending || isGuest}
-        variant="lavender"
-        className="cursor-pointer w-fit"
-        title={isGuest ? GUEST_CLAIM_BLOCKED_COPY : undefined}
-        aria-describedby={isGuest && showExplanation ? "guest-claim-explanation" : undefined}
-      >
-        {pending ? "Claiming…" : "Claim ticket"}
-      </Button>
-      {isGuest && showExplanation && (
-        <p id="guest-claim-explanation" className="text-ui text-muted-foreground">
-          {GUEST_CLAIM_BLOCKED_COPY}
-        </p>
-      )}
+      {button}
+      <p id="guest-claim-explanation" data-slot="guest-claim-explanation" className="w-fit rounded-md bg-bg-subtle px-3 py-2 text-ui text-text-muted">
+        {GUEST_CLAIM_BLOCKED_COPY}
+      </p>
     </div>
   )
 }

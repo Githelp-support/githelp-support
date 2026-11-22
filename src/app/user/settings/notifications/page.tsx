@@ -34,7 +34,7 @@ export default function UserNotificationsSettingsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Notification preferences" subtitle="Manage how you want to be notified" />
 
-      <main className="flex-1 overflow-auto px-8 py-6">
+      <main className="flex-1 overflow-auto px-14 pt-2 pb-6">
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-2xl">
             <PersonalNotificationSettings emailGroups={EMAIL_GROUPS} />

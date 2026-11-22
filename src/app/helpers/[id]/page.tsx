@@ -7,6 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { CategoryBadge, TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -21,7 +22,7 @@ import { useTimeEntries, formatTime, calculateTotalTime } from "@/hooks/useTimeE
 import { usePaymentTransfers, usePayments, formatAmount, type PaymentTransfer } from "@/hooks/usePayments"
 import { useHelperTickets } from "@/hooks/useHelperTickets"
 import { useProjectSelection } from "@/contexts/project-context"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { getStatusBadgeClass } from "@/lib/status-colors"
 import { groupTransfersByTicket, payoutReference, transferDate } from "@/lib/helper-payout-reports"
 import { monthLabel } from "@/lib/user-payment-reports"
@@ -369,7 +370,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Helper Details" aboveTitle={backLink} />
-        <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+        <main className="flex-1 overflow-y-auto bg-background px-14 py-6 space-y-6">
           <ListSkeleton rows={4} className="rounded-lg border border-border-subtle" />
         </main>
       </div>
@@ -380,7 +381,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Helper Details" aboveTitle={backLink} />
-        <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+        <main className="flex-1 overflow-y-auto bg-background px-14 py-6 space-y-6">
           <div>Helper not found</div>
         </main>
       </div>
@@ -390,8 +391,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
   const helper = {
     id: helperData.helper_id,
     name: helperData.user?.name || "Unknown",
-    avatar: (helperData.user?.name || "U")[0].toUpperCase(),
-    avatarColor: getAvatarColorHexForId(helperData.user_id ?? helperData.helper_id),
+    avatarUrl: helperData.user?.avatar_url ?? null,
     category: helperData.category || "Community",
     isRemoved: !!helperData.deleted_at,
     discord: helperData.user?.username || "-",
@@ -405,22 +405,23 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Helper Details" aboveTitle={backLink} />
 
-      <main className="flex-1 overflow-y-auto bg-background px-8 py-6 space-y-6">
+      <main className="flex-1 overflow-y-auto bg-background px-14 py-6 space-y-6">
         {/* Profile header + Contact information */}
         <Card className="border-0 py-0">
           <CardContent className="px-0 py-8 space-y-5">
             <div className="flex items-center gap-4">
-              <div
-                className={`w-12 h-12 ${SQUIRCLE_RADIUS[48]} flex items-center justify-center text-[21px] font-medium text-foreground shrink-0`}
-                style={{ backgroundColor: helper.avatarColor }}
-              >
-                {helper.avatar}
-              </div>
+              <ProfileAvatar
+                id={helperData.user_id ?? helperData.helper_id}
+                name={helper.name}
+                avatarUrl={helper.avatarUrl}
+                size="lg"
+              />
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-base font-subtitle text-foreground">{helper.name}</h1>
-                <Badge variant="secondary" className="bg-brand-primary/10 text-brand-primary border-0 text-xs font-medium">
-                  {helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
-                </Badge>
+                <CategoryBadge
+                  category={helper.category}
+                  label={helper.category.toLowerCase() === "core" ? "Core team" : helper.category}
+                />
                 {helper.isRemoved && (
                   <Badge variant="secondary" className="bg-muted text-muted-foreground border-0 text-xs font-medium">
                     Removed
@@ -587,7 +588,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                           {ticket.amountRaw === null ? "—" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
                         </div>
                         <div className="min-w-0">
-                          <Badge className={statusBadgeClass(ticket.status)}>{ticket.status}</Badge>
+                          <TicketStatusBadge status={ticket.status} />
                         </div>
                         <div className="flex items-center justify-end">
                           <DropdownMenu>
@@ -603,7 +604,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                               </Button>
                             </DropdownMenuTrigger>
                             {/* Portalled, but React events still bubble to the row. */}
-                            <DropdownMenuContent align="end" className="w-44" onClick={stopRowNavigation}>
+                            <DropdownMenuContent align="end" className="w-44 [&_[data-slot=dropdown-menu-item]]:text-ui" onClick={stopRowNavigation}>
                               {ticketHref ? (
                                 <DropdownMenuItem asChild>
                                   <Link href={ticketHref}>

@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { GuestName } from "@/components/ui/guest-name"
+import { guestLabel } from "@/lib/guest-label"
 import {
   ClaimTicketButton,
   GUEST_CLAIM_BLOCKED_COPY,
-  GuestTicketBadge,
   VisitorLeftAction,
   ticketCreatorDisplayName,
 } from "./guest-ticket"
@@ -18,50 +21,85 @@ import {
 } from "@/lib/customer-chat-messages"
 
 describe("ClaimTicketButton", () => {
-  it("is disabled with an explanation on a guest ticket", () => {
+  it("is disabled on a guest ticket and explains why in a tooltip", async () => {
     const onClaim = vi.fn()
-    render(<ClaimTicketButton isGuest onClaim={onClaim} />)
+    render(
+      <TooltipProvider delayDuration={0}>
+        <ClaimTicketButton isGuest showExplanation={false} onClaim={onClaim} />
+      </TooltipProvider>,
+    )
     const button = screen.getByRole("button", { name: "Claim ticket" })
     expect(button).toBeDisabled()
-    expect(screen.getByText(GUEST_CLAIM_BLOCKED_COPY)).toBeInTheDocument()
+    expect(button).not.toHaveAttribute("title")
     fireEvent.click(button)
     expect(onClaim).not.toHaveBeenCalled()
+
+    // The copy only appears once the trigger is hovered or focused.
+    expect(screen.queryByText(GUEST_CLAIM_BLOCKED_COPY)).not.toBeInTheDocument()
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
+
+    // The wrapper is the focusable tooltip trigger, so keyboard users get the reason too.
+    const trigger = button.parentElement as HTMLElement
+    expect(trigger).toHaveAttribute("tabindex", "0")
+    fireEvent.pointerMove(trigger)
+    fireEvent.focus(trigger)
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent(GUEST_CLAIM_BLOCKED_COPY)
+    expect((await screen.findAllByText(GUEST_CLAIM_BLOCKED_COPY)).length).toBeGreaterThanOrEqual(1)
   })
 
-  it("keeps the explanation as a tooltip in compact mode", () => {
-    render(<ClaimTicketButton isGuest showExplanation={false} onClaim={vi.fn()} />)
-    const button = screen.getByRole("button", { name: "Claim ticket" })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAttribute("title", GUEST_CLAIM_BLOCKED_COPY)
-    expect(screen.queryByText(GUEST_CLAIM_BLOCKED_COPY)).not.toBeInTheDocument()
+  it("also shows the explanation under the button by default", () => {
+    render(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest onClaim={vi.fn()} />
+      </TooltipProvider>,
+    )
+    expect(screen.getByRole("button", { name: "Claim ticket" })).toBeDisabled()
+    // The notice sits in its own tinted box, with the exact copy.
+    const notice = screen.getByText(GUEST_CLAIM_BLOCKED_COPY)
+    expect(notice).toHaveAttribute("data-slot", "guest-claim-explanation")
+    expect(notice).toHaveClass("bg-bg-subtle", "rounded-md")
+    expect(notice).toHaveTextContent("The user needs to sign in before this ticket can be claimed. You can still reply.")
   })
 
   it("becomes available once the ticket is no longer a guest ticket", () => {
     const onClaim = vi.fn()
-    const { rerender } = render(<ClaimTicketButton isGuest onClaim={onClaim} />)
-    rerender(<ClaimTicketButton isGuest={false} onClaim={onClaim} />)
+    const { rerender } = render(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest onClaim={onClaim} />
+      </TooltipProvider>,
+    )
+    rerender(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest={false} onClaim={onClaim} />
+      </TooltipProvider>,
+    )
     const button = screen.getByRole("button", { name: "Claim ticket" })
     expect(button).toBeEnabled()
+    // No tooltip trigger wraps the enabled button, and the copy is gone.
+    expect(button.parentElement).not.toHaveAttribute("tabindex")
+    expect(button.parentElement).not.toHaveAttribute("data-state")
     expect(screen.queryByText(GUEST_CLAIM_BLOCKED_COPY)).not.toBeInTheDocument()
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument()
     fireEvent.click(button)
     expect(onClaim).toHaveBeenCalledTimes(1)
   })
 
   it("shows the pending label", () => {
-    render(<ClaimTicketButton isGuest={false} pending onClaim={vi.fn()} />)
+    render(
+      <TooltipProvider>
+        <ClaimTicketButton isGuest={false} pending onClaim={vi.fn()} />
+      </TooltipProvider>,
+    )
     expect(screen.getByRole("button", { name: "Claiming…" })).toBeDisabled()
   })
 })
 
 describe("guest ticket labels", () => {
-  it("renders the guest badge", () => {
-    render(<GuestTicketBadge />)
-    expect(screen.getByText("Not signed in")).toBeInTheDocument()
-  })
-
   it("shows guests as Guest", () => {
     expect(ticketCreatorDisplayName("Ada", true)).toBe("Guest")
     expect(ticketCreatorDisplayName("Ada", false)).toBe("Ada")
+    expect(ticketCreatorDisplayName("Ada", true, "User", { id: "a1b2c3d4-0000" })).toBe("Guest · a1b2")
     expect(ticketCreatorDisplayName(null, false)).toBe("User")
     expect(ticketCreatorDisplayName("  ", false, "Unknown")).toBe("Unknown")
   })
@@ -144,5 +182,56 @@ describe("guest system messages", () => {
     render(<VisitorLeftAction onStartNewConversation={onStart} />)
     fireEvent.click(screen.getByRole("button", { name: "Start a new conversation" }))
     expect(onStart).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("ProfileAvatar guest", () => {
+  it("shows the ghost on the guest tile instead of an initial or image", () => {
+    const { container } = render(
+      <ProfileAvatar id="guest-1" name="Guest" avatarUrl="https://example.com/a.png" guest />,
+    )
+    const avatar = container.querySelector('[data-slot="guest-avatar"]') as HTMLElement
+    expect(avatar).toHaveClass("w-8", "h-8", "bg-avatar-guest-bg", "text-avatar-guest-fg")
+    expect(avatar).toHaveAttribute("aria-hidden", "true")
+    const icon = avatar.querySelector('svg[data-slot="guest-ghost-icon"]')
+    expect(icon).toHaveClass("size-[68%]")
+    expect(icon).toHaveAttribute("aria-hidden", "true")
+    expect(icon).not.toHaveAttribute("role")
+    expect(icon).not.toHaveAttribute("aria-label")
+    expect(container.querySelector("img")).toBeNull()
+    expect(screen.queryByRole("img")).toBeNull()
+    expect(avatar).not.toHaveTextContent("G")
+  })
+})
+
+describe("guestLabel", () => {
+  it("prefers the email", () => {
+    expect(guestLabel({ id: "a1b2c3d4-0000", email: " ada@example.com " })).toEqual({
+      label: "ada@example.com",
+      full: "ada@example.com",
+    })
+  })
+
+  it("falls back to a short code from the stable guest id", () => {
+    expect(guestLabel({ id: "a1b2c3d4-0000", email: null })).toEqual({
+      label: "Guest · a1b2",
+      full: "a1b2c3d4-0000",
+    })
+  })
+
+  it("is just Guest when nothing identifies the guest", () => {
+    expect(guestLabel({ id: null })).toEqual({ label: "Guest", full: null })
+    expect(guestLabel()).toEqual({ label: "Guest", full: null })
+  })
+})
+
+describe("GuestName", () => {
+  it("renders the label in regular weight and the muted colour", () => {
+    render(
+      <TooltipProvider>
+        <GuestName label="Guest · a1b2" full="a1b2c3d4-0000" />
+      </TooltipProvider>,
+    )
+    expect(screen.getByText("Guest · a1b2")).toHaveClass("font-normal", "text-muted-foreground", "truncate")
   })
 })

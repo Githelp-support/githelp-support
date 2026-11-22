@@ -17,11 +17,14 @@ import { useRealtimeTickets } from "@/hooks/useRealtimeTickets"
 import { useMyParticipatingTicketIds, useOtherHelperParticipatingTicketIds } from "@/hooks/useTicketParticipants"
 import { useProjectSelection } from "@/contexts/project-context"
 import { useUser } from "@/contexts/user-context"
-import { getTicketStatusBadgeClass, getPriorityBadgeClass } from "@/lib/status-colors"
+import { TicketPriority, TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { SUPPORT_TICKET_PREVIEW_CARDS, SUPPORT_TICKETS_PREVIEW_DISCLAIMER } from "@/lib/helper-area-preview-copy"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ListSkeleton } from "@/components/ui/skeleton"
+import { ProfileAvatar } from "@/components/ui/profile-avatar"
+import { GuestName } from "@/components/ui/guest-name"
+import { guestLabel } from "@/lib/guest-label"
 import { ErrorState } from "@/components/ui/error-state"
 import { ListHeader, SortIcon, listRowClass } from "@/components/ui/list"
 
@@ -33,6 +36,8 @@ interface Ticket {
     id: string | null
     name: string
     avatar: string
+    /** Guests only: full email or guest identifier, for the name tooltip. */
+    guestFull?: string | null
   }
   /** Name of the ticket's first help category, or GENERAL_TYPE when it has none. */
   type: string
@@ -103,13 +108,15 @@ export default function TicketsPage() {
     if (!ticketsData) return []
     return ticketsData.map((ticket) => {
       const firstCategory = ticket.help_categories?.find((c) => !!c.value)
+      const guest = ticket.guest ? guestLabel({ id: ticket.created_by, email: ticket.user?.email }) : null
       return {
         id: ticket.id,
         title: ticket.title,
         description: ticket.description,
         user: {
           id: ticket.created_by ?? null,
-          name: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "Unknown"),
+          name: guest?.label ?? ticketCreatorDisplayName(ticket.user?.name, false, "Unknown"),
+          guestFull: guest?.full ?? null,
           avatar: ticketCreatorDisplayName(ticket.user?.name, !!ticket.guest, "U")[0].toUpperCase(),
         },
         guest: !!ticket.guest,
@@ -250,10 +257,6 @@ export default function TicketsPage() {
   const visibleTicketCount =
     showAvailablePreviewCards ? sortedPreviewCards.length : filteredTickets.length
 
-  const getStatusColor = (status: string) =>
-    getTicketStatusBadgeClass(status)
-  const getPriorityColor = (priority: string) =>
-    getPriorityBadgeClass(priority)
   // Map the underlying status value to its display label: "available" reads as
   // "Unclaimed", and "claimed"/"in-progress" are merged into "In Progress".
   const getStatusLabel = (status: string) =>
@@ -293,7 +296,7 @@ export default function TicketsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Tickets" subtitle="Manage and track support tickets" />
 
-      <main className="flex-1 px-8 py-6 space-y-6 overflow-y-auto">
+      <main className="flex-1 px-14 py-6 space-y-6 overflow-y-auto">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <button
@@ -520,7 +523,7 @@ export default function TicketsPage() {
                               <div>
                                 <h4 className="text-ui font-semibold text-foreground mb-2">Type of help</h4>
                                 <div className="flex gap-2 flex-wrap">
-                                  <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize">
+                                  <Badge variant="type" className="capitalize">
                                     {card.helpType}
                                   </Badge>
                                 </div>
@@ -670,16 +673,26 @@ export default function TicketsPage() {
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-4">
                         <div className="flex items-start gap-4">
-                          <div
-                            className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-                            style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
-                          >
-                            {ticket.user.avatar}
-                          </div>
+                          {ticket.guest ? (
+                            <ProfileAvatar id={ticket.user.id} guest />
+                          ) : (
+                            <div
+                              className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                              style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                            >
+                              {ticket.user.avatar}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-foreground truncate">
-                              {ticket.user.name}
-                            </h4>
+                            {ticket.guest ? (
+                              <h4 className="text-sm">
+                                <GuestName label={ticket.user.name} full={ticket.user.guestFull} />
+                              </h4>
+                            ) : (
+                              <h4 className="text-sm font-medium text-foreground truncate">
+                                {ticket.user.name}
+                              </h4>
+                            )}
                             <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                             <div className="flex items-center gap-1 mt-1">
                               <Icon name="fi-rr-comment" size={3} className="text-muted-foreground" />
@@ -689,19 +702,15 @@ export default function TicketsPage() {
                         </div>
                       </div>
                       <div className="col-span-2">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                        <Badge variant="type">
                           {ticket.type}
                         </Badge>
                       </div>
                       <div className="col-span-2">
-                        <Badge className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                        </Badge>
+                        <TicketPriority priority={ticket.priority} />
                       </div>
                       <div className="col-span-2">
-                        <Badge className={getStatusColor(ticket.status)}>
-                          {getStatusLabel(ticket.status)}
-                        </Badge>
+                        <TicketStatusBadge status={ticket.status} label={getStatusLabel(ticket.status)} />
                       </div>
                       <div className="col-span-2 flex items-start justify-between gap-2">
                         <div className="text-sm text-muted-foreground">
@@ -766,17 +775,31 @@ export default function TicketsPage() {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-4">
                   <div className="flex items-start gap-4">
-                    <div
-                      className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-                      style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
-                    >
-                      {ticket.user.avatar}
-                    </div>
+                    {ticket.guest ? (
+                      <ProfileAvatar id={ticket.user.id} guest />
+                    ) : (
+                      <div
+                        className={`w-8 h-8 ${SQUIRCLE_RADIUS[32]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
+                        style={{ backgroundColor: getAvatarColorHexForId(ticket.user.id ?? ticket.user.name) }}
+                      >
+                        {ticket.user.avatar}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <Link href={`/helper/tickets/${ticket.id}`}>
-                        <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
-                          {ticket.user.name}
-                        </h4>
+                        {ticket.guest ? (
+                          <h4 className="text-sm cursor-pointer">
+                            <GuestName
+                              label={ticket.user.name}
+                              full={ticket.user.guestFull}
+                              className="hover:text-brand-primary"
+                            />
+                          </h4>
+                        ) : (
+                          <h4 className="text-sm font-medium text-foreground hover:text-brand-primary cursor-pointer truncate">
+                            {ticket.user.name}
+                          </h4>
+                        )}
                       </Link>
                       <p className="text-xs text-muted-foreground">{truncateText(ticket.title)}</p>
                         <div className="flex items-center gap-1 mt-1">
@@ -787,20 +810,16 @@ export default function TicketsPage() {
                   </div>
                 </div>
                 <div className="col-span-2">
-                  <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+                  <Badge variant="type">
                     {ticket.type}
                   </Badge>
                 </div>
                 <div className="col-span-2">
-                  <Badge className={getPriorityColor(ticket.priority)}>
-                    {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                  </Badge>
+                  <TicketPriority priority={ticket.priority} />
                 </div>
                 <div className="col-span-2">
                   <div className="flex items-start gap-2">
-                    <Badge className={getStatusColor(ticket.status)}>
-                      {getStatusLabel(ticket.status)}
-                    </Badge>
+                    <TicketStatusBadge status={ticket.status} label={getStatusLabel(ticket.status)} />
                     {ticket.helper && (
                       <div className={`w-5 h-5 ${SQUIRCLE_RADIUS[20]} flex items-center justify-center bg-brand-primary text-brand-foreground text-xs font-medium shrink-0`}>
                         {ticket.helper.avatar}

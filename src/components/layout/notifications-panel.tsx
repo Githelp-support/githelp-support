@@ -33,11 +33,17 @@ interface NotificationsPanelProps {
   onMarkAllAsRead: () => void
   onNotificationClick: (notification: Notification) => void
   anchorRef?: RefObject<HTMLElement | null>
+  /**
+   * `below` (default): under the anchor, against the right edge of the screen
+   * (the TopBar bell). `right`: beside the anchor, top edges aligned (the
+   * sidebar's Inbox item).
+   */
+  placement?: "below" | "right"
 }
 
 // Default fallback position (matches the previous static `top-16 right-4`
 // placement when no anchor element is provided).
-const DEFAULT_POSITION = { top: 64, right: 16 }
+const DEFAULT_POSITION: { top: number; right?: number; left?: number } = { top: 64, right: 16 }
 // Vertical gap between the bottom of the anchor (bell icon) and the top of
 // the panel. Keeping this small ensures the panel hugs the bell icon
 // regardless of any content shifting the header vertically (e.g. a top
@@ -53,11 +59,12 @@ export function NotificationsPanel({
   onMarkAllAsRead,
   onNotificationClick,
   anchorRef,
+  placement = "below",
 }: NotificationsPanelProps) {
   const router = useRouter()
   // false during SSR and hydration, true afterwards (the panel portals into document.body)
   const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false)
-  const [position, setPosition] = useState<{ top: number; right: number }>(DEFAULT_POSITION)
+  const [position, setPosition] = useState<{ top: number; right?: number; left?: number }>(DEFAULT_POSITION)
 
   // Keep the panel positioned relative to the bell icon so that anything
   // shifting the bell vertically (e.g. a top banner across the page) also
@@ -72,6 +79,10 @@ export function NotificationsPanel({
         return
       }
       const rect = anchor.getBoundingClientRect()
+      if (placement === "right") {
+        setPosition({ top: rect.top, left: rect.right + ANCHOR_GAP })
+        return
+      }
       // Only the vertical position needs to follow the bell icon — a horizontal
       // top banner shifts everything vertically but not horizontally, so the
       // right offset (matching the original `right-4`) is kept constant.
@@ -88,7 +99,7 @@ export function NotificationsPanel({
       window.removeEventListener("resize", updatePosition)
       window.removeEventListener("scroll", updatePosition, true)
     }
-  }, [isOpen, anchorRef])
+  }, [isOpen, anchorRef, placement])
 
   const stripQuotes = (text: string) => text.replace(/^["“”]+|["“”]+$/g, "")
 
@@ -126,8 +137,12 @@ export function NotificationsPanel({
         role="dialog"
         aria-label="Notifications"
         data-state={isOpen ? "open" : "closed"}
-        className="fixed w-96 max-w-[calc(100vw-2rem)] origin-top-right bg-card shadow-popover z-[2147483647] flex flex-col rounded-lg border border-border-subtle max-h-[80vh] data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out"
-        style={{ top: `${position.top}px`, right: `${position.right}px` }}
+        className={`fixed w-96 max-w-[calc(100vw-2rem)] ${position.left !== undefined ? "origin-top-left" : "origin-top-right"} bg-card shadow-popover z-[2147483647] flex flex-col rounded-lg border border-border-subtle max-h-[80vh] data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out`}
+        style={
+          position.left !== undefined
+            ? { top: `${position.top}px`, left: `${position.left}px` }
+            : { top: `${position.top}px`, right: `${position.right}px` }
+        }
       >
         <div className="flex items-center justify-between px-4 py-4 border-b border-border">
           <h2 className="text-base font-subtitle text-foreground">Notifications</h2>

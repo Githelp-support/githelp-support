@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Icon } from "@/components/ui/icon"
+import { SidebarToggleIcon } from "@/components/ui/sidebar-toggle-icon"
 
 const STORAGE_KEY = "sidebar:right:collapsed"
 
@@ -40,9 +40,9 @@ export function useRightSidebarCollapsed() {
 
 /**
  * Toggle header row at the top of the collapsible right sidebar. Mirrors the
- * left sidebar's collapse affordance: the double arrow collapses and the
- * single arrow expands, with directions flipped for the right edge
- * (double angle collapses, single angle expands).
+ * left sidebar's collapse affordance: the same `SidebarToggleIcon` panel
+ * glyph in both the collapsed and expanded states, flipped horizontally
+ * (`mirrored`) so its rail sits on the right edge.
  */
 export function RightSidebarCollapseToggle({
   isCollapsed,
@@ -53,16 +53,16 @@ export function RightSidebarCollapseToggle({
 }) {
   return (
     // Below lg the panel is an off-canvas sheet; the desktop collapse toggle is hidden there.
-    <div className={`${isCollapsed ? "justify-center px-0" : "justify-start px-3"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0 max-lg:hidden`}>
+    <div className={`${isCollapsed ? "justify-center px-0" : "justify-start px-4"} pt-4 pb-3 flex items-center min-h-[40px] shrink-0 max-lg:hidden`}>
       <Button
         variant="ghost"
         size="sm"
         // Expanded: pull the 32px button left by its 6px icon inset so the
-        // 20px glyph lines up with the sidebar content's px-3 edge.
+        // 20px glyph lines up with the sidebar content's px-4 edge.
         className={`${isCollapsed ? "" : "-ml-1.5 "}h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-bg-subtle focus-visible:ring-2 focus-visible:ring-brand-primary/30`}
         onClick={() => onToggle(!isCollapsed)}
       >
-        {isCollapsed ? <Icon name="fi-rr-angle-small-left" size={5} /> : <Icon name="fi-rr-angle-double-small-right" size={5} />}
+        <SidebarToggleIcon mirrored />
       </Button>
     </div>
   )

@@ -2,6 +2,7 @@ import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
 import { formatDateTime } from "./format";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
 import { formatDuration } from "@/lib/format";
+import { guestLabel } from "@/lib/guest-label";
 
 /**
  * Message-thread building shared by the two customer-facing chat pages
@@ -12,6 +13,9 @@ import { formatDuration } from "@/lib/format";
 /** Grey system bubble at the top of every customer thread. */
 export const TICKET_DISCLAIMER =
     "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm.";
+
+/** Welcome bubble for projects that offer support for free: no mention of charging or confirming. */
+export const TICKET_DISCLAIMER_FREE = "Feel free to chat and clarify details before you get a response.";
 
 /**
  * Synthetic auto-reply shown right after the customer's first message.
@@ -39,6 +43,26 @@ export function guestSystemMessageCopy(kind: unknown, audience: "customer" | "he
     if (kind === "visitor_left") return audience === "customer" ? VISITOR_LEFT_CUSTOMER_COPY : VISITOR_LEFT_HELPER_COPY;
     if (kind === "guest_signed_in") return audience === "customer" ? GUEST_SIGNED_IN_CUSTOMER_COPY : GUEST_SIGNED_IN_HELPER_COPY;
     return null;
+}
+
+/**
+ * The stored `payment_authorized` / `payment_required` texts are worded for
+ * the customer ("Your helper has claimed this ticket…"); the helper thread
+ * substitutes its own wording.
+ */
+export const HELPER_PAYMENT_AUTHORIZED_MESSAGE = "The ticket is claimed. You can now start tracking time.";
+export const HELPER_PAYMENT_REQUIRED_MESSAGE =
+    "You've claimed the ticket. The user has now been asked to add a payment method. You can start tracking time once the payment is authorized.";
+
+/**
+ * Helper-side copy for a system message kind, or null when the stored text
+ * should be shown as is. Covers the payment kinds above and the guest kinds
+ * from `guestSystemMessageCopy(kind, "helper")`.
+ */
+export function helperSystemMessageCopy(kind: unknown): string | null {
+    if (kind === "payment_authorized") return HELPER_PAYMENT_AUTHORIZED_MESSAGE;
+    if (kind === "payment_required") return HELPER_PAYMENT_REQUIRED_MESSAGE;
+    return guestSystemMessageCopy(kind, "helper");
 }
 
 type KindMessage = { id?: string; sender_type: string; metadata?: Record<string, unknown> | null };
@@ -103,7 +127,8 @@ export interface CustomerThreadOptions {
     fallbackDescription?: string | null;
     /** Timestamp for the fallback first message (ticket created_at). */
     fallbackTimestamp?: string | null;
-    currentUser: { id?: string; name?: string | null; avatarUrl?: string | null };
+    /** `isGuest`: the viewer is not signed in, so their own messages get the guest avatar and guest label. */
+    currentUser: { id?: string; name?: string | null; avatarUrl?: string | null; isGuest?: boolean };
     /** Project's average response time in seconds (`null` until one exists). */
     avgResponseSeconds?: number | null;
     /**
@@ -112,6 +137,11 @@ export interface CustomerThreadOptions {
      * ticket reopened by adoption hides it.
      */
     ticketStatus?: string | null;
+    /**
+     * The project offers support for free (see isFreeSupport in
+     * lib/ticket-pricing): the welcome bubble must not mention charging.
+     */
+    isFree?: boolean;
 }
 
 /**
@@ -131,16 +161,19 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         currentUser,
         avgResponseSeconds,
         ticketStatus,
+        isFree,
     } = opts;
 
-    const userName = currentUser.name || "You";
+    // A guest's own messages carry the same label helpers see ("Guest · a1b2").
+    const guest = currentUser.isGuest ? guestLabel({ id: currentUser.id }) : null;
+    const userName = guest?.label ?? (currentUser.name || "You");
     const userInitial = userName[0]?.toUpperCase() || "Y";
 
     const list: TicketChatMessage[] = [
         {
             id: "welcome",
             senderType: "system",
-            content: TICKET_DISCLAIMER,
+            content: isFree ? TICKET_DISCLAIMER_FREE : TICKET_DISCLAIMER,
             senderName: `${projectName} Team`,
             senderAvatarUrl: projectLogo,
             timestamp: nowFormatted,
@@ -173,6 +206,8 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             senderAvatarInitial: userInitial,
             senderAvatarUrl: currentUser.avatarUrl ?? null,
             senderId: currentUser.id,
+            senderIsGuest: !!guest,
+            senderGuestFull: guest?.full ?? null,
             timestamp: fallbackTimestamp ? formatChatTimestamp(fallbackTimestamp) : nowFormatted,
         });
     }
@@ -184,18 +219,23 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         if (msg.sender_type === "system" && msg.metadata?.kind === "visitor_left" && msg !== visitorLeftNow) return;
         const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";
+        const isOwnGuestMessage =
+            !!guest && senderType === "user" && (msg.sender_id ?? msg.sender?.id) === currentUser.id;
         list.push({
             id: msg.id,
             senderType,
             content:
                 (senderType === "system" ? guestSystemMessageCopy(msg.metadata?.kind, "customer") : null) ?? msg.content,
             senderName:
+                (isOwnGuestMessage ? guest?.label : null) ||
                 msg.sender?.name ||
                 (senderType === "user" ? userName : senderType === "helper" ? "Helper" : `${projectName} Team`),
             senderAvatarInitial:
                 msg.sender?.name?.[0]?.toUpperCase() || (senderType === "user" ? userInitial : "H"),
             senderAvatarUrl: msg.sender?.avatar_url ?? null,
             senderId: msg.sender_id ?? msg.sender?.id ?? null,
+            senderIsGuest: isOwnGuestMessage,
+            senderGuestFull: isOwnGuestMessage ? guest?.full ?? null : null,
             timestamp: formatChatTimestamp(msg.created_at),
             // Payment system messages (payment_required, payment_requires_action,
             // payment_authorized, …) carry their kind + ticket_id here; TicketChat

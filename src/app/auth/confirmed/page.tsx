@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus"
 import { useAcceptProjectInvite } from "@/hooks/useProject"
 import { useEnterProject } from "@/hooks/useEnterProject"
@@ -244,8 +244,8 @@ export default function AuthConfirmedPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
-      <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-brand-primary mx-auto mb-4" />
+      <div className="text-center" role="status" aria-busy="true">
+        <Loader className="mx-auto mb-4" label="Completing sign in" />
         <p className="text-sm text-muted-foreground">Completing sign in...</p>
       </div>
     </div>

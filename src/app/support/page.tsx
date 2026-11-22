@@ -163,7 +163,10 @@ export default function SupportPage() {
   const { data: liveTicket } = useTicket(ticketId)
   // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
   const ticketPricingSnapshot = (liveTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
-  const effectivePricing = ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings
+  const effectivePricing = useMemo(
+    () => (ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings),
+    [paymentSettings, ticketPricingSnapshot],
+  )
   // Format payment values (convert cents to dollars); null until the project
   // has payment settings — no placeholder prices. An open ticket shows its snapshot.
   const rates = formatTicketRates(effectivePricing)
@@ -186,7 +189,7 @@ export default function SupportPage() {
     activeTicketsSidebar,
     activeTicketsCount,
   } = useCustomerTicketSidebar(ticketId || undefined, sessionUserId)
-  const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, sessionUserId)
+  const chatParticipants: TicketChatParticipant[] = toChatParticipants(participants, sessionUserId, null, isGuest)
 
   // Confirm the logged-time summary the helper sent (one action for every
   // pending entry; declines carry a reason the RPC posts into the chat).
@@ -309,7 +312,8 @@ export default function SupportPage() {
       fallbackDescription: liveTicket?.description ?? null,
       fallbackTimestamp: liveTicket?.created_at ?? null,
       ticketStatus: liveTicket?.status ?? null,
-      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl },
+      isFree: isFreeSupport(effectivePricing),
+      currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
       avgResponseSeconds,
     })
     // A guest ticket closed because the visitor left carries its own
@@ -341,6 +345,7 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    effectivePricing,
     slaId,
     avgResponseSeconds,
     ticketEnded,

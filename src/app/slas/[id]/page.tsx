@@ -7,7 +7,7 @@ import { Icon } from "@/components/ui/icon"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { TicketStatusBadge } from "@/components/ui/ticket-badges"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
@@ -206,7 +206,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-muted">
         <Header title="SLA Details" subtitle="View and manage SLA configuration" />
-        <main className="flex-1 overflow-auto px-8 py-6">
+        <main className="flex-1 overflow-auto px-14 py-6">
           <ListSkeleton rows={4} className="rounded-lg border border-border-subtle bg-card" />
         </main>
       </div>
@@ -217,7 +217,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-muted">
         <Header title="SLA Details" subtitle="View and manage SLA configuration" />
-        <main className="flex-1 overflow-auto px-8 py-6 flex items-center justify-center">
+        <main className="flex-1 overflow-auto px-14 py-6 flex items-center justify-center">
           <span className="text-muted-foreground">SLA not found.</span>
         </main>
       </div>
@@ -237,7 +237,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     <div className="flex-1 flex flex-col overflow-hidden bg-muted">
       <Header title="SLA Details" subtitle="View and manage SLA configuration" />
 
-      <main className="flex-1 overflow-auto px-8 py-6">
+      <main className="flex-1 overflow-auto px-14 py-6">
         {/* Back navigation */}
         <div className="mb-6">
           <Link
@@ -626,15 +626,11 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                               {ticketMs > 0 ? formatMs(ticketMs) : `${currency} 0.00`}
                             </td>
                             <td className="px-6 py-3">
-                              {(isCompleted || isCancelled) ? (
-                                <Badge variant="secondary" className="bg-status-success-bg text-status-success-text border-0">
-                                  ✓ {isCompleted ? "Completed" : "Cancelled"}
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="border-0 capitalize">
-                                  {ticket.status}
-                                </Badge>
-                              )}
+                              <TicketStatusBadge
+                                status={ticket.status}
+                                label={isCompleted ? "Completed" : isCancelled ? "Cancelled" : undefined}
+                                className="capitalize"
+                              />
                             </td>
                             <td className="px-6 py-3">
                               <div className="flex gap-2">

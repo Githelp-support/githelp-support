@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from "@testing-library/react"
 import type { ReactNode } from "react"
 import type { Payment, PaymentTransfer } from "@/hooks/usePayments"
 import type { Database } from "@/types/database"
+import type { ProfileAvatarProps } from "@/components/ui/profile-avatar"
 
 type Ticket = Database["public"]["Tables"]["tickets"]["Row"]
 
@@ -48,6 +49,20 @@ vi.mock("@/hooks/usePayments", async (importOriginal) => {
     ...actual,
     usePayments: (projectId?: string) => usePayments(projectId),
     usePaymentTransfers: (filters?: unknown) => usePaymentTransfers(filters),
+  }
+})
+
+// jsdom never loads images, so Radix AvatarImage does not mount an <img>. Record the props
+// the page passes and render the real component, so the fallback is still the real one.
+const profileAvatarProps = vi.fn()
+vi.mock("@/components/ui/profile-avatar", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/ui/profile-avatar")>()
+  return {
+    ...actual,
+    ProfileAvatar: (props: ProfileAvatarProps) => {
+      profileAvatarProps(props)
+      return <actual.ProfileAvatar {...props} />
+    },
   }
 })
 
@@ -172,7 +187,8 @@ function mockData({
   tickets = allStatusTickets(),
   transfers = [],
   payments = [],
-}: { tickets?: Ticket[]; transfers?: PaymentTransfer[]; payments?: Payment[] } = {}) {
+  avatarUrl,
+}: { tickets?: Ticket[]; transfers?: PaymentTransfer[]; payments?: Payment[]; avatarUrl?: string } = {}) {
   useHelper.mockReturnValue({
     data: {
       helper_id: HELPER_ID,
@@ -180,7 +196,12 @@ function mockData({
       project_id: "proj-1",
       category: "Community",
       deleted_at: null,
-      user: { name: "Test Helper", username: "testhelper", email: "helper@test.dev" },
+      user: {
+        name: "Test Helper",
+        username: "testhelper",
+        email: "helper@test.dev",
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      },
     },
     isLoading: false,
   })
@@ -207,6 +228,7 @@ describe("HelperProfilePage", () => {
     vi.useFakeTimers({ toFake: ["Date"] })
     vi.setSystemTime(new Date(2026, 8, 15, 12))
     push.mockClear()
+    profileAvatarProps.mockClear()
     mockData()
   })
 
@@ -232,6 +254,36 @@ describe("HelperProfilePage", () => {
     expect(screen.getByRole("button", { name: "Helper income (USD)" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Amount" })).not.toBeInTheDocument()
     expect(within(ticketRow("1111111")).getByText("12.34")).toBeInTheDocument()
+  })
+
+  describe("header avatar", () => {
+    it("passes the helper's avatar_url to ProfileAvatar", () => {
+      const avatarUrl = "https://cdn.test.dev/avatars/helper.png"
+      mockData({ avatarUrl })
+      renderPage()
+
+      expect(profileAvatarProps).toHaveBeenCalledTimes(1)
+      expect(profileAvatarProps).toHaveBeenCalledWith({
+        id: "user-helper",
+        name: "Test Helper",
+        avatarUrl,
+        size: "lg",
+      })
+    })
+
+    it("renders the initial fallback when the helper has no avatar_url", () => {
+      renderPage()
+
+      expect(profileAvatarProps).toHaveBeenCalledTimes(1)
+      expect(profileAvatarProps).toHaveBeenCalledWith({
+        id: "user-helper",
+        name: "Test Helper",
+        avatarUrl: null,
+        size: "lg",
+      })
+      expect(screen.getByText("T")).toBeInTheDocument()
+      expect(screen.queryByRole("img")).not.toBeInTheDocument()
+    })
   })
 
   describe("ticket statuses", () => {
