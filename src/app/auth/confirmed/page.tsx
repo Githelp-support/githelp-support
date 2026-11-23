@@ -83,8 +83,7 @@ export default function AuthConfirmedPage() {
       }
 
       // Shared post-sign-in step (OAuth and e-mail links both land here):
-      // after the user confirms the preview, move tickets opened as a guest
-      // to this account. Network steps are capped at ~10 s; a transient
+      // automatically move tickets opened as a guest to this account. Network steps are capped at ~10 s; a transient
       // failure keeps the key for a later retry. Never blocks sign-in.
       const adoption = await runGuestAdoptionFlow({ timeoutMs: 10_000 })
       notifyGuestAdoptionResult(adoption)

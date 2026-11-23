@@ -623,6 +623,39 @@ describe("round 4: later, lock takeover, capped wait, invites, drafts", () => {
     vi.useRealTimers()
   })
 
+  it("without a confirm, links automatically (no prompt, even in a hidden tab)", async () => {
+    const storage = memoryStorage()
+    saveGuestSession(savedNow(), storage)
+    const invoke = fnMock({ preview: previewOk(), adopt: adoptOk(["t1"], ["t1"]) })
+    const result = await runGuestAdoptionFlow({
+      client: makeClient({ user: REAL, invoke }) as never,
+      storage,
+      isVisible: () => false,
+    })
+    expect(invoke).toHaveBeenCalledTimes(2)
+    expect(invoke.mock.calls[1][1]).toEqual({ body: { guest_access_token: "guest-access", expected_user_id: "real-1" } })
+    expect(result.status).toBe("adopted")
+    expect(storage.map.has(GUEST_ADOPTION_KEY)).toBe(false)
+    expect(storage.map.has(OWN_GUEST_ID_KEY)).toBe(false)
+  })
+
+  it("without a confirm, a 'later' left by an older prompt doesn't hold the link back", async () => {
+    const storage = memoryStorage()
+    saveGuestSession(savedNow({ later_at: Date.now() }), storage)
+    const invoke = fnMock({ preview: previewOk(), adopt: adoptOk() })
+    const result = await runGuestAdoptionFlow({ client: makeClient({ user: REAL, invoke }) as never, storage })
+    expect(result.status).toBe("adopted")
+  })
+
+  it("without a confirm, an empty preview still adopts nothing (conversation gone)", async () => {
+    const storage = memoryStorage()
+    saveGuestSession(savedNow(), storage)
+    const invoke = fnMock({ preview: previewOk([]), adopt: adoptOk() })
+    const result = await runGuestAdoptionFlow({ client: makeClient({ user: REAL, invoke }) as never, storage })
+    expect(result).toEqual({ status: "none", unavailable: true })
+    expect(invoke).toHaveBeenCalledTimes(1)
+  })
+
   it("'later' is remembered: no automatic re-prompt for 10 minutes unless forced", async () => {
     const storage = memoryStorage()
     saveGuestSession(savedNow(), storage)

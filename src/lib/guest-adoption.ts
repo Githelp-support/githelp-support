@@ -25,7 +25,6 @@ import {
   type SavedGuestSession,
   type StorageLike,
 } from "@/lib/guest-adoption-storage"
-import { cancelGuestAdoptionConfirm, requestGuestAdoptionConfirm } from "@/lib/guest-adoption-confirm"
 
 /**
  * Guest ticket adoption.
@@ -35,16 +34,16 @@ import { cancelGuestAdoptionConfirm, requestGuestAdoptionConfirm } from "@/lib/g
  * so when they click a sign-in action on a support page (or open the sign-in
  * page with a support `redirect`, i.e. they are continuing that
  * conversation) we save the guest's tokens;
- * once the real sign-in completes, the signed-in user confirms ("Link to my
- * account") a preview of the conversations and `adopt-guest-tickets` moves
- * them to the real account (it verifies the guest access token server-side).
+ * once the real sign-in completes, the conversations are linked to the real
+ * account automatically: `adopt-guest-tickets` moves them (it verifies the
+ * guest access token server-side), without asking the user.
  *
  * Hardening:
  * - only a guest this browser created itself (`githelp.ownGuestId`, set by
  *   ensureSupportSession) can be saved or adopted — a guest session planted
  *   through a crafted `#access_token=` link is refused (login CSRF);
- * - nothing is adopted without the signed-in user's confirmation (also
- *   covers the next person signing in on a shared computer);
+ * - nothing is adopted by a sign-in that did not start from the guest's own
+ *   support page (covers the next person signing in on a shared computer);
  * - the key is only written by a sign-in from a support page (never because
  *   an unrelated page, e.g. an AuthGuard bounce, opened sign-in), expires
  *   after 60 minutes, and is cleared on sign-out and after a definitive
@@ -128,7 +127,7 @@ export type GuestAdoptionChoice = "link" | "discard" | "later" | "superseded"
 interface FlowDeps extends AdoptionDeps {
   /**
    * Ask the signed-in user (named by `account`) to confirm the preview.
-   * Defaults to the app dialog.
+   * Defaults to linking automatically, without asking.
    */
   confirm?: (tickets: GuestTicketPreview[], account: string) => Promise<GuestAdoptionChoice>
   /** This tab's id for the cross-tab lock (tests). */
@@ -522,15 +521,16 @@ function waitUntilVisible(isVisible: () => boolean): Promise<void> {
 async function runFlow(deps: FlowDeps, attempt = 0): Promise<GuestAdoptionResult> {
   const storage = storageOf(deps)
   const now = deps.now ?? Date.now
-  const confirm = deps.confirm ?? requestGuestAdoptionConfirm
+  const confirm = deps.confirm
   const isVisible = deps.isVisible ?? documentIsVisible
   // A confirmation that no longer matches (key replaced, account changed):
   // start over with a new preview — at most a couple of times.
   const restart = (): Promise<GuestAdoptionResult> =>
     attempt < 2 ? runFlow(deps, attempt + 1) : Promise.resolve({ status: "none" })
-  // "Ask me later" was chosen recently: don't prompt again by itself.
+  // "Ask me later" was chosen recently: don't prompt again by itself. Only
+  // when asking; automatic linking ignores a "later" left by an older prompt.
   const before = readSavedGuestSession(storage, deps.now)
-  if (!deps.force && before?.later_at && !before.confirmed && now() - before.later_at < GUEST_ADOPTION_LATER_MS) {
+  if (confirm && !deps.force && before?.later_at && !before.confirmed && now() - before.later_at < GUEST_ADOPTION_LATER_MS) {
     return { status: "deferred" }
   }
   const preview = await withTimeout<GuestAdoptionPreview | { status: "timeout" }>(
@@ -549,8 +549,11 @@ async function runFlow(deps: FlowDeps, attempt = 0): Promise<GuestAdoptionResult
       markGuestConversationUnavailable(storage, deps.now)
       return { status: "none", unavailable: true }
     }
-    await waitUntilVisible(isVisible)
-    const choice = await confirm(preview.tickets, preview.account).catch((): GuestAdoptionChoice => "superseded")
+    let choice: GuestAdoptionChoice = "link"
+    if (confirm) {
+      await waitUntilVisible(isVisible)
+      choice = await confirm(preview.tickets, preview.account).catch((): GuestAdoptionChoice => "superseded")
+    }
     const saved = readSavedGuestSession(storage, deps.now)
     if (choice === "discard") {
       clearSavedGuestSession(storage)
@@ -629,9 +632,8 @@ async function runLocked(deps: FlowDeps): Promise<GuestAdoptionResult> {
     if (!acquireGuestAdoptionLock(tabId, storage, now, isVisible())) return { status: "elsewhere" }
   }
   const keepAlive = setInterval(() => {
-    // Heartbeat with our visibility; taken over by a visible tab → drop our
-    // (background) dialog instead of competing with it.
-    if (!acquireGuestAdoptionLock(tabId, storage, now, isVisible())) cancelGuestAdoptionConfirm()
+    // Heartbeat with our visibility.
+    acquireGuestAdoptionLock(tabId, storage, now, isVisible())
   }, GUEST_ADOPTION_LOCK_TTL_MS / 3)
   try {
     return await runFlow(deps)
@@ -644,8 +646,7 @@ async function runLocked(deps: FlowDeps): Promise<GuestAdoptionResult> {
 /**
  * Shared post-sign-in step (/auth/confirmed, sign-in page, support pages):
  * if a guest session this browser created was saved and the current user is
- * a real account, preview its conversations, ask the user to confirm (naming
- * the account), and adopt them. Calls in this tab share one run; across tabs
+ * a real account, preview its conversations and adopt them automatically. Calls in this tab share one run; across tabs
  * a short localStorage lock lets one tab run it while the others wait for
  * the outcome (`elsewhere`). Never throws — sign-in must not be blocked.
  */

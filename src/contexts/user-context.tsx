@@ -10,7 +10,6 @@ import {
   isOwnGuestId,
   resetGuestAdoptionConfirmation,
 } from "@/lib/guest-adoption-storage"
-import { cancelGuestAdoptionConfirm } from "@/lib/guest-adoption-confirm"
 
 export type UserRole = "helper" | "user" | "admin"
 
@@ -245,8 +244,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Session expiry / global sign-out: a saved guest session (and this
         // browser's guest id) must not outlive it.
         clearAllGuestAdoptionState()
-        // …and an open "Link your guest conversation?" dialog is moot.
-        cancelGuestAdoptionConfirm()
         setUser({
           name: "Incognito",
           role: "user",

@@ -14,7 +14,6 @@ import { MobileNavProvider } from "@/components/layout/mobile-nav"
 import { LoadingFallback } from "@/components/ui/loading-fallback"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { GuestAdoptionConfirmDialog } from "@/components/auth/guest-adoption-confirm-dialog"
 import { Suspense } from "react"
 
 // Two body faces, picked by size (see the "Font by size" rules in globals.css):
@@ -90,7 +89,6 @@ export default function RootLayout({
             protected pages alike get their toasts. */}
         <Toaster position="top-right" richColors closeButton />
         {/* "Link your guest conversation?" after sign-in (lib/guest-adoption). */}
-        <GuestAdoptionConfirmDialog />
       </body>
     </html>
   )
