@@ -33,6 +33,16 @@ export interface TicketChatInputProps {
   imagesUploading?: boolean
 }
 
+/**
+ * Composer placeholder for a project's chat: "Ask #" + the project's slug, or
+ * its display name when it has no slug.
+ */
+export function composerPlaceholder(
+  project: { slug?: string | null; name?: string | null; display_name?: string | null } | null | undefined,
+): string {
+  return `Ask #${project?.slug || project?.display_name || project?.name || ""}`
+}
+
 /** Image files carried by a paste or drop. */
 function imageFilesFrom(data: DataTransfer | null): File[] {
   if (!data) return []
@@ -211,10 +221,19 @@ export function TicketChatInput({
     }
   }, [value])
 
+  // Auto-grow: one row when empty, as tall as the text up to max-h-50, then
+  // it scrolls. Re-measured on every value, so it shrinks back after a send.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = "auto"
+    ta.style.height = `${ta.scrollHeight}px`
+  }, [value])
+
   return (
     <div
       className={cn(
-        "bg-card border border-border rounded-lg shadow-soft mx-4 mb-4 overflow-hidden",
+        "bg-card border border-border rounded-lg shadow-soft mb-4 overflow-hidden transition-colors duration-150 ease-out focus-within:border-composer-border-focus",
         dragActive && "border-brand-primary ring-2 ring-brand-primary/30"
       )}
       onDragOver={handleDragOver}
@@ -265,7 +284,8 @@ export function TicketChatInput({
           placeholder={disabled ? "This ticket is closed. New messages can't be sent." : placeholder}
           disabled={!!disabled}
           aria-disabled={!!disabled}
-          className="min-h-[100px] max-h-32 resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed"
+          rows={1}
+          className="min-h-0 max-h-50 resize-none overflow-y-auto border-0 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base text-muted-foreground placeholder:truncate placeholder:text-muted-foreground disabled:cursor-not-allowed"
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           spellCheck={!isInsideOpenFence(value, value.length)}

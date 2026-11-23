@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input"
 import { useUser } from "@/contexts/user-context"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useSetProjectPageHref } from "@/components/layout/app-shell"
+import { composerPlaceholder } from "@/components/ticket-chat/chat-input"
+import { formatChatTime } from "@/lib/chat-thread"
 import { TicketChat, type TicketChatMessage, type TicketChatParticipant } from "@/components/ticket-chat/ticket-chat"
 import { Icon } from "@/components/ui/icon"
 import { toast } from "sonner"
@@ -37,7 +39,7 @@ import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
 import { useTicketWithDetails, useLatestUserActiveTicket } from "@/hooks/useTicketsWithDetails"
-import { useCustomerTicketSidebar, toChatParticipants } from "@/hooks/useCustomerTicketSidebar"
+import { useCustomerTicketSidebar, toChatParticipants, hasHelperJoined } from "@/hooks/useCustomerTicketSidebar"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
@@ -455,7 +457,12 @@ export default function UserSupportChatPage() {
     void ensureOrg()
   }, [isAuthenticated, isSupportUser, selectedOrganizationId])
 
-  const nowFormatted = useMemo(() => formatChatTimestamp(new Date()), [])
+  // One instant for the synthetic messages: full timestamp for the thread
+  // builder, time only for the intro.
+  const { nowFormatted, nowTime } = useMemo(() => {
+    const now = new Date()
+    return { nowFormatted: formatChatTimestamp(now), nowTime: formatChatTime(now) }
+  }, [])
 
   const welcomeText = slaCovered
     ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
@@ -918,8 +925,8 @@ export default function UserSupportChatPage() {
       <TicketChat
         threadKey={ticketId ?? undefined}
         headerTitle={`Ticket with ${projectName}`}
-        headerTitleClassName="text-xl"
-        headerSubtitle={ticketCreated ? `ID: ${ticketId}` : undefined}
+        headerVariant="chat"
+        ticketId={ticketCreated && ticketId ? ticketId : undefined}
         showBackButton={true}
         intro={
           <CustomerChatIntro
@@ -928,7 +935,7 @@ export default function UserSupportChatPage() {
             projectLogo={projectLogo}
             primaryColor={brandingData?.primary_color}
             welcomeText={welcomeText}
-            timestamp={nowFormatted}
+            timestamp={nowTime}
             rates={rates}
             isFree={isFreeSupport(effectivePricing)}
             isAuthenticated={isAuthenticated}
@@ -940,6 +947,7 @@ export default function UserSupportChatPage() {
         messages={chatMessages}
         participants={chatParticipants}
         participantsLoading={participantsLoading}
+        helperJoined={!!claimer || hasHelperJoined(participants, [sessionUserId, existingTicket?.created_by])}
         topics={topics}
         helpTypes={helpType}
         message={message}
@@ -947,6 +955,7 @@ export default function UserSupportChatPage() {
         onSend={handleSendMessage}
         sendDisabled={!message.trim() || createTicket.isPending}
         sending={isSending}
+        composerPlaceholder={composerPlaceholder(project ?? { name: projectName })}
         isEnded={ticketEnded}
         paymentStatus={paymentStatus.status}
         // Signed-out visitors get the composer: the first send starts a guest
