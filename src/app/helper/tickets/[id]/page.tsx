@@ -35,7 +35,7 @@ import {
   TimeReviewSystemMessage,
 } from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
-import { useProject } from "@/hooks/useProject"
+import { useProject, useProjectBranding } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput, composerPlaceholder } from "@/components/ticket-chat/chat-input"
 import { ChatAvatarSlot, ChatDayDivider, ChatMessageMeta, SystemNote } from "@/components/ticket-chat/chat-message-parts"
@@ -49,7 +49,8 @@ import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { ClaimTicketButton, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy } from "@/lib/customer-chat-messages"
+import { helperSystemMessageCopy, isThreadOpener, parseStoredWelcome, type StoredWelcome } from "@/lib/customer-chat-messages"
+import { WelcomeMessage } from "@/components/ticket-chat/welcome-message"
 import { GuestName } from "@/components/ui/guest-name"
 import { guestLabel } from "@/lib/guest-label"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
@@ -59,6 +60,7 @@ import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmptyText } from "@/components/ticket-chat/sidebar-section"
 import { useRightSidebarCollapsed, RightSidebarHeaderToggle } from "@/components/ticket-chat/right-sidebar-collapse"
+import { AUTOMATIC_MESSAGE_KINDS, latestReadableMessageId } from "@/lib/ticket-message-summary"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFlatFeePricing, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
@@ -101,7 +103,16 @@ interface Message {
   hasDeclines?: boolean
   /** Raw `metadata` of the persisted message (read by `TimeReviewSystemMessage`). */
   metadata?: TimeReviewMessageMetadata
+  /** Stored welcome row (`metadataKind: "welcome"`): what it saved when the ticket was opened. */
+  welcome?: StoredWelcome
 }
+
+/**
+ * Rows the server writes for the customer (welcome, start note, auto-reply).
+ * Helpers and admins see them with the stored text and without an entrance
+ * animation.
+ */
+const AUTOMATIC_KINDS = AUTOMATIC_MESSAGE_KINDS
 
 /** "HH:MM" for a message: from its raw time, else the time part of its formatted timestamp. */
 function messageTime(msg: Message): string | null {
@@ -166,7 +177,7 @@ export default function TicketDetailPage() {
   const { data: paymentSettings } = useProjectPaymentSettings(ticket?.project_id || "")
   // Billing uses the prices snapshotted when the ticket was opened; prefer them over
   // the live project settings so the helper sees what the customer will be charged.
-  const pricingSnapshot = (ticket as { pricing_snapshot?: Record<string, number> | null } | undefined)?.pricing_snapshot
+  const pricingSnapshot = ticket?.pricing_snapshot
   const effectivePricing = pricingSnapshot && paymentSettings ? { ...paymentSettings, ...pricingSnapshot } : paymentSettings
   const paymentGate = useTicketPaymentStatus(ticketId, {
     slaId: (ticketDetails as { sla_id?: string | null } | undefined)?.sla_id ?? null,
@@ -198,6 +209,8 @@ export default function TicketDetailPage() {
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
+  // Logo and fallback colour of the stored welcome row's project avatar.
+  const { data: branding } = useProjectBranding(projectId)
   // Publish the sidebar's "Open project page" link for the ticket's project.
   useSetProjectPageHref(
     project?.slug
@@ -278,10 +291,8 @@ export default function TicketDetailPage() {
 
   const updateLastReadMessage = useUpdateLastReadMessage()
 
-  const lastMessageId = useMemo(
-    () => (messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null),
-    [messagesData]
-  )
+  // The welcome, start note and auto-reply rows are never "the latest message".
+  const lastMessageId = useMemo(() => latestReadableMessageId(messagesData), [messagesData])
 
   // Mark latest message as read when viewing this ticket. Only depend on ids so we don't re-run
   // when the mutation object reference changes (it would cause an update loop with query invalidation).
@@ -422,9 +433,37 @@ export default function TicketDetailPage() {
   const canClaim = !!currentUser?.id && !isClaimed && !isTicketEnded && !isTicketCreator
   const canChat = !isTicketEnded && !!currentUser?.id
 
-  // Transform messages to UI format; prepend synthetic "claimed" message when ticket is claimed
-  const messages: Message[] = useMemo(() => {
-    const list: Message[] = []
+  // Transform messages to UI format, in the order the customer sees them: the
+  // stored welcome and start note open the thread, then the synthetic
+  // "claimed" message (when the ticket is claimed), then everything else in
+  // stored order (the auto-reply is a stored row after the first user message).
+  const { messages, openerCount } = useMemo(() => {
+    const toMessage = (msg: NonNullable<typeof messagesData>[number]): Message => {
+      const metadata = msg.metadata as Record<string, unknown> | null | undefined
+      const kind = typeof metadata?.kind === "string" ? metadata.kind : undefined
+      return {
+        id: msg.id,
+        sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
+        // The stored payment_authorized / payment_required texts are worded for the customer; helpers/admins get their own.
+        // The welcome, start note and auto-reply keep their stored text.
+        content: (msg.sender_type === "system" ? helperSystemMessageCopy(kind) : null) ?? msg.content,
+        timestamp: formatDateTime(msg.created_at),
+        createdAt: msg.created_at,
+        avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
+        senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
+        senderId: msg.sender_id ?? msg.sender?.id,
+        senderAvatarUrl: msg.sender?.avatar_url ?? null,
+        type: undefined,
+        metadataKind: kind,
+        hasDeclines: ((metadata as { declined?: unknown[] } | null | undefined)?.declined?.length ?? 0) > 0,
+        metadata: msg.metadata as TimeReviewMessageMetadata,
+        welcome: msg.sender_type === "system" && kind === "welcome" ? parseStoredWelcome(metadata) : undefined,
+      }
+    }
+    const isOpener = (msg: NonNullable<typeof messagesData>[number]) =>
+      isThreadOpener({ sender_type: msg.sender_type, metadata: msg.metadata as Record<string, unknown> | null })
+    const list: Message[] = (messagesData ?? []).filter(isOpener).map(toMessage)
+    const openers = list.length
     if (isClaimed && claimer) {
       list.push({
         id: "system-claimed",
@@ -438,36 +477,25 @@ export default function TicketDetailPage() {
         type: "claimed",
       })
     }
-    if (!messagesData) return list
-    return list.concat(
-      messagesData.map((msg): Message => ({
-        id: msg.id,
-        sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
-        // The stored payment_authorized / payment_required texts are worded for the customer; helpers/admins get their own.
-        content:
-          (msg.sender_type === "system"
-            ? helperSystemMessageCopy((msg.metadata as { kind?: string } | null | undefined)?.kind)
-            : null) ?? msg.content,
-        timestamp: formatDateTime(msg.created_at),
-        createdAt: msg.created_at,
-        avatar: msg.sender?.name?.[0]?.toUpperCase() || "U",
-        senderName: msg.sender?.name || (msg.sender_type === "user" ? "User" : "Unknown"),
-        senderId: msg.sender_id ?? msg.sender?.id,
-        senderAvatarUrl: msg.sender?.avatar_url ?? null,
-        type: undefined,
-        metadataKind: (msg.metadata as { kind?: string } | null | undefined)?.kind,
-        hasDeclines: ((msg.metadata as { declined?: unknown[] } | null | undefined)?.declined?.length ?? 0) > 0,
-        metadata: msg.metadata as TimeReviewMessageMetadata,
-      }))
-    )
+    ;(messagesData ?? []).forEach((msg) => {
+      if (!isOpener(msg)) list.push(toMessage(msg))
+    })
+    return { messages: list, openerCount: openers }
   }, [messagesData, isClaimed, claimer])
+  // The stored welcome already lists the ticket's rates (or says support is
+  // free), so the "Info about issue" block doesn't repeat them.
+  const welcomeShowsRates = messages.some((m) => !!m.welcome && (m.welcome.isFree || m.welcome.rates != null))
   // Messages present when the thread first loaded don't animate; later ones do.
   // (State set during render, once, when the first non-empty thread arrives.)
   const [initialMessageIds, setInitialMessageIds] = useState<Set<string> | null>(null)
   if (initialMessageIds === null && messagesData && messagesData.length > 0) {
     setInitialMessageIds(new Set(messages.map((m) => m.id)))
   }
-  const isNewMessage = (id: string) => initialMessageIds !== null && !initialMessageIds.has(id)
+  const isNewMessage = (msg: Message) =>
+    initialMessageIds !== null &&
+    !initialMessageIds.has(msg.id) &&
+    // The welcome, start note and auto-reply show immediately, also when they arrive live.
+    !(msg.sender === "system" && !!msg.metadataKind && AUTOMATIC_KINDS.has(msg.metadataKind))
 
   /** First user message in the chat, or ticket description as fallback (for "Info about issue"). */
   const firstIssueMessage = useMemo(() => {
@@ -547,18 +575,22 @@ export default function TicketDetailPage() {
     return () => cancelAnimationFrame(id)
   }, [ticketId, messages, isTicketEnded, hasHistory])
 
-  // Day dividers and sender grouping. The first divider sits above the "Info
-  // about issue" block and takes its date (the first message, else the ticket).
+  // Day dividers and sender grouping. The first divider opens the thread: it
+  // takes the day of the stored welcome / start note when the ticket has them
+  // (they sit above the "Info about issue" block), else the block's own date
+  // (the first message, else the ticket).
   const { rows, topDayLabel } = useMemo(() => {
     const now = new Date()
     const built = buildThreadRows(messages, now)
     const introDate = firstIssueMessage.timestamp ? new Date(firstIssueMessage.timestamp) : null
     const top =
-      introDate && !Number.isNaN(introDate.getTime())
-        ? formatDayDividerLabel(introDate, now)
-        : (built[0]?.showDayDivider ?? formatDayDividerLabel(now, now))
+      openerCount > 0 && built[0]?.showDayDivider
+        ? built[0].showDayDivider
+        : introDate && !Number.isNaN(introDate.getTime())
+          ? formatDayDividerLabel(introDate, now)
+          : (built[0]?.showDayDivider ?? formatDayDividerLabel(now, now))
     return { rows: built, topDayLabel: top }
-  }, [messages, firstIssueMessage.timestamp])
+  }, [messages, openerCount, firstIssueMessage.timestamp])
 
   // A helper has claimed the ticket or joined the chat (anyone but its creator).
   const helperJoined =
@@ -936,6 +968,112 @@ export default function TicketDetailPage() {
     timeEntries.filter((e) => e.reviewStatus !== "declined").map((e) => e.helperId),
   ).size
 
+  // One thread row. The stored welcome / start note rows (the first
+  // `openerCount`) are rendered above the "Info about issue" block, the rest below it.
+  const renderRow = (row: (typeof rows)[number], index: number) => {
+    const msg = row.item
+    // The top divider already shows the intro's day.
+    const dayLabel = row.showDayDivider && (index > 0 || row.showDayDivider !== topDayLabel) ? row.showDayDivider : null
+    const isBanner = msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended")
+    // Only the amber declined variant keeps its box; every other
+    // system message is assumed to be the default grey kind and
+    // renders as a plain note (same assumption as TicketChat).
+    const isDeclined =
+      msg.metadataKind === "time_entry_declined" ||
+      (msg.metadataKind === "time_entries_confirmed" && msg.hasDeclines)
+    const isGuestSender = !!creatorGuest && msg.sender === "user" && isGuestCreator(msg.senderId)
+    return (
+      <Fragment key={msg.id}>
+        {dayLabel && <ChatDayDivider label={dayLabel} className="mt-4" />}
+        <div className={cn(index === 0 && openerCount > 0 ? null : row.groupStart ? "mt-4" : "mt-1", isNewMessage(msg) && "animate-enter")}>
+          {isBanner ? (
+            <div data-slot="chat-banner-row" className="flex items-start gap-3">
+              <ChatAvatarSlot
+                kind="avatar"
+                id={msg.senderId}
+                name={msg.senderName ?? msg.avatar ?? "H"}
+                avatarUrl={msg.senderAvatarUrl}
+              />
+              <div className="min-w-0 flex-1">
+                <ChatMessageMeta name={msg.senderName || "Helper"} time={messageTime(msg)} className="mb-1" />
+                <div className="flex items-center gap-2 text-sm text-foreground">
+                  <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
+                  <MarkdownContent content={msg.content} className="text-sm" />
+                </div>
+              </div>
+            </div>
+          ) : msg.welcome ? (
+            // Stored welcome row: the block the customer sees, filled from
+            // what the row saved (text, rates, time), never from live settings.
+            <WelcomeMessage
+              projectId={projectId}
+              projectName={msg.welcome.projectName || project?.name || "Support"}
+              projectLogo={branding?.logo_url || null}
+              primaryColor={branding?.primary_color}
+              welcomeText={msg.content}
+              timestamp={messageTime(msg)}
+              rates={msg.welcome.rates}
+              isFree={msg.welcome.isFree}
+              freeText={msg.welcome.freeText}
+              missingRates="hidden"
+            />
+          ) : msg.sender === "system" ? (
+            isDeclined ? (
+              <div data-slot="chat-status-row" className="flex items-start gap-3">
+                <ChatAvatarSlot kind="spacer" />
+                <div className="min-w-0 flex-1 bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left">
+                  {msg.metadataKind === "time_entries_confirmed" ? (
+                    <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
+                  ) : (
+                    <MarkdownContent content={msg.content} />
+                  )}
+                </div>
+              </div>
+            ) : msg.metadataKind === "time_entries_confirmed" ? (
+              <SystemNote>
+                <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
+              </SystemNote>
+            ) : (
+              <SystemNote markdown={msg.content} />
+            )
+          ) : (
+            <div
+              data-slot="chat-message-row"
+              data-group-start={row.groupStart ? "" : undefined}
+              className="flex items-start gap-3"
+            >
+              {row.groupStart ? (
+                <ChatAvatarSlot
+                  kind="avatar"
+                  id={msg.senderId}
+                  name={msg.senderName ?? msg.avatar ?? "U"}
+                  avatarUrl={msg.senderAvatarUrl}
+                  guest={msg.sender === "user" && isGuestCreator(msg.senderId)}
+                />
+              ) : (
+                <ChatAvatarSlot kind="spacer" />
+              )}
+              <div className="min-w-0 flex-1">
+                {row.groupStart && (
+                  <ChatMessageMeta
+                    name={isGuestSender ? creatorGuest.label : (msg.senderName ?? "Unknown")}
+                    guest={isGuestSender}
+                    guestFull={isGuestSender ? creatorGuest.full : undefined}
+                    time={messageTime(msg)}
+                    className="mb-1"
+                  />
+                )}
+                <div className="text-sm text-foreground">
+                  <MarkdownContent content={msg.content} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Fragment>
+    )
+  }
+
   // A ticket hidden by RLS (or a bad id) used to render a blank page: the
   // `.single()` read errors, and nothing else has data to show.
   if (ticketError || (!ticketLoading && !ticket)) {
@@ -1018,8 +1156,10 @@ export default function TicketDetailPage() {
                   <div className="min-h-full flex flex-col justify-end">
                     <div className="flex flex-col px-6 py-10 md:px-12">
                 <ChatDayDivider label={topDayLabel} className="mb-4" />
+                {/* Stored welcome and start note: first in the thread, as the customer sees them */}
+                {rows.slice(0, openerCount).map(renderRow)}
                 {/* Initial Ticket Info — first message in chat = "Info about issue" */}
-                <div className="flex gap-3 items-start">
+                <div className={cn("flex gap-3 items-start", openerCount > 0 && "mt-4")}>
                   <ChatAvatarSlot
                     kind="avatar"
                     id={firstIssueMessage.senderId}
@@ -1076,6 +1216,7 @@ export default function TicketDetailPage() {
                       </div>
                     )}
 
+                    {!welcomeShowsRates && (
                     <div>
                       <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
                       {rates == null ? (
@@ -1102,6 +1243,7 @@ export default function TicketDetailPage() {
                         </div>
                       )}
                     </div>
+                    )}
 
                     {/* Action Buttons — claim only on an open, unclaimed ticket
                         (never for its creator); End ticket only for the claimed
@@ -1132,94 +1274,7 @@ export default function TicketDetailPage() {
                 </div>
 
                 {/* Chat Messages: day dividers above each new day, follow-ups grouped under their sender */}
-                  {rows.map((row, index) => {
-                    const msg = row.item
-                    // The top divider already shows the intro's day.
-                    const dayLabel = row.showDayDivider && (index > 0 || row.showDayDivider !== topDayLabel) ? row.showDayDivider : null
-                    const isBanner = msg.sender === "system" && (msg.type === "claimed" || msg.type === "ended")
-                    // Only the amber declined variant keeps its box; every other
-                    // system message is assumed to be the default grey kind and
-                    // renders as a plain note (same assumption as TicketChat).
-                    const isDeclined =
-                      msg.metadataKind === "time_entry_declined" ||
-                      (msg.metadataKind === "time_entries_confirmed" && msg.hasDeclines)
-                    const isGuestSender = !!creatorGuest && msg.sender === "user" && isGuestCreator(msg.senderId)
-                    return (
-                      <Fragment key={msg.id}>
-                        {dayLabel && <ChatDayDivider label={dayLabel} className="mt-4" />}
-                        <div className={cn(row.groupStart ? "mt-4" : "mt-1", isNewMessage(msg.id) && "animate-enter")}>
-                          {isBanner ? (
-                            <div data-slot="chat-banner-row" className="flex items-start gap-3">
-                              <ChatAvatarSlot
-                                kind="avatar"
-                                id={msg.senderId}
-                                name={msg.senderName ?? msg.avatar ?? "H"}
-                                avatarUrl={msg.senderAvatarUrl}
-                              />
-                              <div className="min-w-0 flex-1">
-                                <ChatMessageMeta name={msg.senderName || "Helper"} time={messageTime(msg)} className="mb-1" />
-                                <div className="flex items-center gap-2 text-sm text-foreground">
-                                  <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
-                                  <MarkdownContent content={msg.content} className="text-sm" />
-                                </div>
-                              </div>
-                            </div>
-                          ) : msg.sender === "system" ? (
-                            isDeclined ? (
-                              <div data-slot="chat-status-row" className="flex items-start gap-3">
-                                <ChatAvatarSlot kind="spacer" />
-                                <div className="min-w-0 flex-1 bg-amber-50 border border-amber-200 text-amber-900 py-2 px-4 rounded-lg text-sm text-left">
-                                  {msg.metadataKind === "time_entries_confirmed" ? (
-                                    <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
-                                  ) : (
-                                    <MarkdownContent content={msg.content} />
-                                  )}
-                                </div>
-                              </div>
-                            ) : msg.metadataKind === "time_entries_confirmed" ? (
-                              <SystemNote>
-                                <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
-                              </SystemNote>
-                            ) : (
-                              <SystemNote markdown={msg.content} />
-                            )
-                          ) : (
-                            <div
-                              data-slot="chat-message-row"
-                              data-group-start={row.groupStart ? "" : undefined}
-                              className="flex items-start gap-3"
-                            >
-                              {row.groupStart ? (
-                                <ChatAvatarSlot
-                                  kind="avatar"
-                                  id={msg.senderId}
-                                  name={msg.senderName ?? msg.avatar ?? "U"}
-                                  avatarUrl={msg.senderAvatarUrl}
-                                  guest={msg.sender === "user" && isGuestCreator(msg.senderId)}
-                                />
-                              ) : (
-                                <ChatAvatarSlot kind="spacer" />
-                              )}
-                              <div className="min-w-0 flex-1">
-                                {row.groupStart && (
-                                  <ChatMessageMeta
-                                    name={isGuestSender ? creatorGuest.label : (msg.senderName ?? "Unknown")}
-                                    guest={isGuestSender}
-                                    guestFull={isGuestSender ? creatorGuest.full : undefined}
-                                    time={messageTime(msg)}
-                                    className="mb-1"
-                                  />
-                                )}
-                                <div className="text-sm text-foreground">
-                                  <MarkdownContent content={msg.content} />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </Fragment>
-                    )
-                  })}
+                  {rows.slice(openerCount).map((row, index) => renderRow(row, index + openerCount))}
                   {isTicketEnded && (
                     <div data-slot="chat-banner-row" className="mt-4 flex gap-3 items-start">
                       <ChatAvatarSlot

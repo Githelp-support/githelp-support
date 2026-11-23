@@ -119,6 +119,7 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     status: "completed",
     priority: "medium",
     sla_id: null,
+    pricing_snapshot: null,
     success: true,
     guest: false,
     ...overrides,

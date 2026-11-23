@@ -15,6 +15,7 @@ import { SidebarSectionHeading, SidebarDivider, SidebarEmpty, SidebarEmptyText }
 import { useRightSidebarCollapsed, RightSidebarHeaderToggle } from "./right-sidebar-collapse"
 import { ChatAvatarSlot, ChatDayDivider, ChatMessageMeta, SystemNote } from "./chat-message-parts"
 import { TicketIdPill } from "./ticket-id-pill"
+import { WelcomeMessage } from "./welcome-message"
 import { buildThreadRows, formatChatTime, formatDayDividerLabel } from "@/lib/chat-thread"
 import { EndSessionRequestDialog, EndSessionRequestedBanner } from "@/components/ticket-chat/end-session-request"
 import {
@@ -31,8 +32,10 @@ import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { isPaymentFailedCtaLive } from "@/lib/customer-chat-messages"
 import { VisitorLeftAction } from "@/components/ticket-chat/guest-ticket"
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import type { TicketRates } from "@/lib/ticket-pricing"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { GuestName } from "@/components/ui/guest-name"
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -88,12 +91,28 @@ export type TicketChatMessage = {
   timestamp: string
   /**
    * Raw ISO time of a persisted message (or the pending first message's
-   * ticket time). Absent on synthetic messages (welcome, claimed, auto-reply,
-   * session summary). Drives day dividers and grouping in `lib/chat-thread`.
+   * ticket time). Absent on synthetic messages (claimed, pending first
+   * message, session summary). Drives day dividers and grouping in
+   * `lib/chat-thread`.
    */
   createdAt?: string
   content: string
-  kind?: "claimed" | "ended"
+  /** `welcome` is the stored welcome row (`metadata.kind = 'welcome'`); its data is in `welcome`. */
+  kind?: "claimed" | "ended" | "welcome"
+  /** Written by the server (`tickets_messages.is_automatic`): welcome, start note, auto-reply. */
+  isAutomatic?: boolean
+  /**
+   * `kind: "welcome"` only: what the row stored when the ticket was opened.
+   * Never mixed with the project's live rates or name.
+   */
+  welcome?: {
+    projectName: string | null
+    /** Stored rates as dollar strings; null when none were stored or the ticket is free. */
+    rates: TicketRates | null
+    isFree: boolean
+    /** The stored "offers support for free" line (free tickets only). */
+    freeText: string | null
+  }
   paymentMetadata?: {
     kind: SystemMessageKind
     [key: string]: unknown
@@ -131,6 +150,25 @@ export interface TicketChatProps {
 
   // Intro section shown above the message thread (rates, ticket meta, CTA buttons, etc.)
   intro?: React.ReactNode
+  /**
+   * The project behind the thread, for a stored welcome row (`kind:
+   * "welcome"`): the fallback avatar's colour, and the name when the row
+   * stored none. The welcome's text, rates and time come from the row itself.
+   */
+  welcomeProject?: { id: string; name: string; primaryColor?: string | null }
+  /**
+   * The customer is opening a conversation they are about to start: no ticket
+   * exists yet, or the one shown was created from this very chat. Never set
+   * for an existing ticket (ticket id in the URL, a resumed ticket) or on the
+   * helper/admin side.
+   *
+   * When true on mount, the thread starts empty and the day divider, the
+   * welcome and its note fade in together after `FIRST_OPEN_DELAY_MS`
+   * (skipped under `prefers-reduced-motion`). While it stays true, the stored
+   * welcome rows of the created ticket take the preview's place without
+   * animating, and every other message counts as new.
+   */
+  firstOpenEntrance?: boolean
 
   // Thread + participants
   messages: TicketChatMessage[]
@@ -234,6 +272,12 @@ export interface TicketChatProps {
   paymentStatus?: TicketPaymentStatus
 }
 
+/** How long the thread stays empty before the first-open entrance plays. */
+export const FIRST_OPEN_DELAY_MS = 400
+
+/** Messages on screen when a thread loaded; `firstOpen` is the seeded (empty) set of a first-open conversation. */
+type InitialMessages = { key: string | undefined; ids: Set<string>; firstOpen?: boolean }
+
 /** Gutter of the banners above the composer: 48px like the thread, 16px below `md`. */
 const BANNER_GUTTER = "mx-4 md:mx-12"
 
@@ -282,6 +326,8 @@ export function TicketChat(props: TicketChatProps) {
     headerBackgroundColor,
     showBackButton,
     intro,
+    welcomeProject,
+    firstOpenEntrance = false,
     messages,
     participants,
     participantsLoading,
@@ -365,12 +411,30 @@ export function TicketChat(props: TicketChatProps) {
   // arriving from the server) jumps straight to the newest message. Messages
   // that come in after that scroll smoothly.
   const hasHistory = messages.some((m) => !!m.createdAt)
-  const anchorRef = useRef<{ key: string | undefined; history: boolean } | null>(null)
+  const anchorRef = useRef<{ key: string | undefined; history: boolean; openersHidden: boolean } | null>(null)
+
+  // First-open entrance: the thread starts empty, then the openers (day
+  // divider, welcome, note) are revealed together. Latched off for good once
+  // the thread is no longer a first-open one (e.g. a guest's open ticket was
+  // resumed), so nothing is ever held back or animated for an existing ticket.
+  const reducedMotion = usePrefersReducedMotion()
+  const [entrance, setEntrance] = useState<"pending" | "revealed" | "none">(firstOpenEntrance ? "pending" : "none")
+  if (entrance !== "none" && !firstOpenEntrance) setEntrance("none")
+  const entrancePending = entrance === "pending" && !reducedMotion
+  useEffect(() => {
+    if (!entrancePending) return
+    const id = window.setTimeout(() => setEntrance("revealed"), FIRST_OPEN_DELAY_MS)
+    return () => window.clearTimeout(id)
+  }, [entrancePending])
+  const openersHidden = entrancePending
+  const openersAnimate = entrance === "revealed" && !reducedMotion
+
   useLayoutEffect(() => {
     const anchor = anchorRef.current
     const sameThread = anchor !== null && anchor.key === threadKey
-    const opening = !sameThread || (!anchor.history && hasHistory)
-    anchorRef.current = { key: threadKey, history: hasHistory || (sameThread && anchor.history) }
+    // The reveal of the openers counts as opening: no smooth scroll.
+    const opening = !sameThread || (!anchor.history && hasHistory) || (anchor.openersHidden && !openersHidden)
+    anchorRef.current = { key: threadKey, history: hasHistory || (sameThread && anchor.history), openersHidden }
     if (opening) {
       const box = scrollBoxRef.current
       if (box) box.scrollTop = box.scrollHeight
@@ -380,11 +444,12 @@ export function TicketChat(props: TicketChatProps) {
     // status, not message count) is measured before we scroll to the bottom.
     const id = requestAnimationFrame(() => scrollToBottom())
     return () => cancelAnimationFrame(id)
-  }, [threadKey, messages.length, isEnded, hasHistory])
+  }, [threadKey, messages.length, isEnded, hasHistory, openersHidden])
 
   const thread = useMemo(() => messages ?? [], [messages])
   // Day dividers and sender grouping. The first divider sits above the intro
-  // (the welcome message), so it is rendered there instead of on the first row.
+  // (the welcome preview before a ticket exists), so it is rendered there
+  // instead of on the first row; with rows it is the first row's own divider.
   const { rows, topDayLabel } = useMemo(() => {
     const now = new Date()
     const built = buildThreadRows(thread, now)
@@ -393,12 +458,36 @@ export function TicketChat(props: TicketChatProps) {
   // Messages present when a thread first loads don't animate; later ones do.
   // (State set during render when the first non-empty thread for this
   // `threadKey` arrives; switching tickets takes a fresh snapshot.)
-  const [initialMessages, setInitialMessages] = useState<{ key: string | undefined; ids: Set<string> } | null>(null)
-  if ((initialMessages === null || initialMessages.key !== threadKey) && thread.length > 0) {
+  //
+  // A first-open conversation is seeded with an empty set instead: nothing was
+  // there when it opened, so the customer's first message and everything after
+  // it is new. The seed follows the conversation when its ticket is created
+  // (the `threadKey` changes from none to the new id) and is dropped as soon
+  // as the thread is no longer a first-open one.
+  const [initialMessages, setInitialMessages] = useState<InitialMessages | null>(() =>
+    firstOpenEntrance ? { key: threadKey, ids: new Set(), firstOpen: true } : null,
+  )
+  if (initialMessages?.firstOpen) {
+    if (!firstOpenEntrance) setInitialMessages(null)
+    else if (initialMessages.key !== threadKey) setInitialMessages({ ...initialMessages, key: threadKey })
+  } else if ((initialMessages === null || initialMessages.key !== threadKey) && thread.length > 0) {
     setInitialMessages({ key: threadKey, ids: new Set(thread.map((m) => m.id)) })
   }
   const isNewMessage = (id: string) =>
     initialMessages !== null && initialMessages.key === threadKey && !initialMessages.ids.has(id)
+
+  // The openers: the stored welcome and its start note, i.e. the automatic
+  // system rows the thread starts with. They share one wrapper with the top
+  // day divider and the intro (the pre-ticket welcome preview), under a
+  // stable key, so the stored rows replace the preview inside an element that
+  // is already on screen and never animate on their own.
+  const openerCount = useMemo(() => {
+    const end = rows.findIndex((row) => !(row.item.senderType === "system" && row.item.isAutomatic))
+    return end === -1 ? rows.length : end
+  }, [rows])
+  // The customer's first message keeps one key while its pending copy is
+  // replaced by the stored one, so it isn't remounted (and re-animated).
+  const firstUserId = useMemo(() => thread.find((m) => m.senderType === "user")?.id, [thread])
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
@@ -470,6 +559,26 @@ export function TicketChat(props: TicketChatProps) {
   }
 
   const renderRowBody = (msg: TicketChatMessage, groupStart: boolean) => {
+    // Stored welcome row: the same block as the pre-ticket preview, filled
+    // from what the row saved (text, rates, time), never from live settings.
+    if (msg.kind === "welcome") {
+      const projectName = msg.welcome?.projectName || welcomeProject?.name || "Support"
+      return (
+        <WelcomeMessage
+          projectId={welcomeProject?.id ?? ""}
+          projectName={projectName}
+          projectLogo={msg.senderAvatarUrl ?? null}
+          primaryColor={welcomeProject?.primaryColor}
+          welcomeText={msg.content}
+          timestamp={messageTime(msg)}
+          rates={msg.welcome?.rates ?? null}
+          isFree={msg.welcome?.isFree ?? false}
+          freeText={msg.welcome?.freeText}
+          missingRates="hidden"
+        />
+      )
+    }
+
     // Claimed / ended banner: the helper's avatar and name, then the line with a check.
     if (msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended")) {
       return (
@@ -549,6 +658,25 @@ export function TicketChat(props: TicketChatProps) {
     )
   }
 
+  /** One thread row (with its day divider). `index` is its position in the whole thread. */
+  const renderRow = (row: (typeof rows)[number], index: number, animateNew: boolean) => {
+    const msg = row.item
+    const followUp = !row.groupStart
+    return (
+      <Fragment key={msg.id === firstUserId ? "first-user-message" : msg.id}>
+        {index > 0 && row.showDayDivider && <ChatDayDivider label={row.showDayDivider} className="mt-4" />}
+        <div
+          className={cn(
+            followUp ? "mt-1" : (index > 0 || intro) && "mt-4",
+            animateNew && isNewMessage(msg.id) && "animate-enter",
+          )}
+        >
+          {renderRowBody(msg, row.groupStart)}
+        </div>
+      </Fragment>
+    )
+  }
+
   const showEndSession = !isEnded && !!onRequestEndSession && !endSessionRequested
   const showNoHelper = !participantsLoading && helperJoined === false
   const hasParticipants = !!participants && participants.length > 0
@@ -613,28 +741,19 @@ export function TicketChat(props: TicketChatProps) {
               {/* Short threads sit at the bottom, next to the composer. */}
               <div className="flex min-h-full flex-col justify-end">
                 <div className="flex flex-col px-6 py-5 md:px-12">
-                  {(intro || rows.length > 0) && <ChatDayDivider label={topDayLabel} className="mb-4" />}
-                  {intro}
+                  {!openersHidden && (intro || rows.length > 0) && (
+                    <div
+                      key="openers"
+                      data-slot="chat-openers"
+                      className={cn("flex flex-col", openersAnimate && "animate-enter")}
+                    >
+                      <ChatDayDivider label={topDayLabel} className="mb-4" />
+                      {intro}
+                      {rows.slice(0, openerCount).map((row, index) => renderRow(row, index, false))}
+                    </div>
+                  )}
 
-                  {rows.map((row, index) => {
-                    const msg = row.item
-                    const followUp = !row.groupStart
-                    return (
-                      <Fragment key={msg.id}>
-                        {index > 0 && row.showDayDivider && (
-                          <ChatDayDivider label={row.showDayDivider} className="mt-4" />
-                        )}
-                        <div
-                          className={cn(
-                            followUp ? "mt-1" : (index > 0 || intro) && "mt-4",
-                            isNewMessage(msg.id) && "animate-enter",
-                          )}
-                        >
-                          {renderRowBody(msg, row.groupStart)}
-                        </div>
-                      </Fragment>
-                    )
-                  })}
+                  {rows.slice(openerCount).map((row, index) => renderRow(row, openerCount + index, true))}
                   <div ref={messagesEndRef} />
                 </div>
               </div>

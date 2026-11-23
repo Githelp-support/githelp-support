@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import {
+    AUTOMATIC_MESSAGE_COLUMNS,
+    isAutomaticMessage,
+    summarizeTicketMessages,
+} from "@/lib/ticket-message-summary";
 
 export type RecentTicketInteractionStatus = "Completed" | "Claimed" | "Unclaimed";
 
@@ -66,10 +71,11 @@ export function useUserRecentTicketInteractions(userId?: string, limit = 5) {
                 .is("deleted_at", null);
             if (ownedError) throw ownedError;
 
-            // (b) messages the user wrote (may reference tickets they did not create).
+            // (b) messages the user wrote (may reference tickets they did not create;
+            // never the server-written automatic rows).
             const { data: messages, error: messagesError } = await supabase
                 .from("tickets_messages")
-                .select("ticket_id, created_at")
+                .select(`ticket_id, created_at, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .eq("sender_id", userId)
                 .is("deleted_at", null);
             if (messagesError) throw messagesError;
@@ -101,7 +107,9 @@ export function useUserRecentTicketInteractions(userId?: string, limit = 5) {
                     bump(lastInteraction, t.id, t.end_requested_at);
                 }
             });
-            (messages || []).forEach((m: any) => bump(lastInteraction, m.ticket_id, m.created_at));
+            (messages || []).forEach((m: any) => {
+                if (!isAutomaticMessage(m)) bump(lastInteraction, m.ticket_id, m.created_at);
+            });
             (endRequested || []).forEach((t: any) => bump(lastInteraction, t.id, t.end_requested_at));
             (payments || []).forEach((p: any) =>
                 bump(lastInteraction, p.ticket_id, p.completed_at ?? p.created_at)
@@ -148,13 +156,11 @@ export function useUserRecentTicketInteractions(userId?: string, limit = 5) {
 
             const { data: messageRows } = await supabase
                 .from("tickets_messages")
-                .select("ticket_id")
+                .select(`ticket_id, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null);
-            const countsMap = new Map<string, number>();
-            messageRows?.forEach((msg: any) => {
-                countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
-            });
+            // Welcome, start note and auto-reply rows are not counted.
+            const summaryByTicket = summarizeTicketMessages(messageRows);
 
             // Claiming helper: a claimed participant who is not the current user.
             const { data: participants } = await supabase
@@ -196,7 +202,7 @@ export function useUserRecentTicketInteractions(userId?: string, limit = 5) {
                     project_logo_url: branding?.logo_url ?? project?.logo_url ?? null,
                     status,
                     helper,
-                    message_count: countsMap.get(ticket.id) || 0,
+                    message_count: summaryByTicket.get(ticket.id)?.count ?? 0,
                     last_interaction_at: new Date(ms).toISOString(),
                 };
             });

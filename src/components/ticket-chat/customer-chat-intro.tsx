@@ -2,11 +2,9 @@
 
 import type { ReactNode } from "react"
 import { Icon } from "@/components/ui/icon"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChatMessageMeta } from "./chat-message-parts"
-import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
-import { RATES_NOT_CONFIGURED, type TicketRates } from "@/lib/ticket-pricing"
+import { WelcomeMessage } from "./welcome-message"
+import type { TicketRates } from "@/lib/ticket-pricing"
 
 export interface CustomerChatIntroProps {
   projectId: string
@@ -34,9 +32,11 @@ export interface CustomerChatIntroProps {
 }
 
 /**
- * Intro block above the customer's message thread: project avatar, welcome
- * line, rates, and the sign-in state. Shared by `/support` (Get support tab)
- * and `/support/chat` so both look the same.
+ * Intro block of the customer chat before a ticket exists: a preview of the
+ * welcome message (`WelcomeMessage`, with the project's live rates) plus the
+ * sign-in state. Shared by `/support` (Get support tab) and `/support/chat`
+ * so both look the same. Once a ticket exists the thread shows the stored
+ * welcome row instead (see `TicketChat`).
  */
 export function CustomerChatIntro({
   projectId,
@@ -55,89 +55,43 @@ export function CustomerChatIntro({
   children,
 }: CustomerChatIntroProps) {
   return (
-    <div className="flex gap-3">
-      {projectLogo ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={projectLogo}
-          alt={`${projectName} logo`}
-          className={`size-7.5 ${SQUIRCLE_RADIUS[30]} object-cover shrink-0`}
-        />
-      ) : (
-        <div
-          className={`size-7.5 ${SQUIRCLE_RADIUS[30]} flex items-center justify-center text-sm font-medium text-foreground shrink-0`}
-          style={{ backgroundColor: primaryColor || getAvatarColorHexForId(projectId) }}
-        >
-          {projectName?.[0]?.toUpperCase() || "A"}
-        </div>
-      )}
-      <div className="min-w-0 flex-1 space-y-4">
-        <div>
-          <ChatMessageMeta name={`${projectName} Team`} time={timestamp} className="mb-1">
-            <Badge variant="type">Project</Badge>
-          </ChatMessageMeta>
-          <p className="text-sm text-foreground whitespace-pre-line">{welcomeText}</p>
-        </div>
+    <WelcomeMessage
+      projectId={projectId}
+      projectName={projectName}
+      projectLogo={projectLogo}
+      primaryColor={primaryColor}
+      welcomeText={welcomeText}
+      timestamp={timestamp}
+      rates={rates}
+      isFree={isFree}
+      footer={
+        <>
+            {isAuthenticated && !ticketCreated && (
+              <div className="flex items-center gap-2 text-sm text-brand-primary">
+                <Icon name="fi-rr-check" />
+                <span>You are signed in as {userName}</span>
+              </div>
+            )}
 
-        {children}
-
-        <div>
-          <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
-          {isFree ? (
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm font-medium text-foreground">Free support</p>
-              <p className="text-sm text-muted-foreground">
-                {projectName} offers support for free - no payment method needed.
-              </p>
-            </div>
-          ) : rates == null ? (
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm font-medium text-foreground">{RATES_NOT_CONFIGURED}</p>
-              <p className="text-sm text-muted-foreground">
-                {projectName} hasn&apos;t set its support rates yet.
-              </p>
-            </div>
-          ) : (
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.startPrice}</p>
-              <p className="text-xs text-muted-foreground">Start price (USD)</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.first60Price}</p>
-              <p className="text-xs text-muted-foreground">First 60 min (USD/min)</p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.after60Price}</p>
-              <p className="text-xs text-muted-foreground">After 60 min (USD/min)</p>
-            </div>
-          </div>
-          )}
-        </div>
-
-        {isAuthenticated && !ticketCreated && (
-          <div className="flex items-center gap-2 text-sm text-brand-primary">
-            <Icon name="fi-rr-check" />
-            <span>You are signed in as {userName}</span>
-          </div>
-        )}
-
-        {!isAuthenticated && !ticketCreated && (
-          <div className="flex flex-col gap-2">
-            <Button
-              onClick={onSignIn}
-              variant="outline"
-              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
-            >
-              Sign in
-            </Button>
-            {signedOutExtra}
-            <p className="text-xs text-text-tertiary mt-2">
-              No account needed: just type your question below. Sign in to get notified when a helper replies and to keep your support history.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+            {!isAuthenticated && !ticketCreated && (
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={onSignIn}
+                  variant="outline"
+                  className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent"
+                >
+                  Sign in
+                </Button>
+                {signedOutExtra}
+                <p className="text-xs text-text-tertiary mt-2">
+                  No account needed: just type your question below. Sign in to get notified when a helper replies and to keep your support history.
+                </p>
+              </div>
+            )}
+        </>
+      }
+    >
+      {children}
+    </WelcomeMessage>
   )
 }

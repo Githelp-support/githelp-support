@@ -60,11 +60,14 @@ export interface ThreadItem {
   senderType?: string | null
   sender?: string | null
   senderId?: string | null
-  /** Raw ISO time. Absent on synthetic items (welcome, claimed, auto-reply, session summary). */
+  /** Raw ISO time. Absent on synthetic items (claimed, pending first message, session summary). */
   createdAt?: string | null
   /** A claimed/ended banner. `kind: "claimed" | "ended"` counts as one too. */
   isBanner?: boolean
+  /** `"welcome"` is the stored welcome row: always a group start. */
   kind?: string | null
+  /** Written by the server (`tickets_messages.is_automatic`): welcome, start note, auto-reply. */
+  isAutomatic?: boolean | null
 }
 
 export interface ThreadRow<T extends ThreadItem = ThreadItem> {
@@ -85,9 +88,19 @@ function senderTypeOf(item: ThreadItem): string | null {
   return item.senderType ?? item.sender ?? null
 }
 
-/** System messages and claimed/ended banners never join or continue a group. */
+/**
+ * System messages, automatic rows (whatever sender type they carry), the
+ * welcome row and claimed/ended banners never join or continue a group.
+ */
 function breaksGroup(item: ThreadItem): boolean {
-  return senderTypeOf(item) === "system" || !!item.isBanner || item.kind === "claimed" || item.kind === "ended"
+  return (
+    senderTypeOf(item) === "system" ||
+    !!item.isAutomatic ||
+    !!item.isBanner ||
+    item.kind === "welcome" ||
+    item.kind === "claimed" ||
+    item.kind === "ended"
+  )
 }
 
 /**
@@ -100,8 +113,9 @@ function breaksGroup(item: ThreadItem): boolean {
  *
  * Grouping: a row continues the previous row's group only when both are from
  * the same sender, on the same day, the row is at most 5 minutes after the
- * previous one, and nothing is in between. A day divider, a system message or
- * a claimed/ended banner always starts a new group.
+ * previous one, and nothing is in between. A day divider, a system message,
+ * an automatic row, the welcome row or a claimed/ended banner always starts a
+ * new group.
  */
 export function buildThreadRows<T extends ThreadItem>(messages: T[], now: Date = new Date()): ThreadRow<T>[] {
   const dates = messages.map(parseCreatedAt)

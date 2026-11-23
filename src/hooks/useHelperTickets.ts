@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase/client";
+import {
+    AUTOMATIC_MESSAGE_COLUMNS,
+    hasUnreadMessage,
+    summarizeTicketMessages,
+} from "@/lib/ticket-message-summary";
 import type { Database } from "@/types/database";
 
 type Ticket = Database["public"]["Tables"]["tickets"]["Row"];
@@ -158,30 +163,26 @@ export function useHelperClaimedTicketsSidebar(
             const ticketIds = tickets.map((t) => t.id);
             const { data: messages } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, content, created_at")
+                .select(`id, ticket_id, content, created_at, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
 
-            const firstMessageByTicket = new Map<string, { content: string }>();
-            const lastMessageIdByTicket = new Map<string, string>();
-            messages?.forEach((m: { id: string; ticket_id: string; content: string }) => {
-                if (!firstMessageByTicket.has(m.ticket_id)) {
-                    firstMessageByTicket.set(m.ticket_id, { content: m.content });
-                }
-                lastMessageIdByTicket.set(m.ticket_id, m.id);
-            });
+            // First message and unread dot skip the welcome, start note and
+            // auto-reply rows the server writes.
+            const summaryByTicket = summarizeTicketMessages(messages);
 
             const items = tickets.map((t) => {
                 const projectName = projectMap.get(t.project_id) ?? "Project";
-                const firstMsg = firstMessageByTicket.get(t.id)?.content ?? t.description ?? "";
+                const firstMsg = summaryByTicket.get(t.id)?.firstContent ?? t.description ?? "";
                 const subtitle = firstMsg.length > SUBTITLE_MAX_CHARS
                     ? firstMsg.slice(0, SUBTITLE_MAX_CHARS).trim() + "…"
                     : firstMsg.trim() || "—";
                 const creator = t.created_by ? userMap.get(t.created_by) : null;
-                const lastMessageId = lastMessageIdByTicket.get(t.id) ?? null;
-                const lastRead = lastReadByTicket.get(t.id) ?? null;
-                const hasNotification = lastMessageId != null && lastRead !== lastMessageId;
+                const hasNotification = hasUnreadMessage(
+                    summaryByTicket.get(t.id),
+                    lastReadByTicket.get(t.id)
+                );
 
                 return {
                     id: t.id,
@@ -342,28 +343,19 @@ export function useAdminActiveTicketsSidebar(
 
             const { data: messages } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, content, created_at")
+                .select(`id, ticket_id, content, created_at, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
 
-            const firstMessageByTicket = new Map<string, { content: string }>();
-            const lastMessageIdByTicket = new Map<string, string>();
-            messages?.forEach(
-                (m: { id: string; ticket_id: string; content: string }) => {
-                    if (!firstMessageByTicket.has(m.ticket_id)) {
-                        firstMessageByTicket.set(m.ticket_id, {
-                            content: m.content,
-                        });
-                    }
-                    lastMessageIdByTicket.set(m.ticket_id, m.id);
-                }
-            );
+            // First message and unread dot skip the welcome, start note and
+            // auto-reply rows the server writes.
+            const summaryByTicket = summarizeTicketMessages(messages);
 
             const items = tickets.map((t) => {
                 const projectName = projectMap.get(t.project_id) ?? "Project";
                 const firstMsg =
-                    firstMessageByTicket.get(t.id)?.content ??
+                    summaryByTicket.get(t.id)?.firstContent ??
                     t.description ??
                     "";
                 const subtitle =
@@ -371,11 +363,10 @@ export function useAdminActiveTicketsSidebar(
                         ? firstMsg.slice(0, SUBTITLE_MAX_CHARS).trim() + "…"
                         : firstMsg.trim() || "—";
                 const creator = t.created_by ? userMap.get(t.created_by) : null;
-                const lastMessageId =
-                    lastMessageIdByTicket.get(t.id) ?? null;
-                const lastRead = lastReadByTicket.get(t.id) ?? null;
-                const hasNotification =
-                    lastMessageId != null && lastRead !== lastMessageId;
+                const hasNotification = hasUnreadMessage(
+                    summaryByTicket.get(t.id),
+                    lastReadByTicket.get(t.id)
+                );
 
                 return {
                     id: t.id,

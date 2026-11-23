@@ -25,6 +25,7 @@ const { mutation, mocks } = vi.hoisted(() => {
   useTimeEntries: vi.fn(),
   useCurrentHelper: vi.fn(),
   useProject: vi.fn(),
+  useProjectBranding: vi.fn(),
   useProjectPaymentSettings: vi.fn(),
   useProjectRole: vi.fn(),
   useHelperClaimedTicketsSidebar: vi.fn(),
@@ -62,6 +63,7 @@ vi.mock("@/hooks/useCurrentHelper", () => ({ useCurrentHelper: mocks.useCurrentH
 vi.mock("@/hooks/useProject", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/useProject")>()),
   useProject: mocks.useProject,
+  useProjectBranding: mocks.useProjectBranding,
   useProjectPaymentSettings: mocks.useProjectPaymentSettings,
 }))
 vi.mock("@/hooks/useProjectRole", () => ({ useProjectRole: mocks.useProjectRole }))
@@ -129,6 +131,7 @@ describe("helper ticket page frame", () => {
     mocks.useTimeEntries.mockReturnValue({ data: [] })
     mocks.useCurrentHelper.mockReturnValue({ data: "h1" })
     mocks.useProject.mockReturnValue({ data: { id: "p1", name: "Testhelp" } })
+    mocks.useProjectBranding.mockReturnValue({ data: null })
     mocks.useProjectPaymentSettings.mockReturnValue({ data: null })
     mocks.useProjectRole.mockReturnValue({ data: "helper" })
     mocks.useHelperClaimedTicketsSidebar.mockReturnValue({ data: { items: [], activeCount: 0 } })
@@ -251,5 +254,129 @@ describe("helper ticket page frame", () => {
     expect(note).toHaveTextContent("Note · Time was logged")
     // One divider above the intro, one for the next day.
     expect(screen.getAllByRole("separator")).toHaveLength(2)
+  })
+
+  describe("stored welcome, start note and auto-reply", () => {
+    const sys = (id: string, kind: string, content: string, created_at: string, metadata: Record<string, unknown> = {}) => ({
+      id,
+      sender_type: "system",
+      sender_id: null,
+      content,
+      created_at,
+      sender: null,
+      is_automatic: true,
+      metadata: { kind, ...metadata },
+    })
+    const welcome = sys("w1", "welcome", "Welcome to Acme support!", "2026-08-25T10:00:00Z", {
+      project_name: "Acme Inc",
+      rates: { ticket_start_price: 500, ticket_price_minute_first_60: 100, ticket_price_minute_after_60: 200, currency: "usd", is_free: false },
+    })
+    const startNote = sys("n1", "start_note", "A helper will join shortly.", "2026-08-25T10:00:00Z")
+    const firstMessage = {
+      id: "m1",
+      sender_type: "user",
+      sender_id: "c1",
+      content: "My build is broken",
+      created_at: "2026-08-25T10:01:00Z",
+      sender: { id: "c1", name: "Ada", avatar_url: null },
+      metadata: null,
+    }
+    const autoReply = sys("a1", "auto_reply", "Thanks, we got your message.", "2026-08-25T10:01:05Z")
+    const claimedBy = {
+      data: [{ id: "tp1", participant_id: "u1", claimed: true, created_at: "", user: { id: "u1", name: "Helper", avatar_url: null } }],
+      isLoading: false,
+    }
+
+    /** `a` comes before `b` in the document. */
+    const precedes = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+    it("renders the stored welcome with the shared component, from the row's own snapshot", () => {
+      // Stored out of order on purpose: the welcome still opens the thread.
+      mocks.useTicketMessages.mockReturnValue({ data: [firstMessage, autoReply, welcome, startNote], isLoading: false })
+      // Live settings differ from the snapshot; the welcome must not use them.
+      mocks.useProjectPaymentSettings.mockReturnValue({
+        data: { ticket_start_price: 900, ticket_price_minute_first_60: 900, ticket_price_minute_after_60: 900 },
+      })
+      const { container } = render(<TicketDetailPage />)
+
+      const blocks = container.querySelectorAll('[data-slot="chat-welcome"]')
+      expect(blocks).toHaveLength(1)
+      const block = blocks[0] as HTMLElement
+      expect(within(block).getByText("Acme Inc Team")).toBeInTheDocument()
+      expect(within(block).getByText("Project")).toBeInTheDocument()
+      expect(within(block).getByText("Welcome to Acme support!")).toBeInTheDocument()
+      expect(within(block).getByText("5.00")).toBeInTheDocument()
+      expect(within(block).getByText("1.00")).toBeInTheDocument()
+      expect(within(block).getByText("2.00")).toBeInTheDocument()
+      // Not also as a system note, and the rates are listed once.
+      expect(screen.getAllByText("Welcome to Acme support!")).toHaveLength(1)
+      expect(screen.getAllByText("Rates")).toHaveLength(1)
+      expect(screen.queryByText("9.00")).not.toBeInTheDocument()
+    })
+
+    it("shows the start note and auto-reply as notes with the stored text", () => {
+      mocks.useTicketMessages.mockReturnValue({ data: [welcome, startNote, firstMessage, autoReply], isLoading: false })
+      const { container } = render(<TicketDetailPage />)
+      const notes = Array.from(container.querySelectorAll('[data-slot="system-note"]'))
+      expect(notes.map((n) => n.textContent)).toEqual([
+        "Note · A helper will join shortly.",
+        "Note · Thanks, we got your message.",
+      ])
+    })
+
+    it("orders the thread like the customer's: divider, welcome, start note, issue, claimed, the rest", () => {
+      mocks.useTicketParticipants.mockReturnValue(claimedBy)
+      mocks.useTicketMessages.mockReturnValue({ data: [welcome, startNote, firstMessage, autoReply], isLoading: false })
+      const { container } = render(<TicketDetailPage />)
+
+      const dividers = screen.getAllByRole("separator")
+      // One day, one divider: nothing above the welcome but it.
+      expect(dividers).toHaveLength(1)
+      const block = container.querySelector('[data-slot="chat-welcome"]') as HTMLElement
+      const [note, reply] = Array.from(container.querySelectorAll('[data-slot="system-note"]'))
+      const issue = screen.getByText("Info about issue")
+      const claimed = screen.getByText("Ticket is claimed")
+      const message = container.querySelector('[data-slot="chat-message-row"]') as HTMLElement
+
+      const order = [dividers[0], block, note, issue, claimed, message, reply]
+      order.slice(1).forEach((el, i) => expect(precedes(order[i], el)).toBe(true))
+      // The first thread element after the divider is the welcome.
+      expect(dividers[0].nextElementSibling).toContainElement(block)
+    })
+
+    it("keeps the block's own rates when the stored welcome lists none", () => {
+      mocks.useTicketMessages.mockReturnValue({
+        data: [{ ...welcome, metadata: { kind: "welcome", project_name: null, rates: null } }, firstMessage],
+        isLoading: false,
+      })
+      const { container } = render(<TicketDetailPage />)
+      const block = container.querySelector('[data-slot="chat-welcome"]') as HTMLElement
+      // Falls back to the project's name; says nothing about rates itself.
+      expect(within(block).getByText("Testhelp Team")).toBeInTheDocument()
+      expect(within(block).queryByText("Rates")).not.toBeInTheDocument()
+      expect(screen.getAllByText("Rates")).toHaveLength(1)
+    })
+
+    it("has no welcome on a ticket without stored welcome rows", () => {
+      mocks.useTicketMessages.mockReturnValue({ data: [firstMessage], isLoading: false })
+      const { container } = render(<TicketDetailPage />)
+      expect(container.querySelector('[data-slot="chat-welcome"]')).not.toBeInTheDocument()
+      expect(screen.getByText("Info about issue")).toBeInTheDocument()
+    })
+
+    it("shows them immediately, also when they arrive after the thread loaded", () => {
+      mocks.useTicketMessages.mockReturnValue({ data: [firstMessage], isLoading: false })
+      const { container, rerender } = render(<TicketDetailPage />)
+      const reply = { ...firstMessage, id: "m2", sender_type: "helper", sender_id: "u1", content: "On it", created_at: "2026-08-25T10:20:00Z" }
+      mocks.useTicketMessages.mockReturnValue({ data: [welcome, startNote, firstMessage, autoReply, reply], isLoading: false })
+      rerender(<TicketDetailPage />)
+
+      expect(container.querySelector('[data-slot="chat-welcome"]')?.closest(".animate-enter")).toBeNull()
+      const notes = container.querySelectorAll('[data-slot="system-note"]')
+      expect(notes).toHaveLength(2)
+      notes.forEach((n) => expect(n.closest(".animate-enter")).toBeNull())
+      // Ordinary new messages still animate in.
+      expect(screen.getByText("On it").closest(".animate-enter")).not.toBeNull()
+    })
   })
 })

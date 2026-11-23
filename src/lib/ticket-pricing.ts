@@ -59,3 +59,42 @@ export function formatTicketRates(settings: TicketPriceSettings | null | undefin
 
 /** Copy shown wherever rates would be listed but the project has no payment settings row. */
 export const RATES_NOT_CONFIGURED = "Rates not configured"
+
+/** What a stored welcome message says about pricing (see `parseWelcomeRates`). */
+export interface WelcomeRates {
+  /** The ticket's rates as dollar strings, or null when the welcome row stored none (or the ticket is free). */
+  rates: TicketRates | null
+  /** The ticket was opened as free support: no rates are listed. */
+  isFree: boolean
+}
+
+const numberOrNull = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null
+
+/**
+ * Reads `metadata.rates` of a stored welcome message (kind `welcome`, written
+ * by the `insert_ticket_welcome_messages` trigger from the ticket's
+ * `pricing_snapshot`): `{ ticket_start_price, ticket_price_minute_first_60,
+ * ticket_price_minute_after_60, currency, is_free }`, prices in cents.
+ *
+ * Only what the row stored is used; there is no fallback to the project's
+ * live rates. Missing or malformed rates, or a row without a single stored
+ * price, give `rates: null` (callers render "Rates not configured" or
+ * nothing). Once one price is stored, a missing one counts as 0, like
+ * `formatTicketRates`.
+ */
+export function parseWelcomeRates(rates: unknown): WelcomeRates {
+  if (!rates || typeof rates !== "object" || Array.isArray(rates)) return { rates: null, isFree: false }
+  const stored = rates as Record<string, unknown>
+  if (stored.is_free === true) return { rates: null, isFree: true }
+  const settings: TicketPriceSettings = {
+    ticket_start_price: numberOrNull(stored.ticket_start_price),
+    ticket_price_minute_first_60: numberOrNull(stored.ticket_price_minute_first_60),
+    ticket_price_minute_after_60: numberOrNull(stored.ticket_price_minute_after_60),
+  }
+  const hasPrice =
+    settings.ticket_start_price !== null ||
+    settings.ticket_price_minute_first_60 !== null ||
+    settings.ticket_price_minute_after_60 !== null
+  return { rates: hasPrice ? formatTicketRates(settings) : null, isFree: false }
+}

@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
 import { supabase } from "@/lib/supabase/client";
+import {
+    AUTOMATIC_MESSAGE_COLUMNS,
+    hasUnreadMessage,
+    summarizeTicketMessages,
+} from "@/lib/ticket-message-summary";
 
 export interface TicketWithDetails {
     id: string;
@@ -17,6 +22,8 @@ export interface TicketWithDetails {
     end_requested_by?: string | null;
     /** SLA covering this ticket (billing goes through metered usage, not a card hold). */
     sla_id?: string | null;
+    /** Prices (in cents) the customer was shown when the ticket was opened; billing uses these. */
+    pricing_snapshot?: Record<string, number> | null;
     /** Opened by a visitor who hasn't signed in (guest ticket). */
     guest?: boolean;
     keywords?: Array<{ value: string }>;
@@ -74,17 +81,12 @@ export function useTicketsWithDetails(projectId?: string) {
             const ticketIds = (data || []).map((t: any) => t.id);
             const { data: messageCounts } = await supabase
                 .from("tickets_messages")
-                .select("ticket_id")
+                .select(`ticket_id, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null);
 
-            const countsMap = new Map<string, number>();
-            messageCounts?.forEach((msg: any) => {
-                countsMap.set(
-                    msg.ticket_id,
-                    (countsMap.get(msg.ticket_id) || 0) + 1
-                );
-            });
+            // Welcome, start note and auto-reply rows are not counted.
+            const summaryByTicket = summarizeTicketMessages(messageCounts);
 
             // Transform the data to a flatter structure
             return (data || []).map((ticket: any) => ({
@@ -103,7 +105,7 @@ export function useTicketsWithDetails(projectId?: string) {
                 user: ticket.created_by
                     ? usersMap.get(ticket.created_by)
                     : null,
-                message_count: countsMap.get(ticket.id) || 0,
+                message_count: summaryByTicket.get(ticket.id)?.count ?? 0,
             })) as TicketWithDetails[];
         },
         enabled: !!projectId,
@@ -241,29 +243,20 @@ export function useUserActiveTicketsSidebar(
 
             const { data: messages } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, content, created_at")
+                .select(`id, ticket_id, content, created_at, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
 
-            const firstMessageByTicket = new Map<string, { content: string }>();
-            const lastMessageIdByTicket = new Map<string, string>();
-            messages?.forEach(
-                (m: { id: string; ticket_id: string; content: string }) => {
-                    if (!firstMessageByTicket.has(m.ticket_id)) {
-                        firstMessageByTicket.set(m.ticket_id, {
-                            content: m.content,
-                        });
-                    }
-                    lastMessageIdByTicket.set(m.ticket_id, m.id);
-                }
-            );
+            // First message and unread dot skip the welcome, start note and
+            // auto-reply rows the server writes.
+            const summaryByTicket = summarizeTicketMessages(messages);
 
             const items = tickets.map((t) => {
                 const projectName = projectMap.get(t.project_id) ?? "Project";
                 const projectLogo = brandingMap.get(t.project_id) ?? null;
                 const firstMsg =
-                    firstMessageByTicket.get(t.id)?.content ??
+                    summaryByTicket.get(t.id)?.firstContent ??
                     t.description ??
                     "";
                 const subtitle =
@@ -272,11 +265,10 @@ export function useUserActiveTicketsSidebar(
                               .slice(0, USER_SIDEBAR_SUBTITLE_MAX_CHARS)
                               .trim() + "…"
                         : firstMsg.trim() || "—";
-                const lastMessageId =
-                    lastMessageIdByTicket.get(t.id) ?? null;
-                const lastRead = lastReadByTicket.get(t.id) ?? null;
-                const hasNotification =
-                    lastMessageId != null && lastRead !== lastMessageId;
+                const hasNotification = hasUnreadMessage(
+                    summaryByTicket.get(t.id),
+                    lastReadByTicket.get(t.id)
+                );
 
                 return {
                     id: t.id,
@@ -380,13 +372,11 @@ export function useUserTickets(userId?: string) {
             const ticketIds = tickets.map((t: any) => t.id);
             const { data: messageCounts } = await supabase
                 .from("tickets_messages")
-                .select("ticket_id")
+                .select(`ticket_id, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null);
-            const countsMap = new Map<string, number>();
-            messageCounts?.forEach((msg: any) => {
-                countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
-            });
+            // Welcome, start note and auto-reply rows are not counted.
+            const summaryByTicket = summarizeTicketMessages(messageCounts);
 
             // Fetch the helper (if any) who has claimed each ticket. A ticket is
             // "claimed" when a participant row exists with claimed=true and the
@@ -448,7 +438,7 @@ export function useUserTickets(userId?: string) {
                               avatar_url: (claimer as any).avatar_url ?? null,
                           }
                         : null,
-                    message_count: countsMap.get(ticket.id) || 0,
+                    message_count: summaryByTicket.get(ticket.id)?.count ?? 0,
                 };
             }) as (TicketWithDetails & {
                 project: { project_id: string; name: string } | null;

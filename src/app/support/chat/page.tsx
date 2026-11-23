@@ -38,6 +38,7 @@ import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
+import { latestReadableMessageId } from "@/lib/ticket-message-summary"
 import { useTicketWithDetails, useLatestUserActiveTicket } from "@/hooks/useTicketsWithDetails"
 import { useCustomerTicketSidebar, toChatParticipants, hasHelperJoined } from "@/hooks/useCustomerTicketSidebar"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
@@ -51,7 +52,6 @@ import {
   hasVisitorLeft,
 } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
-import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -179,7 +179,6 @@ export default function UserSupportChatPage() {
       ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
       : undefined
   useSetProjectPageHref(projectPageHref)
-  const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
 
@@ -195,7 +194,7 @@ export default function UserSupportChatPage() {
   // effectiveProjectId also covers the ?slug= entry, so the displayed prices are always loaded.
   const { data: paymentSettings, isLoading: paymentSettingsLoading } = useProjectPaymentSettings(effectiveProjectId)
   // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
-  const ticketPricingSnapshot = (existingTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
+  const ticketPricingSnapshot = existingTicket?.pricing_snapshot
   const effectivePricing = useMemo(
     () => (ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings),
     [paymentSettings, ticketPricingSnapshot],
@@ -327,9 +326,10 @@ export default function UserSupportChatPage() {
   const { data: brandingData } = useProjectBranding(effectiveProjectId)
   const projectLogo = brandingData?.logo_url || null
   
-  // Format payment values (convert cents to dollars); null until the project
-  // has payment settings — no placeholder prices.
-  const rates = formatTicketRates(effectivePricing)
+  // Rates of the welcome preview shown before a ticket exists: the project's
+  // live settings (the prices the DB guard checks on creation), converted from
+  // cents; null until the project has payment settings — no placeholder prices.
+  const previewRates = formatTicketRates(paymentSettings)
 
   // Ticket creation and messaging
   const createTicket = useCreateTicket()
@@ -342,10 +342,12 @@ export default function UserSupportChatPage() {
   useRealtimeTicket(ticketId)
 
   // Mark the latest message as read so the sidebar's unread dot clears for
-  // the customer too (mirrors the helper page). Depend on ids only: the
-  // mutation object changes identity and would loop with the invalidation.
+  // the customer too (mirrors the helper page). The welcome, start note and
+  // auto-reply rows are skipped, as in the unread dot itself. Depend on ids
+  // only: the mutation object changes identity and would loop with the
+  // invalidation.
   const updateLastReadMessage = useUpdateLastReadMessage()
-  const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
+  const lastMessageId = latestReadableMessageId(messagesData)
   useEffect(() => {
     if (!ticketId || !sessionUserId || !lastMessageId) return
     updateLastReadMessage.mutate({ ticketId, participantId: sessionUserId, messageId: lastMessageId })
@@ -457,8 +459,9 @@ export default function UserSupportChatPage() {
     void ensureOrg()
   }, [isAuthenticated, isSupportUser, selectedOrganizationId])
 
-  // One instant for the synthetic messages: full timestamp for the thread
-  // builder, time only for the intro.
+  // One instant for the synthetic parts: full timestamp for the thread builder
+  // (claimed banner, pending first message), time only for the pre-ticket
+  // welcome preview. A stored welcome row carries its own created_at.
   const { nowFormatted, nowTime } = useMemo(() => {
     const now = new Date()
     return { nowFormatted: formatChatTimestamp(now), nowTime: formatChatTime(now) }
@@ -468,8 +471,8 @@ export default function UserSupportChatPage() {
     ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
     : `Welcome to ${projectName}'s support chat.\nAsk your question and someone from our team will try to help you, as soon as we can.`
 
-  // Thread: disclaimer → claimed banner → (pending first message) → persisted
-  // messages → session summary once ended. Shared with the /support page.
+  // Thread: stored welcome and note → claimed banner → (pending first message)
+  // → persisted messages → session summary once ended. Shared with the /support page.
   const chatMessages: TicketChatMessage[] = useMemo(() => {
     const list = buildCustomerThreadMessages({
       projectName,
@@ -481,9 +484,7 @@ export default function UserSupportChatPage() {
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
       ticketStatus: existingTicket?.status ?? null,
-      isFree: isFreeSupport(effectivePricing),
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
-      avgResponseSeconds,
     })
     // A guest ticket closed because the visitor left carries its own
     // visitor_left message — no helper "session ended" summary.
@@ -514,8 +515,6 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
-    effectivePricing,
-    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     slaCovered,
@@ -775,7 +774,7 @@ export default function UserSupportChatPage() {
                   },
                 }
               : {}),
-          } as Parameters<typeof createTicket.mutateAsync>[0])
+          })
         } catch (error) {
           console.error("Failed to create ticket:", error)
           const hint = (error as { hint?: string } | null)?.hint
@@ -928,22 +927,32 @@ export default function UserSupportChatPage() {
         headerVariant="chat"
         ticketId={ticketCreated && ticketId ? ticketId : undefined}
         showBackButton={true}
+        // Before a ticket exists: a preview of the welcome with the live rates
+        // and the sign-in state. A ticket (also one still loading from
+        // ?ticket=) shows only its stored welcome row in the thread.
         intro={
-          <CustomerChatIntro
-            projectId={effectiveProjectId}
-            projectName={projectName}
-            projectLogo={projectLogo}
-            primaryColor={brandingData?.primary_color}
-            welcomeText={welcomeText}
-            timestamp={nowTime}
-            rates={rates}
-            isFree={isFreeSupport(effectivePricing)}
-            isAuthenticated={isAuthenticated}
-            ticketCreated={ticketCreated}
-            userName={user?.name}
-            onSignIn={handleSignIn}
-          />
+          ticketCreated || ticketIdParam ? undefined : (
+            <CustomerChatIntro
+              projectId={effectiveProjectId}
+              projectName={projectName}
+              projectLogo={projectLogo}
+              primaryColor={brandingData?.primary_color}
+              welcomeText={welcomeText}
+              timestamp={nowTime}
+              rates={previewRates}
+              isFree={isFreeSupport(paymentSettings)}
+              isAuthenticated={isAuthenticated}
+              ticketCreated={false}
+              userName={user?.name}
+              onSignIn={handleSignIn}
+            />
+          )
         }
+        welcomeProject={{ id: effectiveProjectId, name: projectName, primaryColor: brandingData?.primary_color }}
+        // First-open entrance: only for a conversation started here (no
+        // ?ticket= yet, or the ticket this chat just created), never for an
+        // existing ticket opened from the URL or the tickets list.
+        firstOpenEntrance={!ticketIdParam || ticketIdParam === createdTicketId}
         messages={chatMessages}
         participants={chatParticipants}
         participantsLoading={participantsLoading}
