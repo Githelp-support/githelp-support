@@ -33,5 +33,6 @@ describe("Header", () => {
     const banner = screen.getByRole("banner")
     expect(banner.className).not.toMatch(/border-b/)
     expect(banner.className).toContain("px-14")
+    expect(banner.className).toContain("pt-7.5")
   })
 })

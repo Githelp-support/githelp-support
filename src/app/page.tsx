@@ -183,7 +183,7 @@ export default function Dashboard() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Overview" subtitle="Stats and insight" />
 
-      <main className="flex-1 px-14 py-6 space-y-12 overflow-y-auto">
+      <main className="flex-1 px-14 pt-6 pb-10 space-y-12 overflow-y-auto">
         <div className="space-y-6">
           {/* Next steps for a project that is not fully set up yet; renders nothing otherwise */}
           {projectId && <OnboardingChecklist projectId={projectId} />}

@@ -84,7 +84,7 @@ export function Header({ title, subtitle, showBackButton = false, backButtonText
       ref={headerRef}
       className={cn(
         "sticky top-0 z-30 shrink-0",
-        isChat ? "flex h-15 items-center border-b border-border-subtle px-5" : "px-14 py-5",
+        isChat ? "flex h-15 items-center border-b border-border-subtle px-5" : "px-14 pt-7.5 pb-5",
         !backgroundColor && "bg-background",
         className,
       )}

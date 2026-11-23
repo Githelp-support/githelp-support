@@ -63,11 +63,11 @@ function PageSkeleton({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("animate-fade-in flex flex-1 min-h-0 flex-col overflow-hidden", className)}
       {...props}
     >
-      <div className="px-14 py-5">
+      <div className="px-14 pt-7.5 pb-5">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="mt-2.5 h-3.5 w-72" />
       </div>
-      <div className="flex flex-col gap-8 px-14 py-6">
+      <div className="flex flex-col gap-8 px-14 pt-6 pb-10">
         <div className="grid grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="rounded-lg border border-border-subtle p-5">
