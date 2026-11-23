@@ -20,6 +20,7 @@
   --color-status-warning-text: var(--status-warning-text);
   --color-status-high-bg: var(--status-high-bg);
   --color-status-high-text: var(--status-high-text);
+  --color-step-todo: var(--step-todo);
   --color-badge-neutral-bg: var(--badge-neutral-bg);
   --color-badge-neutral-text: var(--badge-neutral-text);
   --color-badge-muted-text: var(--badge-muted-text);
@@ -508,6 +509,8 @@
   --status-warning-text: #a1944a;
   --status-high-bg: #f4bccc;
   --status-high-text: #d63384;
+  /* Onboarding checklist: the dashed ring of a step that is not done (light mode only) */
+  --step-todo: #c4c8cf;
   /* Semantic badge colours (ticket type, category, status, priority, tier dots). Every text/background pair is 4.5:1 or better, including muted text on the neutral fill and on list rows */
   --badge-neutral-bg: #f1f2f4;
   --badge-neutral-text: #3f4450;

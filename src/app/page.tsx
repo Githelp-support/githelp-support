@@ -185,8 +185,9 @@ export default function Dashboard() {
 
       <main className="flex-1 px-14 pt-6 pb-10 space-y-12 overflow-y-auto">
         <div className="space-y-6">
-          {/* Next steps for a project that is not fully set up yet; renders nothing otherwise */}
-          {projectId && <OnboardingChecklist projectId={projectId} />}
+          {/* Next steps for a project that is not fully set up yet; renders nothing otherwise.
+              mb-9 replaces the 24px from space-y-6: 12px more above the filters while it shows. */}
+          {projectId && <OnboardingChecklist projectId={projectId} className="mb-9" />}
 
           {/* Filters */}
           <div className="flex gap-2">
