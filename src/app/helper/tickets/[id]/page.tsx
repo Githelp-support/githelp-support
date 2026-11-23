@@ -107,13 +107,6 @@ interface Message {
   welcome?: StoredWelcome
 }
 
-/**
- * Rows the server writes for the customer (welcome, start note, auto-reply).
- * Helpers and admins see them with the stored text and without an entrance
- * animation.
- */
-const AUTOMATIC_KINDS = AUTOMATIC_MESSAGE_KINDS
-
 /** "HH:MM" for a message: from its raw time, else the time part of its formatted timestamp. */
 function messageTime(msg: Message): string | null {
   if (msg.createdAt) return formatChatTime(msg.createdAt)
@@ -495,7 +488,7 @@ export default function TicketDetailPage() {
     initialMessageIds !== null &&
     !initialMessageIds.has(msg.id) &&
     // The welcome, start note and auto-reply show immediately, also when they arrive live.
-    !(msg.sender === "system" && !!msg.metadataKind && AUTOMATIC_KINDS.has(msg.metadataKind))
+    !(msg.sender === "system" && !!msg.metadataKind && AUTOMATIC_MESSAGE_KINDS.has(msg.metadataKind))
 
   /** First user message in the chat, or ticket description as fallback (for "Info about issue"). */
   const firstIssueMessage = useMemo(() => {

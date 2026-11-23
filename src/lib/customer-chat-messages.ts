@@ -276,6 +276,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             return {
                 ...base,
                 kind: "welcome",
+                opener: true,
                 senderAvatarUrl: projectLogo,
                 paymentMetadata: null,
                 welcome: parseStoredWelcome(msg.metadata),
@@ -283,7 +284,12 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         }
         // The stored start note and auto-reply are ordinary system notes.
         if (metadataKind === "start_note" || metadataKind === "auto_reply") {
-            return { ...base, paymentMetadata: null, autoReply: metadataKind === "auto_reply" };
+            return {
+                ...base,
+                paymentMetadata: null,
+                opener: metadataKind === "start_note",
+                autoReply: metadataKind === "auto_reply",
+            };
         }
         return base;
     };
@@ -313,12 +319,16 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     });
     if (useFallback && fallback) {
         if (!hasStoredKind("start_note")) {
-            list.unshift(fallbackRow(FALLBACK_START_NOTE_ID, fallback.isFree ? START_NOTE_FREE : START_NOTE));
+            list.unshift({
+                ...fallbackRow(FALLBACK_START_NOTE_ID, fallback.isFree ? START_NOTE_FREE : START_NOTE),
+                opener: true,
+            });
         }
         if (fallback.welcome && !hasStoredKind("welcome")) {
             list.unshift({
                 ...fallbackRow(FALLBACK_WELCOME_ID, fallback.welcomeText),
                 kind: "welcome",
+                opener: true,
                 welcome: { projectName, rates: fallback.isFree ? null : fallback.rates, isFree: fallback.isFree, freeText: null },
             });
         }

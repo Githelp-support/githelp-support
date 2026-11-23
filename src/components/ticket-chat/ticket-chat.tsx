@@ -101,6 +101,8 @@ export type TicketChatMessage = {
   kind?: "claimed" | "ended" | "welcome"
   /** Written by the server (`tickets_messages.is_automatic`): welcome, start note, auto-reply. */
   isAutomatic?: boolean
+  /** The welcome or the start note (stored row or its fallback): the rows that open the thread. */
+  opener?: boolean
   /** The auto-reply after the first message (stored row or its fallback): keeps one key when the stored row arrives. */
   autoReply?: boolean
   /**
@@ -478,13 +480,13 @@ export function TicketChat(props: TicketChatProps) {
   const isNewMessage = (id: string) =>
     initialMessages !== null && initialMessages.key === threadKey && !initialMessages.ids.has(id)
 
-  // The openers: the stored welcome and its start note, i.e. the automatic
-  // system rows the thread starts with. They share one wrapper with the top
+  // The openers: the welcome and its start note at the start of the thread
+  // (never another system row that happens to follow them). They share one wrapper with the top
   // day divider and the intro (the pre-ticket welcome preview), under a
   // stable key, so the stored rows replace the preview inside an element that
   // is already on screen and never animate on their own.
   const openerCount = useMemo(() => {
-    const end = rows.findIndex((row) => !(row.item.senderType === "system" && row.item.isAutomatic))
+    const end = rows.findIndex((row) => !row.item.opener)
     return end === -1 ? rows.length : end
   }, [rows])
   // The customer's first message keeps one key while its pending copy is

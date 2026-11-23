@@ -352,6 +352,7 @@ describe("TicketChat first-open entrance", () => {
     senderType: "system",
     senderId: null,
     kind: "welcome",
+    opener: true,
     isAutomatic: true,
     createdAt: at(15, 9, 41),
     content: "Welcome to Acme's support chat.",
@@ -359,6 +360,7 @@ describe("TicketChat first-open entrance", () => {
   const storedNote = message("n1", {
     senderType: "system",
     senderId: null,
+    opener: true,
     isAutomatic: true,
     createdAt: at(15, 9, 41),
     content: "You are not charged anything before you confirm.",
@@ -451,6 +453,20 @@ describe("TicketChat first-open entrance", () => {
       vi.advanceTimersByTime(FIRST_OPEN_DELAY_MS * 2)
     })
     expect(container.querySelector(".animate-enter")).toBeNull()
+  })
+
+  it("keeps a system row that directly follows the start note out of the openers", () => {
+    const payment = message("p1", {
+      senderType: "system",
+      senderId: null,
+      isAutomatic: true,
+      createdAt: at(15, 9, 42),
+      content: "Payment hold authorized.",
+    })
+    const { container } = renderChat({ threadKey: "t1", messages: [storedWelcome, storedNote, payment] })
+    const wrapper = openers(container) as HTMLElement
+    expect(within(wrapper).getByText("You are not charged anything before you confirm.")).toBeInTheDocument()
+    expect(wrapper).not.toContainElement(screen.getByText("Payment hold authorized."))
   })
 
   it("shows everything at once when a first-open thread turns out to be an existing ticket", () => {
