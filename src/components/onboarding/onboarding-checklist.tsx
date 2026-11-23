@@ -139,6 +139,7 @@ interface OnboardingChecklistCardProps {
   checklist: Checklist
   onStepOpen: (step: OnboardingStep) => void
   onStepDismiss: (step: OnboardingStep) => void
+  className?: string
 }
 
 /**
@@ -146,17 +147,22 @@ interface OnboardingChecklistCardProps {
  * a done-count pill, a one-line intro and one bordered row per step (the rows
  * are a design exception to "no cards inside cards").
  */
-export function OnboardingChecklistCard({ checklist, onStepOpen, onStepDismiss }: OnboardingChecklistCardProps) {
+export function OnboardingChecklistCard({
+  checklist,
+  onStepOpen,
+  onStepDismiss,
+  className,
+}: OnboardingChecklistCardProps) {
   const titleId = useId()
   const { steps, doneCount, totalCount } = checklist
   const nextStepId = steps.find((s) => !s.done)?.id
   return (
     <section
       aria-labelledby={titleId}
-      className="animate-enter rounded-2xl border border-border-subtle bg-card px-8 pt-7 pb-8"
+      className={cn("animate-enter rounded-2xl border border-border-subtle bg-card px-8 pt-7 pb-8", className)}
     >
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <h2 id={titleId} className="text-lg font-semibold text-foreground">
+        <h2 id={titleId} className="text-base font-subtitle text-foreground">
           Finish setting up your project
         </h2>
         <span
@@ -189,7 +195,7 @@ export function OnboardingChecklistCard({ checklist, onStepOpen, onStepDismiss }
  * Onboarding checklist for the admin Overview page. Renders nothing while
  * loading, for a sandbox project, and once every step is done or dismissed.
  */
-export function OnboardingChecklist({ projectId }: { projectId: string }) {
+export function OnboardingChecklist({ projectId, className }: { projectId: string; className?: string }) {
   const { checklist, setStepDismissed } = useOnboardingChecklist(projectId)
   const markLandingPageViewed = useMarkLandingPageViewed(projectId)
 
@@ -215,5 +221,12 @@ export function OnboardingChecklist({ projectId }: { projectId: string }) {
     if (step.id === "view_landing_page") markLandingPageViewed()
   }
 
-  return <OnboardingChecklistCard checklist={checklist} onStepOpen={handleOpen} onStepDismiss={handleDismiss} />
+  return (
+    <OnboardingChecklistCard
+      checklist={checklist}
+      onStepOpen={handleOpen}
+      onStepDismiss={handleDismiss}
+      className={className}
+    />
+  )
 }
