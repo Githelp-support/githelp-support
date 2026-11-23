@@ -46,6 +46,7 @@ import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
 import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
+import { latestReadableMessageId } from "@/lib/ticket-message-summary"
 import { useCustomerTicketSidebar, toChatParticipants, hasHelperJoined } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
@@ -159,12 +160,12 @@ export default function SupportPage() {
   const retryPayment = useRetryTicketPayment()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
-  const { data: messagesData } = useTicketMessages(ticketId)
+  const { data: messagesData, isError: messagesFailed } = useTicketMessages(ticketId)
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
   const { data: liveTicket } = useTicket(ticketId)
   // Billing uses the ticket's pricing snapshot (taken at creation); prefer it over live settings.
-  const ticketPricingSnapshot = (liveTicket as { pricing_snapshot?: Record<string, number> | null } | undefined | null)?.pricing_snapshot
+  const ticketPricingSnapshot = liveTicket?.pricing_snapshot
   const effectivePricing = useMemo(
     () => (ticketPricingSnapshot && paymentSettings ? { ...paymentSettings, ...ticketPricingSnapshot } : paymentSettings),
     [paymentSettings, ticketPricingSnapshot],
@@ -281,17 +282,19 @@ export default function SupportPage() {
   })
 
   // Mark the latest message as read so the sidebar's unread dot clears for
-  // the customer too (mirrors the helper page). Depend on ids only: the
-  // mutation object changes identity and would loop with the invalidation.
+  // the customer too (mirrors the helper page). The welcome, start note and
+  // auto-reply rows are skipped, as in the unread dot itself. Depend on ids
+  // only: the mutation object changes identity and would loop with the
+  // invalidation.
   const updateLastReadMessage = useUpdateLastReadMessage()
-  const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
+  const lastMessageId = latestReadableMessageId(messagesData)
   useEffect(() => {
     if (!ticketId || !sessionUserId || !lastMessageId) return
     updateLastReadMessage.mutate({ ticketId, participantId: sessionUserId, messageId: lastMessageId })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
   }, [ticketId, sessionUserId, lastMessageId])
 
-  // Welcome message used as the prose copy in the intro block.
+  // Welcome copy of the preview shown before a ticket exists.
   const welcomeMessageContent = useMemo(
     () =>
       `Welcome to ${projectName}'s support chat.\nAsk your question and someone from our team will try to help you, as soon as we can.`,
@@ -299,15 +302,16 @@ export default function SupportPage() {
   )
 
 
-  // One instant for the synthetic messages: full timestamp for the thread
-  // builder, time only for the intro.
+  // One instant for the synthetic parts: full timestamp for the thread builder
+  // (claimed banner, pending first message), time only for the pre-ticket
+  // welcome preview. A stored welcome row carries its own created_at.
   const { nowFormatted, nowTime } = useMemo(() => {
     const now = new Date()
     return { nowFormatted: formatChatTimestamp(now), nowTime: formatChatTime(now) }
   }, [])
 
-  // Thread: disclaimer → claimed banner → (pending first message) → persisted
-  // messages → session summary once ended. Shared with /support/chat.
+  // Thread: stored welcome and note → claimed banner → (pending first message)
+  // → persisted messages → session summary once ended. Shared with /support/chat.
   const chatMessages: TicketChatMessage[] = useMemo(() => {
     const list = buildCustomerThreadMessages({
       projectName,
@@ -319,9 +323,19 @@ export default function SupportPage() {
       fallbackDescription: liveTicket?.description ?? null,
       fallbackTimestamp: liveTicket?.created_at ?? null,
       ticketStatus: liveTicket?.status ?? null,
-      isFree: isFreeSupport(effectivePricing),
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
-      avgResponseSeconds,
+      // The welcome, start note and auto-reply stay in the thread when the
+      // ticket has no stored rows for them (and before a ticket exists, where
+      // the intro is the welcome).
+      fallback: {
+        welcome: ticketCreated,
+        welcomeText: welcomeMessageContent,
+        rates: formatTicketRates(effectivePricing),
+        isFree: isFreeSupport(effectivePricing),
+        avgResponseSeconds,
+        // …and when the messages could not be loaded at all.
+        whileLoading: ticketId !== resumedTicketId || messagesFailed,
+      },
     })
     // A guest ticket closed because the visitor left carries its own
     // visitor_left message — no helper "session ended" summary.
@@ -352,9 +366,14 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    ticketCreated,
+    welcomeMessageContent,
     effectivePricing,
-    slaId,
     avgResponseSeconds,
+    messagesFailed,
+    ticketId,
+    resumedTicketId,
+    slaId,
     ticketEnded,
     totalLoggedFormatted,
     paymentStatus.status,
@@ -455,7 +474,7 @@ export default function SupportPage() {
                   },
                 }
               : {}),
-          } as Parameters<typeof createTicket.mutateAsync>[0])
+          })
         } catch (error) {
           console.error("Failed to create ticket:", error)
           const hint = (error as { hint?: string } | null)?.hint
@@ -619,7 +638,10 @@ export default function SupportPage() {
     )
   }
 
-  const chatIntro = (
+  // Before a ticket exists: a preview of the welcome with the project's live
+  // rates (the prices the DB guard checks on creation) and the sign-in state.
+  // Once a ticket exists the thread shows its stored welcome row instead.
+  const chatIntro = ticketCreated ? undefined : (
     <CustomerChatIntro
       projectId={projectId ?? ""}
       projectName={projectName}
@@ -627,10 +649,10 @@ export default function SupportPage() {
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
       timestamp={nowTime}
-      rates={rates}
-      isFree={isFreeSupport(effectivePricing)}
+      rates={formatTicketRates(paymentSettings)}
+      isFree={isFreeSupport(paymentSettings)}
       isAuthenticated={isAuthenticated}
-      ticketCreated={ticketCreated}
+      ticketCreated={false}
       userName={user?.name}
       onSignIn={handleSignIn}
     />
@@ -761,6 +783,10 @@ export default function SupportPage() {
             }
             showBackButton={false}
             intro={chatIntro}
+            welcomeProject={{ id: projectId ?? "", name: projectName, primaryColor: brandingData?.primary_color }}
+            // First-open entrance: only for a conversation started here, not
+            // for a guest's open ticket that was resumed.
+            firstOpenEntrance={ticketId !== resumedTicketId}
             messages={chatMessages}
             participants={chatParticipants}
             participantsLoading={participantsLoading}

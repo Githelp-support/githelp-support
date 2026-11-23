@@ -1,103 +1,197 @@
 import { describe, it, expect } from "vitest";
 import {
-    buildAutoReply,
     buildCustomerThreadMessages,
     describeChargedLine,
     findPendingSca,
     helperSystemMessageCopy,
     isPaymentFailedCtaLive,
-    TICKET_DISCLAIMER,
-    TICKET_DISCLAIMER_FREE,
     GUEST_SIGNED_IN_HELPER_COPY,
     HELPER_PAYMENT_AUTHORIZED_MESSAGE,
     HELPER_PAYMENT_REQUIRED_MESSAGE,
+    FALLBACK_AUTO_REPLY_ID,
+    FALLBACK_START_NOTE_ID,
+    FALLBACK_WELCOME_ID,
+    START_NOTE,
+    START_NOTE_FREE,
     type CustomerThreadOptions,
+    type ThreadFallback,
     type PersistedTicketMessage,
 } from "../customer-chat-messages";
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
+import { parseWelcomeRates } from "../ticket-pricing";
 
-describe("buildCustomerThreadMessages auto-reply", () => {
+describe("buildCustomerThreadMessages stored automatic rows", () => {
     const baseOpts = (overrides: Partial<CustomerThreadOptions> = {}): CustomerThreadOptions => ({
         projectName: "Acme",
-        projectLogo: null,
-        nowFormatted: "01/01/2026, 12:00",
+        projectLogo: "https://example.com/logo.png",
+        nowFormatted: "01.01.2026, 12:00",
         messagesData: undefined,
         currentUser: { id: "user-1", name: "Ada" },
         ...overrides,
     });
 
-    const persistedUserMessage = (overrides: Partial<PersistedTicketMessage> = {}): PersistedTicketMessage => ({
+    const userMessage = (overrides: Partial<PersistedTicketMessage> = {}): PersistedTicketMessage => ({
         id: "msg-1",
         content: "My build is broken",
-        created_at: "2026-01-01T12:00:00Z",
+        created_at: "2026-01-01T12:00:05.000Z",
         sender_type: "user",
+        sender_id: "user-1",
         ...overrides,
     });
 
-    it("appears directly after the pending first message when nothing is persisted yet", () => {
-        const list = buildCustomerThreadMessages(
-            baseOpts({ pendingFirstMessage: "My build is broken" }),
+    const automatic = (
+        id: string,
+        metadata: Record<string, unknown>,
+        overrides: Partial<PersistedTicketMessage> = {},
+    ): PersistedTicketMessage => ({
+        id,
+        content: `${id} text`,
+        created_at: "2026-01-01T12:00:00.000Z",
+        sender_type: "system",
+        sender_id: null,
+        is_automatic: true,
+        metadata,
+        ...overrides,
+    });
+
+    const paidRates = {
+        ticket_start_price: 2500,
+        ticket_price_minute_first_60: 150,
+        ticket_price_minute_after_60: 100,
+        currency: "usd",
+        is_free: false,
+    };
+    const welcomeRow = (metadata: Record<string, unknown> = {}) =>
+        automatic(
+            "w1",
+            { kind: "welcome", project_name: "Acme Inc", rates: paidRates, rates_source: "ticket_snapshot", ...metadata },
+            { content: "Welcome to Acme Inc's support chat." },
         );
-        const pendingIndex = list.findIndex((m) => m.id === "pending-first");
-        expect(pendingIndex).toBeGreaterThan(-1);
-        expect(list[pendingIndex + 1]).toMatchObject({
-            id: "auto-reply",
+    const startNoteRow = () =>
+        automatic(
+            "n1",
+            { kind: "start_note", is_free: false },
+            { content: "You are not charged anything before both you and the helper have confirmed the ticket.", created_at: "2026-01-01T12:00:00.001Z" },
+        );
+    const autoReplyRow = () =>
+        automatic(
+            "r1",
+            { kind: "auto_reply", avg_response_seconds: 5400 },
+            {
+                content: "Thank you for reaching out! The average response time for this project is **1h 30m**.",
+                created_at: "2026-01-01T12:00:05.001Z",
+            },
+        );
+
+    it("adds no welcome, note or auto-reply when no fallback is given", () => {
+        expect(buildCustomerThreadMessages(baseOpts())).toEqual([]);
+        const list = buildCustomerThreadMessages(baseOpts({ messagesData: [userMessage()] }));
+        expect(list.map((m) => m.id)).toEqual(["msg-1"]);
+    });
+
+    it("maps the stored welcome row to the welcome kind with its stored rates and project name", () => {
+        const [welcome] = buildCustomerThreadMessages(baseOpts({ messagesData: [welcomeRow()] }));
+        expect(welcome).toMatchObject({
+            id: "w1",
             senderType: "system",
-            content: buildAutoReply(null),
+            kind: "welcome",
+            isAutomatic: true,
+            content: "Welcome to Acme Inc's support chat.",
+            createdAt: "2026-01-01T12:00:00.000Z",
+            senderAvatarUrl: "https://example.com/logo.png",
+            paymentMetadata: null,
+            welcome: {
+                projectName: "Acme Inc",
+                rates: { startPrice: "25.00", first60Price: "1.50", after60Price: "1.00" },
+                isFree: false,
+                freeText: null,
+            },
         });
     });
 
-    it("appears directly after the first persisted user message", () => {
-        const list = buildCustomerThreadMessages(
+    it("carries the free state instead of rates for a free ticket", () => {
+        const [welcome] = buildCustomerThreadMessages(
             baseOpts({
                 messagesData: [
-                    persistedUserMessage(),
-                    persistedUserMessage({ id: "msg-2", content: "Any update?" }),
+                    welcomeRow({
+                        rates: { ...paidRates, ticket_start_price: 0, ticket_price_minute_first_60: 0, ticket_price_minute_after_60: 0, is_free: true },
+                        free_text: "Acme Inc offers support for free - no payment method needed.",
+                    }),
                 ],
             }),
         );
-        const firstUserIndex = list.findIndex((m) => m.id === "msg-1");
-        expect(firstUserIndex).toBeGreaterThan(-1);
-        expect(list[firstUserIndex + 1]).toMatchObject({
-            id: "auto-reply",
-            senderType: "system",
-            content: buildAutoReply(null),
+        expect(welcome.welcome).toEqual({
+            projectName: "Acme Inc",
+            rates: null,
+            isFree: true,
+            freeText: "Acme Inc offers support for free - no payment method needed.",
         });
-        // Only one auto-reply, after the first user message — not the second.
-        expect(list.filter((m) => m.id === "auto-reply")).toHaveLength(1);
     });
 
-    it("is absent when there is no user message", () => {
-        const list = buildCustomerThreadMessages(baseOpts());
-        expect(list.some((m) => m.id === "auto-reply")).toBe(false);
+    it("leaves the rates empty when the welcome row stored none", () => {
+        const [welcome] = buildCustomerThreadMessages(
+            baseOpts({ messagesData: [welcomeRow({ rates: null, rates_source: null, project_name: null })] }),
+        );
+        expect(welcome.welcome).toEqual({ projectName: null, rates: null, isFree: false, freeText: null });
     });
 
-    it("uses the project's average response time", () => {
+    it("maps the stored start note and auto-reply to ordinary system notes with their stored text", () => {
         const list = buildCustomerThreadMessages(
-            baseOpts({ pendingFirstMessage: "My build is broken", avgResponseSeconds: 90 * 60 }),
+            baseOpts({ messagesData: [welcomeRow(), startNoteRow(), userMessage(), autoReplyRow()] }),
         );
-        expect(list.find((m) => m.id === "auto-reply")?.content).toContain("**1h 30m**");
+        expect(list.map((m) => m.id)).toEqual(["w1", "n1", "msg-1", "r1"]);
+        const note = list[1];
+        const reply = list[3];
+        for (const m of [note, reply]) {
+            expect(m.senderType).toBe("system");
+            expect(m.kind).toBeUndefined();
+            expect(m.isAutomatic).toBe(true);
+            expect(m.paymentMetadata).toBeNull();
+            expect(m.welcome).toBeUndefined();
+        }
+        expect(note.content).toContain("not charged");
+        expect(reply.content).toContain("**1h 30m**");
+        expect(reply.createdAt).toBe("2026-01-01T12:00:05.001Z");
     });
 
-    it("omits the average response time sentence while the project has none yet", () => {
-        const base = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
-        expect(buildAutoReply(null)).toBe(base);
-        expect(buildAutoReply(undefined)).toBe(base);
-        expect(buildAutoReply(null)).not.toContain("~");
-        expect(buildAutoReply(null)).not.toContain("average response time");
-    });
-
-    it("includes the average response time sentence with a real value", () => {
-        expect(buildAutoReply(90 * 60)).toBe(
-            "Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **1h 30m**.",
+    it("places the pending first message after the stored welcome and note", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({ messagesData: [welcomeRow(), startNoteRow()], pendingFirstMessage: "My build is broken" }),
         );
+        expect(list.map((m) => m.id)).toEqual(["w1", "n1", "pending-first"]);
+        expect(list[2]).toMatchObject({ senderType: "user", content: "My build is broken" });
     });
 
-    it("sets the raw createdAt on persisted messages and the pending-first fallback only", () => {
-        const persisted = buildCustomerThreadMessages(baseOpts({ messagesData: [persistedUserMessage()] }));
-        expect(persisted.find((m) => m.id === "msg-1")?.createdAt).toBe("2026-01-01T12:00:00Z");
-        expect(persisted.find((m) => m.id === "welcome")?.createdAt).toBeUndefined();
-        expect(persisted.find((m) => m.id === "auto-reply")?.createdAt).toBeUndefined();
+    it("keeps the claimed banner between the stored note and the first message", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({
+                messagesData: [welcomeRow(), startNoteRow()],
+                claimer: { id: "h1", name: "Grace", avatar_url: null },
+                fallbackDescription: "My build is broken",
+            }),
+        );
+        expect(list.map((m) => m.id)).toEqual(["w1", "n1", "system-claimed", "pending-first"]);
+    });
+
+    it("drops the pending first message once a user message is stored", () => {
+        const list = buildCustomerThreadMessages(
+            baseOpts({
+                messagesData: [welcomeRow(), startNoteRow(), userMessage(), autoReplyRow()],
+                pendingFirstMessage: "My build is broken",
+            }),
+        );
+        expect(list.some((m) => m.id === "pending-first")).toBe(false);
+    });
+
+    it("shows the pending first message alone while nothing is stored yet", () => {
+        const list = buildCustomerThreadMessages(baseOpts({ pendingFirstMessage: "My build is broken" }));
+        expect(list.map((m) => m.id)).toEqual(["pending-first"]);
+    });
+
+    it("sets the raw createdAt on persisted messages and the dated pending-first fallback", () => {
+        const persisted = buildCustomerThreadMessages(baseOpts({ messagesData: [userMessage()] }));
+        expect(persisted.find((m) => m.id === "msg-1")?.createdAt).toBe("2026-01-01T12:00:05.000Z");
+        expect(persisted.find((m) => m.id === "msg-1")?.isAutomatic).toBe(false);
 
         const pending = buildCustomerThreadMessages(
             baseOpts({ fallbackDescription: "My build is broken", fallbackTimestamp: "2026-01-01T11:00:00Z" }),
@@ -107,29 +201,130 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         const noTimestamp = buildCustomerThreadMessages(baseOpts({ pendingFirstMessage: "My build is broken" }));
         expect(noTimestamp.find((m) => m.id === "pending-first")?.createdAt).toBeUndefined();
     });
+
+    describe("fallback while no stored row exists", () => {
+        const fallback = (overrides: Partial<ThreadFallback> = {}): ThreadFallback => ({
+            welcome: true,
+            welcomeText: "Welcome to Acme's support chat.",
+            rates: { startPrice: "25.00", first60Price: "1.50", after60Price: "1.00" },
+            isFree: false,
+            avgResponseSeconds: null,
+            whileLoading: true,
+            ...overrides,
+        });
+
+        it("shows only the start note before a ticket exists (the intro is the welcome)", () => {
+            const list = buildCustomerThreadMessages(baseOpts({ fallback: fallback({ welcome: false }) }));
+            expect(list).toHaveLength(1);
+            expect(list[0]).toMatchObject({
+                id: FALLBACK_START_NOTE_ID,
+                senderType: "system",
+                isAutomatic: true,
+                content: START_NOTE,
+            });
+        });
+
+        it("keeps the welcome with rates, the note and the auto-reply for a ticket without stored rows", () => {
+            const list = buildCustomerThreadMessages(
+                baseOpts({
+                    messagesData: [userMessage()],
+                    fallbackTimestamp: "2026-01-01T12:00:00.000Z",
+                    claimer: { id: "h1", name: "Helper", avatar_url: null },
+                    fallback: fallback({ avgResponseSeconds: 5400 }),
+                }),
+            );
+            expect(list.map((m) => m.id)).toEqual([
+                FALLBACK_WELCOME_ID,
+                FALLBACK_START_NOTE_ID,
+                "system-claimed",
+                "msg-1",
+                FALLBACK_AUTO_REPLY_ID,
+            ]);
+            expect(list[0]).toMatchObject({
+                kind: "welcome",
+                isAutomatic: true,
+                createdAt: "2026-01-01T12:00:00.000Z",
+                content: "Welcome to Acme's support chat.",
+                welcome: { projectName: "Acme", isFree: false, rates: { startPrice: "25.00" } },
+            });
+            expect(list[4]).toMatchObject({ autoReply: true, createdAt: "2026-01-01T12:00:05.000Z" });
+            expect(list[4].content).toContain("The average response time for this project is **1h 30m**.");
+        });
+
+        it("leaves the response-time sentence out when there is no value", () => {
+            const list = buildCustomerThreadMessages(
+                baseOpts({ pendingFirstMessage: "My build is broken", fallback: fallback() }),
+            );
+            const reply = list.find((m) => m.id === FALLBACK_AUTO_REPLY_ID);
+            expect(reply?.content).toBe(
+                "Thank you for reaching out! A helper will get in touch with you as soon as possible.",
+            );
+        });
+
+        it("uses the free wording and lists no rates for free support", () => {
+            const list = buildCustomerThreadMessages(baseOpts({ messagesData: [], fallback: fallback({ isFree: true }) }));
+            expect(list[0].welcome).toMatchObject({ isFree: true, rates: null });
+            expect(list[1].content).toBe(START_NOTE_FREE);
+        });
+
+        it("lets every stored row win over its fallback", () => {
+            const list = buildCustomerThreadMessages(
+                baseOpts({
+                    messagesData: [welcomeRow(), startNoteRow(), userMessage(), autoReplyRow()],
+                    fallback: fallback(),
+                }),
+            );
+            expect(list.map((m) => m.id)).toEqual(["w1", "n1", "msg-1", "r1"]);
+            expect(list[3].autoReply).toBe(true);
+        });
+
+        it("waits for an existing ticket's messages unless the conversation started here", () => {
+            expect(buildCustomerThreadMessages(baseOpts({ fallback: fallback({ whileLoading: false }) }))).toEqual([]);
+            const loaded = buildCustomerThreadMessages(
+                baseOpts({ messagesData: [], fallback: fallback({ whileLoading: false }) }),
+            );
+            expect(loaded.map((m) => m.id)).toEqual([FALLBACK_WELCOME_ID, FALLBACK_START_NOTE_ID]);
+        });
+    });
 });
 
-describe("buildCustomerThreadMessages welcome disclaimer", () => {
-    const baseOpts = (overrides: Partial<CustomerThreadOptions> = {}): CustomerThreadOptions => ({
-        projectName: "Acme",
-        projectLogo: null,
-        nowFormatted: "01/01/2026, 12:00",
-        messagesData: undefined,
-        currentUser: { id: "user-1", name: "Ada" },
-        ...overrides,
+describe("parseWelcomeRates", () => {
+    it("formats the stored cents as dollar strings", () => {
+        expect(
+            parseWelcomeRates({ ticket_start_price: 2500, ticket_price_minute_first_60: 150, ticket_price_minute_after_60: 0 }),
+        ).toEqual({ rates: { startPrice: "25.00", first60Price: "1.50", after60Price: "0.00" }, isFree: false });
     });
 
-    it("uses the paid copy by default", () => {
-        const welcome = buildCustomerThreadMessages(baseOpts()).find((m) => m.id === "welcome");
-        expect(welcome?.content).toBe(TICKET_DISCLAIMER);
-        expect(welcome?.content).toContain("not charged");
+    it("returns the free state when the row says so", () => {
+        expect(
+            parseWelcomeRates({ ticket_start_price: 0, ticket_price_minute_first_60: 0, ticket_price_minute_after_60: 0, is_free: true }),
+        ).toEqual({ rates: null, isFree: true });
     });
 
-    it("does not mention charging or confirming when the project offers free support", () => {
-        const welcome = buildCustomerThreadMessages(baseOpts({ isFree: true })).find((m) => m.id === "welcome");
-        expect(welcome?.content).toBe(TICKET_DISCLAIMER_FREE);
-        expect(welcome?.content).not.toContain("charged");
-        expect(welcome?.content).not.toContain("confirm");
+    it("counts a missing price as 0 once another one is stored", () => {
+        expect(parseWelcomeRates({ ticket_start_price: 500, ticket_price_minute_first_60: null }).rates).toEqual({
+            startPrice: "5.00",
+            first60Price: "0.00",
+            after60Price: "0.00",
+        });
+    });
+
+    it("returns no rates for a ticket without a snapshot (all prices null) or malformed metadata", () => {
+        const none = { rates: null, isFree: false };
+        expect(
+            parseWelcomeRates({
+                ticket_start_price: null,
+                ticket_price_minute_first_60: null,
+                ticket_price_minute_after_60: null,
+                currency: "usd",
+                is_free: false,
+            }),
+        ).toEqual(none);
+        expect(parseWelcomeRates(null)).toEqual(none);
+        expect(parseWelcomeRates(undefined)).toEqual(none);
+        expect(parseWelcomeRates("25.00")).toEqual(none);
+        expect(parseWelcomeRates([2500])).toEqual(none);
+        expect(parseWelcomeRates({ ticket_start_price: "2500" })).toEqual(none);
     });
 });
 

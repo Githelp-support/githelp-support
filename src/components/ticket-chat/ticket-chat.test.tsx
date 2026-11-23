@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -17,7 +17,7 @@ vi.mock("@/components/layout/header", () => ({
   ),
 }))
 
-import { TicketChat, type TicketChatMessage, type TicketChatProps } from "./ticket-chat"
+import { FIRST_OPEN_DELAY_MS, TicketChat, type TicketChatMessage, type TicketChatProps } from "./ticket-chat"
 
 /** Local time on Sunday 15 November 2026 (day dividers and times are local). */
 const at = (day: number, hour: number, minute: number) => new Date(2026, 10, day, hour, minute).toISOString()
@@ -41,21 +41,22 @@ const welcome = message("welcome", {
 
 function renderChat(overrides: Partial<TicketChatProps> = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const props: TicketChatProps = {
-    headerTitle: "Ticket with Acme",
-    messages: [welcome],
-    message: "",
-    onMessageChange: () => {},
-    onSend: () => {},
-    ...overrides,
-  }
-  return render(
+  const ui = (next: Partial<TicketChatProps>) => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <TicketChat {...props} />
+        <TicketChat
+          headerTitle="Ticket with Acme"
+          messages={[welcome]}
+          message=""
+          onMessageChange={() => {}}
+          onSend={() => {}}
+          {...next}
+        />
       </TooltipProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
+  const view = render(ui(overrides))
+  return { ...view, rerenderChat: (next: Partial<TicketChatProps>) => view.rerender(ui(next)) }
 }
 
 beforeEach(() => {
@@ -170,6 +171,94 @@ describe("TicketChat thread", () => {
   })
 })
 
+describe("TicketChat stored welcome row", () => {
+  const storedWelcome = (overrides: Partial<TicketChatMessage> = {}) =>
+    message("w1", {
+      senderType: "system",
+      senderName: "Live Name Team",
+      senderId: null,
+      kind: "welcome",
+      isAutomatic: true,
+      createdAt: at(15, 9, 41),
+      content: "Welcome to Acme Inc's support chat.",
+      welcome: {
+        projectName: "Acme Inc",
+        rates: { startPrice: "25.00", first60Price: "1.50", after60Price: "1.00" },
+        isFree: false,
+        freeText: null,
+      },
+      ...overrides,
+    })
+  const project = { id: "p1", name: "Live Name" }
+
+  it("renders the welcome in the thread from the stored row, timestamped from created_at", () => {
+    const { container } = renderChat({
+      welcomeProject: project,
+      messages: [
+        storedWelcome(),
+        message("note", {
+          senderType: "system",
+          senderId: null,
+          isAutomatic: true,
+          createdAt: at(15, 9, 41),
+          content: "You are not charged anything before you confirm.",
+        }),
+        message("a", { createdAt: at(16, 10, 17), content: "next day" }),
+      ],
+    })
+    const row = container.querySelector('[data-slot="chat-welcome"]') as HTMLElement
+    // Stored name, text, rates and time; not the live project name or "now".
+    expect(within(row).getByText("Acme Inc Team")).toBeInTheDocument()
+    expect(within(row).getByText("Project")).toBeInTheDocument()
+    expect(within(row).getByText("09:41")).toBeInTheDocument()
+    expect(within(row).getByText("Welcome to Acme Inc's support chat.")).toBeInTheDocument()
+    expect(within(row).getByText("25.00")).toBeInTheDocument()
+    expect(within(row).getByText("1.50")).toBeInTheDocument()
+    expect(within(row).getByText("1.00")).toBeInTheDocument()
+    expect(screen.queryByText("Live Name Team")).not.toBeInTheDocument()
+    // Not a system note, and no sign-in state.
+    expect(row.closest('[data-slot="system-note"]')).toBeNull()
+    expect(within(row).queryByRole("button")).not.toBeInTheDocument()
+
+    // Day dividers come from the rows: the welcome's day first, then the next day's.
+    const dividers = screen.getAllByRole("separator")
+    expect(dividers.map((d) => d.getAttribute("aria-label"))).toEqual(["Sunday 15 November", "Monday 16 November"])
+    expect(dividers[0].compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const note = container.querySelector('[data-slot="system-note"]') as HTMLElement
+    expect(row.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(note.compareDocumentPosition(dividers[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it("shows the stored free-support line instead of rates", () => {
+    renderChat({
+      welcomeProject: project,
+      messages: [
+        storedWelcome({
+          welcome: {
+            projectName: "Acme Inc",
+            rates: null,
+            isFree: true,
+            freeText: "Acme Inc offers support for free - no payment method needed.",
+          },
+        }),
+      ],
+    })
+    expect(screen.getByText("Free support")).toBeInTheDocument()
+    expect(screen.getByText("Acme Inc offers support for free - no payment method needed.")).toBeInTheDocument()
+    expect(screen.queryByText("Start price (USD)")).not.toBeInTheDocument()
+  })
+
+  it("lists no rates when the row stored none, and falls back to the project name only for the heading", () => {
+    renderChat({
+      welcomeProject: project,
+      messages: [storedWelcome({ welcome: { projectName: null, rates: null, isFree: false, freeText: null } })],
+    })
+    expect(screen.getByText("Live Name Team")).toBeInTheDocument()
+    expect(screen.queryByText("Rates")).not.toBeInTheDocument()
+    expect(screen.queryByText("Rates not configured")).not.toBeInTheDocument()
+  })
+})
+
 describe("TicketChat header", () => {
   it("shows End session in the header and opens the request dialog", async () => {
     const onRequestEndSession = vi.fn()
@@ -253,5 +342,153 @@ describe("TicketChat composer and right panel", () => {
     expect(screen.getByText("Ada")).toBeInTheDocument()
     expect(screen.queryByText("No helper has joined yet.")).not.toBeInTheDocument()
     expect(screen.queryByText("No other topics yet.")).not.toBeInTheDocument()
+  })
+})
+
+describe("TicketChat first-open entrance", () => {
+  const intro = <div data-testid="intro">Welcome to Acme</div>
+  const openers = (container: HTMLElement) => container.querySelector('[data-slot="chat-openers"]') as HTMLElement | null
+  const storedWelcome = message("w1", {
+    senderType: "system",
+    senderId: null,
+    kind: "welcome",
+    opener: true,
+    isAutomatic: true,
+    createdAt: at(15, 9, 41),
+    content: "Welcome to Acme's support chat.",
+  })
+  const storedNote = message("n1", {
+    senderType: "system",
+    senderId: null,
+    opener: true,
+    isAutomatic: true,
+    createdAt: at(15, 9, 41),
+    content: "You are not charged anything before you confirm.",
+  })
+  const mockReducedMotion = (matches: boolean) =>
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: matches && query.includes("prefers-reduced-motion"),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    )
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it("starts with an empty thread and reveals the divider and welcome together after the delay", () => {
+    const { container } = renderChat({ firstOpenEntrance: true, intro, messages: [] })
+    // Empty conversation first: the composer is there, the openers are not.
+    expect(screen.getByRole("textbox")).toBeInTheDocument()
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("intro")).not.toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(FIRST_OPEN_DELAY_MS - 1)
+    })
+    expect(screen.queryByTestId("intro")).not.toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    // One wrapper carries the animation for the divider and the welcome.
+    const wrapper = openers(container) as HTMLElement
+    expect(wrapper).toHaveClass("animate-enter")
+    expect(within(wrapper).getByRole("separator")).toBeInTheDocument()
+    expect(within(wrapper).getByTestId("intro")).toBeInTheDocument()
+  })
+
+  it("swaps the stored welcome and note in without re-animating, and animates the first message once", () => {
+    const { container, rerenderChat } = renderChat({ firstOpenEntrance: true, intro, messages: [], threadKey: "" })
+    act(() => {
+      vi.advanceTimersByTime(FIRST_OPEN_DELAY_MS)
+    })
+    const wrapper = openers(container) as HTMLElement
+
+    // Ticket created: the pending first message shows, then the stored rows arrive.
+    rerenderChat({
+      firstOpenEntrance: true,
+      threadKey: "t1",
+      messages: [message("pending-first", { content: "my question" })],
+    })
+    const pendingRow = screen.getByText("my question").closest(".animate-enter") as HTMLElement
+    expect(pendingRow).not.toBeNull()
+
+    rerenderChat({
+      firstOpenEntrance: true,
+      threadKey: "t1",
+      messages: [storedWelcome, storedNote, message("m1", { content: "my question", createdAt: at(15, 9, 42) })],
+    })
+    // Same wrapper element, now holding the stored rows; they carry no animation of their own.
+    expect(openers(container)).toBe(wrapper)
+    expect(screen.queryByTestId("intro")).not.toBeInTheDocument()
+    const welcomeRow = within(wrapper).getByText("Welcome to Acme's support chat.")
+    const noteRow = within(wrapper).getByText("You are not charged anything before you confirm.")
+    expect(welcomeRow.closest(".animate-enter")).toBe(wrapper)
+    expect(noteRow.closest(".animate-enter")).toBe(wrapper)
+    // The first message kept its element when the stored copy replaced the pending one.
+    expect(screen.getByText("my question").closest(".animate-enter")).toBe(pendingRow)
+    expect(wrapper).not.toContainElement(pendingRow)
+  })
+
+  it("renders an existing ticket immediately, without the entrance", () => {
+    const { container } = renderChat({
+      threadKey: "t1",
+      messages: [storedWelcome, storedNote, message("m1", { createdAt: at(15, 9, 42) })],
+    })
+    expect(screen.getByRole("separator")).toBeInTheDocument()
+    expect(screen.getByText("Welcome to Acme's support chat.")).toBeInTheDocument()
+    expect(screen.getByText("message m1")).toBeInTheDocument()
+    expect(container.querySelector(".animate-enter")).toBeNull()
+
+    act(() => {
+      vi.advanceTimersByTime(FIRST_OPEN_DELAY_MS * 2)
+    })
+    expect(container.querySelector(".animate-enter")).toBeNull()
+  })
+
+  it("keeps a system row that directly follows the start note out of the openers", () => {
+    const payment = message("p1", {
+      senderType: "system",
+      senderId: null,
+      isAutomatic: true,
+      createdAt: at(15, 9, 42),
+      content: "Payment hold authorized.",
+    })
+    const { container } = renderChat({ threadKey: "t1", messages: [storedWelcome, storedNote, payment] })
+    const wrapper = openers(container) as HTMLElement
+    expect(within(wrapper).getByText("You are not charged anything before you confirm.")).toBeInTheDocument()
+    expect(wrapper).not.toContainElement(screen.getByText("Payment hold authorized."))
+  })
+
+  it("shows everything at once when a first-open thread turns out to be an existing ticket", () => {
+    const { container, rerenderChat } = renderChat({ firstOpenEntrance: true, intro, messages: [] })
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument()
+    // E.g. a guest's open ticket is resumed before the delay has passed.
+    rerenderChat({ firstOpenEntrance: false, messages: [storedWelcome, storedNote, message("m1", { createdAt: at(15, 9, 42) })] })
+    expect(screen.getByText("Welcome to Acme's support chat.")).toBeInTheDocument()
+    expect(screen.getByText("message m1")).toBeInTheDocument()
+    expect(container.querySelector(".animate-enter")).toBeNull()
+  })
+
+  it("skips the delay and the animation under prefers-reduced-motion", () => {
+    mockReducedMotion(true)
+    const { container } = renderChat({ firstOpenEntrance: true, intro, messages: [] })
+    expect(screen.getByRole("separator")).toBeInTheDocument()
+    expect(screen.getByTestId("intro")).toBeInTheDocument()
+    expect(openers(container)).not.toHaveClass("animate-enter")
+
+    act(() => {
+      vi.advanceTimersByTime(FIRST_OPEN_DELAY_MS * 2)
+    })
+    expect(openers(container)).not.toHaveClass("animate-enter")
   })
 })

@@ -134,35 +134,63 @@ describe("buildThreadRows", () => {
     expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, true, true])
   })
 
+  it("treats the stored welcome row as a group start and automatic rows as group breaks", () => {
+    const rows = buildThreadRows(
+      [
+        msg("welcome", at(15, 10, 17), { senderType: "system", senderId: null, kind: "welcome", isAutomatic: true }),
+        msg("start-note", at(15, 10, 17), { senderType: "system", senderId: null, isAutomatic: true }),
+        msg("a", at(15, 10, 17)),
+        msg("auto-reply", at(15, 10, 17), { senderType: "system", senderId: null, isAutomatic: true }),
+        msg("b", at(15, 10, 18)),
+        msg("c", at(15, 10, 19)),
+      ],
+      NOW,
+    )
+    expect(rows.map((r) => r.showDayDivider)).toEqual(["Sunday 15 November", null, null, null, null, null])
+    // The auto-reply sits between a and b, so b starts a new group; c joins b.
+    expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, true, true, false])
+  })
+
+  it("breaks groups on the welcome kind and the automatic flag alone, whatever the sender", () => {
+    const rows = buildThreadRows(
+      [
+        msg("a", at(15, 10, 17)),
+        msg("welcome", at(15, 10, 17), { kind: "welcome" }),
+        msg("b", at(15, 10, 18)),
+        msg("auto", at(15, 10, 18), { isAutomatic: true }),
+        msg("c", at(15, 10, 19)),
+      ],
+      NOW,
+    )
+    expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, true, true])
+  })
+
   it("lets undated items inherit the neighbouring day without a divider of their own", () => {
     const rows = buildThreadRows(
       [
-        msg("welcome", undefined, { senderType: "system", senderId: null }),
         msg("system-claimed", undefined, { senderType: "system", senderId: "h1", kind: "claimed" }),
+        msg("pending-first", undefined),
         msg("a", at(15, 10, 17)),
-        msg("auto-reply", undefined, { senderType: "system", senderId: null }),
         msg("b", at(15, 10, 18)),
         msg("c", at(16, 9, 0)),
         msg("session-summary", undefined, { senderType: "system", senderId: null }),
       ],
       NOW,
     )
-    // The welcome row takes the first dated message's day, not "Today".
+    // The undated rows at the top take the first dated message's day, not "Today".
     expect(rows.map((r) => r.showDayDivider)).toEqual([
       "Sunday 15 November",
-      null,
       null,
       null,
       null,
       "Monday 16 November",
       null,
     ])
-    // The auto-reply sits between a and b, so b starts a new group.
-    expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, true, true, true, true])
+    expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, false, true, true])
   })
 
   it("falls back to today when nothing in the thread is dated", () => {
-    const rows = buildThreadRows([msg("welcome", undefined, { senderType: "system", senderId: null })], NOW)
+    const rows = buildThreadRows([msg("session-summary", undefined, { senderType: "system", senderId: null })], NOW)
     expect(rows[0].showDayDivider).toBe("Today")
   })
 

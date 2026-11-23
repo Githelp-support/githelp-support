@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import {
+    AUTOMATIC_MESSAGE_COLUMNS,
+    hasUnreadMessage,
+    isAutomaticMessage,
+    summarizeTicketMessages,
+} from "@/lib/ticket-message-summary";
 
 export type HelperRecentTicketStatus = "Completed" | "Claimed" | "Unclaimed";
 
@@ -16,7 +22,8 @@ export interface HelperRecentTicketInteraction {
     message_count: number;
     /**
      * Same rule as the helper chat sidebar: the newest non-deleted message
-     * differs from this helper's participant `last_read_message_id`.
+     * (welcome, start note and auto-reply rows aside) differs from this
+     * helper's participant `last_read_message_id`.
      */
     has_unread: boolean;
     /** ISO timestamp of the helper's most recent interaction with the ticket. */
@@ -69,10 +76,10 @@ export async function fetchHelperTicketsByLastInteraction(userId: string): Promi
     ranked: RankedHelperTicket[];
     participantByTicket: Map<string, ParticipantRow>;
 }> {
-    // (a) messages the helper sent.
+    // (a) messages the helper sent (never the server-written automatic rows).
     const { data: messages, error: messagesError } = await supabase
         .from("tickets_messages")
-        .select("ticket_id, created_at")
+        .select(`ticket_id, created_at, ${AUTOMATIC_MESSAGE_COLUMNS}`)
         .eq("sender_id", userId)
         .is("deleted_at", null);
     if (messagesError) throw messagesError;
@@ -95,7 +102,9 @@ export async function fetchHelperTicketsByLastInteraction(userId: string): Promi
     const lastInteraction = new Map<string, number>();
     const participantByTicket = new Map<string, ParticipantRow>();
 
-    (messages || []).forEach((m: any) => bump(lastInteraction, m.ticket_id, m.created_at));
+    (messages || []).forEach((m: any) => {
+        if (!isAutomaticMessage(m)) bump(lastInteraction, m.ticket_id, m.created_at);
+    });
     ((participants || []) as unknown as ParticipantRow[]).forEach((p) => {
         participantByTicket.set(p.ticket_id, p);
         bump(lastInteraction, p.ticket_id, p.created_at);
@@ -182,18 +191,14 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
 
             // Non-deleted messages, oldest first: gives both the message count and
             // the last message id per ticket (same rule as the helper sidebar).
+            // The welcome, start note and auto-reply rows count for neither.
             const { data: messageRows } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, created_at")
+                .select(`id, ticket_id, created_at, ${AUTOMATIC_MESSAGE_COLUMNS}`)
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
-            const countsMap = new Map<string, number>();
-            const lastMessageIdByTicket = new Map<string, string>();
-            messageRows?.forEach((msg: any) => {
-                countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
-                lastMessageIdByTicket.set(msg.ticket_id, msg.id);
-            });
+            const summaryByTicket = summarizeTicketMessages(messageRows);
 
             // Any claimed participant (this helper or someone else) means "Claimed".
             const { data: claimedParticipants } = await supabase
@@ -233,9 +238,8 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                 const status: HelperRecentTicketStatus =
                     ticket.status === "completed" ? "Completed" : isClaimed ? "Claimed" : "Unclaimed";
 
-                const lastMessageId = lastMessageIdByTicket.get(ticket.id) ?? null;
-                const lastRead = participant?.last_read_message_id ?? null;
-                const has_unread = lastMessageId != null && lastRead !== lastMessageId;
+                const summary = summaryByTicket.get(ticket.id);
+                const has_unread = hasUnreadMessage(summary, participant?.last_read_message_id);
 
                 return {
                     id: ticket.id,
@@ -245,7 +249,7 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                     project_logo_url: branding?.logo_url ?? project?.logo_url ?? null,
                     status,
                     creator,
-                    message_count: countsMap.get(ticket.id) || 0,
+                    message_count: summary?.count ?? 0,
                     has_unread,
                     last_interaction_at: new Date(ms).toISOString(),
                 };

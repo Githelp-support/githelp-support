@@ -209,6 +209,8 @@ export type Database = {
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
                     success: boolean;
+                    /** Prices (in cents) the customer was shown when the ticket was opened; billing and the stored welcome message use these, not the live project settings. */
+                    pricing_snapshot: Record<string, number> | null;
                     /** Opened by an anonymous (not signed-in) visitor; cleared when they sign in. Read-only for clients. */
                     guest: boolean;
                 };
@@ -237,6 +239,8 @@ export type Database = {
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
                     success: boolean;
+                    /** Prices (in cents) the customer was shown when the ticket was opened; billing and the stored welcome message use these, not the live project settings. */
+                    pricing_snapshot: Record<string, number> | null;
                 }>;
                 Update: Partial<{
                     id: string;
@@ -263,6 +267,8 @@ export type Database = {
                     priority: "low" | "medium" | "high";
                     sla_id: string | null;
                     success: boolean;
+                    /** Prices (in cents) the customer was shown when the ticket was opened; billing and the stored welcome message use these, not the live project settings. */
+                    pricing_snapshot: Record<string, number> | null;
                 }>;
             };
             projects_helpers: {
@@ -395,6 +401,8 @@ export type Database = {
                     deleted_at: string | null;
                     updated_at: string;
                     metadata: Record<string, unknown> | null;
+                    /** Written by the server (welcome, start note, auto-reply and every other system message); clients cannot set it. */
+                    is_automatic: boolean;
                 };
                 Insert: Partial<{
                     id: string;
@@ -407,6 +415,8 @@ export type Database = {
                     deleted_at: string | null;
                     updated_at: string;
                     metadata: Record<string, unknown> | null;
+                    /** Written by the server (welcome, start note, auto-reply and every other system message); clients cannot set it. */
+                    is_automatic: boolean;
                 }>;
                 Update: Partial<{
                     id: string;
@@ -419,6 +429,8 @@ export type Database = {
                     deleted_at: string | null;
                     updated_at: string;
                     metadata: Record<string, unknown> | null;
+                    /** Written by the server (welcome, start note, auto-reply and every other system message); clients cannot set it. */
+                    is_automatic: boolean;
                 }>;
             };
             users: {
