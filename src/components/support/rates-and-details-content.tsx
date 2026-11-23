@@ -36,7 +36,7 @@ export function RatesAndDetailsContent({
 
         {isFree && (
           <p className="text-sm text-text-secondary mb-6">
-            {projectName} offers support for free — you won&apos;t be charged and no payment method is needed.
+            {projectName} offers support for free - no payment method needed.
           </p>
         )}
 

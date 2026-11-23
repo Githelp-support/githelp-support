@@ -31,7 +31,7 @@ function isStoredWelcome(msg: { sender_type: string; metadata?: Record<string, u
 }
 
 /** The disclaimer stored for a free ticket; the intro already carries its sentence. */
-function isFreeWelcomeDisclaimer(metadata: Record<string, unknown> | null | undefined): boolean {
+export function isFreeWelcomeDisclaimer(metadata: Record<string, unknown> | null | undefined): boolean {
     return metadata?.kind === "welcome_disclaimer" && metadata?.is_free === true;
 }
 

@@ -55,7 +55,7 @@ import {
   endAbandonedGuestTicketErrorAction,
   ticketCreatorDisplayName,
 } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy, isGuestAbandoned, storedWelcomeIntro } from "@/lib/customer-chat-messages"
+import { helperSystemMessageCopy, isFreeWelcomeDisclaimer, isGuestAbandoned, storedWelcomeIntro } from "@/lib/customer-chat-messages"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import { useQueryClient } from "@tanstack/react-query"
 import { GuestName } from "@/components/ui/guest-name"
@@ -477,7 +477,10 @@ export default function TicketDetailPage() {
     }
     if (!messagesData) return list
     return list.concat(
-      messagesData.map((msg): Message => ({
+      messagesData
+        // A free ticket's intro already says it is free; its stored disclaimer would repeat it.
+        .filter((msg) => !(msg.sender_type === "system" && isFreeWelcomeDisclaimer(msg.metadata as Record<string, unknown> | null)))
+        .map((msg): Message => ({
         id: msg.id,
         sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
         // The stored payment_authorized / payment_required texts are worded for the customer; helpers/admins get their own.
