@@ -11,21 +11,33 @@
 /** `metadata.kind` of the rows the server writes for the customer. */
 export const AUTOMATIC_MESSAGE_KINDS: ReadonlySet<string> = new Set(["welcome", "start_note", "auto_reply"]);
 
-/** The columns the rule reads; select `is_automatic, metadata` alongside your own. */
-export const AUTOMATIC_MESSAGE_COLUMNS = "is_automatic, metadata";
+/**
+ * The columns the rule reads; select them alongside your own. Deliberately
+ * not `is_automatic`: that column only exists once migration
+ * 20261123120000_ticket_welcome_messages is applied, and selecting a missing
+ * column fails the whole query (previews, counts and unread dots would go
+ * blank on a database that is one migration behind).
+ */
+export const AUTOMATIC_MESSAGE_COLUMNS = "sender_type, sender_id, metadata";
 
 type AutomaticFields = {
     is_automatic?: boolean | null;
+    sender_type?: string | null;
+    sender_id?: string | null;
     metadata?: Record<string, unknown> | null;
 };
 
 /**
- * A server-written welcome, start note or auto-reply. Keys on `is_automatic`
- * (which clients cannot set) and the kind, so the other system messages
+ * A server-written welcome, start note or auto-reply. "Server-written" is
+ * `is_automatic` when the row carries it (clients cannot set it), otherwise a
+ * system row without a sender (a client insert always has `sender_id =
+ * auth.uid()`). The kind must match too, so the other system messages
  * (payments, time logged, guest notices) still count.
  */
 export function isAutomaticMessage(row: AutomaticFields): boolean {
-    if (!row.is_automatic) return false;
+    const serverWritten =
+        row.is_automatic != null ? row.is_automatic : row.sender_type === "system" && row.sender_id == null;
+    if (!serverWritten) return false;
     const kind = row.metadata?.kind;
     return typeof kind === "string" && AUTOMATIC_MESSAGE_KINDS.has(kind);
 }

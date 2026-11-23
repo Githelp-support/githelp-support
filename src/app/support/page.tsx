@@ -160,7 +160,7 @@ export default function SupportPage() {
   const retryPayment = useRetryTicketPayment()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
-  const { data: messagesData } = useTicketMessages(ticketId)
+  const { data: messagesData, isError: messagesFailed } = useTicketMessages(ticketId)
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
   const { data: liveTicket } = useTicket(ticketId)
@@ -333,7 +333,8 @@ export default function SupportPage() {
         rates: formatTicketRates(effectivePricing),
         isFree: isFreeSupport(effectivePricing),
         avgResponseSeconds,
-        whileLoading: ticketId !== resumedTicketId,
+        // …and when the messages could not be loaded at all.
+        whileLoading: ticketId !== resumedTicketId || messagesFailed,
       },
     })
     // A guest ticket closed because the visitor left carries its own
@@ -369,6 +370,7 @@ export default function SupportPage() {
     welcomeMessageContent,
     effectivePricing,
     avgResponseSeconds,
+    messagesFailed,
     ticketId,
     resumedTicketId,
     slaId,

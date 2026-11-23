@@ -49,7 +49,19 @@ import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
 import { ClaimTicketButton, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy, isThreadOpener, parseStoredWelcome, type StoredWelcome } from "@/lib/customer-chat-messages"
+import {
+  buildAutoReply,
+  FALLBACK_AUTO_REPLY_ID,
+  FALLBACK_START_NOTE_ID,
+  FALLBACK_WELCOME_ID,
+  helperSystemMessageCopy,
+  isThreadOpener,
+  parseStoredWelcome,
+  START_NOTE,
+  START_NOTE_FREE,
+  type StoredWelcome,
+} from "@/lib/customer-chat-messages"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { WelcomeMessage } from "@/components/ticket-chat/welcome-message"
 import { GuestName } from "@/components/ui/guest-name"
 import { guestLabel } from "@/lib/guest-label"
@@ -103,7 +115,7 @@ interface Message {
   hasDeclines?: boolean
   /** Raw `metadata` of the persisted message (read by `TimeReviewSystemMessage`). */
   metadata?: TimeReviewMessageMetadata
-  /** Stored welcome row (`metadataKind: "welcome"`): what it saved when the ticket was opened. */
+  /** Welcome row (`metadataKind: "welcome"`): what the stored row saved when the ticket was opened, or its stand-in. */
   welcome?: StoredWelcome
 }
 
@@ -204,6 +216,8 @@ export default function TicketDetailPage() {
   const { data: project } = useProject(projectId)
   // Logo and fallback colour of the stored welcome row's project avatar.
   const { data: branding } = useProjectBranding(projectId)
+  // Only for the stand-in auto-reply of a ticket that has no stored one.
+  const { data: avgResponseSeconds } = useProjectAverageResponseTime(projectId)
   // Publish the sidebar's "Open project page" link for the ticket's project.
   useSetProjectPageHref(
     project?.slug
@@ -426,6 +440,28 @@ export default function TicketDetailPage() {
   const canClaim = !!currentUser?.id && !isClaimed && !isTicketEnded && !isTicketCreator
   const canChat = !isTicketEnded && !!currentUser?.id
 
+  // What a stand-in welcome shows: the ticket's own snapshot when it has one
+  // (the prices it is billed at), the project's settings only when it has none.
+  const ticketCreatedAt = ticket?.created_at ?? null
+  const welcomeProjectName = project?.name?.trim() || null
+  const welcomePricing = pricingSnapshot ?? paymentSettings
+  const welcomeIsFree = isFreeSupport(welcomePricing)
+  const welcomeStartPrice = welcomePricing?.ticket_start_price
+  const welcomeFirst60 = welcomePricing?.ticket_price_minute_first_60
+  const welcomeAfter60 = welcomePricing?.ticket_price_minute_after_60
+  const hasWelcomePricing = !!welcomePricing
+  const welcomeRates = useMemo(
+    () =>
+      hasWelcomePricing
+        ? formatTicketRates({
+            ticket_start_price: welcomeStartPrice,
+            ticket_price_minute_first_60: welcomeFirst60,
+            ticket_price_minute_after_60: welcomeAfter60,
+          })
+        : null,
+    [hasWelcomePricing, welcomeStartPrice, welcomeFirst60, welcomeAfter60],
+  )
+
   // Transform messages to UI format, in the order the customer sees them: the
   // stored welcome and start note open the thread, then the synthetic
   // "claimed" message (when the ticket is claimed), then everything else in
@@ -456,6 +492,49 @@ export default function TicketDetailPage() {
     const isOpener = (msg: NonNullable<typeof messagesData>[number]) =>
       isThreadOpener({ sender_type: msg.sender_type, metadata: msg.metadata as Record<string, unknown> | null })
     const list: Message[] = (messagesData ?? []).filter(isOpener).map(toMessage)
+
+    // A ticket without a stored welcome, start note or auto-reply (its
+    // database has no welcome triggers, or the rows are missing) still shows
+    // them, as the customer chat does (`buildCustomerThreadMessages`): the
+    // same stand-ins, at the ticket's creation time, from the ticket's
+    // snapshot rates. Only once the ticket and its messages have loaded, so a
+    // stored row is never preceded by its stand-in.
+    const standIns = !!ticketCreatedAt && messagesData !== undefined
+    const hasStoredKind = (kind: string) =>
+      (messagesData ?? []).some(
+        (m) => m.sender_type === "system" && (m.metadata as Record<string, unknown> | null)?.kind === kind,
+      )
+    const standIn = (id: string, kind: string, content: string, createdAt: string): Message => ({
+      id,
+      sender: "system",
+      content,
+      timestamp: formatDateTime(createdAt),
+      createdAt,
+      metadataKind: kind,
+    })
+    if (standIns && ticketCreatedAt) {
+      if (!hasStoredKind("start_note")) {
+        list.unshift(
+          standIn(FALLBACK_START_NOTE_ID, "start_note", welcomeIsFree ? START_NOTE_FREE : START_NOTE, ticketCreatedAt),
+        )
+      }
+      if (!hasStoredKind("welcome")) {
+        list.unshift({
+          ...standIn(
+            FALLBACK_WELCOME_ID,
+            "welcome",
+            `Welcome to ${welcomeProjectName ?? "our"}${welcomeProjectName ? "'s" : ""} support chat.\nAsk your question and someone from our team will try to help you, as soon as we can.`,
+            ticketCreatedAt,
+          ),
+          welcome: {
+            projectName: welcomeProjectName,
+            rates: welcomeIsFree ? null : welcomeRates,
+            isFree: welcomeIsFree,
+            freeText: null,
+          },
+        })
+      }
+    }
     const openers = list.length
     if (isClaimed && claimer) {
       list.push({
@@ -473,8 +552,20 @@ export default function TicketDetailPage() {
     ;(messagesData ?? []).forEach((msg) => {
       if (!isOpener(msg)) list.push(toMessage(msg))
     })
+    // The stand-in auto-reply sits right after the customer's first message.
+    if (standIns && !hasStoredKind("auto_reply")) {
+      const firstUserIndex = list.findIndex((m) => m.sender === "user")
+      const first = list[firstUserIndex]
+      if (first?.createdAt) {
+        list.splice(
+          firstUserIndex + 1,
+          0,
+          standIn(FALLBACK_AUTO_REPLY_ID, "auto_reply", buildAutoReply(avgResponseSeconds), first.createdAt),
+        )
+      }
+    }
     return { messages: list, openerCount: openers }
-  }, [messagesData, isClaimed, claimer])
+  }, [messagesData, isClaimed, claimer, ticketCreatedAt, welcomeProjectName, welcomeRates, welcomeIsFree, avgResponseSeconds])
   // The stored welcome already lists the ticket's rates (or says support is
   // free), so the "Info about issue" block doesn't repeat them.
   const welcomeShowsRates = messages.some((m) => !!m.welcome && (m.welcome.isFree || m.welcome.rates != null))

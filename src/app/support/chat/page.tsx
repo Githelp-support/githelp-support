@@ -339,7 +339,7 @@ export default function UserSupportChatPage() {
   const retryPayment = useRetryTicketPayment()
   const sendMessage = useSendMessage()
   const ensureParticipant = useEnsureParticipant()
-  const { data: messagesData } = useTicketMessages(ticketId)
+  const { data: messagesData, isError: messagesFailed } = useTicketMessages(ticketId)
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
 
@@ -496,7 +496,8 @@ export default function UserSupportChatPage() {
         rates: formatTicketRates(effectivePricing),
         isFree: isFreeSupport(effectivePricing),
         avgResponseSeconds,
-        whileLoading: !ticketIdParam || ticketIdParam === createdTicketId,
+        // …and when the messages could not be loaded at all.
+        whileLoading: !ticketIdParam || ticketIdParam === createdTicketId || messagesFailed,
       },
     })
     // A guest ticket closed because the visitor left carries its own
@@ -534,6 +535,7 @@ export default function UserSupportChatPage() {
     welcomeText,
     effectivePricing,
     avgResponseSeconds,
+    messagesFailed,
     ticketEnded,
     totalLoggedFormatted,
     slaCovered,
