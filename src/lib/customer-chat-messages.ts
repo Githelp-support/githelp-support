@@ -145,8 +145,9 @@ export interface PersistedTicketMessage {
 }
 
 /**
- * The stored rows written when a ticket is created (migration
- * 20261123120000_ticket_welcome_messages): `welcome` then `start_note`.
+ * The rows that open a ticket's thread: `welcome` then `start_note`, built in
+ * the browser (or, on a database with the optional backend migration
+ * 20261123120000_ticket_welcome_messages, stored rows of the same kinds).
  * They open the thread, ahead of the claimed banner and the first message
  * (in the customer chat and on the helper/admin ticket page alike).
  */

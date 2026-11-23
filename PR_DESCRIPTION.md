@@ -6,6 +6,21 @@ The welcome message is no longer expected to come from the backend. The browser 
 
 The two migrations on the backend branch `agent/slack-5d808efd-change-how-the-welcome-message-the-proje` (`20261123120000_ticket_welcome_messages.sql`, `20261123121000_backfill_ticket_welcome_messages.sql`) are not required and can be dropped. I did not touch the backend repository.
 
+## Backend migration: evaluated
+
+I read both migrations on `agent/slack-5d808efd-change-how-the-welcome-message-the-proje` and checked what this frontend needs from the database. Nothing in them is required:
+
+| Frontend dependency | Where it comes from |
+|---|---|
+| `tickets.pricing_snapshot` (the per-ticket rate snapshot) | Already on backend `main`: `20261025190000_launch_hardening.sql` adds the column, backfills it and fills it at insert |
+| `tickets_messages.metadata` (for `metadata.kind`) | Already on backend `main`: `20260611164416_tickets_messages_metadata.sql` |
+| `tickets_messages.is_automatic` | Only in the dropped migration. The frontend never selects it (selecting a missing column would fail the query) and only reads it when a row happens to carry it |
+| Welcome / start-note / auto-reply triggers, `format_response_duration`, the message guard changes and the backfill | Only in the dropped migrations. Not used: the browser builds these rows |
+
+Recommendation: close the backend PR without merging. Nothing needs adding or changing on backend `main` for this PR. If it is ever merged, the frontend still works: stored rows of the three kinds are shown instead of the browser-built ones, so they are never shown twice.
+
+Frontend follow-up from this check: `is_automatic` is now optional in `src/types/database.ts`, so the types no longer claim that column always exists, and the comments in `src/lib/ticket-message-summary.ts` and `src/lib/customer-chat-messages.ts` call that migration optional instead of required.
+
 ## What changed in this follow-up
 
 The browser-built welcome already existed as a stand-in for all three roles. One gap remained in the customer chat: between creating a ticket and the ticket query loading, the welcome, start note and first message were dated with the time the page was opened, not the ticket's creation time.
@@ -13,6 +28,7 @@ The browser-built welcome already existed as a stand-in for all three roles. One
 - `src/app/support/chat/page.tsx`, `src/app/support/page.tsx`: the `created_at` returned by the ticket insert is kept and used straight away, then replaced by the loaded ticket's (the same value). The welcome and start note are never dated with the page-open time once a ticket exists.
 - `src/lib/customer-chat-messages.ts`, `src/app/helper/tickets/[id]/page.tsx`: comments only, describing the browser-built rows as the intended mechanism.
 - `CLAUDE.md`: "Chat thread" paragraph rewritten to match.
+- `src/types/database.ts`: `tickets_messages.is_automatic` made optional (see above).
 
 ## How it works now
 

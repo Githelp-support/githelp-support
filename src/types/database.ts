@@ -401,8 +401,12 @@ export type Database = {
                     deleted_at: string | null;
                     updated_at: string;
                     metadata: Record<string, unknown> | null;
-                    /** Written by the server (welcome, start note, auto-reply and every other system message); clients cannot set it. */
-                    is_automatic: boolean;
+                    /**
+                     * Only on a database that has the optional backend migration
+                     * 20261123120000_ticket_welcome_messages (not required by this frontend;
+                     * never select it explicitly). Server-written; clients cannot set it.
+                     */
+                    is_automatic?: boolean;
                 };
                 Insert: Partial<{
                     id: string;
@@ -415,8 +419,12 @@ export type Database = {
                     deleted_at: string | null;
                     updated_at: string;
                     metadata: Record<string, unknown> | null;
-                    /** Written by the server (welcome, start note, auto-reply and every other system message); clients cannot set it. */
-                    is_automatic: boolean;
+                    /**
+                     * Only on a database that has the optional backend migration
+                     * 20261123120000_ticket_welcome_messages (not required by this frontend;
+                     * never select it explicitly). Server-written; clients cannot set it.
+                     */
+                    is_automatic?: boolean;
                 }>;
                 Update: Partial<{
                     id: string;
@@ -429,8 +437,12 @@ export type Database = {
                     deleted_at: string | null;
                     updated_at: string;
                     metadata: Record<string, unknown> | null;
-                    /** Written by the server (welcome, start note, auto-reply and every other system message); clients cannot set it. */
-                    is_automatic: boolean;
+                    /**
+                     * Only on a database that has the optional backend migration
+                     * 20261123120000_ticket_welcome_messages (not required by this frontend;
+                     * never select it explicitly). Server-written; clients cannot set it.
+                     */
+                    is_automatic?: boolean;
                 }>;
             };
             users: {

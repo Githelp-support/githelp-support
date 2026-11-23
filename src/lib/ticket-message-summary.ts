@@ -13,8 +13,9 @@ export const AUTOMATIC_MESSAGE_KINDS: ReadonlySet<string> = new Set(["welcome", 
 
 /**
  * The columns the rule reads; select them alongside your own. Deliberately
- * not `is_automatic`: that column only exists once migration
- * 20261123120000_ticket_welcome_messages is applied, and selecting a missing
+ * not `is_automatic`: that column only exists on a database with the optional
+ * backend migration 20261123120000_ticket_welcome_messages (not needed by this
+ * frontend and not planned for merge), and selecting a missing
  * column fails the whole query (previews, counts and unread dots would go
  * blank on a database that is one migration behind).
  */
