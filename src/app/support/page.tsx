@@ -838,6 +838,7 @@ export default function SupportPage() {
                   projectName={projectName}
                   resources={resources}
                   resourcesLoading={resourcesLoading}
+                  outlinedEmptyState
                 />
               )}
 
