@@ -37,8 +37,8 @@ export default function SignInPage() {
       const { data: { session } } = await supabase.auth.getSession()
       // An anonymous guest (public support chat) is NOT signed in: show the
       // options. This browser's own guest gets their guest session saved for
-      // adoption below (a foreign / planted guest never does); linking still
-      // needs the signed-in user's confirmation afterwards.
+      // adoption below (a foreign / planted guest never does); it is linked
+      // automatically after sign-in.
       if (hasSignedInSession(session)) {
         // Signed in elsewhere (another tab) while a guest session was saved.
         const adoption = await runGuestAdoptionFlow({ timeoutMs: 10_000 })
@@ -48,8 +48,7 @@ export default function SignInPage() {
       } else {
         // This browser's own guest continuing a support conversation (the
         // redirect is a support route): keep their guest session so the
-        // conversation can be linked after sign-in — confirmed by the user,
-        // naming the account. Not for other redirects (e.g. an AuthGuard
+        // conversation is linked automatically after sign-in. Not for other redirects (e.g. an AuthGuard
         // bounce on a shared computer: the next person must not inherit
         // it). An existing key keeps its 60-minute window.
         const guestId = hasGuestSession(session) ? session?.user?.id : undefined

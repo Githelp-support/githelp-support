@@ -19,7 +19,6 @@ vi.mock("@/lib/supabase/client", () => ({
 
 import { UserProvider, useUser } from "../user-context"
 import { GUEST_ADOPTION_KEY, OWN_GUEST_ID_KEY, saveOwnGuestId } from "@/lib/guest-adoption-storage"
-import { requestGuestAdoptionConfirm } from "@/lib/guest-adoption-confirm"
 
 const seen: { id?: string; guestId?: string } = {}
 function Probe() {
@@ -55,18 +54,6 @@ describe("UserProvider guest handling", () => {
     expect(window.localStorage.getItem(GUEST_ADOPTION_KEY)).toBeNull()
     expect(window.localStorage.getItem(OWN_GUEST_ID_KEY)).toBeNull()
     expect(window.localStorage.getItem("githelp.supportDraft:p1")).toBeNull()
-  })
-
-  it("SIGNED_OUT closes an open link dialog as superseded (not 'later')", async () => {
-    render(
-      <UserProvider>
-        <Probe />
-      </UserProvider>,
-    )
-    await waitFor(() => expect(authCallback).not.toBeNull())
-    const pending = requestGuestAdoptionConfirm([], "ada@example.com")
-    act(() => authCallback!("SIGNED_OUT", null))
-    await expect(pending).resolves.toBe("superseded")
   })
 
   it("a foreign anonymous session is not used as guestId (treated as no session)", async () => {

@@ -23,10 +23,9 @@ const isVisible = () => typeof document === "undefined" || document.visibilitySt
 /**
  * On the support pages, for a signed-in (real) user: finish a guest adoption
  * that didn't complete at sign-in (timeout / network / 5xx keep the saved key
- * for up to 60 minutes). Runs the shared flow (preview + confirmation, unless
- * already confirmed) while the tab is visible — a hidden tab never prompts;
- * it starts when the tab becomes visible — and every ~10 s while the key
- * exists, then refetches. After "ask me later" it stops until `linkNow()`.
+ * for up to 60 minutes). Runs the shared flow (preview + automatic link)
+ * while the tab is visible — it starts when the tab becomes visible — and
+ * every ~10 s while the key exists, then refetches.
  * No-op without a saved key.
  */
 export function useGuestAdoptionRetry(
