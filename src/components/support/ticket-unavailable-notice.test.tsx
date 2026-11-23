@@ -25,6 +25,23 @@ describe("TicketUnavailableNotice", () => {
     expect(screen.queryByRole("link", { name: "Start a new conversation" })).not.toBeInTheDocument()
   })
 
+  it("guestExpired: says the guest conversation is no longer available and offers a new one", () => {
+    render(
+      <TicketUnavailableNotice linking={false} failedFinal={false} guestExpired newConversationHref="/support/chat?project=p1" />,
+    )
+    expect(screen.getByRole("heading", { name: "This conversation is no longer available" })).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Guest conversations can be re-opened for 30 minutes after you leave. Start a new conversation to get help.",
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Start a new conversation" })).toHaveAttribute(
+      "href",
+      "/support/chat?project=p1",
+    )
+    expect(screen.queryByText("Ticket not found")).not.toBeInTheDocument()
+  })
+
   it("offers a new conversation after a definitive refusal", () => {
     render(<TicketUnavailableNotice linking={false} failedFinal newConversationHref="/support/chat?project=p1" />)
     expect(screen.getByRole("link", { name: "Start a new conversation" })).toHaveAttribute(

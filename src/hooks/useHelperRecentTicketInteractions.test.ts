@@ -97,6 +97,11 @@ function setupSupabase(fx: Fixture) {
                     const value = row[f.col];
                     if (f.op === "eq") return value === f.val;
                     if (f.op === "is") return value === f.val || (f.val === null && value === undefined);
+                    if (f.op === "or") {
+                        // Only the abandoned-guest-ticket filter is modelled here.
+                        if (f.col !== "guest.eq.false,status.neq.cancelled") throw new Error(`unexpected or(): ${f.col}`);
+                        return !(row.guest === true) || row.status !== "cancelled";
+                    }
                     if (f.op === "in") return (f.val as unknown[]).includes(value);
                     return true;
                 })
@@ -119,6 +124,7 @@ function setupSupabase(fx: Fixture) {
         builder.eq = chain("eq");
         builder.is = chain("is");
         builder.in = chain("in");
+        builder.or = chain("or");
         builder.order = (col: string, opts?: { ascending?: boolean }) => {
             order = { col, ascending: opts?.ascending !== false };
             return builder;
@@ -328,6 +334,32 @@ describe("useHelperRecentTicketInteractions", () => {
 
         const data = await renderRecent();
         expect(data.map((d) => d.id)).toEqual(["t-live"]);
+    });
+
+    it("leaves out abandoned guest tickets but keeps adopted and open guest tickets", async () => {
+        setupSupabase({
+            tickets: [
+                // Cancelled by the cleanup cron while still a guest ticket.
+                ticket("t-abandoned", {
+                    guest: true,
+                    status: "cancelled",
+                    cancelled_at: "2026-01-09T00:30:00.000Z",
+                }),
+                // Adopted before it was cancelled: a normal cancelled ticket.
+                ticket("t-adopted", { guest: false, status: "cancelled" }),
+                // Guest still inside the window.
+                ticket("t-open-guest", { guest: true, status: "claimed" }),
+            ],
+            messages: [
+                message("m1", "t-abandoned", "2026-01-09T00:00:00.000Z", { sender_id: HELPER_USER }),
+                message("m2", "t-adopted", "2026-01-05T00:00:00.000Z", { sender_id: HELPER_USER }),
+                message("m3", "t-open-guest", "2026-01-03T00:00:00.000Z", { sender_id: HELPER_USER }),
+            ],
+            participants: [participant("t-abandoned")],
+        });
+
+        const data = await renderRecent();
+        expect(data.map((d) => d.id)).toEqual(["t-adopted", "t-open-guest"]);
     });
 
     it("derives status, creator, project details and message_count", async () => {

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { isAbandonedGuestTicket } from "@/lib/guest-ticket-filters"
 import type { PaymentRowStatus, UserPaymentRecord } from "@/lib/user-payment-reports"
 import { normalizeTransferStatus } from "@/lib/helper-payout-reports"
 
@@ -78,7 +79,7 @@ export function usePayments(projectId?: string) {
     queryFn: async () => {
       let query = supabase
         .from("payments")
-        .select("*, ticket:tickets(id, title, status, completed_at, cancelled_at)")
+        .select("*, ticket:tickets(id, title, status, guest, completed_at, cancelled_at)")
         .order("created_at", { ascending: false })
 
       if (projectId) {
@@ -87,7 +88,8 @@ export function usePayments(projectId?: string) {
 
       const { data, error } = await query
       if (error) throw error
-      return (data || []) as Payment[]
+      // Admin reports: rows of abandoned guest tickets are never listed.
+      return ((data || []) as Payment[]).filter((payment) => !isAbandonedGuestTicket((payment as any).ticket))
     },
     enabled: !!projectId,
     retry: false,
@@ -120,6 +122,7 @@ export function usePaymentTransfers(filters?: {
             id,
             title,
             status,
+            guest,
             completed_at,
             cancelled_at,
             sla:slas(name),
@@ -146,8 +149,9 @@ export function usePaymentTransfers(filters?: {
       const { data, error } = await query
       if (error) throw error
 
-      // Transform nested data (many-to-one embeds are objects, not arrays)
-      return (data || []).map((transfer: any) => {
+      // Transform nested data (many-to-one embeds are objects, not arrays).
+      // Helper/admin reports: rows of abandoned guest tickets are never listed.
+      return (data || []).filter((transfer: any) => !isAbandonedGuestTicket(transfer.ticket)).map((transfer: any) => {
         const rawHelper = transfer.helper
         const helper = rawHelper == null
           ? null

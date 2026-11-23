@@ -611,6 +611,16 @@ export type Database = {
                 Args: { p_ticket_id?: string | null };
                 Returns: undefined;
             };
+            /** The guest left the chat: marks the caller's own open guest ticket, or all of them when called without an id. */
+            leave_guest_ticket: {
+                Args: { p_ticket_id?: string };
+                Returns: undefined;
+            };
+            /** Ends a guest ticket whose guest has left and not come back. */
+            end_abandoned_guest_ticket: {
+                Args: { p_ticket_id: string };
+                Returns: undefined;
+            };
         };
     };
 };

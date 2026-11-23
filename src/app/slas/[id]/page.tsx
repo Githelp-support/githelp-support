@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/layout/header"
 import { useSLA } from "@/hooks/useSLAs"
 import { supabase } from "@/lib/supabase/client"
+import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters"
 import { getAvatarColorHexForId, ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
@@ -81,12 +82,13 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
   const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
     queryKey: ["sla-tickets", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tickets")
-        .select("*, tickets_time_entries(*), tickets_participants(*)")
-        .eq("sla_id", id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
+      const { data, error } = await excludeAbandonedGuestTickets(
+        supabase
+          .from("tickets")
+          .select("*, tickets_time_entries(*), tickets_participants(*)")
+          .eq("sla_id", id)
+          .is("deleted_at", null)
+      ).order("created_at", { ascending: false })
       if (error) throw error
       // Entries the customer declined are not billed and don't consume SLA minutes.
       return ((data ?? []) as TicketRow[]).map((t) => ({

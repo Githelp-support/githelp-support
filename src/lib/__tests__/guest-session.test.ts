@@ -2,7 +2,13 @@ import { describe, it, expect, vi } from "vitest"
 
 vi.mock("@/lib/supabase/client", () => ({ supabase: {} }))
 
-import { ensureSupportSession, findGuestOpenTicket, findOpenTicket, isOwnGuestSession } from "../guest-session"
+import {
+  ensureSupportSession,
+  findGuestOpenTicket,
+  findOpenTicket,
+  findResumableGuestTicket,
+  isOwnGuestSession,
+} from "../guest-session"
 
 function client(session: unknown, anon: { data: unknown; error: unknown } = { data: { user: null }, error: null }) {
   return {
@@ -123,6 +129,54 @@ describe("findGuestOpenTicket", () => {
     await expect(findOpenTicket("u1", "p1", {}, client as never)).resolves.toEqual({ id: "t9", project_id: "p1" })
     expect(calls).toContainEqual(["eq", "created_by", "u1"])
     expect(calls).not.toContainEqual(["eq", "guest", true])
+  })
+})
+
+describe("findResumableGuestTicket (a guest coming back within 30 minutes)", () => {
+  it("waits for touch_guest_ticket before the lookup, so the reopened ticket is found as open", async () => {
+    // The ticket is 'cancelled' (visitor left) until the touch has reopened it.
+    let reopened = false
+    const { client, from, calls } = ticketsClient({ data: [{ id: "t1", project_id: "p1" }], error: null })
+    const touch = vi.fn(async () => {
+      expect(from).not.toHaveBeenCalled()
+      await new Promise((r) => setTimeout(r, 5))
+      reopened = true
+    })
+    from.mockImplementationOnce(() => {
+      expect(reopened).toBe(true)
+      return from.getMockImplementation()!()
+    })
+    await expect(findResumableGuestTicket("g1", "p1", touch, client as never)).resolves.toEqual({
+      id: "t1",
+      project_id: "p1",
+    })
+    expect(touch).toHaveBeenCalledTimes(1)
+    // Still only open tickets: the backend flips the status, not the filter.
+    expect(calls).toContainEqual(["eq", "guest", true])
+    expect(calls).toContainEqual(["not", "status", "in", "(completed,cancelled)"])
+  })
+
+  it("is null when the ticket stayed out of reach (more than 30 minutes, or deleted)", async () => {
+    const { client } = ticketsClient({ data: [], error: null })
+    await expect(findResumableGuestTicket("g1", "p1", async () => undefined, client as never)).resolves.toBeNull()
+  })
+
+  it("a failed touch never blocks the lookup", async () => {
+    const { client } = ticketsClient({ data: [{ id: "t1", project_id: "p1" }], error: null })
+    const touch = vi.fn().mockRejectedValue(new Error("network"))
+    await expect(findResumableGuestTicket("g1", "p1", touch, client as never)).resolves.toEqual({
+      id: "t1",
+      project_id: "p1",
+    })
+  })
+
+  it("skips touch and lookup without ids", async () => {
+    const { client, from } = ticketsClient({ data: [], error: null })
+    const touch = vi.fn()
+    await expect(findResumableGuestTicket("", "p1", touch, client as never)).resolves.toBeNull()
+    await expect(findResumableGuestTicket("g1", "", touch, client as never)).resolves.toBeNull()
+    expect(touch).not.toHaveBeenCalled()
+    expect(from).not.toHaveBeenCalled()
   })
 })
 

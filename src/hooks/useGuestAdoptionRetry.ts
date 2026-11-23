@@ -12,6 +12,8 @@ export interface GuestAdoptionRetryState {
   deferred: boolean
   /** The last attempt was a definitive refusal (4xx): nothing more will happen. */
   failedFinal: boolean
+  /** The guest conversation expired or was deleted before it could be linked (final). */
+  unavailable: boolean
   /** "Link conversation": run the flow now, asking even after "later". */
   linkNow: () => void
 }
@@ -36,6 +38,7 @@ export function useGuestAdoptionRetry(
   const [linking, setLinking] = useState(() => enabled && readSavedGuestSession() != null)
   const [deferred, setDeferred] = useState(false)
   const [failedFinal, setFailedFinal] = useState(false)
+  const [unavailable, setUnavailable] = useState(false)
   const navigateRef = useRef(navigate)
   useEffect(() => {
     navigateRef.current = navigate
@@ -71,6 +74,8 @@ export function useGuestAdoptionRetry(
           void queryClient.invalidateQueries()
         }
         if (result.status === "failed" && !result.retryable) setFailedFinal(true)
+        // The conversation expired or was deleted: final, nothing to retry.
+        if ((result.status === "none" || result.status === "failed") && result.unavailable) setUnavailable(true)
         const here = typeof window !== "undefined" ? window.location.pathname + window.location.search : null
         const landing = landingAfterGuestAdoption(result, here)
         if (landing && navigateRef.current) navigateRef.current(landing)
@@ -113,5 +118,5 @@ export function useGuestAdoptionRetry(
     void attemptRef.current?.(true)
   }, [])
 
-  return { linking: enabled && linking, deferred: enabled && deferred, failedFinal, linkNow }
+  return { linking: enabled && linking, deferred: enabled && deferred, failedFinal, unavailable, linkNow }
 }

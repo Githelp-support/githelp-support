@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
+import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
 import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 
@@ -109,14 +110,15 @@ export function useHelperClaimedTicketsSidebar(
                 currentTicketId &&
                 !tickets.some((t) => t.id === currentTicketId)
             ) {
-                const { data: currentTicket } = await supabase
-                    .from("tickets")
-                    .select(
-                        "id, title, description, created_at, updated_at, created_by, project_id, status"
-                    )
-                    .eq("id", currentTicketId)
-                    .is("deleted_at", null)
-                    .maybeSingle();
+                const { data: currentTicket } = await excludeAbandonedGuestTickets(
+                    supabase
+                        .from("tickets")
+                        .select(
+                            "id, title, description, created_at, updated_at, created_by, project_id, status"
+                        )
+                        .eq("id", currentTicketId)
+                        .is("deleted_at", null)
+                ).maybeSingle();
                 if (currentTicket) {
                     tickets = [currentTicket as SidebarTicketRow, ...tickets];
                 }
@@ -268,14 +270,15 @@ export function useAdminActiveTicketsSidebar(
                 currentTicketId &&
                 !tickets.some((t) => t.id === currentTicketId)
             ) {
-                const { data: currentTicket } = await supabase
-                    .from("tickets")
-                    .select(
-                        "id, title, description, created_at, updated_at, created_by, project_id, status"
-                    )
-                    .eq("id", currentTicketId)
-                    .is("deleted_at", null)
-                    .maybeSingle();
+                const { data: currentTicket } = await excludeAbandonedGuestTickets(
+                    supabase
+                        .from("tickets")
+                        .select(
+                            "id, title, description, created_at, updated_at, created_by, project_id, status"
+                        )
+                        .eq("id", currentTicketId)
+                        .is("deleted_at", null)
+                ).maybeSingle();
                 if (currentTicket) {
                     tickets = [currentTicket as SidebarTicketRow, ...tickets];
                 }
@@ -441,6 +444,9 @@ export function useHelperTickets(helperId: string, projectId?: string) {
             if (projectId) {
                 ticketsQuery = ticketsQuery.eq("project_id", projectId);
             }
+
+            // Helper/admin list: never show abandoned guest tickets.
+            ticketsQuery = excludeAbandonedGuestTickets(ticketsQuery);
 
             const { data: ticketsData, error: ticketsError } =
                 await ticketsQuery;

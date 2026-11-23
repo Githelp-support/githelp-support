@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase/client"
+import { isAbandonedGuestTicket } from "@/lib/guest-ticket-filters"
 import { ticketClosedAt } from "@/lib/helper-payout-reports"
 
 export interface HelperTimeEntry {
@@ -33,7 +34,7 @@ export function useHelperTimeEntries(helperId?: string | null, projectId?: strin
       if (!helperId) return []
       let query = supabase
         .from("tickets_time_entries")
-        .select("id, ticket_id, helper_id, type, time_milliseconds, date, created_at, review_status, ticket:tickets!inner(project_id, status, completed_at, cancelled_at)")
+        .select("id, ticket_id, helper_id, type, time_milliseconds, date, created_at, review_status, ticket:tickets!inner(project_id, status, guest, completed_at, cancelled_at)")
         .eq("helper_id", helperId)
         .order("date", { ascending: false })
       if (projectId) {
@@ -42,6 +43,8 @@ export function useHelperTimeEntries(helperId?: string | null, projectId?: strin
       const { data, error } = await query
       if (error) throw error
       return (data || [])
+        // Time on an abandoned guest ticket never shows up in helper reports.
+        .filter((row: any) => !isAbandonedGuestTicket(row.ticket))
         .map((row: any) => {
           const { ticket, ...entry } = row
           return { ...entry, ticket_closed_at: ticketClosedAt(ticket) } as HelperTimeEntry

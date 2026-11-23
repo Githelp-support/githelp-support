@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
 import type { Database } from "@/types/database";
 
 type Ticket = Database["public"]["Tables"]["tickets"]["Row"];
@@ -19,6 +20,9 @@ export function useTickets(projectId?: string) {
             if (projectId) {
                 query = query.eq("project_id", projectId);
             }
+
+            // Helper/admin list: never show abandoned guest tickets.
+            query = excludeAbandonedGuestTickets(query);
 
             const { data, error } = await query;
 

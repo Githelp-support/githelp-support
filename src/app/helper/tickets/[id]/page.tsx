@@ -48,8 +48,15 @@ import NextLink from "next/link"
 import { useParams } from "next/navigation"
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets"
 import { useTicketWithDetails } from "@/hooks/useTicketsWithDetails"
-import { ClaimTicketButton, GUEST_CLAIM_BLOCKED_COPY, ticketCreatorDisplayName } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy } from "@/lib/customer-chat-messages"
+import {
+  ClaimTicketButton,
+  GUEST_CLAIM_BLOCKED_COPY,
+  GuestAbandonedAction,
+  endAbandonedGuestTicketErrorAction,
+  ticketCreatorDisplayName,
+} from "@/components/ticket-chat/guest-ticket"
+import { helperSystemMessageCopy, isGuestAbandoned } from "@/lib/customer-chat-messages"
+import { useQueryClient } from "@tanstack/react-query"
 import { GuestName } from "@/components/ui/guest-name"
 import { guestLabel } from "@/lib/guest-label"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
@@ -129,6 +136,8 @@ export default function TicketDetailPage() {
   const [justClaimedLocal, setJustClaimedLocal] = useState(false)
   const [justEndedLocal, setJustEndedLocal] = useState(false)
   const [endOutcome, setEndOutcome] = useState<string | null>(null)
+  const [isEndingAbandoned, setIsEndingAbandoned] = useState(false)
+  const queryClient = useQueryClient()
   const [userHasSLA, setUserHasSLA] = useState(false)
   // In-flight guard for sending: `sendMessage.isPending` only flips once the
   // insert starts, after the (lazy-loaded) formatter has run, so a fast
@@ -421,6 +430,24 @@ export default function TicketDetailPage() {
   // than the person who asked for help (the backend rejects both anyway).
   const canClaim = !!currentUser?.id && !isClaimed && !isTicketEnded && !isTicketCreator
   const canChat = !isTicketEnded && !!currentUser?.id
+
+  // The guest closed the chat window and has not come back (latest presence
+  // note is `guest_abandoned`, ticket still open). Any helper or admin of the
+  // project may then end the ticket, although a guest ticket can't be claimed;
+  // the database checks the role. A `guest_returned` message (realtime) clears it.
+  const guestAbandoned =
+    isGuestTicket && !isTicketEnded && !isTicketCreator && !!currentUser?.id && isGuestAbandoned(messagesData, ticket?.status)
+  // The action sits under the note that explains it: the latest `guest_abandoned`.
+  const guestAbandonedMessageId = useMemo(() => {
+    if (!guestAbandoned || !messagesData) return null
+    for (let i = messagesData.length - 1; i >= 0; i--) {
+      const m = messagesData[i]
+      if (m.sender_type === "system" && (m.metadata as { kind?: string } | null | undefined)?.kind === "guest_abandoned") {
+        return m.id
+      }
+    }
+    return null
+  }, [guestAbandoned, messagesData])
 
   // Transform messages to UI format; prepend synthetic "claimed" message when ticket is claimed
   const messages: Message[] = useMemo(() => {
@@ -775,6 +802,46 @@ export default function TicketDetailPage() {
     }
   }
 
+  /**
+   * End a guest ticket whose guest has left. Goes straight to the RPC: no End
+   * ticket drawer, outcome or capture, since a guest ticket has no logged time
+   * and no payment.
+   */
+  const handleEndAbandonedGuestTicket = async () => {
+    if (!ticketId || isEndingAbandoned) return
+    const refetchTicketAndMessages = () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["ticket-with-details", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["ticket-messages", ticketId] }),
+      ])
+    setIsEndingAbandoned(true)
+    try {
+      const { error } = await supabase.rpc("end_abandoned_guest_ticket", { p_ticket_id: ticketId })
+      if (error) throw error
+      setJustEndedLocal(true)
+      toast.success("Ticket ended")
+      void refetchTicketAndMessages()
+      // Lists and sidebars that show this ticket's status.
+      for (const key of [
+        "tickets",
+        "tickets-with-details",
+        "helper-tickets",
+        "helper-claimed-tickets-sidebar",
+        "admin-active-tickets-sidebar",
+      ]) {
+        void queryClient.invalidateQueries({ queryKey: [key] })
+      }
+    } catch (error) {
+      console.error("Failed to end abandoned guest ticket:", error)
+      const action = endAbandonedGuestTicketErrorAction(error)
+      if (action.message) toast.error(action.message)
+      if (action.refetch) void refetchTicketAndMessages()
+    } finally {
+      setIsEndingAbandoned(false)
+    }
+  }
+
   const handleSeeDetails = () => {
     // Here you would typically show a modal or navigate to a details page
   }
@@ -938,7 +1005,9 @@ export default function TicketDetailPage() {
 
   // A ticket hidden by RLS (or a bad id) used to render a blank page: the
   // `.single()` read errors, and nothing else has data to show.
-  if (ticketError || (!ticketLoading && !ticket)) {
+  // Same for a soft-deleted ticket (an abandoned guest ticket is deleted after
+  // 24 h; an old notification can still link here).
+  if (ticketError || (!ticketLoading && (!ticket || !!ticket.deleted_at))) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-bg-subtle">
         <div className="relative z-10">
@@ -1122,6 +1191,22 @@ export default function TicketDetailPage() {
                       </div>
                     )}
 
+                    {/* Abandoned guest ticket: not claimable, but any helper or
+                        admin can end it (directly, without the drawer). */}
+                    {guestAbandoned && !(isClaimed && canManageTicket) && (
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          loading={isEndingAbandoned}
+                          onClick={() => void handleEndAbandonedGuestTicket()}
+                          className="cursor-pointer"
+                        >
+                          End ticket
+                        </Button>
+                      </div>
+                    )}
+
                     {isClaimed && !isTicketEnded && !canManageTicket && (
                       <p className="text-ui text-muted-foreground">
                         {claimer?.name ? `${claimer.name} is handling this ticket.` : "Another helper is handling this ticket."}{" "}
@@ -1181,7 +1266,16 @@ export default function TicketDetailPage() {
                                 <TimeReviewSystemMessage content={msg.content} metadata={msg.metadata} />
                               </SystemNote>
                             ) : (
-                              <SystemNote markdown={msg.content} />
+                              // The End ticket action sits under the note that
+                              // explains it: the latest `guest_abandoned`.
+                              <SystemNote markdown={msg.content}>
+                                {msg.id === guestAbandonedMessageId && (
+                                  <GuestAbandonedAction
+                                    onEndTicket={() => void handleEndAbandonedGuestTicket()}
+                                    pending={isEndingAbandoned}
+                                  />
+                                )}
+                              </SystemNote>
                             )
                           ) : (
                             <div

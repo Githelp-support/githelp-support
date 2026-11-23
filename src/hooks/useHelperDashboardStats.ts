@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
 import { useCurrentHelper } from "./useCurrentHelper";
 import {
     useTimeEntries,
@@ -83,13 +84,15 @@ export function useHelperDashboardStats(projectId?: string, helperId?: string) {
                 .eq("helper_id", effectiveHelperId)
                 .single();
 
-            // All (non-deleted) tickets for the project.
-            const { data: tickets } = await supabase
-                .from("tickets")
-                .select("id, title, status, priority, created_at, completed_at")
-                .eq("project_id", projectId)
-                .is("deleted_at", null)
-                .order("created_at", { ascending: false });
+            // All (non-deleted) tickets for the project, minus abandoned
+            // guest tickets (never counted or listed for helpers).
+            const { data: tickets } = await excludeAbandonedGuestTickets(
+                supabase
+                    .from("tickets")
+                    .select("id, title, status, priority, created_at, completed_at")
+                    .eq("project_id", projectId)
+                    .is("deleted_at", null)
+            ).order("created_at", { ascending: false });
 
             // Help categories for the project.
             const { data: helpCategories } = await supabase

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen, within } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import TicketDetailPage from "./page"
 
 Element.prototype.scrollIntoView = vi.fn()
@@ -98,6 +99,17 @@ vi.mock("@/components/ticket-chat/end-session-request", () => ({ EndSessionReque
 vi.mock("@/components/drawers/end-ticket-drawer", () => ({ EndTicketDrawer: () => null }))
 vi.mock("@/components/drawers/log-time-drawer", () => ({ LogTimeDrawer: () => null }))
 
+// The page calls useQueryClient() to invalidate ticket queries, so it needs a
+// client in context even though every data hook is mocked.
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <TicketDetailPage />
+    </QueryClientProvider>
+  )
+}
+
 describe("helper ticket page frame", () => {
   beforeEach(() => {
     mocks.useParams.mockReturnValue({ id: "t1" })
@@ -137,7 +149,7 @@ describe("helper ticket page frame", () => {
   })
 
   it("lays the chat column and the right panel out side by side in one row", () => {
-    const { container } = render(<TicketDetailPage />)
+    const { container } = renderPage()
 
     const header = screen.getByRole("heading", { name: "Ticket with Testhelp" })
     const panelHeading = screen.getByText(/people in this chat/i)
@@ -153,7 +165,7 @@ describe("helper ticket page frame", () => {
   })
 
   it("lets the chat column shrink below its content width on narrow screens", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     // <main> is a flex row; without min-w-0 its column keeps its min-content
     // width and runs past the viewport on phones.
     const column = screen.getByRole("main").firstElementChild as HTMLElement
@@ -161,7 +173,7 @@ describe("helper ticket page frame", () => {
   })
 
   it("shows the ticket id as a copyable pill next to the title", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     const header = screen.getByRole("banner")
     expect(within(header).getByText("t1..")).toBeInTheDocument()
     expect(within(header).getByRole("button", { name: "Copy full ticket ID" })).toBeInTheDocument()
@@ -169,13 +181,13 @@ describe("helper ticket page frame", () => {
   })
 
   it("pads the top of the panel, which has no toggle row of its own", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     const scroller = screen.getByText(/people in this chat/i).closest(".overflow-y-auto") as HTMLElement
     expect(scroller.className).toMatch(/\bpt-4\b/)
   })
 
   it("puts the right-panel toggle in the header", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     const header = screen.getByRole("banner")
     expect(within(header).getByRole("button", { name: /hide ticket details/i })).toBeInTheDocument()
     expect(within(header).getByRole("button", { name: "Ticket details" })).toBeInTheDocument()
@@ -186,7 +198,7 @@ describe("helper ticket page frame", () => {
       data: [{ id: "tp1", participant_id: "u1", claimed: true, created_at: "", user: { id: "u1", name: "Helper", avatar_url: null } }],
       isLoading: false,
     })
-    render(<TicketDetailPage />)
+    renderPage()
     expect(within(screen.getByRole("banner")).getByRole("button", { name: "End session" })).toBeInTheDocument()
     expect(within(screen.getByTestId("composer")).queryByRole("button", { name: "End session" })).not.toBeInTheDocument()
   })
@@ -196,7 +208,7 @@ describe("helper ticket page frame", () => {
       data: [{ id: "tp1", participant_id: "h2", claimed: true, created_at: "", user: { id: "h2", name: "Other", avatar_url: null } }],
       isLoading: false,
     })
-    render(<TicketDetailPage />)
+    renderPage()
     expect(screen.queryByRole("button", { name: "End session" })).not.toBeInTheDocument()
   })
 
@@ -206,19 +218,19 @@ describe("helper ticket page frame", () => {
       isLoading: false,
       isError: false,
     })
-    render(<TicketDetailPage />)
+    renderPage()
     expect(within(screen.getByTestId("composer")).getByRole("button", { name: /claim/i })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "End session" })).not.toBeInTheDocument()
   })
 
   it("uses the project's composer placeholder", () => {
     mocks.useProject.mockReturnValue({ data: { id: "p1", name: "Testhelp", slug: "testhelp" } })
-    render(<TicketDetailPage />)
+    renderPage()
     expect(screen.getByLabelText("Message")).toHaveAttribute("placeholder", "Ask #testhelp")
   })
 
   it("says so when no helper has joined and when there are no other topics", () => {
-    render(<TicketDetailPage />)
+    renderPage()
     expect(screen.getByText("No helper has joined yet.")).toBeInTheDocument()
     expect(screen.getByText("No other topics yet.")).toBeInTheDocument()
     expect(screen.getByText("Active tickets (0)")).toBeInTheDocument()
@@ -229,7 +241,7 @@ describe("helper ticket page frame", () => {
       data: [{ id: "tp1", participant_id: "u1", claimed: true, created_at: "", user: { id: "u1", name: "Helper", avatar_url: null } }],
       isLoading: false,
     })
-    render(<TicketDetailPage />)
+    renderPage()
     expect(screen.queryByText("No helper has joined yet.")).not.toBeInTheDocument()
   })
 
@@ -242,7 +254,7 @@ describe("helper ticket page frame", () => {
       ],
       isLoading: false,
     })
-    const { container } = render(<TicketDetailPage />)
+    const { container } = renderPage()
     const rows = container.querySelectorAll('[data-slot="chat-message-row"]')
     expect(rows).toHaveLength(2)
     expect(rows[0]).toHaveAttribute("data-group-start")
