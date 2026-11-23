@@ -8,7 +8,13 @@ import {
     GUEST_SIGNED_IN_HELPER_COPY,
     HELPER_PAYMENT_AUTHORIZED_MESSAGE,
     HELPER_PAYMENT_REQUIRED_MESSAGE,
+    FALLBACK_AUTO_REPLY_ID,
+    FALLBACK_START_NOTE_ID,
+    FALLBACK_WELCOME_ID,
+    START_NOTE,
+    START_NOTE_FREE,
     type CustomerThreadOptions,
+    type ThreadFallback,
     type PersistedTicketMessage,
 } from "../customer-chat-messages";
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
@@ -77,7 +83,7 @@ describe("buildCustomerThreadMessages stored automatic rows", () => {
             },
         );
 
-    it("adds no welcome, disclaimer or auto-reply of its own", () => {
+    it("adds no welcome, note or auto-reply when no fallback is given", () => {
         expect(buildCustomerThreadMessages(baseOpts())).toEqual([]);
         const list = buildCustomerThreadMessages(baseOpts({ messagesData: [userMessage()] }));
         expect(list.map((m) => m.id)).toEqual(["msg-1"]);
@@ -194,6 +200,91 @@ describe("buildCustomerThreadMessages stored automatic rows", () => {
 
         const noTimestamp = buildCustomerThreadMessages(baseOpts({ pendingFirstMessage: "My build is broken" }));
         expect(noTimestamp.find((m) => m.id === "pending-first")?.createdAt).toBeUndefined();
+    });
+
+    describe("fallback while no stored row exists", () => {
+        const fallback = (overrides: Partial<ThreadFallback> = {}): ThreadFallback => ({
+            welcome: true,
+            welcomeText: "Welcome to Acme's support chat.",
+            rates: { startPrice: "25.00", first60Price: "1.50", after60Price: "1.00" },
+            isFree: false,
+            avgResponseSeconds: null,
+            whileLoading: true,
+            ...overrides,
+        });
+
+        it("shows only the start note before a ticket exists (the intro is the welcome)", () => {
+            const list = buildCustomerThreadMessages(baseOpts({ fallback: fallback({ welcome: false }) }));
+            expect(list).toHaveLength(1);
+            expect(list[0]).toMatchObject({
+                id: FALLBACK_START_NOTE_ID,
+                senderType: "system",
+                isAutomatic: true,
+                content: START_NOTE,
+            });
+        });
+
+        it("keeps the welcome with rates, the note and the auto-reply for a ticket without stored rows", () => {
+            const list = buildCustomerThreadMessages(
+                baseOpts({
+                    messagesData: [userMessage()],
+                    fallbackTimestamp: "2026-01-01T12:00:00.000Z",
+                    claimer: { id: "h1", name: "Helper", avatar_url: null },
+                    fallback: fallback({ avgResponseSeconds: 5400 }),
+                }),
+            );
+            expect(list.map((m) => m.id)).toEqual([
+                FALLBACK_WELCOME_ID,
+                FALLBACK_START_NOTE_ID,
+                "system-claimed",
+                "msg-1",
+                FALLBACK_AUTO_REPLY_ID,
+            ]);
+            expect(list[0]).toMatchObject({
+                kind: "welcome",
+                isAutomatic: true,
+                createdAt: "2026-01-01T12:00:00.000Z",
+                content: "Welcome to Acme's support chat.",
+                welcome: { projectName: "Acme", isFree: false, rates: { startPrice: "25.00" } },
+            });
+            expect(list[4]).toMatchObject({ autoReply: true, createdAt: "2026-01-01T12:00:05.000Z" });
+            expect(list[4].content).toContain("The average response time for this project is **1h 30m**.");
+        });
+
+        it("leaves the response-time sentence out when there is no value", () => {
+            const list = buildCustomerThreadMessages(
+                baseOpts({ pendingFirstMessage: "My build is broken", fallback: fallback() }),
+            );
+            const reply = list.find((m) => m.id === FALLBACK_AUTO_REPLY_ID);
+            expect(reply?.content).toBe(
+                "Thank you for reaching out! A helper will get in touch with you as soon as possible.",
+            );
+        });
+
+        it("uses the free wording and lists no rates for free support", () => {
+            const list = buildCustomerThreadMessages(baseOpts({ messagesData: [], fallback: fallback({ isFree: true }) }));
+            expect(list[0].welcome).toMatchObject({ isFree: true, rates: null });
+            expect(list[1].content).toBe(START_NOTE_FREE);
+        });
+
+        it("lets every stored row win over its fallback", () => {
+            const list = buildCustomerThreadMessages(
+                baseOpts({
+                    messagesData: [welcomeRow(), startNoteRow(), userMessage(), autoReplyRow()],
+                    fallback: fallback(),
+                }),
+            );
+            expect(list.map((m) => m.id)).toEqual(["w1", "n1", "msg-1", "r1"]);
+            expect(list[3].autoReply).toBe(true);
+        });
+
+        it("waits for an existing ticket's messages unless the conversation started here", () => {
+            expect(buildCustomerThreadMessages(baseOpts({ fallback: fallback({ whileLoading: false }) }))).toEqual([]);
+            const loaded = buildCustomerThreadMessages(
+                baseOpts({ messagesData: [], fallback: fallback({ whileLoading: false }) }),
+            );
+            expect(loaded.map((m) => m.id)).toEqual([FALLBACK_WELCOME_ID, FALLBACK_START_NOTE_ID]);
+        });
     });
 });
 

@@ -324,6 +324,17 @@ export default function SupportPage() {
       fallbackTimestamp: liveTicket?.created_at ?? null,
       ticketStatus: liveTicket?.status ?? null,
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
+      // The welcome, start note and auto-reply stay in the thread when the
+      // ticket has no stored rows for them (and before a ticket exists, where
+      // the intro is the welcome).
+      fallback: {
+        welcome: ticketCreated,
+        welcomeText: welcomeMessageContent,
+        rates: formatTicketRates(effectivePricing),
+        isFree: isFreeSupport(effectivePricing),
+        avgResponseSeconds,
+        whileLoading: ticketId !== resumedTicketId,
+      },
     })
     // A guest ticket closed because the visitor left carries its own
     // visitor_left message — no helper "session ended" summary.
@@ -354,6 +365,12 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
+    ticketCreated,
+    welcomeMessageContent,
+    effectivePricing,
+    avgResponseSeconds,
+    ticketId,
+    resumedTicketId,
     slaId,
     ticketEnded,
     totalLoggedFormatted,

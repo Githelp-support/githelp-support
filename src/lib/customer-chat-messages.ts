@@ -1,5 +1,5 @@
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
-import { formatDateTime } from "./format";
+import { formatDateTime, formatDuration } from "./format";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
 import { parseWelcomeRates, type TicketRates } from "@/lib/ticket-pricing";
 import { guestLabel } from "@/lib/guest-label";
@@ -9,6 +9,55 @@ import { guestLabel } from "@/lib/guest-label";
  * (`/support` Get support tab and `/support/chat`) so they render the same
  * thread for the same ticket.
  */
+
+/**
+ * Texts of the start note and the auto-reply, word for word what the database
+ * triggers store (migration 20261123120000_ticket_welcome_messages). Used only
+ * for the fallback rows of `buildCustomerThreadMessages`, while a thread has
+ * no stored ones.
+ */
+export const START_NOTE =
+    "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm.";
+export const START_NOTE_FREE = "Feel free to chat and clarify details before you get a response.";
+
+/** The average-response-time sentence is only included when there is a real value. */
+export function buildAutoReply(avgResponseSeconds: number | null | undefined): string {
+    const base = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+    if (avgResponseSeconds == null) return base;
+    return `${base} The average response time for this project is **${formatDuration(avgResponseSeconds)}**.`;
+}
+
+/** Ids of the fallback rows (never stored). */
+export const FALLBACK_WELCOME_ID = "welcome-fallback";
+export const FALLBACK_START_NOTE_ID = "start-note-fallback";
+export const FALLBACK_AUTO_REPLY_ID = "auto-reply-fallback";
+
+/**
+ * What the thread shows in place of a stored welcome, start note or
+ * auto-reply row that isn't there: before a ticket exists, in the moment
+ * between creating a ticket and its rows arriving, and for a ticket that has
+ * none stored. A stored row always wins over its fallback.
+ */
+export interface ThreadFallback {
+    /**
+     * Include the welcome message itself. False before a ticket exists: the
+     * page renders the welcome preview (`CustomerChatIntro`) there.
+     */
+    welcome: boolean;
+    /** Welcome copy, same as the preview's. */
+    welcomeText: string;
+    /** The ticket's rates (its pricing snapshot when it has one), as dollar strings. */
+    rates: TicketRates | null;
+    isFree: boolean;
+    /** Project's average response time in seconds (`null` until one exists), for the auto-reply. */
+    avgResponseSeconds?: number | null;
+    /**
+     * Also apply while the stored messages are still loading. Only for a
+     * conversation started in this chat; an existing ticket waits for its
+     * messages, so its history never shifts or animates on load.
+     */
+    whileLoading: boolean;
+}
 
 /**
  * Guest-ticket system messages (migration 20261029150000_guest_tickets):
@@ -156,15 +205,17 @@ export interface CustomerThreadOptions {
      * ticket reopened by adoption hides it.
      */
     ticketStatus?: string | null;
+    /** Stand-ins for the welcome, start note and auto-reply while no stored row exists (see `ThreadFallback`). */
+    fallback?: ThreadFallback | null;
 }
 
 /**
- * Stored welcome → stored start note → claimed banner → (pending first
- * message) → the other persisted messages, in stored order (the auto-reply is
- * a stored row right after the first user message). Nothing here is made up
- * from the project's current settings: a ticket without stored welcome rows
- * simply has none. Callers append page-specific trailing messages (e.g. the
- * session summary).
+ * Welcome → start note → claimed banner → (pending first message) → the
+ * other persisted messages, in stored order (the auto-reply is a stored row
+ * right after the first user message). The stored rows are used whenever they
+ * exist; without them the `fallback` stand-ins keep the welcome, the note and
+ * the auto-reply in the thread. Callers append page-specific trailing
+ * messages (e.g. the session summary).
  */
 export function buildCustomerThreadMessages(opts: CustomerThreadOptions): TicketChatMessage[] {
     const {
@@ -178,6 +229,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         fallbackTimestamp,
         currentUser,
         ticketStatus,
+        fallback,
     } = opts;
 
     // A guest's own messages carry the same label helpers see ("Guest · a1b2").
@@ -231,7 +283,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         }
         // The stored start note and auto-reply are ordinary system notes.
         if (metadataKind === "start_note" || metadataKind === "auto_reply") {
-            return { ...base, paymentMetadata: null };
+            return { ...base, paymentMetadata: null, autoReply: metadataKind === "auto_reply" };
         }
         return base;
     };
@@ -241,6 +293,36 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     );
 
     const list: TicketChatMessage[] = persisted.filter(isThreadOpener).map(toChatMessage);
+
+    // No stored welcome or start note: keep them in the thread anyway, at the
+    // ticket's creation time when it is known.
+    const useFallback = !!fallback && (messagesData !== undefined || fallback.whileLoading);
+    const hasStoredKind = (kind: string) =>
+        persisted.some((m) => m.sender_type === "system" && m.metadata?.kind === kind);
+    const fallbackRow = (id: string, content: string): TicketChatMessage => ({
+        id,
+        senderType: "system",
+        content,
+        senderName: `${projectName} Team`,
+        senderAvatarUrl: projectLogo,
+        senderId: null,
+        timestamp: fallbackTimestamp ? formatChatTimestamp(fallbackTimestamp) : nowFormatted,
+        createdAt: fallbackTimestamp ?? undefined,
+        isAutomatic: true,
+        paymentMetadata: null,
+    });
+    if (useFallback && fallback) {
+        if (!hasStoredKind("start_note")) {
+            list.unshift(fallbackRow(FALLBACK_START_NOTE_ID, fallback.isFree ? START_NOTE_FREE : START_NOTE));
+        }
+        if (fallback.welcome && !hasStoredKind("welcome")) {
+            list.unshift({
+                ...fallbackRow(FALLBACK_WELCOME_ID, fallback.welcomeText),
+                kind: "welcome",
+                welcome: { projectName, rates: fallback.isFree ? null : fallback.rates, isFree: fallback.isFree, freeText: null },
+            });
+        }
+    }
 
     if (claimer) {
         list.push({
@@ -280,6 +362,21 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     persisted.forEach((msg) => {
         if (!isThreadOpener(msg)) list.push(toChatMessage(msg));
     });
+
+    // No stored auto-reply: keep it right after the customer's first message
+    // (the pending copy or the stored one).
+    if (useFallback && fallback && !hasStoredKind("auto_reply")) {
+        const firstUserIndex = list.findIndex((m) => m.senderType === "user");
+        if (firstUserIndex !== -1) {
+            const first = list[firstUserIndex];
+            list.splice(firstUserIndex + 1, 0, {
+                ...fallbackRow(FALLBACK_AUTO_REPLY_ID, buildAutoReply(fallback.avgResponseSeconds)),
+                timestamp: first.timestamp,
+                createdAt: first.createdAt,
+                autoReply: true,
+            });
+        }
+    }
 
     return list;
 }

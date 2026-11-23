@@ -52,6 +52,7 @@ import {
   hasVisitorLeft,
 } from "@/lib/customer-chat-messages"
 import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
+import { useProjectAverageResponseTime } from "@/hooks/useProjectResponseTime"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
 import { ensureUserOrganization } from "@/lib/organizations"
@@ -179,6 +180,7 @@ export default function UserSupportChatPage() {
       ? `/support?project=${encodeURIComponent(effectiveProjectId)}`
       : undefined
   useSetProjectPageHref(projectPageHref)
+  const { data: avgResponseSeconds } = useProjectAverageResponseTime(effectiveProjectId)
   const projectName = project?.name ?? "Support"
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null)
 
@@ -485,6 +487,17 @@ export default function UserSupportChatPage() {
       fallbackTimestamp: existingTicket?.created_at ?? null,
       ticketStatus: existingTicket?.status ?? null,
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
+      // The welcome, start note and auto-reply stay in the thread when the
+      // ticket has no stored rows for them (and before a ticket exists, where
+      // the intro below is the welcome).
+      fallback: {
+        welcome: ticketCreated || !!ticketIdParam,
+        welcomeText,
+        rates: formatTicketRates(effectivePricing),
+        isFree: isFreeSupport(effectivePricing),
+        avgResponseSeconds,
+        whileLoading: !ticketIdParam || ticketIdParam === createdTicketId,
+      },
     })
     // A guest ticket closed because the visitor left carries its own
     // visitor_left message — no helper "session ended" summary.
@@ -515,6 +528,12 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
+    ticketCreated,
+    ticketIdParam,
+    createdTicketId,
+    welcomeText,
+    effectivePricing,
+    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     slaCovered,

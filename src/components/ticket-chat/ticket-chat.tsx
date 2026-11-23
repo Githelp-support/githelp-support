@@ -101,6 +101,8 @@ export type TicketChatMessage = {
   kind?: "claimed" | "ended" | "welcome"
   /** Written by the server (`tickets_messages.is_automatic`): welcome, start note, auto-reply. */
   isAutomatic?: boolean
+  /** The auto-reply after the first message (stored row or its fallback): keeps one key when the stored row arrives. */
+  autoReply?: boolean
   /**
    * `kind: "welcome"` only: what the row stored when the ticket was opened.
    * Never mixed with the project's live rates or name.
@@ -663,7 +665,7 @@ export function TicketChat(props: TicketChatProps) {
     const msg = row.item
     const followUp = !row.groupStart
     return (
-      <Fragment key={msg.id === firstUserId ? "first-user-message" : msg.id}>
+      <Fragment key={msg.id === firstUserId ? "first-user-message" : msg.autoReply ? "auto-reply" : msg.id}>
         {index > 0 && row.showDayDivider && <ChatDayDivider label={row.showDayDivider} className="mt-4" />}
         <div
           className={cn(

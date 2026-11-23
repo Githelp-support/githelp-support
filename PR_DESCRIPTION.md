@@ -4,6 +4,18 @@ Frontend branch `agent/slack-5d808efd-change-how-the-welcome-message-the-proje` 
 
 **Deploy order: backend migrations first.** The frontend now selects `tickets_messages.is_automatic` and no longer builds any of the three messages itself. Against a database without the migrations those selects fail, and threads would show no welcome, note or auto-reply.
 
+## Follow-up: the welcome and notes are never left out
+
+The customer chat showed the welcome (with rates), the start note and the auto-reply only when stored rows existed. Before a ticket existed the note was gone, and against a database without the two migrations all three disappeared once the first message was sent. Now `buildCustomerThreadMessages` takes a `fallback` (`ThreadFallback`) and puts a stand-in in the thread for each of the three that has no stored row:
+
+- before a ticket exists: the welcome preview plus the start note, revealed together by the first-open entrance;
+- after the ticket is created: welcome (the ticket's snapshot rates, live rates only when it has none), start note and auto-reply (response-time sentence only with a real value), at the ticket's creation time;
+- a stored row always replaces its stand-in, without re-animating (the auto-reply keeps one key); an existing ticket waits for its messages first, so its history does not animate on load.
+
+The helper/admin ticket page is unchanged: it shows the stored rows only, so it still needs the migrations to show the welcome.
+
+Changed: `src/lib/customer-chat-messages.ts` (+ test), `src/components/ticket-chat/ticket-chat.tsx`, `src/app/support/page.tsx`, `src/app/support/chat/page.tsx`, `CLAUDE.md`. `npm run test`: 100 files, 916 tests passed; `tsc --noEmit` and ESLint on the touched folders clean. Not checked in a browser.
+
 ## Findings (before this change)
 
 - The welcome bubble, the "You are not charged anything…" note and the "Thank you for reaching out!" auto-reply did not exist in the database. `buildCustomerThreadMessages` and `CustomerChatIntro` built them in the browser on every render.
