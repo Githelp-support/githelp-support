@@ -29,13 +29,13 @@ import { isAutomaticMessage, latestReadableMessageId } from "@/lib/ticket-messag
 /**
  * A new ticket, from creation to what the customer sees.
  *
- * `FakeDb` stands in for the database. With `migrated: true` it writes what
- * the triggers of backend migration 20261123120000_ticket_welcome_messages
- * write (welcome + start note on ticket insert, auto-reply after the first
- * user message; the triggers themselves are tested by the backend harness
- * probes R15a–g). With `migrated: false` it is a database that does not have
- * that migration: nothing is stored. The thread must show the welcome, the
- * rates and the notes in both cases.
+ * `FakeDb` stands in for the database. The frontend builds the welcome, the
+ * start note and the auto-reply itself, so by default (`migrated: false`)
+ * nothing is stored. `migrated: true` is a database that does hold stored
+ * system rows of those kinds (welcome + start note at ticket creation,
+ * auto-reply after the first user message); they are shown instead of the
+ * browser-built ones. The thread must show the welcome, the rates and the
+ * notes exactly once in both cases.
  */
 type Row = PersistedTicketMessage & { ticket_id: string }
 type Ticket = { id: string; project_id: string; created_at: string; pricing_snapshot: TicketPriceSettings | null }
@@ -68,7 +68,7 @@ class FakeDb {
   createTicket(pricing_snapshot: TicketPriceSettings | null, created_at: string): Ticket {
     const ticket: Ticket = { id: "t1", project_id: "p1", created_at, pricing_snapshot }
     if (!this.migrated) return ticket
-    // insert_ticket_welcome_messages()
+    // Stored welcome + start note at ticket creation.
     const isFree = isFreeSupport(pricing_snapshot)
     this.system(
       ticket.id,
@@ -101,7 +101,7 @@ class FakeDb {
       content,
       metadata: null,
     })
-    // insert_ticket_auto_reply(): no response-time sentence without a value.
+    // Stored auto-reply: no response-time sentence without a value.
     if (this.migrated && first) {
       this.system(
         ticket.id,

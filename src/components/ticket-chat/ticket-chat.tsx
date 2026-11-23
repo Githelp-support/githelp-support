@@ -99,7 +99,7 @@ export type TicketChatMessage = {
   content: string
   /** `welcome` is the stored welcome row (`metadata.kind = 'welcome'`); its data is in `welcome`. */
   kind?: "claimed" | "ended" | "welcome"
-  /** Written by the server (`tickets_messages.is_automatic`): welcome, start note, auto-reply. */
+  /** Welcome, start note or auto-reply: built in the browser, or a stored row of those kinds (`metadata.kind`, optional `tickets_messages.is_automatic`). */
   isAutomatic?: boolean
   /** The welcome or the start note (stored row or its fallback): the rows that open the thread. */
   opener?: boolean

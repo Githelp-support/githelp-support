@@ -66,7 +66,7 @@ export interface ThreadItem {
   isBanner?: boolean
   /** `"welcome"` is the stored welcome row: always a group start. */
   kind?: string | null
-  /** Written by the server (`tickets_messages.is_automatic`): welcome, start note, auto-reply. */
+  /** Welcome, start note or auto-reply: built in the browser, or a stored row of those kinds (`metadata.kind`, optional `tickets_messages.is_automatic`). */
   isAutomatic?: boolean | null
 }
 

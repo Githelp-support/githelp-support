@@ -72,9 +72,10 @@ const numberOrNull = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) ? value : null
 
 /**
- * Reads `metadata.rates` of a stored welcome message (kind `welcome`, written
- * by the `insert_ticket_welcome_messages` trigger from the ticket's
- * `pricing_snapshot`): `{ ticket_start_price, ticket_price_minute_first_60,
+ * Reads `metadata.rates` of a stored welcome message (kind `welcome`). The
+ * frontend builds the welcome itself; this only applies to a database that
+ * does hold such a row, whose rates were taken from the ticket's
+ * `pricing_snapshot`: `{ ticket_start_price, ticket_price_minute_first_60,
  * ticket_price_minute_after_60, currency, is_free }`, prices in cents.
  *
  * Only what the row stored is used; there is no fallback to the project's

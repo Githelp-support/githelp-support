@@ -17,7 +17,7 @@ const auto = (id: string, kind: string, ticket_id = "t1") => ({
 const msg = (id: string, ticket_id = "t1") => ({ id, ticket_id, content: `text ${id}`, is_automatic: false, metadata: null });
 
 describe("isAutomaticMessage", () => {
-    it("matches the server-written welcome, start note and auto-reply", () => {
+    it("matches a stored welcome, start note and auto-reply", () => {
         expect(isAutomaticMessage(auto("a", "welcome"))).toBe(true);
         expect(isAutomaticMessage(auto("a", "start_note"))).toBe(true);
         expect(isAutomaticMessage(auto("a", "auto_reply"))).toBe(true);
