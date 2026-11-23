@@ -195,7 +195,7 @@ export default function UserPaymentSettingsPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Payment" subtitle="Manage how you pay for support" />
-      <main className="flex-1 px-15.5 pt-2 pb-10 overflow-y-auto">
+      <main className="flex-1 px-8 pt-2 pb-10 overflow-y-auto">
         <div className="max-w-3xl space-y-6">
           <div className="bg-card rounded-lg p-6">
             <div className="flex items-center gap-2 mb-2">

@@ -154,7 +154,7 @@ export default function HelpPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Help" subtitle="Get help with common issues" />
 
-      <main className="flex-1 overflow-auto px-15.5 pt-6 pb-10">
+      <main className="flex-1 overflow-auto px-14 pt-6 pb-10">
         <div className="max-w-3xl space-y-8">
           {/* Intro */}
           <div>

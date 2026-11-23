@@ -448,7 +448,7 @@ export default function PaymentSettingsPage() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Payment Settings" subtitle="Manage rates and sharing ratios" info="Configure what users pay for support, and how each payment is split between your project and its helpers." />
-      <main className="flex-1 px-15.5 pt-3.5 pb-10 overflow-y-auto">
+      <main className="flex-1 px-8 pt-3.5 pb-10 overflow-y-auto">
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="flex gap-1 pl-6">

@@ -451,7 +451,7 @@ export default function ReportsSupportPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Reports and Payouts" subtitle="Your project's income per ticket, and what has been paid out to helpers." />
 
-      <main className="flex-1 px-15.5 pt-3.5 pb-10 overflow-y-auto">
+      <main className="flex-1 px-14 pt-3.5 pb-10 overflow-y-auto">
         <div className="space-y-6">
           <div className="mb-6">
             <div className="flex gap-1">

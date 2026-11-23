@@ -14,7 +14,7 @@ export default function IntegrationsSettingsPage() {
         subtitle="Send this project's activity to Slack, Discord, or your own systems"
       />
 
-      <main className="flex-1 overflow-auto px-15.5 pt-2 pb-10">
+      <main className="flex-1 overflow-auto px-8 pt-2 pb-10">
         <div className="max-w-3xl divide-y divide-border-subtle">
           <div className="max-w-2xl">
             <div className="bg-background rounded-lg p-6 mb-6">
