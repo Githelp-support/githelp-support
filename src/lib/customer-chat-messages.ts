@@ -11,10 +11,11 @@ import { guestLabel } from "@/lib/guest-label";
  */
 
 /**
- * Texts of the start note and the auto-reply, word for word what the database
- * triggers store (migration 20261123120000_ticket_welcome_messages). Used only
- * for the fallback rows of `buildCustomerThreadMessages`, while a thread has
- * no stored ones.
+ * Texts of the start note and the auto-reply. The welcome, the start note and
+ * the auto-reply are built in the browser (`buildCustomerThreadMessages`, and
+ * the helper/admin ticket page) and dated with the ticket's creation time; no
+ * backend migration is needed for them. A stored row of the same kind, should
+ * a database have one, is shown in its place.
  */
 export const START_NOTE =
     "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm.";
@@ -27,16 +28,16 @@ export function buildAutoReply(avgResponseSeconds: number | null | undefined): s
     return `${base} The average response time for this project is **${formatDuration(avgResponseSeconds)}**.`;
 }
 
-/** Ids of the fallback rows (never stored). */
+/** Ids of the rows built in the browser (never stored). */
 export const FALLBACK_WELCOME_ID = "welcome-fallback";
 export const FALLBACK_START_NOTE_ID = "start-note-fallback";
 export const FALLBACK_AUTO_REPLY_ID = "auto-reply-fallback";
 
 /**
- * What the thread shows in place of a stored welcome, start note or
- * auto-reply row that isn't there: before a ticket exists, in the moment
- * between creating a ticket and its rows arriving, and for a ticket that has
- * none stored. A stored row always wins over its fallback.
+ * What the browser-built welcome, start note and auto-reply show. The welcome
+ * and the start note carry the ticket's creation time (`fallbackTimestamp`),
+ * the auto-reply the time of the customer's first message. A stored row of
+ * the same kind always wins.
  */
 export interface ThreadFallback {
     /**
@@ -300,8 +301,8 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
 
     const list: TicketChatMessage[] = persisted.filter(isThreadOpener).map(toChatMessage);
 
-    // No stored welcome or start note: keep them in the thread anyway, at the
-    // ticket's creation time when it is known.
+    // The welcome and the start note, built here and dated with the ticket's
+    // creation time (unless the ticket has stored rows for them).
     const useFallback = !!fallback && (messagesData !== undefined || fallback.whileLoading);
     const hasStoredKind = (kind: string) =>
         persisted.some((m) => m.sender_type === "system" && m.metadata?.kind === kind);

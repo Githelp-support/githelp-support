@@ -98,6 +98,9 @@ export default function UserSupportChatPage() {
   const [ticketId, setTicketId] = useState("")
   /** Ticket created in this session (signed-in flow pushes it into the URL). */
   const [createdTicketId, setCreatedTicketId] = useState<string | null>(null)
+  // Its creation time: the welcome, start note and first message are dated
+  // with it from the moment the ticket exists, before the ticket query loads.
+  const [createdTicketAt, setCreatedTicketAt] = useState<string | null>(null)
   const [topics] = useState<string[]>([])
   const [helpType] = useState<string[]>([])
   const [projectSearch, setProjectSearch] = useState("")
@@ -463,17 +466,22 @@ export default function UserSupportChatPage() {
 
   // One instant for the synthetic parts: full timestamp for the thread builder
   // (claimed banner, pending first message), time only for the pre-ticket
-  // welcome preview. A stored welcome row carries its own created_at.
+  // welcome preview. The welcome of a ticket is dated with the ticket's created_at.
   const { nowFormatted, nowTime } = useMemo(() => {
     const now = new Date()
     return { nowFormatted: formatChatTimestamp(now), nowTime: formatChatTime(now) }
   }, [])
 
+  // The ticket's creation time: from the loaded ticket, or from the insert
+  // result for the ticket just created here.
+  const ticketCreatedAt =
+    existingTicket?.created_at ?? (!ticketIdParam || ticketIdParam === createdTicketId ? createdTicketAt : null)
+
   const welcomeText = slaCovered
     ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
     : `Welcome to ${projectName}'s support chat.\nAsk your question and someone from our team will try to help you, as soon as we can.`
 
-  // Thread: stored welcome and note → claimed banner → (pending first message)
+  // Thread: welcome and note → claimed banner → (pending first message)
   // → persisted messages → session summary once ended. Shared with the /support page.
   const chatMessages: TicketChatMessage[] = useMemo(() => {
     const list = buildCustomerThreadMessages({
@@ -484,12 +492,12 @@ export default function UserSupportChatPage() {
       claimer,
       pendingFirstMessage,
       fallbackDescription: existingTicket?.description ?? null,
-      fallbackTimestamp: existingTicket?.created_at ?? null,
+      fallbackTimestamp: ticketCreatedAt,
       ticketStatus: existingTicket?.status ?? null,
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
-      // The welcome, start note and auto-reply stay in the thread when the
-      // ticket has no stored rows for them (and before a ticket exists, where
-      // the intro below is the welcome).
+      // The welcome, start note and auto-reply are built here, dated with the
+      // ticket's creation time (before a ticket exists, the intro below is
+      // the welcome).
       fallback: {
         welcome: ticketCreated || !!ticketIdParam,
         welcomeText,
@@ -527,7 +535,7 @@ export default function UserSupportChatPage() {
     claimer,
     pendingFirstMessage,
     existingTicket?.description,
-    existingTicket?.created_at,
+    ticketCreatedAt,
     existingTicket?.status,
     ticketCreated,
     ticketIdParam,
@@ -838,6 +846,7 @@ export default function UserSupportChatPage() {
         clearSupportDraft(effectiveProjectId)
         setTicketId(ticket.id)
         setCreatedTicketId(ticket.id)
+        setCreatedTicketAt(ticket.created_at ?? null)
         const firstMessageContent = await prepareOutgoingMessage(message)
         setMessage("")
         // Show the question immediately; it's replaced by the persisted
@@ -919,6 +928,7 @@ export default function UserSupportChatPage() {
     setTicketId("")
     setTicketCreated(false)
     setCreatedTicketId(null)
+    setCreatedTicketAt(null)
     setPendingFirstMessage(null)
     setMessage("")
     router.push(

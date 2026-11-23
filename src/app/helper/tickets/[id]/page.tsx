@@ -493,12 +493,11 @@ export default function TicketDetailPage() {
       isThreadOpener({ sender_type: msg.sender_type, metadata: msg.metadata as Record<string, unknown> | null })
     const list: Message[] = (messagesData ?? []).filter(isOpener).map(toMessage)
 
-    // A ticket without a stored welcome, start note or auto-reply (its
-    // database has no welcome triggers, or the rows are missing) still shows
-    // them, as the customer chat does (`buildCustomerThreadMessages`): the
-    // same stand-ins, at the ticket's creation time, from the ticket's
-    // snapshot rates. Only once the ticket and its messages have loaded, so a
-    // stored row is never preceded by its stand-in.
+    // The welcome, start note and auto-reply are built here, as in the
+    // customer chat (`buildCustomerThreadMessages`): dated with the ticket's
+    // creation time, from the ticket's snapshot rates. A stored row of the
+    // same kind, if the ticket has one, is shown instead; so only once the
+    // ticket and its messages have loaded.
     const standIns = !!ticketCreatedAt && messagesData !== undefined
     const hasStoredKind = (kind: string) =>
       (messagesData ?? []).some(

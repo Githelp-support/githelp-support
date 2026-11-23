@@ -143,6 +143,9 @@ export default function SupportPage() {
   // A guest who reloads (or comes back) resumes their open ticket on this
   // project instead of an empty composer that would hit guest_ticket_limit.
   const [resumedTicketId, setResumedTicketId] = useState<string | null>(null)
+  // Creation time of the ticket created here: the welcome, start note and
+  // first message are dated with it before the ticket query loads.
+  const [createdTicket, setCreatedTicket] = useState<{ id: string; createdAt: string } | null>(null)
   const { data: resumableGuestTicket } = useResumableGuestTicket(
     !ticketId ? user?.guestId : undefined,
     isGuest,
@@ -304,13 +307,18 @@ export default function SupportPage() {
 
   // One instant for the synthetic parts: full timestamp for the thread builder
   // (claimed banner, pending first message), time only for the pre-ticket
-  // welcome preview. A stored welcome row carries its own created_at.
+  // welcome preview. The welcome of a ticket is dated with the ticket's created_at.
   const { nowFormatted, nowTime } = useMemo(() => {
     const now = new Date()
     return { nowFormatted: formatChatTimestamp(now), nowTime: formatChatTime(now) }
   }, [])
 
-  // Thread: stored welcome and note → claimed banner → (pending first message)
+  // The ticket's creation time: from the loaded ticket, or from the insert
+  // result for the ticket just created here.
+  const ticketCreatedAt =
+    liveTicket?.created_at ?? (createdTicket && createdTicket.id === ticketId ? createdTicket.createdAt : null)
+
+  // Thread: welcome and note → claimed banner → (pending first message)
   // → persisted messages → session summary once ended. Shared with /support/chat.
   const chatMessages: TicketChatMessage[] = useMemo(() => {
     const list = buildCustomerThreadMessages({
@@ -321,12 +329,12 @@ export default function SupportPage() {
       claimer,
       pendingFirstMessage,
       fallbackDescription: liveTicket?.description ?? null,
-      fallbackTimestamp: liveTicket?.created_at ?? null,
+      fallbackTimestamp: ticketCreatedAt,
       ticketStatus: liveTicket?.status ?? null,
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
-      // The welcome, start note and auto-reply stay in the thread when the
-      // ticket has no stored rows for them (and before a ticket exists, where
-      // the intro is the welcome).
+      // The welcome, start note and auto-reply are built here, dated with the
+      // ticket's creation time (before a ticket exists, the intro is the
+      // welcome).
       fallback: {
         welcome: ticketCreated,
         welcomeText: welcomeMessageContent,
@@ -364,7 +372,7 @@ export default function SupportPage() {
     claimer,
     pendingFirstMessage,
     liveTicket?.description,
-    liveTicket?.created_at,
+    ticketCreatedAt,
     liveTicket?.status,
     ticketCreated,
     welcomeMessageContent,
@@ -516,6 +524,7 @@ export default function SupportPage() {
         setTicketCreated(true)
         clearSupportDraft(projectId)
         setTicketId(ticket.id)
+        setCreatedTicket(ticket.created_at ? { id: ticket.id, createdAt: ticket.created_at } : null)
         const firstMessageContent = await prepareOutgoingMessage(message)
         setMessage("")
         // Show the question immediately; hidden once the persisted message arrives.
