@@ -45,6 +45,7 @@ import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-s
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
   buildCustomerThreadMessages,
+  storedWelcomeIntro,
   buildSessionEndedMessage,
   describeChargedLine,
   findPendingSca,
@@ -520,7 +521,7 @@ export default function UserSupportChatPage() {
     ? `Welcome to ${projectName}'s support chat. This ticket is covered by your SLA.\nAsk your question and someone from our team will try to help you, as soon as we can.`
     : `Welcome to ${projectName}'s support chat.\nAsk your question and someone from our team will try to help you, as soon as we can.`
 
-  // Thread: disclaimer → claimed banner → (pending first message) → persisted
+  // Thread: stored welcome + disclaimer → claimed banner → (pending first message) → persisted
   // messages → session summary once ended. Shared with the /support page.
   const chatMessages: TicketChatMessage[] = useMemo(() => {
     const list = buildCustomerThreadMessages({
@@ -533,9 +534,7 @@ export default function UserSupportChatPage() {
       fallbackDescription: existingTicket?.description ?? null,
       fallbackTimestamp: existingTicket?.created_at ?? null,
       ticketStatus: existingTicket?.status ?? null,
-      isFree: isFreeSupport(effectivePricing),
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
-      avgResponseSeconds,
     })
     // A guest ticket closed because the visitor left carries its own
     // visitor_left message — no helper "session ended" summary.
@@ -566,8 +565,6 @@ export default function UserSupportChatPage() {
     existingTicket?.description,
     existingTicket?.created_at,
     existingTicket?.status,
-    effectivePricing,
-    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     slaCovered,
@@ -982,10 +979,21 @@ export default function UserSupportChatPage() {
     isGuest,
   )
 
+  // Once a ticket exists the intro is its stored welcome message: the rate
+  // snapshot and time it was posted with. Before that, today's rates and time.
+  const welcomeIntro = ticketId
+    ? storedWelcomeIntro({
+        messages: messagesData,
+        ticket: existingTicket?.id === ticketId ? existingTicket : null,
+        fallback: { rates, isFree: isFreeSupport(effectivePricing) },
+      })
+    : null
+
   return (
     <>
       <TicketChat
         threadKey={ticketId ?? undefined}
+        welcomeRevealId={ticketId || undefined}
         headerTitle={`Ticket with ${projectName}`}
         headerVariant="chat"
         ticketId={ticketCreated && ticketId ? ticketId : undefined}
@@ -997,9 +1005,9 @@ export default function UserSupportChatPage() {
             projectLogo={projectLogo}
             primaryColor={brandingData?.primary_color}
             welcomeText={welcomeText}
-            timestamp={nowTime}
-            rates={rates}
-            isFree={isFreeSupport(effectivePricing)}
+            timestamp={welcomeIntro?.timestamp ?? nowTime}
+            rates={welcomeIntro ? welcomeIntro.rates : rates}
+            isFree={welcomeIntro ? welcomeIntro.isFree : isFreeSupport(effectivePricing)}
             isAuthenticated={isAuthenticated}
             ticketCreated={ticketCreated}
             userName={user?.name}

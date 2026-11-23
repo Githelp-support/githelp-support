@@ -1,8 +1,14 @@
 import type { TicketChatMessage } from "@/components/ticket-chat/ticket-chat";
 import { formatDateTime } from "./format";
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus";
-import { formatDuration } from "@/lib/format";
 import { guestLabel } from "@/lib/guest-label";
+import { formatChatTime } from "@/lib/chat-thread";
+import {
+    ticketRatesFromSnapshot,
+    type TicketRates,
+    type TicketRateSnapshotColumns,
+    type WelcomeRateMetadata,
+} from "@/lib/ticket-pricing";
 
 /**
  * Message-thread building shared by the two customer-facing chat pages
@@ -10,23 +16,66 @@ import { guestLabel } from "@/lib/guest-label";
  * thread for the same ticket.
  */
 
-/** Grey system bubble at the top of every customer thread. */
-export const TICKET_DISCLAIMER =
-    "You are not charged anything before both you and the helper have confirmed the ticket. Feel free to chat and clarify details before you confirm.";
+/**
+ * Automatic project messages the backend posts on every ticket
+ * (20261123120000_ticket_rate_snapshot_and_welcome_message,
+ * 20261123130000_auto_reply_system_message): `welcome` at the ticket's
+ * created_at (its metadata carries the rate snapshot), `welcome_disclaimer`
+ * 1 ms later, and `auto_reply` right after the customer's first message. The
+ * threads render the stored rows; nothing is synthesised on the client.
+ */
+export const WELCOME_KIND = "welcome";
 
-/** Welcome bubble for projects that offer support for free: no mention of charging or confirming. */
-export const TICKET_DISCLAIMER_FREE = "Feel free to chat and clarify details before you get a response.";
+function isStoredWelcome(msg: { sender_type: string; metadata?: Record<string, unknown> | null }): boolean {
+    return msg.sender_type === "system" && msg.metadata?.kind === WELCOME_KIND;
+}
+
+/** The stored welcome message of a ticket, if it has loaded. */
+export function findStoredWelcome<T extends { sender_type: string; metadata?: Record<string, unknown> | null }>(
+    messages: T[] | undefined
+): T | null {
+    return messages?.find(isStoredWelcome) ?? null;
+}
+
+/** What `CustomerChatIntro` shows for an existing ticket. */
+export interface StoredWelcomeIntro {
+    rates: TicketRates | null;
+    isFree: boolean;
+    /** "HH:MM" of the welcome message (else the ticket's created_at). */
+    timestamp: string;
+}
 
 /**
- * Synthetic auto-reply shown right after the customer's first message.
- * Rendered by MarkdownContent like other system bubbles (hence the **bold**).
- * The average-response-time sentence is only included once the project has a
- * real value; without one it is left out entirely.
+ * Rates, free flag and time for the intro once a ticket exists: from the
+ * stored welcome message's metadata snapshot, else the ticket's rate snapshot
+ * columns, so the intro keeps the prices the ticket was opened with. Only a
+ * ticket with no snapshot at all (opened before snapshots existed) uses
+ * `fallback`, the live settings. Returns null when there is no ticket yet:
+ * callers keep the pre-creation intro.
  */
-export function buildAutoReply(avgResponseSeconds: number | null | undefined): string {
-    const base = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
-    if (avgResponseSeconds == null) return base;
-    return `${base} The average response time for this project is **${formatDuration(avgResponseSeconds)}**.`;
+export function storedWelcomeIntro(opts: {
+    messages: PersistedTicketMessage[] | undefined;
+    ticket: (TicketRateSnapshotColumns & { created_at?: string | null }) | null | undefined;
+    fallback: { rates: TicketRates | null; isFree: boolean };
+}): StoredWelcomeIntro | null {
+    const welcome = findStoredWelcome(opts.messages);
+    if (!welcome && !opts.ticket) return null;
+    const snapshot =
+        ticketRatesFromSnapshot(welcome?.metadata as WelcomeRateMetadata | null | undefined) ??
+        ticketRatesFromSnapshot(opts.ticket);
+    const createdAt = welcome?.created_at ?? opts.ticket?.created_at ?? null;
+    let rates: TicketRates | null;
+    let isFree: boolean;
+    if (snapshot?.isFree) {
+        rates = null;
+        isFree = true;
+    } else if (snapshot) {
+        rates = { startPrice: snapshot.startPrice, first60Price: snapshot.first60Price, after60Price: snapshot.after60Price };
+        isFree = false;
+    } else {
+        ({ rates, isFree } = opts.fallback);
+    }
+    return { rates, isFree, timestamp: createdAt ? formatChatTime(createdAt) : "" };
 }
 
 /**
@@ -150,7 +199,7 @@ export interface PersistedTicketMessage {
 export interface CustomerThreadOptions {
     projectName: string;
     projectLogo: string | null;
-    /** Timestamp for synthetic (non-persisted) messages. */
+    /** Timestamp for the synthetic claimed banner and the pending first message. */
     nowFormatted: string;
     messagesData: PersistedTicketMessage[] | undefined;
     /** The helper who claimed the ticket, if any → "Ticket is claimed by …" banner. */
@@ -167,24 +216,21 @@ export interface CustomerThreadOptions {
     fallbackTimestamp?: string | null;
     /** `isGuest`: the viewer is not signed in, so their own messages get the guest avatar and guest label. */
     currentUser: { id?: string; name?: string | null; avatarUrl?: string | null; isGuest?: boolean };
-    /** Project's average response time in seconds (`null` until one exists). */
-    avgResponseSeconds?: number | null;
     /**
      * The ticket's current status. A `visitor_left` notice (and its "Start a
      * new conversation" action) only shows while the ticket is cancelled; a
      * ticket reopened by adoption hides it.
      */
     ticketStatus?: string | null;
-    /**
-     * The project offers support for free (see isFreeSupport in
-     * lib/ticket-pricing): the welcome bubble must not mention charging.
-     */
-    isFree?: boolean;
 }
 
 /**
- * Disclaimer → claimed banner → (pending first message) → persisted messages.
- * Callers append page-specific trailing messages (e.g. the session summary).
+ * Stored welcome + disclaimer → claimed banner → (pending first message) →
+ * the other persisted messages (auto-reply included), in created_at order.
+ * The stored `welcome` row becomes a `kind: "welcome"` row carrying its
+ * metadata (rate snapshot), which TicketChat renders as the page's intro;
+ * `welcome_disclaimer` and `auto_reply` are plain system notes. Callers append
+ * page-specific trailing messages (e.g. the session summary).
  */
 export function buildCustomerThreadMessages(opts: CustomerThreadOptions): TicketChatMessage[] {
     const {
@@ -197,9 +243,7 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         fallbackDescription,
         fallbackTimestamp,
         currentUser,
-        avgResponseSeconds,
         ticketStatus,
-        isFree,
     } = opts;
 
     // A guest's own messages carry the same label helpers see ("Guest · a1b2").
@@ -207,16 +251,11 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
     const userName = guest?.label ?? (currentUser.name || "You");
     const userInitial = userName[0]?.toUpperCase() || "Y";
 
-    const list: TicketChatMessage[] = [
-        {
-            id: "welcome",
-            senderType: "system",
-            content: isFree ? TICKET_DISCLAIMER_FREE : TICKET_DISCLAIMER,
-            senderName: `${projectName} Team`,
-            senderAvatarUrl: projectLogo,
-            timestamp: nowFormatted,
-        },
-    ];
+    // Persisted rows in their stored (created_at) order. The welcome and its
+    // disclaimer lead the thread; synthetic rows are inserted after them.
+    const head: TicketChatMessage[] = [];
+    const tail: TicketChatMessage[] = [];
+    const list: TicketChatMessage[] = [];
 
     if (claimer) {
         list.push({
@@ -262,7 +301,10 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";
         const isOwnGuestMessage =
             !!guest && senderType === "user" && (msg.sender_id ?? msg.sender?.id) === currentUser.id;
-        list.push({
+        const systemKind = senderType === "system" ? msg.metadata?.kind : undefined;
+        const leading =
+            (systemKind === WELCOME_KIND || systemKind === "welcome_disclaimer") && tail.length === 0;
+        (leading ? head : tail).push({
             id: msg.id,
             senderType,
             content:
@@ -283,25 +325,12 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
             // payment_authorized, …) carry their kind + ticket_id here; TicketChat
             // renders the "Add payment method" CTA from it.
             paymentMetadata: (msg.metadata as TicketChatMessage["paymentMetadata"]) ?? null,
+            // The stored welcome: TicketChat renders the page's intro in its place.
+            kind: systemKind === WELCOME_KIND ? "welcome" : undefined,
         });
     });
 
-    // Auto-reply right after the customer's first message — whether that is the
-    // synthetic pending-first message or the first persisted user message — so
-    // it shows both in the live session and on reload.
-    const firstUserIndex = list.findIndex((m) => m.senderType === "user");
-    if (firstUserIndex !== -1) {
-        list.splice(firstUserIndex + 1, 0, {
-            id: "auto-reply",
-            senderType: "system",
-            content: buildAutoReply(avgResponseSeconds),
-            senderName: `${projectName} Team`,
-            senderAvatarUrl: projectLogo,
-            timestamp: list[firstUserIndex].timestamp,
-        });
-    }
-
-    return list;
+    return [...head, ...list, ...tail];
 }
 
 /**

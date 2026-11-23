@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { act, fireEvent, render, screen, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -64,6 +64,30 @@ beforeEach(() => {
 })
 
 describe("TicketChat thread", () => {
+  it("renders the intro in place of the stored welcome row, once, in created_at order", () => {
+    renderChat({
+      intro: <div data-testid="intro">Welcome to Acme</div>,
+      messages: [
+        message("w", {
+          senderType: "system",
+          senderId: null,
+          kind: "welcome",
+          content: "Welcome to Acme's support chat.",
+          createdAt: at(15, 10, 16),
+        }),
+        message("d", { senderType: "system", senderId: null, content: "Not charged yet.", createdAt: at(15, 10, 16) }),
+        message("a", { createdAt: at(15, 10, 17) }),
+      ],
+    })
+    const intro = screen.getAllByTestId("intro")
+    expect(intro).toHaveLength(1)
+    // The stored welcome text is not repeated as a note; the disclaimer is one.
+    expect(screen.queryByText("Welcome to Acme's support chat.")).toBeNull()
+    const note = screen.getByText("Not charged yet.")
+    expect(intro[0].compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(note.closest("[data-slot='system-note']")).not.toBeNull()
+  })
+
   it("puts a day divider above the intro and above the first message of each later day", () => {
     const { container } = renderChat({
       intro: <div data-testid="intro">Welcome to Acme</div>,
@@ -253,5 +277,73 @@ describe("TicketChat composer and right panel", () => {
     expect(screen.getByText("Ada")).toBeInTheDocument()
     expect(screen.queryByText("No helper has joined yet.")).not.toBeInTheDocument()
     expect(screen.queryByText("No other topics yet.")).not.toBeInTheDocument()
+  })
+})
+
+describe("TicketChat welcome entrance", () => {
+  const thread = [
+    message("w", { senderType: "system", senderId: null, kind: "welcome", content: "Welcome.", createdAt: at(15, 10, 16) }),
+    message("d", {
+      senderType: "system",
+      senderId: null,
+      content: "Not charged yet.",
+      createdAt: at(15, 10, 16),
+      paymentMetadata: { kind: "welcome_disclaimer" },
+    }),
+  ]
+  const intro = <div data-testid="intro">Welcome to Acme</div>
+
+  beforeEach(() => {
+    window.sessionStorage.clear()
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+  })
+
+  it("reveals the welcome group once after a beat for a freshly created ticket", () => {
+    vi.useFakeTimers()
+    try {
+      window.sessionStorage.setItem("welcome-reveal:t1", "1")
+      renderChat({ intro, messages: thread, welcomeRevealId: "t1" })
+      expect(screen.queryByTestId("intro")).toBeNull()
+      expect(screen.queryByText("Not charged yet.")).toBeNull()
+      expect(screen.queryByRole("separator")).toBeNull()
+
+      act(() => vi.advanceTimersByTime(400))
+      expect(screen.getByTestId("intro").closest(".animate-enter")).not.toBeNull()
+      expect(screen.getByText("Not charged yet.").closest(".animate-enter")).not.toBeNull()
+      expect(window.sessionStorage.getItem("welcome-reveal:t1")).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("shows everything immediately when the ticket is not flagged", () => {
+    vi.useFakeTimers()
+    try {
+      renderChat({ intro, messages: thread, welcomeRevealId: "t1" })
+      expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+      expect(screen.getByText("Not charged yet.")).toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(400))
+      expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("ignores the flag on views without welcomeRevealId (helper/admin) and leaves it set", () => {
+    window.sessionStorage.setItem("welcome-reveal:t1", "1")
+    renderChat({ intro, messages: thread })
+    expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+    expect(screen.getByText("Not charged yet.")).toBeInTheDocument()
+    expect(window.sessionStorage.getItem("welcome-reveal:t1")).toBe("1")
+  })
+
+  it("is immediate under reduced motion and retires the flag", () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
+    window.sessionStorage.setItem("welcome-reveal:t2", "1")
+    renderChat({ intro, messages: thread, welcomeRevealId: "t2" })
+    expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+    expect(screen.getByText("Not charged yet.").closest(".animate-enter")).toBeNull()
+    expect(screen.getByRole("separator")).toBeInTheDocument()
+    expect(window.sessionStorage.getItem("welcome-reveal:t2")).toBeNull()
   })
 })

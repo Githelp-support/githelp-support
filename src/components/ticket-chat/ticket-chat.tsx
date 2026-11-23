@@ -33,6 +33,7 @@ import { VisitorLeftAction } from "@/components/ticket-chat/guest-ticket"
 import type { TicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { ListSkeleton } from "@/components/ui/skeleton"
 import { GuestName } from "@/components/ui/guest-name"
+import { WELCOME_REVEAL_DELAY_MS, clearWelcomeReveal, hasWelcomeReveal } from "@/lib/welcome-reveal"
 
 export type PaymentSystemMessageKind =
   | "payment_required"
@@ -76,6 +77,11 @@ export type SystemMessageKind =
   // Helper-only notes: the guest closed the chat window / came back.
   | "guest_abandoned"
   | "guest_returned"
+  // Automatic project messages posted with every ticket (welcome carries the
+  // rate snapshot; the disclaimer and auto-reply render as notes).
+  | "welcome"
+  | "welcome_disclaimer"
+  | "auto_reply"
 
 export type TicketChatMessage = {
   id: string
@@ -91,12 +97,12 @@ export type TicketChatMessage = {
   timestamp: string
   /**
    * Raw ISO time of a persisted message (or the pending first message's
-   * ticket time). Absent on synthetic messages (welcome, claimed, auto-reply,
-   * session summary). Drives day dividers and grouping in `lib/chat-thread`.
+   * ticket time). Absent on synthetic messages (claimed, session summary). Drives day dividers and grouping in `lib/chat-thread`.
    */
   createdAt?: string
   content: string
-  kind?: "claimed" | "ended"
+  /** `welcome`: the stored welcome message, rendered as the `intro` when one is given. */
+  kind?: "claimed" | "ended" | "welcome"
   paymentMetadata?: {
     kind: SystemMessageKind
     [key: string]: unknown
@@ -132,7 +138,8 @@ export interface TicketChatProps {
   headerBackgroundColor?: string
   showBackButton?: boolean
 
-  // Intro section shown above the message thread (rates, ticket meta, CTA buttons, etc.)
+  // Intro section (rates, ticket meta, CTA buttons, etc.): rendered in place of
+  // the stored welcome row (`kind: "welcome"`) once there is one, else above the thread.
   intro?: React.ReactNode
 
   // Thread + participants
@@ -220,6 +227,13 @@ export interface TicketChatProps {
    * next thread's history renders without the new-message animation.
    */
   threadKey?: string
+  /**
+   * Customer pages only: the ticket whose welcome group (top day divider,
+   * welcome message and its starting notes) may make a one-time entrance,
+   * when the create mutation marked it (see lib/welcome-reveal). Omit on
+   * helper/admin views so they always see everything immediately.
+   */
+  welcomeRevealId?: string
 
   /**
    * Called when the user clicks a payment CTA on a system message: "Add
@@ -235,6 +249,15 @@ export interface TicketChatProps {
    * CTAs are retired (see isPaymentFailedCtaLive).
    */
   paymentStatus?: TicketPaymentStatus
+}
+
+/** System notes posted with the welcome message; they enter together with it. */
+const WELCOME_NOTE_KINDS: ReadonlySet<SystemMessageKind> = new Set(["welcome_disclaimer", "auto_reply"])
+const isWelcomeGroupRow = (msg: TicketChatMessage) =>
+  msg.kind === "welcome" || (msg.senderType === "system" && !!msg.paymentMetadata && WELCOME_NOTE_KINDS.has(msg.paymentMetadata.kind))
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
 }
 
 /** Gutter of the banners above the composer: 48px like the thread, 16px below `md`. */
@@ -314,6 +337,7 @@ export function TicketChat(props: TicketChatProps) {
     attachmentStoragePrefix,
     rightSidebarFooter,
     threadKey,
+    welcomeRevealId,
     onPaymentCtaClick,
     paymentCtaLoading,
     paymentStatus,
@@ -386,6 +410,9 @@ export function TicketChat(props: TicketChatProps) {
   }, [threadKey, messages.length, isEnded, hasHistory])
 
   const thread = useMemo(() => messages ?? [], [messages])
+  // Before the stored welcome message exists (no ticket yet) the intro sits
+  // above the thread; afterwards it renders at the welcome row's position.
+  const introAtTop = !thread.some((m) => m.kind === "welcome")
   // Day dividers and sender grouping. The first divider sits above the intro
   // (the welcome message), so it is rendered there instead of on the first row.
   const { rows, topDayLabel } = useMemo(() => {
@@ -402,6 +429,38 @@ export function TicketChat(props: TicketChatProps) {
   }
   const isNewMessage = (id: string) =>
     initialMessages !== null && initialMessages.key === threadKey && !initialMessages.ids.has(id)
+
+  // One-time entrance of a freshly created ticket's welcome group: hidden on
+  // arrival, shown after a short beat with `animate-enter`. The flag is
+  // cleared once the reveal has run, so reloads and later visits show it at
+  // once; reduced motion skips the delay and the animation.
+  // (State derived during render when `welcomeRevealId` changes, like the
+  // snapshot above; the timer only flips it to "entering".)
+  const [welcomeReveal, setWelcomeReveal] = useState<{
+    id: string | undefined
+    phase: "hidden" | "entering" | null
+  }>({ id: undefined, phase: null })
+  if (welcomeReveal.id !== welcomeRevealId) {
+    const marked = !!welcomeRevealId && hasWelcomeReveal(welcomeRevealId)
+    setWelcomeReveal({ id: welcomeRevealId, phase: marked && !prefersReducedMotion() ? "hidden" : null })
+  }
+  const revealPending = welcomeReveal.id === welcomeRevealId && welcomeReveal.phase === "hidden"
+  useEffect(() => {
+    if (!welcomeRevealId || !hasWelcomeReveal(welcomeRevealId)) return
+    // Reduced motion: shown at once; just retire the flag.
+    if (!revealPending) {
+      clearWelcomeReveal(welcomeRevealId)
+      return
+    }
+    const id = window.setTimeout(() => {
+      clearWelcomeReveal(welcomeRevealId)
+      setWelcomeReveal({ id: welcomeRevealId, phase: "entering" })
+    }, WELCOME_REVEAL_DELAY_MS)
+    return () => window.clearTimeout(id)
+  }, [welcomeRevealId, revealPending])
+  const welcomeHidden = revealPending
+  const welcomeEnterClass =
+    welcomeReveal.id === welcomeRevealId && welcomeReveal.phase === "entering" ? "animate-enter" : undefined
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
@@ -473,6 +532,8 @@ export function TicketChat(props: TicketChatProps) {
   }
 
   const renderRowBody = (msg: TicketChatMessage, groupStart: boolean) => {
+    // The stored welcome message is the intro (welcome line + rates snapshot).
+    if (msg.kind === "welcome" && intro) return intro
     // Claimed / ended banner: the helper's avatar and name, then the line with a check.
     if (msg.senderType === "system" && (msg.kind === "claimed" || msg.kind === "ended")) {
       return (
@@ -616,12 +677,16 @@ export function TicketChat(props: TicketChatProps) {
               {/* Short threads sit at the bottom, next to the composer. */}
               <div className="flex min-h-full flex-col justify-end">
                 <div className="flex flex-col px-6 py-5 md:px-12">
-                  {(intro || rows.length > 0) && <ChatDayDivider label={topDayLabel} className="mb-4" />}
-                  {intro}
+                  {!welcomeHidden && (intro || rows.length > 0) && (
+                    <ChatDayDivider label={topDayLabel} className={cn("mb-4", welcomeEnterClass)} />
+                  )}
+                  {!welcomeHidden && introAtTop && (welcomeEnterClass && intro ? <div className={welcomeEnterClass}>{intro}</div> : intro)}
 
                   {rows.map((row, index) => {
                     const msg = row.item
                     const followUp = !row.groupStart
+                    const welcomeRow = isWelcomeGroupRow(msg)
+                    if (welcomeHidden && welcomeRow) return null
                     return (
                       <Fragment key={msg.id}>
                         {index > 0 && row.showDayDivider && (
@@ -629,8 +694,10 @@ export function TicketChat(props: TicketChatProps) {
                         )}
                         <div
                           className={cn(
-                            followUp ? "mt-1" : (index > 0 || intro) && "mt-4",
-                            isNewMessage(msg.id) && "animate-enter",
+                            followUp ? "mt-1" : (index > 0 || (intro && introAtTop)) && "mt-4",
+                            // The intro was on screen before its stored row arrived.
+                            isNewMessage(msg.id) && !(intro && msg.kind === "welcome") && "animate-enter",
+                            welcomeRow && welcomeEnterClass,
                           )}
                         >
                           {renderRowBody(msg, row.groupStart)}

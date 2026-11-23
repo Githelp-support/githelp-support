@@ -35,7 +35,7 @@ import {
   TimeReviewSystemMessage,
 } from "@/components/ticket-chat/time-entry-review"
 import { useCurrentHelper } from "@/hooks/useCurrentHelper"
-import { useProject } from "@/hooks/useProject"
+import { useProject, useProjectBranding } from "@/hooks/useProject"
 import { MarkdownContent } from "@/components/ticket-chat/markdown-content"
 import { TicketChatInput, composerPlaceholder } from "@/components/ticket-chat/chat-input"
 import { ChatAvatarSlot, ChatDayDivider, ChatMessageMeta, SystemNote } from "@/components/ticket-chat/chat-message-parts"
@@ -55,7 +55,8 @@ import {
   endAbandonedGuestTicketErrorAction,
   ticketCreatorDisplayName,
 } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy, isGuestAbandoned } from "@/lib/customer-chat-messages"
+import { helperSystemMessageCopy, isGuestAbandoned, storedWelcomeIntro } from "@/lib/customer-chat-messages"
+import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import { useQueryClient } from "@tanstack/react-query"
 import { GuestName } from "@/components/ui/guest-name"
 import { guestLabel } from "@/lib/guest-label"
@@ -207,6 +208,7 @@ export default function TicketDetailPage() {
   // Admin but not yet registered as helper - must add self before claiming or logging time
   const projectId = ticket?.project_id ?? ""
   const { data: project } = useProject(projectId)
+  const { data: brandingData } = useProjectBranding(projectId)
   // Publish the sidebar's "Open project page" link for the ticket's project.
   useSetProjectPageHref(
     project?.slug
@@ -280,6 +282,14 @@ export default function TicketDetailPage() {
   // Format payment values (convert cents to dollars); null until the project
   // has a payment settings row — no placeholder prices.
   const rates = formatTicketRates(effectivePricing)
+
+  // The stored welcome message renders like the customer's intro, with the
+  // rate snapshot and time it was posted with (same for user, helper, admin).
+  const welcomeIntro = storedWelcomeIntro({
+    messages: messagesData,
+    ticket,
+    fallback: { rates, isFree: isFreeSupport(effectivePricing) },
+  })
 
   // Set up real-time subscriptions
   useRealtimeMessages(ticketId)
@@ -1233,7 +1243,22 @@ export default function TicketDetailPage() {
                       <Fragment key={msg.id}>
                         {dayLabel && <ChatDayDivider label={dayLabel} className="mt-4" />}
                         <div className={cn(row.groupStart ? "mt-4" : "mt-1", isNewMessage(msg.id) && "animate-enter")}>
-                          {isBanner ? (
+                          {msg.sender === "system" && msg.metadataKind === "welcome" ? (
+                            <CustomerChatIntro
+                              projectId={projectId}
+                              projectName={project?.name || "Support"}
+                              projectLogo={brandingData?.logo_url || null}
+                              primaryColor={brandingData?.primary_color}
+                              welcomeText={msg.content}
+                              timestamp={welcomeIntro?.timestamp ?? messageTime(msg) ?? ""}
+                              rates={welcomeIntro?.rates ?? null}
+                              isFree={welcomeIntro?.isFree ?? false}
+                              // Sign-in state is for the customer before a ticket exists.
+                              isAuthenticated
+                              ticketCreated
+                              onSignIn={() => {}}
+                            />
+                          ) : isBanner ? (
                             <div data-slot="chat-banner-row" className="flex items-start gap-3">
                               <ChatAvatarSlot
                                 kind="avatar"

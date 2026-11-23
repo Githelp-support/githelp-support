@@ -30,6 +30,7 @@ import { useTicketPaymentStatus } from "@/hooks/useTicketPaymentStatus"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import {
   buildCustomerThreadMessages,
+  storedWelcomeIntro,
   buildSessionEndedMessage,
   describeChargedLine,
   findPendingSca,
@@ -306,7 +307,7 @@ export default function SupportPage() {
     return { nowFormatted: formatChatTimestamp(now), nowTime: formatChatTime(now) }
   }, [])
 
-  // Thread: disclaimer → claimed banner → (pending first message) → persisted
+  // Thread: stored welcome + disclaimer → claimed banner → (pending first message) → persisted
   // messages → session summary once ended. Shared with /support/chat.
   const chatMessages: TicketChatMessage[] = useMemo(() => {
     const list = buildCustomerThreadMessages({
@@ -319,9 +320,7 @@ export default function SupportPage() {
       fallbackDescription: liveTicket?.description ?? null,
       fallbackTimestamp: liveTicket?.created_at ?? null,
       ticketStatus: liveTicket?.status ?? null,
-      isFree: isFreeSupport(effectivePricing),
       currentUser: { id: sessionUserId, name: isGuest ? "Guest" : user?.name, avatarUrl: user?.avatarUrl, isGuest },
-      avgResponseSeconds,
     })
     // A guest ticket closed because the visitor left carries its own
     // visitor_left message — no helper "session ended" summary.
@@ -352,9 +351,7 @@ export default function SupportPage() {
     liveTicket?.description,
     liveTicket?.created_at,
     liveTicket?.status,
-    effectivePricing,
     slaId,
-    avgResponseSeconds,
     ticketEnded,
     totalLoggedFormatted,
     paymentStatus.status,
@@ -619,6 +616,16 @@ export default function SupportPage() {
     )
   }
 
+  // Once a ticket exists the intro is its stored welcome message: the rate
+  // snapshot and time it was posted with. Before that, today's rates and time.
+  const welcomeIntro = ticketId
+    ? storedWelcomeIntro({
+        messages: messagesData,
+        ticket: liveTicket,
+        fallback: { rates, isFree: isFreeSupport(effectivePricing) },
+      })
+    : null
+
   const chatIntro = (
     <CustomerChatIntro
       projectId={projectId ?? ""}
@@ -626,9 +633,9 @@ export default function SupportPage() {
       projectLogo={projectLogo}
       primaryColor={brandingData?.primary_color}
       welcomeText={welcomeMessageContent}
-      timestamp={nowTime}
-      rates={rates}
-      isFree={isFreeSupport(effectivePricing)}
+      timestamp={welcomeIntro?.timestamp ?? nowTime}
+      rates={welcomeIntro ? welcomeIntro.rates : rates}
+      isFree={welcomeIntro ? welcomeIntro.isFree : isFreeSupport(effectivePricing)}
       isAuthenticated={isAuthenticated}
       ticketCreated={ticketCreated}
       userName={user?.name}
@@ -761,6 +768,7 @@ export default function SupportPage() {
             }
             showBackButton={false}
             intro={chatIntro}
+            welcomeRevealId={ticketId || undefined}
             messages={chatMessages}
             participants={chatParticipants}
             participantsLoading={participantsLoading}

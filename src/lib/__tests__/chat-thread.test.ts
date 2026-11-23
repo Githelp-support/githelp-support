@@ -134,20 +134,38 @@ describe("buildThreadRows", () => {
     expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, true, true])
   })
 
+  it("places the stored welcome rows at the ticket's creation time", () => {
+    // The ticket was opened late on the 14th; the customer wrote after midnight.
+    const ticketCreatedAt = new Date(2026, 10, 14, 23, 59, 30).toISOString()
+    const rows = buildThreadRows(
+      [
+        msg("w", ticketCreatedAt, { senderType: "system", senderId: null, kind: "welcome" }),
+        msg("d", new Date(Date.parse(ticketCreatedAt) + 1).toISOString(), { senderType: "system", senderId: null }),
+        msg("a", at(15, 0, 2)),
+        msg("auto", new Date(Date.parse(at(15, 0, 2)) + 1).toISOString(), { senderType: "system", senderId: null }),
+        msg("b", at(15, 0, 3)),
+      ],
+      NOW,
+    )
+    // The welcome's divider is the creation day, not the first message's day or "Today".
+    expect(rows.map((r) => r.showDayDivider)).toEqual(["Saturday 14 November", null, "Sunday 15 November", null, null])
+    expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, true, true])
+  })
+
   it("lets undated items inherit the neighbouring day without a divider of their own", () => {
     const rows = buildThreadRows(
       [
-        msg("welcome", undefined, { senderType: "system", senderId: null }),
+        msg("pending-welcome", undefined, { senderType: "system", senderId: null }),
         msg("system-claimed", undefined, { senderType: "system", senderId: "h1", kind: "claimed" }),
         msg("a", at(15, 10, 17)),
-        msg("auto-reply", undefined, { senderType: "system", senderId: null }),
+        msg("note", undefined, { senderType: "system", senderId: null }),
         msg("b", at(15, 10, 18)),
         msg("c", at(16, 9, 0)),
         msg("session-summary", undefined, { senderType: "system", senderId: null }),
       ],
       NOW,
     )
-    // The welcome row takes the first dated message's day, not "Today".
+    // The leading undated row takes the first dated message's day, not "Today".
     expect(rows.map((r) => r.showDayDivider)).toEqual([
       "Sunday 15 November",
       null,
@@ -157,12 +175,12 @@ describe("buildThreadRows", () => {
       "Monday 16 November",
       null,
     ])
-    // The auto-reply sits between a and b, so b starts a new group.
+    // The note sits between a and b, so b starts a new group.
     expect(rows.map((r) => r.groupStart)).toEqual([true, true, true, true, true, true, true])
   })
 
   it("falls back to today when nothing in the thread is dated", () => {
-    const rows = buildThreadRows([msg("welcome", undefined, { senderType: "system", senderId: null })], NOW)
+    const rows = buildThreadRows([msg("pending-welcome", undefined, { senderType: "system", senderId: null })], NOW)
     expect(rows[0].showDayDivider).toBe("Today")
   })
 
