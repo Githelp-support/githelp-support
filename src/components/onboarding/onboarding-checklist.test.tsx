@@ -63,8 +63,8 @@ describe("OnboardingChecklistCard", () => {
     expect(screen.getByLabelText("1 of 6 done")).toHaveTextContent("1 / 6")
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument()
     expect(
-      screen.getByText("Follow the steps below to get your project ready for support requests."),
-    ).toBeInTheDocument()
+      screen.queryByText("Follow the steps below to get your project ready for support requests."),
+    ).not.toBeInTheDocument()
     expect(screen.getByText("Create project")).toHaveClass("text-muted-foreground")
     expect(screen.getByText("Create project")).not.toHaveClass("line-through")
     expect(screen.queryByRole("link", { name: "Create project" })).not.toBeInTheDocument()

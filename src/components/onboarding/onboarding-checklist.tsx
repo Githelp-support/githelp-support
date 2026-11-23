@@ -103,13 +103,13 @@ function StepRow({
         <Link
           href={step.href as string}
           onClick={() => onOpen(step)}
-          className="min-w-0 truncate text-sm font-medium text-foreground outline-none after:absolute after:inset-0"
+          className="min-w-0 truncate text-ui font-medium text-foreground outline-none after:absolute after:inset-0"
         >
           {step.label}
         </Link>
       ) : (
         <span
-          className={cn("min-w-0 truncate text-sm font-medium", step.done ? "text-muted-foreground" : "text-foreground")}
+          className={cn("min-w-0 truncate text-ui font-medium", step.done ? "text-muted-foreground" : "text-foreground")}
         >
           {step.label}
         </span>
@@ -144,8 +144,8 @@ interface OnboardingChecklistCardProps {
 
 /**
  * The checklist itself, without data fetching: a white card with the title,
- * a done-count pill, a one-line intro and one bordered row per step (the rows
- * are a design exception to "no cards inside cards").
+ * a done-count pill and one bordered row per step (the rows are a design
+ * exception to "no cards inside cards").
  */
 export function OnboardingChecklistCard({
   checklist,
@@ -173,9 +173,6 @@ export function OnboardingChecklistCard({
           {doneCount} / {totalCount}
         </span>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Follow the steps below to get your project ready for support requests.
-      </p>
       <ol className="mt-5 flex flex-col gap-2">
         {steps.map((step) => (
           <StepRow
