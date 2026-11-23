@@ -61,3 +61,11 @@ export function SidebarEmpty({
 }) {
   return <div className={cn("text-center text-muted-foreground text-ui py-4", className)}>{children}</div>
 }
+
+/**
+ * Left-aligned sentence for a section with nothing in it yet
+ * ("No helper has joined yet.", "No other topics yet.").
+ */
+export function SidebarEmptyText({ children, className }: { children: ReactNode; className?: string }) {
+  return <p className={cn("text-left text-ui text-text-empty", className)}>{children}</p>
+}

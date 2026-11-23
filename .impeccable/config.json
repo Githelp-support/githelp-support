@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/ticket-chat/active-tickets-list.tsx"
+        ],
+        "createdAt": "2026-11-22T16:21:59.325Z",
+        "reason": "agent decided: task brief says to keep the existing current-item highlight (brand left accent, pre-existing in customer-sidebar-footer.tsx and the helper ticket page) and the reference image shows it"
+      }
+    ]
+  }
+}

@@ -137,7 +137,7 @@ export function NotificationsPanel({
         role="dialog"
         aria-label="Notifications"
         data-state={isOpen ? "open" : "closed"}
-        className={`fixed w-96 max-w-[calc(100vw-2rem)] ${position.left !== undefined ? "origin-top-left" : "origin-top-right"} bg-card shadow-popover z-[2147483647] flex flex-col rounded-lg border border-border-subtle max-h-[80vh] data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out`}
+        className={`fixed w-115 max-w-[calc(100vw-2rem)] ${position.left !== undefined ? "origin-top-left" : "origin-top-right"} bg-card shadow-popover z-[2147483647] flex flex-col rounded-lg border border-border-subtle max-h-[80vh] data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out`}
         style={
           position.left !== undefined
             ? { top: `${position.top}px`, left: `${position.left}px` }
@@ -188,7 +188,8 @@ export function NotificationsPanel({
                       </div>
                     </div>
                     <p
-                      className={`text-ui leading-relaxed ${
+                      title={stripQuotes(notification.content)}
+                      className={`text-ui leading-relaxed line-clamp-2 ${
                         !notification.is_read ? "text-foreground" : "text-text-tertiary"
                       }`}
                     >

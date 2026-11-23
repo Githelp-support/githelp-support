@@ -208,7 +208,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-muted">
         <Header title="SLA Details" subtitle="View and manage SLA configuration" />
-        <main className="flex-1 overflow-auto px-14 py-6">
+        <main className="flex-1 overflow-auto px-14 pt-6 pb-10">
           <ListSkeleton rows={4} className="rounded-lg border border-border-subtle bg-card" />
         </main>
       </div>
@@ -219,7 +219,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-muted">
         <Header title="SLA Details" subtitle="View and manage SLA configuration" />
-        <main className="flex-1 overflow-auto px-14 py-6 flex items-center justify-center">
+        <main className="flex-1 overflow-auto px-14 pt-6 pb-10 flex items-center justify-center">
           <span className="text-muted-foreground">SLA not found.</span>
         </main>
       </div>
@@ -239,7 +239,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
     <div className="flex-1 flex flex-col overflow-hidden bg-muted">
       <Header title="SLA Details" subtitle="View and manage SLA configuration" />
 
-      <main className="flex-1 overflow-auto px-14 py-6">
+      <main className="flex-1 overflow-auto px-14 pt-6 pb-10">
         {/* Back navigation */}
         <div className="mb-6">
           <Link

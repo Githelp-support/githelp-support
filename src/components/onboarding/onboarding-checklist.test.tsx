@@ -36,9 +36,21 @@ const input: OnboardingChecklistInput = {
 
 const wrap = (ui: ReactNode) => render(<TooltipProvider delayDuration={0}>{ui}</TooltipProvider>)
 const row = (label: string) => screen.getByText(label).closest("li") as HTMLElement
+const openLabels = [
+  "Add helpers",
+  "Modify rates",
+  "Share your support landing page",
+  "Set your branding",
+  "Set up payouts",
+]
+/** Labels of the rows carrying the inset brand edge of the next open step. */
+const accentedRows = () =>
+  ["Create project", ...openLabels].filter(
+    (label) => screen.queryByText(label)?.closest("li")?.className.includes("shadow-[inset_3px_0_0"),
+  )
 
 describe("OnboardingChecklistCard", () => {
-  it("strikes through done steps and links the open ones to their section", () => {
+  it("marks done steps with the done icon and links the open ones to their section", () => {
     wrap(
       <OnboardingChecklistCard
         checklist={buildOnboardingChecklist({ ...input, payoutsNeeded: true })}
@@ -47,10 +59,16 @@ describe("OnboardingChecklistCard", () => {
       />,
     )
 
-    expect(screen.getByText("1 of 6 done")).toBeInTheDocument()
-    expect(screen.getByText("Create project")).toHaveClass("line-through")
+    expect(screen.getByText("1 / 6")).toBeInTheDocument()
+    expect(screen.getByLabelText("1 of 6 done")).toHaveTextContent("1 / 6")
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Follow the steps below to get your project ready for support requests."),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText("Create project")).toHaveClass("text-muted-foreground")
+    expect(screen.getByText("Create project")).not.toHaveClass("line-through")
     expect(screen.queryByRole("link", { name: "Create project" })).not.toBeInTheDocument()
-    expect(within(row("Create project")).queryByRole("button", { name: /Dismiss/ })).not.toBeInTheDocument()
+    expect(within(row("Create project")).queryByRole("button", { name: /Skip/ })).not.toBeInTheDocument()
 
     expect(screen.getByRole("link", { name: "Add helpers" })).toHaveAttribute("href", "/helpers")
     expect(screen.getByRole("link", { name: "Modify rates" })).toHaveAttribute("href", "/settings/payment")
@@ -58,8 +76,38 @@ describe("OnboardingChecklistCard", () => {
     expect(screen.getByRole("link", { name: "Set your branding" })).toHaveAttribute("href", "/settings/branding")
     expect(screen.getByRole("link", { name: "Set up payouts" })).toHaveAttribute("href", "/settings/payment")
 
+    expect(accentedRows()).toEqual(["Add helpers"])
+    expect(within(row("Create project")).getByRole("img", { name: "Done" })).toBeInTheDocument()
+    expect(within(row("Create project")).queryByRole("img", { name: "Not done" })).not.toBeInTheDocument()
+    for (const label of openLabels) {
+      expect(within(row(label)).getByRole("img", { name: "Not done" })).toBeInTheDocument()
+    }
+
     expect(within(row("Modify rates")).getByText("Optional")).toBeInTheDocument()
     expect(within(row("Add helpers")).queryByText("Optional")).not.toBeInTheDocument()
+  })
+
+  it("moves the accent to the next open step and gives each done icon its own mask", () => {
+    wrap(
+      <OnboardingChecklistCard
+        checklist={buildOnboardingChecklist({ ...input, helperCount: 1 })}
+        onStepOpen={vi.fn()}
+        onStepDismiss={vi.fn()}
+      />,
+    )
+
+    expect(accentedRows()).toEqual(["Modify rates"])
+
+    const doneIcons = screen.getAllByRole("img", { name: "Done" })
+    expect(doneIcons).toHaveLength(2)
+    const maskIds = doneIcons.map((icon) => icon.querySelector("mask")?.id)
+    expect(maskIds[0]).toBeTruthy()
+    expect(maskIds[1]).toBeTruthy()
+    expect(maskIds[0]).not.toBe(maskIds[1])
+    // Each disc points at its own mask, not the first one in the document.
+    doneIcons.forEach((icon, i) =>
+      expect(icon.querySelector("circle[mask]")).toHaveAttribute("mask", `url(#${maskIds[i]})`),
+    )
   })
 
   it("shows a step's details from its info button", async () => {
@@ -86,7 +134,7 @@ describe("OnboardingChecklistCard", () => {
         onStepDismiss={onStepDismiss}
       />,
     )
-    fireEvent.click(screen.getByRole("button", { name: 'Dismiss "Set your branding"' }))
+    fireEvent.click(screen.getByRole("button", { name: 'Skip "Set your branding"' }))
     expect(onStepDismiss).toHaveBeenCalledTimes(1)
     expect(onStepDismiss.mock.calls[0][0].id).toBe("set_branding")
     expect(onStepOpen).not.toHaveBeenCalled()
@@ -126,7 +174,7 @@ describe("OnboardingChecklist", () => {
     mocks.useOnboardingChecklist.mockReturnValue({ checklist: buildOnboardingChecklist(input), setStepDismissed })
     wrap(<OnboardingChecklist projectId="p1" />)
 
-    fireEvent.click(screen.getByRole("button", { name: 'Dismiss "Modify rates"' }))
+    fireEvent.click(screen.getByRole("button", { name: 'Skip "Modify rates"' }))
     await waitFor(() => expect(mocks.toast).toHaveBeenCalled())
     expect(setStepDismissed).toHaveBeenCalledWith("modify_rates", true)
 
@@ -141,7 +189,7 @@ describe("OnboardingChecklist", () => {
     mocks.useOnboardingChecklist.mockReturnValue({ checklist: buildOnboardingChecklist(input), setStepDismissed })
     wrap(<OnboardingChecklist projectId="p1" />)
 
-    fireEvent.click(screen.getByRole("button", { name: 'Dismiss "Add helpers"' }))
+    fireEvent.click(screen.getByRole("button", { name: 'Skip "Add helpers"' }))
     await waitFor(() => expect(mocks.toast.error).toHaveBeenCalled())
     expect(mocks.toast).not.toHaveBeenCalled()
   })

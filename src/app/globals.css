@@ -20,6 +20,7 @@
   --color-status-warning-text: var(--status-warning-text);
   --color-status-high-bg: var(--status-high-bg);
   --color-status-high-text: var(--status-high-text);
+  --color-step-todo: var(--step-todo);
   --color-badge-neutral-bg: var(--badge-neutral-bg);
   --color-badge-neutral-text: var(--badge-neutral-text);
   --color-badge-muted-text: var(--badge-muted-text);
@@ -53,6 +54,9 @@
   --color-text-muted: var(--text-muted);
   --color-bg-subtle: var(--bg-subtle);
   --color-text-tertiary: var(--text-tertiary);
+  --color-text-note: var(--text-note);
+  --color-text-empty: var(--text-empty);
+  --color-composer-border-focus: var(--composer-border-focus);
   --color-support-header: var(--support-header);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -445,6 +449,10 @@
   --text-muted: #55555d;
   /* Blue-grey tertiary; passes AA (4.5:1+) on white, page-muted, bg-subtle and the lavender tint */
   --text-tertiary: #666b77;
+  /* Chat thread (light only, no .dark entries): system-note text follows the muted badge grey (#5c6370), right-panel empty text, composer border while focused */
+  --text-note: var(--badge-muted-text);
+  --text-empty: #767676;
+  --composer-border-focus: #8a909b;
   --bg-subtle: #f6f6f6;
   --surface-hover: rgba(0, 0, 0, 0.04);
   --surface-active: rgba(0, 0, 0, 0.08);
@@ -501,6 +509,8 @@
   --status-warning-text: #a1944a;
   --status-high-bg: #f4bccc;
   --status-high-text: #d63384;
+  /* Onboarding checklist: the dashed ring of a step that is not done (light mode only) */
+  --step-todo: #c4c8cf;
   /* Semantic badge colours (ticket type, category, status, priority, tier dots). Every text/background pair is 4.5:1 or better, including muted text on the neutral fill and on list rows */
   --badge-neutral-bg: #f1f2f4;
   --badge-neutral-text: #3f4450;

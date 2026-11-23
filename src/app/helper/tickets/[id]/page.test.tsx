@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import TicketDetailPage from "./page"
 
@@ -85,7 +85,15 @@ vi.mock("@/components/layout/header", () => ({
 vi.mock("@/components/ticket-chat/markdown-content", () => ({
   MarkdownContent: ({ content }: { content: string }) => <div>{content}</div>,
 }))
-vi.mock("@/components/ticket-chat/chat-input", () => ({ TicketChatInput: () => <textarea aria-label="Message" /> }))
+vi.mock("@/components/ticket-chat/chat-input", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/ticket-chat/chat-input")>()),
+  TicketChatInput: ({ placeholder, toolbarEndContent }: { placeholder?: string; toolbarEndContent?: React.ReactNode }) => (
+    <div data-testid="composer">
+      <textarea aria-label="Message" placeholder={placeholder} />
+      {toolbarEndContent}
+    </div>
+  ),
+}))
 vi.mock("@/components/ticket-chat/attach-image-modal", () => ({ AttachImageModal: () => null }))
 vi.mock("@/components/ticket-chat/end-session-request", () => ({ EndSessionRequestedHelperBanner: () => null }))
 vi.mock("@/components/drawers/end-ticket-drawer", () => ({ EndTicketDrawer: () => null }))
@@ -164,16 +172,96 @@ describe("helper ticket page frame", () => {
     expect(column.className).toMatch(/min-w-0/)
   })
 
-  it("keeps the ticket id on one line and drops it below xl so the title keeps its room", () => {
+  it("shows the ticket id as a copyable pill next to the title", () => {
     renderPage()
-    const id = screen.getByText("ID: t1")
-    expect(id.className).toMatch(/whitespace-nowrap/)
-    expect(id.className).toMatch(/max-xl:hidden/)
+    const header = screen.getByRole("banner")
+    expect(within(header).getByText("t1..")).toBeInTheDocument()
+    expect(within(header).getByRole("button", { name: "Copy full ticket ID" })).toBeInTheDocument()
+    expect(screen.queryByText("ID: t1")).not.toBeInTheDocument()
   })
 
-  it("pads the top of the panel sheet below lg, where the collapse toggle is hidden", () => {
+  it("pads the top of the panel, which has no toggle row of its own", () => {
     renderPage()
     const scroller = screen.getByText(/people in this chat/i).closest(".overflow-y-auto") as HTMLElement
-    expect(scroller.className).toMatch(/max-lg:pt-4/)
+    expect(scroller.className).toMatch(/\bpt-4\b/)
+  })
+
+  it("puts the right-panel toggle in the header", () => {
+    renderPage()
+    const header = screen.getByRole("banner")
+    expect(within(header).getByRole("button", { name: /hide ticket details/i })).toBeInTheDocument()
+    expect(within(header).getByRole("button", { name: "Ticket details" })).toBeInTheDocument()
+  })
+
+  it("shows End session in the header, not in the composer, for the claimed helper", () => {
+    mocks.useTicketParticipants.mockReturnValue({
+      data: [{ id: "tp1", participant_id: "u1", claimed: true, created_at: "", user: { id: "u1", name: "Helper", avatar_url: null } }],
+      isLoading: false,
+    })
+    renderPage()
+    expect(within(screen.getByRole("banner")).getByRole("button", { name: "End session" })).toBeInTheDocument()
+    expect(within(screen.getByTestId("composer")).queryByRole("button", { name: "End session" })).not.toBeInTheDocument()
+  })
+
+  it("hides End session from a helper who has not claimed the ticket", () => {
+    mocks.useTicketParticipants.mockReturnValue({
+      data: [{ id: "tp1", participant_id: "h2", claimed: true, created_at: "", user: { id: "h2", name: "Other", avatar_url: null } }],
+      isLoading: false,
+    })
+    renderPage()
+    expect(screen.queryByRole("button", { name: "End session" })).not.toBeInTheDocument()
+  })
+
+  it("keeps Claim ticket in the composer toolbar on an unclaimed ticket", () => {
+    mocks.useTicket.mockReturnValue({
+      data: { id: "t1", project_id: "p1", status: "available", title: "Build fails", description: "It fails on main", created_at: "2026-08-25T10:00:00Z" },
+      isLoading: false,
+      isError: false,
+    })
+    renderPage()
+    expect(within(screen.getByTestId("composer")).getByRole("button", { name: /claim/i })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "End session" })).not.toBeInTheDocument()
+  })
+
+  it("uses the project's composer placeholder", () => {
+    mocks.useProject.mockReturnValue({ data: { id: "p1", name: "Testhelp", slug: "testhelp" } })
+    renderPage()
+    expect(screen.getByLabelText("Message")).toHaveAttribute("placeholder", "Ask #testhelp")
+  })
+
+  it("says so when no helper has joined and when there are no other topics", () => {
+    renderPage()
+    expect(screen.getByText("No helper has joined yet.")).toBeInTheDocument()
+    expect(screen.getByText("No other topics yet.")).toBeInTheDocument()
+    expect(screen.getByText("Active tickets (0)")).toBeInTheDocument()
+  })
+
+  it("drops the no-helper line once a helper has claimed the ticket", () => {
+    mocks.useTicketParticipants.mockReturnValue({
+      data: [{ id: "tp1", participant_id: "u1", claimed: true, created_at: "", user: { id: "u1", name: "Helper", avatar_url: null } }],
+      isLoading: false,
+    })
+    renderPage()
+    expect(screen.queryByText("No helper has joined yet.")).not.toBeInTheDocument()
+  })
+
+  it("renders grey system messages as notes and groups follow-ups under one sender", () => {
+    mocks.useTicketMessages.mockReturnValue({
+      data: [
+        { id: "m1", sender_type: "user", sender_id: "c1", content: "First", created_at: "2026-08-25T10:00:00Z", sender: { id: "c1", name: "Ada", avatar_url: null }, metadata: null },
+        { id: "m2", sender_type: "user", sender_id: "c1", content: "Second", created_at: "2026-08-25T10:01:00Z", sender: { id: "c1", name: "Ada", avatar_url: null }, metadata: null },
+        { id: "m3", sender_type: "system", sender_id: null, content: "Time was logged", created_at: "2026-08-26T10:02:00Z", sender: null, metadata: { kind: "time_logged" } },
+      ],
+      isLoading: false,
+    })
+    const { container } = renderPage()
+    const rows = container.querySelectorAll('[data-slot="chat-message-row"]')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toHaveAttribute("data-group-start")
+    expect(rows[1]).not.toHaveAttribute("data-group-start")
+    const note = container.querySelector('[data-slot="system-note"]') as HTMLElement
+    expect(note).toHaveTextContent("Note · Time was logged")
+    // One divider above the intro, one for the next day.
+    expect(screen.getAllByRole("separator")).toHaveLength(2)
   })
 })

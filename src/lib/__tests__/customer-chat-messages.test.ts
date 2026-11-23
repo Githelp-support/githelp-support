@@ -83,9 +83,33 @@ describe("buildCustomerThreadMessages auto-reply", () => {
         expect(list.find((m) => m.id === "auto-reply")?.content).toContain("**1h 30m**");
     });
 
-    it("shows ~ while the project has no average response time yet", () => {
-        expect(buildAutoReply(null)).toContain("**~**");
-        expect(buildAutoReply(undefined)).toContain("**~**");
+    it("omits the average response time sentence while the project has none yet", () => {
+        const base = "Thank you for reaching out! A helper will get in touch with you as soon as possible.";
+        expect(buildAutoReply(null)).toBe(base);
+        expect(buildAutoReply(undefined)).toBe(base);
+        expect(buildAutoReply(null)).not.toContain("~");
+        expect(buildAutoReply(null)).not.toContain("average response time");
+    });
+
+    it("includes the average response time sentence with a real value", () => {
+        expect(buildAutoReply(90 * 60)).toBe(
+            "Thank you for reaching out! A helper will get in touch with you as soon as possible. The average response time for this project is **1h 30m**.",
+        );
+    });
+
+    it("sets the raw createdAt on persisted messages and the pending-first fallback only", () => {
+        const persisted = buildCustomerThreadMessages(baseOpts({ messagesData: [persistedUserMessage()] }));
+        expect(persisted.find((m) => m.id === "msg-1")?.createdAt).toBe("2026-01-01T12:00:00Z");
+        expect(persisted.find((m) => m.id === "welcome")?.createdAt).toBeUndefined();
+        expect(persisted.find((m) => m.id === "auto-reply")?.createdAt).toBeUndefined();
+
+        const pending = buildCustomerThreadMessages(
+            baseOpts({ fallbackDescription: "My build is broken", fallbackTimestamp: "2026-01-01T11:00:00Z" }),
+        );
+        expect(pending.find((m) => m.id === "pending-first")?.createdAt).toBe("2026-01-01T11:00:00Z");
+
+        const noTimestamp = buildCustomerThreadMessages(baseOpts({ pendingFirstMessage: "My build is broken" }));
+        expect(noTimestamp.find((m) => m.id === "pending-first")?.createdAt).toBeUndefined();
     });
 });
 
