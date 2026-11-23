@@ -30,6 +30,11 @@ function isStoredWelcome(msg: { sender_type: string; metadata?: Record<string, u
     return msg.sender_type === "system" && msg.metadata?.kind === WELCOME_KIND;
 }
 
+/** The disclaimer stored for a free ticket; the intro already carries its sentence. */
+function isFreeWelcomeDisclaimer(metadata: Record<string, unknown> | null | undefined): boolean {
+    return metadata?.kind === "welcome_disclaimer" && metadata?.is_free === true;
+}
+
 /** The stored welcome message of a ticket, if it has loaded. */
 export function findStoredWelcome<T extends { sender_type: string; metadata?: Record<string, unknown> | null }>(
     messages: T[] | undefined
@@ -229,7 +234,8 @@ export interface CustomerThreadOptions {
  * the other persisted messages (auto-reply included), in created_at order.
  * The stored `welcome` row becomes a `kind: "welcome"` row carrying its
  * metadata (rate snapshot), which TicketChat renders as the page's intro;
- * `welcome_disclaimer` and `auto_reply` are plain system notes. Callers append
+ * `welcome_disclaimer` and `auto_reply` are plain system notes (a free ticket's
+ * disclaimer is hidden: the intro already says it is free). Callers append
  * page-specific trailing messages (e.g. the session summary).
  */
 export function buildCustomerThreadMessages(opts: CustomerThreadOptions): TicketChatMessage[] {
@@ -297,6 +303,9 @@ export function buildCustomerThreadMessages(opts: CustomerThreadOptions): Ticket
         if (msg.sender_type === "system" && msg.metadata?.kind === "visitor_left" && msg !== visitorLeftNow) return;
         // Notes addressed to the helper (the guest closed the window / came back).
         if (msg.sender_type === "system" && isHelperOnlySystemKind(msg.metadata?.kind)) return;
+        // A free ticket's intro already says it is free (CustomerChatIntro), so its
+        // disclaimer would repeat the sentence; the paid disclaimer stays.
+        if (msg.sender_type === "system" && isFreeWelcomeDisclaimer(msg.metadata)) return;
         const senderType: TicketChatMessage["senderType"] =
             msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system";
         const isOwnGuestMessage =

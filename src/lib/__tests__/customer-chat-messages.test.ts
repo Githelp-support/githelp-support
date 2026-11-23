@@ -92,18 +92,18 @@ describe("buildCustomerThreadMessages stored automatic messages", () => {
         expect([...times].sort((x, y) => x - y)).toEqual(times);
     });
 
-    it("shows the stored free disclaimer as is, without charging or confirming", () => {
+    it("hides a free ticket's disclaimer: the intro already says it is free", () => {
         const freeWelcome = msg({ ...welcome, metadata: { kind: "welcome", is_free: true } });
         const freeDisclaimer = msg({
             ...disclaimer,
-            content: "Acme offers support for free — you won't be charged and no payment method is needed.",
+            content: "Acme offers support for free - no payment method needed.",
             metadata: { kind: "welcome_disclaimer", is_free: true },
         });
-        const list = buildCustomerThreadMessages(baseOpts({ messagesData: [freeWelcome, freeDisclaimer] }));
+        const list = buildCustomerThreadMessages(baseOpts({ messagesData: [freeWelcome, freeDisclaimer, msg()] }));
+        expect(list.map((m) => m.id)).toEqual(["w", "msg-1"]);
         expect(list[0].paymentMetadata).toMatchObject({ kind: "welcome", is_free: true });
         expect(list[0].paymentMetadata?.rate_start_price).toBeUndefined();
-        expect(list[1].content).toBe("Acme offers support for free — you won't be charged and no payment method is needed.");
-        expect(list[1].content).not.toContain("confirm");
+        expect(list.some((m) => /offers support for free/.test(m.content))).toBe(false);
         expect(list.some((m) => /not charged anything/.test(m.content))).toBe(false);
     });
 
