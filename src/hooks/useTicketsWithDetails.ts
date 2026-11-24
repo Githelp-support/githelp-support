@@ -78,12 +78,13 @@ export function useTicketsWithDetails(projectId?: string) {
             const ticketIds = (data || []).map((t: any) => t.id);
             const { data: messageCounts } = await supabase
                 .from("tickets_messages")
-                .select("ticket_id")
+                .select("ticket_id, is_automatic")
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null);
 
             const countsMap = new Map<string, number>();
             messageCounts?.forEach((msg: any) => {
+                if (msg.is_automatic) return; // automatic welcome/notes are not messages people wrote
                 countsMap.set(
                     msg.ticket_id,
                     (countsMap.get(msg.ticket_id) || 0) + 1
@@ -245,7 +246,7 @@ export function useUserActiveTicketsSidebar(
 
             const { data: messages } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, content, created_at")
+                .select("id, ticket_id, content, created_at, is_automatic")
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
@@ -253,8 +254,9 @@ export function useUserActiveTicketsSidebar(
             const firstMessageByTicket = new Map<string, { content: string }>();
             const lastMessageIdByTicket = new Map<string, string>();
             messages?.forEach(
-                (m: { id: string; ticket_id: string; content: string }) => {
-                    if (!firstMessageByTicket.has(m.ticket_id)) {
+                (m: { id: string; ticket_id: string; content: string; is_automatic?: boolean }) => {
+                    // The subtitle is the customer's question, not the automatic welcome/notes.
+                    if (!m.is_automatic && !firstMessageByTicket.has(m.ticket_id)) {
                         firstMessageByTicket.set(m.ticket_id, {
                             content: m.content,
                         });
@@ -384,11 +386,12 @@ export function useUserTickets(userId?: string) {
             const ticketIds = tickets.map((t: any) => t.id);
             const { data: messageCounts } = await supabase
                 .from("tickets_messages")
-                .select("ticket_id")
+                .select("ticket_id, is_automatic")
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null);
             const countsMap = new Map<string, number>();
             messageCounts?.forEach((msg: any) => {
+                if (msg.is_automatic) return; // automatic welcome/notes are not messages people wrote
                 countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
             });
 

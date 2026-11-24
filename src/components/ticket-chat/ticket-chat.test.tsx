@@ -316,6 +316,35 @@ describe("TicketChat welcome entrance", () => {
     }
   })
 
+  it("keeps an intro that was already on screen when the ticket is created from the chat", () => {
+    vi.useFakeTimers()
+    try {
+      const wrap = (node: ReactNode) => (
+        <QueryClientProvider client={new QueryClient()}>
+          <TooltipProvider>{node}</TooltipProvider>
+        </QueryClientProvider>
+      )
+      const base: Omit<TicketChatProps, "messages"> = { headerTitle: "Ticket with Acme", message: "", onMessageChange: () => {}, onSend: () => {}, intro }
+      // Before the ticket exists: the intro above an empty thread.
+      const { rerender } = render(wrap(<TicketChat {...base} messages={[]} />))
+      expect(screen.getByTestId("intro")).toBeInTheDocument()
+
+      // Created: the flag is set and the stored rows arrive.
+      window.sessionStorage.setItem("welcome-reveal:t3", "1")
+      rerender(wrap(<TicketChat {...base} messages={thread} welcomeRevealId="t3" />))
+      expect(screen.getByTestId("intro")).toBeInTheDocument()
+      expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+      expect(screen.queryByText("Not charged yet.")).toBeNull()
+
+      act(() => vi.advanceTimersByTime(400))
+      expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+      expect(screen.getByText("Not charged yet.").closest(".animate-enter")).not.toBeNull()
+      expect(window.sessionStorage.getItem("welcome-reveal:t3")).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it("shows everything immediately when the ticket is not flagged", () => {
     vi.useFakeTimers()
     try {

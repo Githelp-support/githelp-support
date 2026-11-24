@@ -436,13 +436,25 @@ export function TicketChat(props: TicketChatProps) {
   // once; reduced motion skips the delay and the animation.
   // (State derived during render when `welcomeRevealId` changes, like the
   // snapshot above; the timer only flips it to "entering".)
+  // When the ticket is created from this chat, the intro (welcome + rates) was
+  // already on screen before it existed: it stays put (`keepIntro`) and only
+  // the notes posted with it make the entrance, so nothing blinks away.
   const [welcomeReveal, setWelcomeReveal] = useState<{
     id: string | undefined
     phase: "hidden" | "entering" | null
-  }>({ id: undefined, phase: null })
+    introShown: boolean
+    keepIntro: boolean
+  }>({ id: undefined, phase: null, introShown: false, keepIntro: false })
   if (welcomeReveal.id !== welcomeRevealId) {
     const marked = !!welcomeRevealId && hasWelcomeReveal(welcomeRevealId)
-    setWelcomeReveal({ id: welcomeRevealId, phase: marked && !prefersReducedMotion() ? "hidden" : null })
+    setWelcomeReveal({
+      id: welcomeRevealId,
+      phase: marked && !prefersReducedMotion() ? "hidden" : null,
+      introShown: welcomeReveal.introShown,
+      keepIntro: welcomeReveal.introShown,
+    })
+  } else if (!welcomeRevealId && !!intro !== welcomeReveal.introShown) {
+    setWelcomeReveal({ ...welcomeReveal, introShown: !!intro })
   }
   const revealPending = welcomeReveal.id === welcomeRevealId && welcomeReveal.phase === "hidden"
   useEffect(() => {
@@ -454,13 +466,17 @@ export function TicketChat(props: TicketChatProps) {
     }
     const id = window.setTimeout(() => {
       clearWelcomeReveal(welcomeRevealId)
-      setWelcomeReveal({ id: welcomeRevealId, phase: "entering" })
+      setWelcomeReveal((prev) => ({ ...prev, id: welcomeRevealId, phase: "entering" }))
     }, WELCOME_REVEAL_DELAY_MS)
     return () => window.clearTimeout(id)
   }, [welcomeRevealId, revealPending])
   const welcomeHidden = revealPending
   const welcomeEnterClass =
     welcomeReveal.id === welcomeRevealId && welcomeReveal.phase === "entering" ? "animate-enter" : undefined
+  // The intro and the top day divider sit out the reveal when they were already shown.
+  const keepIntro = welcomeReveal.id === welcomeRevealId && welcomeReveal.keepIntro
+  const introHidden = welcomeHidden && !keepIntro
+  const introEnterClass = keepIntro ? undefined : welcomeEnterClass
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
@@ -677,15 +693,16 @@ export function TicketChat(props: TicketChatProps) {
               {/* Short threads sit at the bottom, next to the composer. */}
               <div className="flex min-h-full flex-col justify-end">
                 <div className="flex flex-col px-6 py-5 md:px-12">
-                  {!welcomeHidden && (intro || rows.length > 0) && (
-                    <ChatDayDivider label={topDayLabel} className={cn("mb-4", welcomeEnterClass)} />
+                  {!introHidden && (intro || rows.length > 0) && (
+                    <ChatDayDivider label={topDayLabel} className={cn("mb-4", introEnterClass)} />
                   )}
-                  {!welcomeHidden && introAtTop && (welcomeEnterClass && intro ? <div className={welcomeEnterClass}>{intro}</div> : intro)}
+                  {!introHidden && introAtTop && (introEnterClass && intro ? <div className={introEnterClass}>{intro}</div> : intro)}
 
                   {rows.map((row, index) => {
                     const msg = row.item
                     const followUp = !row.groupStart
-                    const welcomeRow = isWelcomeGroupRow(msg)
+                    // The stored welcome row is the intro: it follows the intro's reveal.
+                    const welcomeRow = isWelcomeGroupRow(msg) && !(keepIntro && msg.kind === "welcome")
                     if (welcomeHidden && welcomeRow) return null
                     return (
                       <Fragment key={msg.id}>

@@ -188,14 +188,16 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
             // the last message id per ticket (same rule as the helper sidebar).
             const { data: messageRows } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, created_at")
+                .select("id, ticket_id, created_at, is_automatic")
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
             const countsMap = new Map<string, number>();
             const lastMessageIdByTicket = new Map<string, string>();
             messageRows?.forEach((msg: any) => {
-                countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
+                // Count messages written by people; the unread check still compares
+                // against the latest row of any kind (what the chat marks as read).
+                if (!msg.is_automatic) countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
                 lastMessageIdByTicket.set(msg.ticket_id, msg.id);
             });
 
