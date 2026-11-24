@@ -1,14 +1,13 @@
 "use client"
 
+import { Logo } from "@/components/brand/logo"
 import { SidebarToggleIcon } from "@/components/ui/sidebar-toggle-icon"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { useUser } from "@/contexts/user-context"
 import { SignInLink } from "@/components/auth/sign-in-link"
-import { SQUIRCLE_RADIUS } from "@/lib/constants"
 
 interface PublicSupportSidebarProps {
   className?: string
@@ -54,6 +53,15 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
   })
   const isCollapsed = forceExpanded ? false : storedCollapsed
 
+  const setCollapsed = (collapsed: boolean) => {
+    setIsCollapsed(collapsed)
+    try {
+      window.localStorage.setItem("public-support-sidebar:collapsed", String(collapsed))
+    } catch {
+      // Ignore localStorage write errors.
+    }
+  }
+
   const navigationItems: NavigationItem[] = [
     { name: "Get support", icon: "fi-rr-comments" },
     { name: "Rates and details", icon: "fi-rr-browser" },
@@ -78,52 +86,38 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
       // the TopBar and the profile block stays pinned to the bottom.
       className={`${isCollapsed ? "w-16" : "w-64"} bg-sidebar border-r border-sidebar-border flex flex-col transition-[width] duration-slow ease-in-out self-stretch overflow-hidden shrink-0 ${className}`}
     >
-      <div className={`${isCollapsed ? "justify-center" : "px-4 justify-end"} ${forceExpanded ? "invisible" : ""} pt-4 pb-3 flex items-center min-h-[40px] shrink-0`}>
-        {!isCollapsed ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            onClick={() => {
-              setIsCollapsed(true)
-              if (typeof window !== "undefined") {
-                try {
-                  window.localStorage.setItem("public-support-sidebar:collapsed", "true")
-                } catch {
-                  // Ignore localStorage write errors.
-                }
-              }
-            }}
+      {isCollapsed ? (
+        // Collapsed: the logo itself is the 'Expand sidebar' button, as in `Sidebar`.
+        <div className="mb-1.25 flex h-15 shrink-0 items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Expand sidebar"
+            onClick={() => setCollapsed(false)}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors duration-fast ease-out hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
           >
-            <SidebarToggleIcon />
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
-            onClick={() => {
-              setIsCollapsed(false)
-              if (typeof window !== "undefined") {
-                try {
-                  window.localStorage.setItem("public-support-sidebar:collapsed", "false")
-                } catch {
-                  // Ignore localStorage write errors.
-                }
-              }
-            }}
-          >
-            <SidebarToggleIcon />
-          </Button>
-        )}
-      </div>
-
-      {!isCollapsed && !isAuthenticated && (
-        <div className="px-3 pb-3 shrink-0">
-          <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
-            <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
-              <SignInLink redirectTo={redirectTarget}>Sign in</SignInLink>
-            </Button>
+            <Logo />
+          </button>
+        </div>
+      ) : (
+        // Logo row with the collapse control, mirroring the shell `Sidebar`. The
+        // logo sits in the same 16px icon slot as the nav icons below. Inside the
+        // mobile sheet the logo stays but the collapse control is left out.
+        <div className="mb-1.25 flex h-15 shrink-0 flex-col px-4 pt-3.5">
+          <div className="flex h-8 shrink-0 items-center justify-between gap-1 pl-2.5">
+            <span data-slot="sidebar-logo" className="flex h-4 w-4 shrink-0 items-center justify-center">
+              <Logo />
+            </span>
+            {!forceExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Collapse sidebar"
+                className="h-8 w-8 shrink-0 p-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                onClick={() => setCollapsed(true)}
+              >
+                <SidebarToggleIcon />
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -183,11 +177,24 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
         </div>
       )}
 
+      {/* Sign in card for signed-out visitors — sits just above the profile
+          block's border-t divider, like the user portal link for signed-in
+          users. */}
+      {!isCollapsed && !isAuthenticated && (
+        <div className="px-3 pb-3 shrink-0">
+          <div className="w-full px-3 py-2.5 bg-bg-subtle border border-sidebar-border rounded-lg">
+            <Button variant="outline" size="sm" className="w-full text-brand-primary" asChild>
+              <SignInLink redirectTo={redirectTarget}>Sign in</SignInLink>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom profile block — same structure as the main `Sidebar`. Shows
           the signed-in user from the user context, falling back to the
           Incognito guest identity for anonymous visitors. */}
       <div className="px-3 py-2.5 border-t border-sidebar-border shrink-0">
-        <div className={`flex items-start gap-4 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
+        <div className={`flex items-center gap-3 px-2 py-1.5 rounded-md ${isCollapsed ? "justify-center" : ""}`}>
           {isAuthenticated ? (
             <ProfileAvatar
               id={user.id}
@@ -196,23 +203,10 @@ export function PublicSupportSidebar({ className, activeTab, onTabChange, forceE
               size="sm"
             />
           ) : (
-            <Avatar className={`w-7 h-7 ${SQUIRCLE_RADIUS[28]} shrink-0`}>
-              <AvatarFallback
-                className="bg-text-tertiary text-white text-sm rounded-lg font-medium"
-              >
-                {user.avatar}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileAvatar guest size="sm" id={user.id} name={user.name} />
           )}
           {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-sidebar-foreground truncate leading-tight">{user.name}</div>
-              {isAuthenticated && (
-                <div className="text-xs font-normal text-muted-foreground truncate">
-                  Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                </div>
-              )}
-            </div>
+            <div className="flex-1 min-w-0 text-sm font-medium text-sidebar-foreground truncate">{user.name}</div>
           )}
         </div>
       </div>

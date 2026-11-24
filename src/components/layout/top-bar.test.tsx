@@ -141,6 +141,24 @@ describe("TopBar", () => {
     expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
   })
 
+  it("hides the role and project switchers on a public support page but not elsewhere", () => {
+    useUserRoles.mockReturnValue({ data: ["user"], isSuccess: true })
+
+    usePathname.mockReturnValue("/support/some-slug")
+    const { unmount } = render(<TopBar />)
+    // Still the default bar for a signed-in user …
+    expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument()
+    // … but without the role dropdown and the project (Private) dropdown.
+    expect(screen.queryByText("User")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /private/i })).not.toBeInTheDocument()
+    unmount()
+
+    usePathname.mockReturnValue("/projects/1")
+    render(<TopBar />)
+    expect(screen.getByText("User")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /private/i })).toBeInTheDocument()
+  })
+
   it("does not show the Private placeholder when acting as Admin", () => {
     usePathname.mockReturnValue("/tickets")
     useUser.mockReturnValue({ user: { ...signedInUser, role: "admin" as const }, switchRole: vi.fn() })

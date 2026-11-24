@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { Logo } from "@/components/brand/logo"
 import { MobileNavToggle } from "@/components/layout/mobile-nav"
+import { isShellRoute } from "@/components/layout/app-shell"
 import { RoleSwitcher, ProjectSwitcher } from "@/components/layout/workspace-switchers"
 import { NotificationsPanel } from "./notifications-panel"
 import type { Notification } from "@/hooks/useNotifications"
@@ -133,6 +134,9 @@ export function TopBar({ variant = "default" }: TopBarProps) {
   // banner.
   if (pathname?.startsWith("/invite")) return null
 
+  // On a public support project page the role and project dropdowns are hidden.
+  const isPublicSupportPage = !!pathname?.startsWith("/support") && !isShellRoute(pathname)
+
   return (
     <>
       <div
@@ -154,8 +158,12 @@ export function TopBar({ variant = "default" }: TopBarProps) {
             <MobileNavToggle />
             <Logo />
 
-            <RoleSwitcher />
-            <ProjectSwitcher />
+            {!isPublicSupportPage && (
+              <>
+                <RoleSwitcher />
+                <ProjectSwitcher />
+              </>
+            )}
           </div>
         )}
 
