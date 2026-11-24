@@ -38,9 +38,13 @@ interface TopBarProps {
 }
 
 export function TopBar({ variant = "default" }: TopBarProps) {
-  const isShell = variant === "shell"
   const router = useRouter()
   const pathname = usePathname()
+  // On a public support project page the top bar (logo, Sign out, bell,
+  // avatar) is removed: the support sidebar holds the logo and the profile.
+  // Like the shell, only the slim menu-button bar remains below lg.
+  const isPublicSupportPage = !!pathname?.startsWith("/support") && !isShellRoute(pathname)
+  const isShell = variant === "shell" || isPublicSupportPage
   const { confirmNavigation } = useUnsavedChanges()
   const {
     user,
@@ -134,9 +138,6 @@ export function TopBar({ variant = "default" }: TopBarProps) {
   // banner.
   if (pathname?.startsWith("/invite")) return null
 
-  // On a public support project page the role and project dropdowns are hidden.
-  const isPublicSupportPage = !!pathname?.startsWith("/support") && !isShellRoute(pathname)
-
   return (
     <>
       <div
@@ -158,12 +159,8 @@ export function TopBar({ variant = "default" }: TopBarProps) {
             <MobileNavToggle />
             <Logo />
 
-            {!isPublicSupportPage && (
-              <>
-                <RoleSwitcher />
-                <ProjectSwitcher />
-              </>
-            )}
+            <RoleSwitcher />
+            <ProjectSwitcher />
           </div>
         )}
 

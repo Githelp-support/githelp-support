@@ -141,20 +141,21 @@ describe("TopBar", () => {
     expect(screen.queryByText("Alpha")).not.toBeInTheDocument()
   })
 
-  it("hides the role and project switchers on a public support page but not elsewhere", () => {
+  it("removes the top bar on a public support page but not elsewhere", () => {
     useUserRoles.mockReturnValue({ data: ["user"], isSuccess: true })
 
     usePathname.mockReturnValue("/support/some-slug")
     const { unmount } = render(<TopBar />)
-    // Still the default bar for a signed-in user …
-    expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument()
-    // … but without the role dropdown and the project (Private) dropdown.
+    // No Sign out, bell, avatar, role or project dropdown on the support page …
+    expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument()
     expect(screen.queryByText("User")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /private/i })).not.toBeInTheDocument()
     unmount()
 
+    // … while other non-shell routes keep the full bar.
     usePathname.mockReturnValue("/projects/1")
     render(<TopBar />)
+    expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument()
     expect(screen.getByText("User")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /private/i })).toBeInTheDocument()
   })
