@@ -44,8 +44,8 @@ export interface ActiveTicketsListProps<T extends ActiveTicketListItem> {
 
 /**
  * "Active tickets (N)" for the chat's right-hand panel. The heading sits
- * outside the scroll area so it stays visible; the list is capped at four
- * rows (4 × h-19 = max-h-76) and scrolls beyond that. Cancels the panel's
+ * outside the scroll area so it stays visible; the list is capped at three
+ * rows (3 × h-19 = max-h-57) and scrolls beyond that. Cancels the panel's
  * px-4 so the current-row highlight is full bleed.
  */
 export function ActiveTicketsList<T extends ActiveTicketListItem>({
@@ -61,7 +61,7 @@ export function ActiveTicketsList<T extends ActiveTicketListItem>({
       {items.length === 0 ? (
         <SidebarEmptyText>No active tickets</SidebarEmptyText>
       ) : (
-        <ul className={cn("-mx-4", items.length > 4 && "max-h-76 overflow-y-auto scrollbar-subtle")}>
+        <ul className={cn("-mx-4", items.length > 3 && "max-h-57 overflow-y-auto scrollbar-subtle")}>
           {items.map((item) => (
             <li key={item.id}>
               <Link

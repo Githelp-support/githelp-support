@@ -43,6 +43,10 @@ const SUBTITLE_MAX_CHARS = 50;
  * in the list. Also returns `activeCount` — a ticket counts as "active" when
  * its status is `claimed` or `in-progress`. The count is used by the UI to
  * render "Active tickets (N)".
+ *
+ * Count rule (UI terms): Helpers count In progress tickets only; Unclaimed,
+ * Completed and Cancelled never count, even when the current ticket is added
+ * to the list for display.
  */
 export function useHelperClaimedTicketsSidebar(
     userId: string | undefined,
@@ -219,6 +223,10 @@ export function useHelperClaimedTicketsSidebar(
  * render the same UI. `userId` is used to compute the unread/notification dot
  * relative to the current admin's last_read_message_id (when one exists).
  * Always includes the current ticket even if it falls outside the active set.
+ *
+ * Count rule (UI terms): Admins count In progress tickets only (statuses
+ * `claimed`, `in-progress`); Unclaimed, Completed and Cancelled never count,
+ * even when the current ticket is added to the list for display.
  */
 export function useAdminActiveTicketsSidebar(
     projectId: string | undefined,
