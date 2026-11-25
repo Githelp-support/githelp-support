@@ -42,13 +42,17 @@ export interface CustomerTimeEntryDisplay {
  *    (there is nothing to look up without a user id), and time entries are
  *    RLS-restricted to authenticated users so an anonymous visitor simply gets
  *    an empty list.
+ *  - "Active tickets" are the user's tickets with status available
+ *    (Unclaimed), claimed or in-progress (In progress); up to
+ *    `activeTicketsLimit` (default 50) are listed, always including the
+ *    current ticket.
  *  - Callers should still gate the *rendering* of the Logged time / Active
  *    tickets footer on being signed in; this hook only fetches.
  */
 export function useCustomerTicketSidebar(
     ticketId: string | undefined,
     userId: string | undefined,
-    activeTicketsLimit = 3
+    activeTicketsLimit = 50
 ) {
     const { data: participants, isLoading: participantsLoading } = useTicketParticipants(
         ticketId ?? ""
