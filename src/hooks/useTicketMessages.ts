@@ -13,7 +13,9 @@ export function useTicketMessages(ticketId: string) {
     return useQuery({
         queryKey: ["ticket-messages", ticketId],
         queryFn: async () => {
-            // First, get all messages
+            // First, get all messages. Keep `*` (or list them explicitly): the
+            // chat needs `is_automatic` and `metadata` (welcome/auto-reply kinds,
+            // the welcome message's rate snapshot, payment details).
             const { data: messages, error: messagesError } = await supabase
                 .from("tickets_messages")
                 .select("*")

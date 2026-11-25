@@ -148,11 +148,12 @@ export function useUserRecentTicketInteractions(userId?: string, limit = 5) {
 
             const { data: messageRows } = await supabase
                 .from("tickets_messages")
-                .select("ticket_id")
+                .select("ticket_id, is_automatic")
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null);
             const countsMap = new Map<string, number>();
             messageRows?.forEach((msg: any) => {
+                if (msg.is_automatic) return; // automatic welcome/notes are not messages people wrote
                 countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
             });
 
