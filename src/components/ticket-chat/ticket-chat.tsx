@@ -234,6 +234,16 @@ export interface TicketChatProps {
    * helper/admin views so they always see everything immediately.
    */
   welcomeRevealId?: string
+  /**
+   * Customer pages only: this chat was just opened without a ticket (the
+   * visitor navigated into the support chat). The conversation renders empty
+   * first; after a short beat the top day divider and the `intro` (welcome +
+   * rates) make their entrance. Read when the chat mounts, so it runs once per
+   * visit; it is cancelled (everything shows at once) if the prop turns false
+   * or messages arrive before it has run, e.g. a resumed ticket. Reduced
+   * motion shows the intro at once.
+   */
+  introEntrance?: boolean
 
   /**
    * Called when the user clicks a payment CTA on a system message: "Add
@@ -338,6 +348,7 @@ export function TicketChat(props: TicketChatProps) {
     rightSidebarFooter,
     threadKey,
     welcomeRevealId,
+    introEntrance: introEntranceRequested = false,
     onPaymentCtaClick,
     paymentCtaLoading,
     paymentStatus,
@@ -475,8 +486,26 @@ export function TicketChat(props: TicketChatProps) {
     welcomeReveal.id === welcomeRevealId && welcomeReveal.phase === "entering" ? "animate-enter" : undefined
   // The intro and the top day divider sit out the reveal when they were already shown.
   const keepIntro = welcomeReveal.id === welcomeRevealId && welcomeReveal.keepIntro
-  const introHidden = welcomeHidden && !keepIntro
-  const introEnterClass = keepIntro ? undefined : welcomeEnterClass
+
+  // Entrance of the intro when a fresh chat is opened (`introEntrance`): the
+  // empty conversation first, then the day divider and intro after the same
+  // beat. Decided on mount; it stands down if the chat turns out to hold a
+  // ticket or messages before it has run. (State adjusted during render like
+  // the reveal above; the timer only flips it to "entering".)
+  const [introEntrance, setIntroEntrance] = useState<"hidden" | "entering" | "done">(() =>
+    introEntranceRequested && !prefersReducedMotion() ? "hidden" : "done",
+  )
+  if (introEntrance === "hidden" && (!introEntranceRequested || thread.length > 0)) {
+    setIntroEntrance("done")
+  }
+  useEffect(() => {
+    if (introEntrance !== "hidden") return
+    const id = window.setTimeout(() => setIntroEntrance("entering"), WELCOME_REVEAL_DELAY_MS)
+    return () => window.clearTimeout(id)
+  }, [introEntrance])
+
+  const introHidden = (welcomeHidden && !keepIntro) || introEntrance === "hidden"
+  const introEnterClass = introEntrance === "entering" ? "animate-enter" : keepIntro ? undefined : welcomeEnterClass
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live

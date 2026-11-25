@@ -769,6 +769,8 @@ export default function SupportPage() {
             showBackButton={false}
             intro={chatIntro}
             welcomeRevealId={ticketId || undefined}
+            // Entering the chat without a ticket: the welcome makes its entrance.
+            introEntrance={!ticketId}
             messages={chatMessages}
             participants={chatParticipants}
             participantsLoading={participantsLoading}

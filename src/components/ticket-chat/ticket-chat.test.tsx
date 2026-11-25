@@ -376,3 +376,75 @@ describe("TicketChat welcome entrance", () => {
     expect(window.sessionStorage.getItem("welcome-reveal:t2")).toBeNull()
   })
 })
+
+describe("TicketChat intro entrance on opening a fresh chat", () => {
+  const intro = <div data-testid="intro">Welcome to Acme</div>
+  const wrap = (node: ReactNode) => (
+    <QueryClientProvider client={new QueryClient()}>
+      <TooltipProvider>{node}</TooltipProvider>
+    </QueryClientProvider>
+  )
+  const base: Omit<TicketChatProps, "messages"> = { headerTitle: "Ticket with Acme", message: "", onMessageChange: () => {}, onSend: () => {}, intro }
+
+  beforeEach(() => {
+    window.sessionStorage.clear()
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia
+  })
+
+  it("renders the empty conversation first, then the day divider and intro enter after a beat", () => {
+    vi.useFakeTimers()
+    try {
+      render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
+      expect(screen.queryByTestId("intro")).toBeNull()
+      expect(screen.queryByRole("separator")).toBeNull()
+
+      act(() => vi.advanceTimersByTime(399))
+      expect(screen.queryByTestId("intro")).toBeNull()
+
+      act(() => vi.advanceTimersByTime(1))
+      expect(screen.getByTestId("intro").closest(".animate-enter")).not.toBeNull()
+      expect(screen.getByRole("separator").closest(".animate-enter")).not.toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("stands down and shows everything at once when a ticket turns up before the beat", () => {
+    vi.useFakeTimers()
+    try {
+      const { rerender } = render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
+      expect(screen.queryByTestId("intro")).toBeNull()
+      // e.g. a guest's open ticket was resumed
+      rerender(wrap(<TicketChat {...base} messages={[]} introEntrance={false} />))
+      expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+      act(() => vi.advanceTimersByTime(400))
+      expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("keeps the intro in place once the ticket is created after the entrance", () => {
+    vi.useFakeTimers()
+    try {
+      const { rerender } = render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
+      act(() => vi.advanceTimersByTime(400))
+      expect(screen.getByTestId("intro")).toBeInTheDocument()
+      rerender(wrap(<TicketChat {...base} messages={[message("u1", { content: "Help", createdAt: at(15, 10, 17) })]} introEntrance={false} />))
+      expect(screen.getByTestId("intro")).toBeInTheDocument()
+      expect(screen.getByText("Help")).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("shows the intro at once without the prop (existing tickets, helper/admin) and under reduced motion", () => {
+    const { unmount } = render(wrap(<TicketChat {...base} messages={[]} />))
+    expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+    unmount()
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
+    render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
+    expect(screen.getByTestId("intro").closest(".animate-enter")).toBeNull()
+    expect(screen.getByRole("separator")).toBeInTheDocument()
+  })
+})

@@ -994,6 +994,8 @@ export default function UserSupportChatPage() {
       <TicketChat
         threadKey={ticketId ?? undefined}
         welcomeRevealId={ticketId || undefined}
+        // Opened without a ticket (none in the URL or state): the welcome makes its entrance.
+        introEntrance={!ticketIdParam && !ticketId}
         headerTitle={`Ticket with ${projectName}`}
         headerVariant="chat"
         ticketId={ticketCreated && ticketId ? ticketId : undefined}
