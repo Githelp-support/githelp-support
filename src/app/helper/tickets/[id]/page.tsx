@@ -65,6 +65,9 @@ import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
+import { useMarkTicketRead } from "@/hooks/useTicketReadState"
+import { useChatReadVisibility } from "@/hooks/useChatReadVisibility"
+import { useMobileNav } from "@/components/layout/mobile-nav"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmptyText } from "@/components/ticket-chat/sidebar-section"
 import { useRightSidebarCollapsed, RightSidebarHeaderToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
@@ -586,6 +589,17 @@ export default function TicketDetailPage() {
     const id = requestAnimationFrame(() => scrollToBottom())
     return () => cancelAnimationFrame(id)
   }, [ticketId, messages, isTicketEnded, hasHistory])
+
+  // Mark the ticket read while its newest message is actually on screen: on
+  // open, and as realtime messages arrive while the reader sits at the bottom.
+  const { open: mobileNavOpen } = useMobileNav()
+  const threadInView = useChatReadVisibility({
+    scrollRef: scrollBoxRef,
+    endRef: messagesEndRef,
+    coveredBySheet: mobilePanelOpen || mobileNavOpen,
+    contentKey: messages.length,
+  })
+  useMarkTicketRead(ticketId, lastMessageId, { enabled: !!currentUser?.id && threadInView })
 
   // Day dividers and sender grouping. The first divider sits above the "Info
   // about issue" block and takes its date (the first message, else the ticket).

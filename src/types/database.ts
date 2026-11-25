@@ -624,8 +624,42 @@ export type Database = {
                     last_read_message_id: string | null;
                 }>;
             };
+            tickets_read_state: {
+                /** Per-user read position in a ticket's chat (one row per user and ticket). */
+                Row: {
+                    user_id: string;
+                    ticket_id: string;
+                    last_read_message_id: string | null;
+                    last_read_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    user_id: string;
+                    ticket_id: string;
+                    last_read_message_id?: string | null;
+                    last_read_at?: string;
+                    updated_at?: string;
+                };
+                Update: Partial<{
+                    user_id: string;
+                    ticket_id: string;
+                    last_read_message_id: string | null;
+                    last_read_at: string;
+                    updated_at: string;
+                }>;
+            };
         };
         Functions: {
+            /** Marks a ticket read for the caller up to a message; also the "chat is open" heartbeat. */
+            mark_ticket_read: {
+                Args: { p_ticket_id: string; p_message_id?: string | null };
+                Returns: undefined;
+            };
+            /** Whether each of the given tickets has messages the caller hasn't read. */
+            ticket_unread_flags: {
+                Args: { p_ticket_ids: string[] };
+                Returns: { ticket_id: string; has_unread: boolean }[];
+            };
             /** Guest presence heartbeat: the caller's own open guest ticket, or all of them when called without an id. */
             touch_guest_ticket: {
                 Args: { p_ticket_id?: string | null };

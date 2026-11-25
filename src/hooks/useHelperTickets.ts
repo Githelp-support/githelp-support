@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
 import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
 import { supabase } from "@/lib/supabase/client";
+import { useQueryWithUnreadFlags } from "@/hooks/useTicketReadState";
 import type { Database } from "@/types/database";
 
 type Ticket = Database["public"]["Tables"]["tickets"]["Row"];
@@ -23,6 +24,7 @@ export interface HelperClaimedTicketSidebarItem {
     /** Ticket creator's user id — used for deterministic avatar background color. */
     creatorId: string | null;
     current: boolean;
+    /** Unread messages for this user (from `ticket_unread_flags`); never set on the open ticket. */
     hasNotification: boolean;
 }
 
@@ -31,12 +33,19 @@ export interface HelperClaimedTicketsSidebarResult {
     activeCount: number;
 }
 
+/** What the sidebar queries fetch; `hasNotification` is added from the unread flags. */
+interface SidebarQueryResult {
+    items: Omit<HelperClaimedTicketSidebarItem, "hasNotification">[];
+    activeCount: number;
+}
+
 const SUBTITLE_MAX_CHARS = 50;
 
 /**
  * Tickets the current helper has claimed that are still in progress (for
  * sidebar). Title = project name + ticket id, subtitle = first message
- * snippet, hasNotification from last_read_message_id.
+ * snippet, hasNotification from `ticket_unread_flags` (never on the open
+ * ticket, which is being read).
  *
  * Always includes the current ticket even if it falls outside the `limit`
  * window or isn't in an active state — the open/displayed ticket must appear
@@ -49,26 +58,20 @@ export function useHelperClaimedTicketsSidebar(
     currentTicketId: string | undefined,
     limit = 3
 ) {
-    return useQuery({
+    const query = useQuery({
         queryKey: ["helper-claimed-tickets-sidebar", userId, currentTicketId, limit],
-        queryFn: async (): Promise<HelperClaimedTicketsSidebarResult> => {
+        queryFn: async (): Promise<SidebarQueryResult> => {
             if (!userId) return { items: [], activeCount: 0 };
 
             const { data: participantRows, error: partError } = await supabase
                 .from("tickets_participants")
-                .select("ticket_id, last_read_message_id")
+                .select("ticket_id")
                 .eq("participant_id", userId)
                 .eq("claimed", true);
 
             if (partError) throw partError;
 
             const claimedTicketIds = participantRows?.map((p) => p.ticket_id) ?? [];
-            const lastReadByTicket = new Map(
-                (participantRows ?? []).map((p) => [
-                    p.ticket_id,
-                    p.last_read_message_id ?? null,
-                ])
-            );
 
             type SidebarTicketRow = {
                 id: string;
@@ -166,13 +169,11 @@ export function useHelperClaimedTicketsSidebar(
                 .order("created_at", { ascending: true });
 
             const firstMessageByTicket = new Map<string, { content: string }>();
-            const lastMessageIdByTicket = new Map<string, string>();
             messages?.forEach((m: { id: string; ticket_id: string; content: string; is_automatic?: boolean }) => {
                 // The subtitle is the customer's question, not the automatic welcome/notes.
                 if (!m.is_automatic && !firstMessageByTicket.has(m.ticket_id)) {
                     firstMessageByTicket.set(m.ticket_id, { content: m.content });
                 }
-                lastMessageIdByTicket.set(m.ticket_id, m.id);
             });
 
             const items = tickets.map((t) => {
@@ -182,9 +183,6 @@ export function useHelperClaimedTicketsSidebar(
                     ? firstMsg.slice(0, SUBTITLE_MAX_CHARS).trim() + "…"
                     : firstMsg.trim() || "-";
                 const creator = t.created_by ? userMap.get(t.created_by) : null;
-                const lastMessageId = lastMessageIdByTicket.get(t.id) ?? null;
-                const lastRead = lastReadByTicket.get(t.id) ?? null;
-                const hasNotification = lastMessageId != null && lastRead !== lastMessageId;
 
                 return {
                     id: t.id,
@@ -199,7 +197,6 @@ export function useHelperClaimedTicketsSidebar(
                     avatarInitial: creator?.name?.[0]?.toUpperCase() ?? "?",
                     creatorId: t.created_by ?? null,
                     current: t.id === currentTicketId,
-                    hasNotification,
                 };
             });
 
@@ -209,6 +206,7 @@ export function useHelperClaimedTicketsSidebar(
         retry: false,
         staleTime: 60000,
     });
+    return useQueryWithUnreadFlags(query);
 }
 
 /**
@@ -217,8 +215,9 @@ export function useHelperClaimedTicketsSidebar(
  * tickets claimed by various helpers (admins can monitor everyone's work).
  *
  * Mirrors `useHelperClaimedTicketsSidebar` in shape so the chat sidebar can
- * render the same UI. `userId` is used to compute the unread/notification dot
- * relative to the current admin's last_read_message_id (when one exists).
+ * render the same UI. The unread dot comes from `ticket_unread_flags` for the
+ * signed-in admin (never on the open ticket). `userId` is kept in the query
+ * key so the cache is per user.
  * Always includes the current ticket even if it falls outside the active set.
  */
 export function useAdminActiveTicketsSidebar(
@@ -227,7 +226,7 @@ export function useAdminActiveTicketsSidebar(
     currentTicketId: string | undefined,
     limit = 50
 ) {
-    return useQuery({
+    const query = useQuery({
         queryKey: [
             "admin-active-tickets-sidebar",
             projectId,
@@ -235,7 +234,7 @@ export function useAdminActiveTicketsSidebar(
             currentTicketId,
             limit,
         ],
-        queryFn: async (): Promise<HelperClaimedTicketsSidebarResult> => {
+        queryFn: async (): Promise<SidebarQueryResult> => {
             if (!projectId) return { items: [], activeCount: 0 };
 
             type SidebarTicketRow = {
@@ -327,23 +326,6 @@ export function useAdminActiveTicketsSidebar(
             const userMap = new Map(users?.map((u) => [u.id, u]) ?? []);
 
             const ticketIds = tickets.map((t) => t.id);
-            // Notification dot is relative to this admin's last_read_message_id
-            // (if a participant row exists for them on the ticket).
-            const lastReadByTicket = new Map<string, string | null>();
-            if (userId && ticketIds.length) {
-                const { data: partRows } = await supabase
-                    .from("tickets_participants")
-                    .select("ticket_id, last_read_message_id")
-                    .eq("participant_id", userId)
-                    .in("ticket_id", ticketIds);
-                partRows?.forEach((p) =>
-                    lastReadByTicket.set(
-                        p.ticket_id,
-                        p.last_read_message_id ?? null
-                    )
-                );
-            }
-
             const { data: messages } = await supabase
                 .from("tickets_messages")
                 .select("id, ticket_id, content, created_at, is_automatic")
@@ -352,7 +334,6 @@ export function useAdminActiveTicketsSidebar(
                 .order("created_at", { ascending: true });
 
             const firstMessageByTicket = new Map<string, { content: string }>();
-            const lastMessageIdByTicket = new Map<string, string>();
             messages?.forEach(
                 (m: { id: string; ticket_id: string; content: string; is_automatic?: boolean }) => {
                     // The subtitle is the customer's question, not the automatic welcome/notes.
@@ -361,7 +342,6 @@ export function useAdminActiveTicketsSidebar(
                             content: m.content,
                         });
                     }
-                    lastMessageIdByTicket.set(m.ticket_id, m.id);
                 }
             );
 
@@ -376,11 +356,6 @@ export function useAdminActiveTicketsSidebar(
                         ? firstMsg.slice(0, SUBTITLE_MAX_CHARS).trim() + "…"
                         : firstMsg.trim() || "-";
                 const creator = t.created_by ? userMap.get(t.created_by) : null;
-                const lastMessageId =
-                    lastMessageIdByTicket.get(t.id) ?? null;
-                const lastRead = lastReadByTicket.get(t.id) ?? null;
-                const hasNotification =
-                    lastMessageId != null && lastRead !== lastMessageId;
 
                 return {
                     id: t.id,
@@ -395,7 +370,6 @@ export function useAdminActiveTicketsSidebar(
                     avatarInitial: creator?.name?.[0]?.toUpperCase() ?? "?",
                     creatorId: t.created_by ?? null,
                     current: t.id === currentTicketId,
-                    hasNotification,
                 };
             });
 
@@ -405,6 +379,7 @@ export function useAdminActiveTicketsSidebar(
         retry: false,
         staleTime: 60000,
     });
+    return useQueryWithUnreadFlags(query);
 }
 
 export function useHelperTickets(helperId: string, projectId?: string) {

@@ -9,6 +9,15 @@ import { createPortal } from "react-dom"
 import { notificationType, type Notification, type NotificationType } from "@/hooks/useNotifications"
 import { formatRelativeTime } from "@/lib/format"
 
+/**
+ * Label shown in a row's header. Chat messages read "New message"; the
+ * dispatcher keeps one unread row per ticket and refreshes it.
+ */
+export function notificationTypeLabel(type: NotificationType) {
+  if (type === "TICKET_MESSAGE") return "New message"
+  return type.replace("_", " ")
+}
+
 export function notificationTypeColor(type: NotificationType) {
   switch (type) {
     case "HELPER_REQUEST":
@@ -158,6 +167,10 @@ export function NotificationsPanel({
             <div className="p-4 space-y-4">
               {notifications.slice(0, 3).map((notification) => {
                 const type = notificationType(notification)
+                // TICKET_MESSAGE content ("subject · project · sender") is
+                // shown exactly as delivered.
+                const content =
+                  type === "TICKET_MESSAGE" ? notification.content : stripQuotes(notification.content)
                 return (
                   <div
                     key={notification.id}
@@ -173,8 +186,10 @@ export function NotificationsPanel({
                     }}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <span className={`text-xs font-medium uppercase tracking-wide ${notificationTypeColor(type)}`}>
-                        {type.replace("_", " ")}
+                      <span
+                        className={`text-xs font-medium ${type === "TICKET_MESSAGE" ? "" : "uppercase tracking-wide "}${notificationTypeColor(type)}`}
+                      >
+                        {notificationTypeLabel(type)}
                       </span>
                       <div className="flex items-center gap-2">
                         <span
@@ -188,12 +203,12 @@ export function NotificationsPanel({
                       </div>
                     </div>
                     <p
-                      title={stripQuotes(notification.content)}
+                      title={content}
                       className={`text-ui leading-relaxed line-clamp-2 ${
                         !notification.is_read ? "text-foreground" : "text-text-tertiary"
                       }`}
                     >
-                      {stripQuotes(notification.content)}
+                      {content}
                     </p>
                   </div>
                 )

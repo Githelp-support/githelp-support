@@ -782,6 +782,8 @@ export default function SupportPage() {
             sending={isSending}
             composerPlaceholder={composerPlaceholder(project ?? { name: projectName })}
             isEnded={ticketEnded}
+            // Marked read while the newest message is on screen; guests (no user id) are skipped.
+            readTracking={{ ticketId, userId: user?.id, latestMessageId: lastMessageId }}
             paymentStatus={paymentStatus.status}
             // Signed-out visitors get the composer: the first send starts a
             // guest session. While a guest, a banner above it offers sign-in.

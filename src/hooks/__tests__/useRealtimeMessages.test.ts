@@ -109,6 +109,27 @@ describe("useRealtimeMessages", () => {
         expect(queryClient.getQueryState(timeEntriesKey(TICKET))?.isInvalidated).toBe(false);
     });
 
+    it("an INSERT refreshes the sidebar unread flags", async () => {
+        const { queryClient } = setup();
+        queryClient.setQueryData(["ticket-unread", ["a", "b"]], new Map());
+
+        await fire({ eventType: "INSERT", new: { id: "m2", metadata: null } });
+
+        await waitFor(() => {
+            expect(queryClient.getQueryState(["ticket-unread", ["a", "b"]])?.isInvalidated).toBe(true);
+        });
+    });
+
+    it("an UPDATE or DELETE leaves the unread flags alone", async () => {
+        const { queryClient } = setup();
+        queryClient.setQueryData(["ticket-unread", ["a"]], new Map());
+
+        await fire({ eventType: "UPDATE", new: { id: "m2", metadata: null } });
+        await fire({ eventType: "DELETE", old: { id: "m2" } });
+
+        expect(queryClient.getQueryState(["ticket-unread", ["a"]])?.isInvalidated).toBe(false);
+    });
+
     it("a time_logged system message also refreshes this ticket's time entries only", async () => {
         const { queryClient } = setup();
         queryClient.setQueryData(timeEntriesKey(TICKET), []);
