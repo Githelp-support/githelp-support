@@ -113,7 +113,7 @@ function cycleSort<T extends string>(
 
 /** Extract a short ticket ID for display (e.g. from uuid 02735023-... to 2735023) */
 function getShortTicketId(ticketId: string | null): string {
-  if (!ticketId) return "—"
+  if (!ticketId) return "-"
   const first = ticketId.split("-")[0] || ""
   return first.replace(/^0+/, "") || first.slice(0, 8)
 }
@@ -298,7 +298,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
               key: group.key,
               id: group.ticketId ?? "",
               shortId: getShortTicketId(group.ticketId),
-              title: "—",
+              title: "-",
               dateIso: group.date || null,
               amountRaw: group.amountSmallestUnit as number | null,
               currency: group.currency,
@@ -314,7 +314,7 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                 key: ticket.id,
                 id: ticket.id,
                 shortId: getShortTicketId(ticket.id),
-                title: ticket.title?.trim() || "—",
+                title: ticket.title?.trim() || "-",
                 dateIso: ticketDisplayDate(ticket),
                 amountRaw: group ? group.amountSmallestUnit : null,
                 currency: group?.currency ?? "usd",
@@ -577,15 +577,15 @@ export default function HelperProfilePage({ params }: { params: Promise<{ id: st
                               {ticket.shortId}
                             </Link>
                           ) : (
-                            <span className="text-sm font-medium text-foreground">—</span>
+                            <span className="text-sm font-medium text-foreground">-</span>
                           )}
                           <div className="text-xs text-muted-foreground" title={ticket.title}>
                             {ticketPreview(ticket.title)}
                           </div>
                         </div>
-                        <div className="min-w-0 text-sm text-muted-foreground">{ticket.dateIso ? formatDate(ticket.dateIso) : "—"}</div>
+                        <div className="min-w-0 text-sm text-muted-foreground">{ticket.dateIso ? formatDate(ticket.dateIso) : "-"}</div>
                         <div className="min-w-0 text-sm font-medium text-foreground whitespace-nowrap">
-                          {ticket.amountRaw === null ? "—" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
+                          {ticket.amountRaw === null ? "-" : formatPaymentAmount(ticket.amountRaw, ticket.currency)}
                         </div>
                         <div className="min-w-0">
                           <TicketStatusBadge status={ticket.status} />

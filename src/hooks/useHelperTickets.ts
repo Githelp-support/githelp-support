@@ -180,7 +180,7 @@ export function useHelperClaimedTicketsSidebar(
                 const firstMsg = firstMessageByTicket.get(t.id)?.content ?? t.description ?? "";
                 const subtitle = firstMsg.length > SUBTITLE_MAX_CHARS
                     ? firstMsg.slice(0, SUBTITLE_MAX_CHARS).trim() + "…"
-                    : firstMsg.trim() || "—";
+                    : firstMsg.trim() || "-";
                 const creator = t.created_by ? userMap.get(t.created_by) : null;
                 const lastMessageId = lastMessageIdByTicket.get(t.id) ?? null;
                 const lastRead = lastReadByTicket.get(t.id) ?? null;
@@ -190,7 +190,7 @@ export function useHelperClaimedTicketsSidebar(
                     id: t.id,
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
-                    subject: t.title?.trim() || firstMsg.trim() || "—",
+                    subject: t.title?.trim() || firstMsg.trim() || "-",
                     projectName,
                     shortId: t.id.slice(0, 8),
                     createdAt: t.created_at,
@@ -374,7 +374,7 @@ export function useAdminActiveTicketsSidebar(
                 const subtitle =
                     firstMsg.length > SUBTITLE_MAX_CHARS
                         ? firstMsg.slice(0, SUBTITLE_MAX_CHARS).trim() + "…"
-                        : firstMsg.trim() || "—";
+                        : firstMsg.trim() || "-";
                 const creator = t.created_by ? userMap.get(t.created_by) : null;
                 const lastMessageId =
                     lastMessageIdByTicket.get(t.id) ?? null;
@@ -386,7 +386,7 @@ export function useAdminActiveTicketsSidebar(
                     id: t.id,
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
-                    subject: t.title?.trim() || firstMsg.trim() || "—",
+                    subject: t.title?.trim() || firstMsg.trim() || "-",
                     projectName,
                     shortId: t.id.slice(0, 8),
                     createdAt: t.created_at,

@@ -29,7 +29,7 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
     <div className="min-w-0">
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className={mono ? "font-mono text-sm break-all text-foreground" : "text-sm text-foreground break-words"}>
-        {value || "—"}
+        {value || "-"}
       </dd>
     </div>
   )

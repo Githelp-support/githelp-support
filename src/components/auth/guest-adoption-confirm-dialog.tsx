@@ -26,7 +26,7 @@ export function GuestAdoptionConfirmDialog() {
           {request.tickets.map((ticket) => (
             <li key={ticket.id}>
               {ticket.title}
-              {ticket.project_name ? ` — ${ticket.project_name}` : ""}
+              {ticket.project_name ? ` - ${ticket.project_name}` : ""}
             </li>
           ))}
         </ul>
@@ -35,7 +35,7 @@ export function GuestAdoptionConfirmDialog() {
         </p>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => request.resolve("discard")}>
-            Not mine — discard
+            Not mine - discard
           </Button>
           <Button variant="lavender" onClick={() => request.resolve("link")}>
             Link to my account

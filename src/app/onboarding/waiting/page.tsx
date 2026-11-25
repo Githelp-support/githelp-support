@@ -185,7 +185,7 @@ export default function WaitingPage() {
                                 </h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     {onboardingStatus?.hasPendingRequest
-                                        ? "A project admin needs to approve your request to become a helper. You'll be notified once that happens — or check again now."
+                                        ? "A project admin needs to approve your request to become a helper. You'll be notified once that happens - or check again now."
                                         : "A project admin can invite you to join their project. You'll receive an email notification when you're invited."}
                                 </p>
                                 <Button

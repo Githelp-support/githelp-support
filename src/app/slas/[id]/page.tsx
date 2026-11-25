@@ -20,7 +20,7 @@ import { ProfileAvatar } from "@/components/ui/profile-avatar"
 // ---- Helpers ----------------------------------------------------------------
 
 function formatMinutes(minutes: number | null | undefined): string {
-  if (minutes == null) return "—"
+  if (minutes == null) return "-"
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   if (h > 0 && m > 0) return `${h}h ${m}min`
@@ -38,7 +38,7 @@ function formatMs(ms: number): string {
 }
 
 function centsToDisplay(cents: number | null | undefined, currency = "USD"): string {
-  if (cents == null) return "—"
+  if (cents == null) return "-"
   const amount = cents / 100
   return `${currency} ${amount.toFixed(2)}`
 }
@@ -228,7 +228,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
 
   // ---- Derived display values ---------------------------------------------
   const slaName = sla.name ?? "Unnamed SLA"
-  const spaceId = sla.space_id ?? "—"
+  const spaceId = sla.space_id ?? "-"
   const currency = sla.currency ?? "USD"
 
   const copySpaceId = () => {
@@ -329,7 +329,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Rollover time from last month</span>
-                    <span className="text-sm font-medium">—</span>
+                    <span className="text-sm font-medium">-</span>
                   </div>
                 </div>
               </CardContent>
@@ -589,7 +589,7 @@ export default function SLADetailsPage({ params }: { params: Promise<{ id: strin
                         // Primary helper = participant who claimed the ticket
                         const claimedParticipant = ticket.tickets_participants.find((p) => p.claimed)
                         const primaryHelperId = claimedParticipant?.participant_id
-                        const primaryHelperName = primaryHelperId ? (helperMap.get(primaryHelperId) ?? "Unknown") : "—"
+                        const primaryHelperName = primaryHelperId ? (helperMap.get(primaryHelperId) ?? "Unknown") : "-"
                         const primaryHelperAvatarKey = primaryHelperId
                           ? (helperAvatarKeyMap.get(primaryHelperId) ?? primaryHelperId)
                           : null

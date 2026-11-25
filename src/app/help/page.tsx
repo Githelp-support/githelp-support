@@ -47,12 +47,12 @@ const ADMIN_FAQ_ITEMS = [
   {
     question: "How do I set up SLAs for my project?",
     answer:
-      "Go to SLAs in the sidebar to define service-level agreements — response and resolution targets for tickets. Once configured, SLAs are applied to incoming tickets so you and your helpers can see which ones are at risk of breaching.",
+      "Go to SLAs in the sidebar to define service-level agreements - response and resolution targets for tickets. Once configured, SLAs are applied to incoming tickets so you and your helpers can see which ones are at risk of breaching.",
   },
   {
     question: "How do I customize my project's support landing page?",
     answer:
-      "Open your project's settings to update the landing-page branding — logo, name, and description shown on the public support page. Changes appear immediately on your project's support URL, so users always see up-to-date branding.",
+      "Open your project's settings to update the landing-page branding - logo, name, and description shown on the public support page. Changes appear immediately on your project's support URL, so users always see up-to-date branding.",
   },
   {
     question: "How do I configure payment settings and payouts?",
@@ -71,14 +71,14 @@ const ADMIN_FAQ_ITEMS = [
 const HELPER_FAQ_ITEMS = [
   SHARED_FAQ_ITEMS[0],
   {
-    question: "I'm a helper — how do I claim and work on tickets?",
+    question: "I'm a helper - how do I claim and work on tickets?",
     answer:
       "Go to Tickets in the sidebar to see available tickets. Open a ticket and use the 'Claim' action to assign it to yourself. You can then chat with the user and log time. Each logged entry has to be accepted or declined by the user before you can end the session; if they decline, their reason is posted in the chat so you can log a corrected entry. Entries the user does not review within 24 hours are accepted automatically. Declined time is not charged. When done, end the session and mark the outcome.",
   },
   {
     question: "How do I log time on a ticket?",
     answer:
-      "Open a ticket you've claimed and log the time you've spent directly on it. Logged time is what your payouts and the project's reports are based on, so keep it up to date — you can adjust it before the ticket is marked as completed.",
+      "Open a ticket you've claimed and log the time you've spent directly on it. Logged time is what your payouts and the project's reports are based on, so keep it up to date - you can adjust it before the ticket is marked as completed.",
   },
   {
     question: "My payout looks wrong",
@@ -93,7 +93,7 @@ const HELPER_FAQ_ITEMS = [
   {
     question: "How do I manage my availability?",
     answer:
-      "Your availability settings control when you're shown as available to take tickets. Update them from your helper profile settings — if you're marked unavailable, new tickets won't be routed to you, but you can still work on tickets you've already claimed.",
+      "Your availability settings control when you're shown as available to take tickets. Update them from your helper profile settings - if you're marked unavailable, new tickets won't be routed to you, but you can still work on tickets you've already claimed.",
   },
   {
     question: "Where do I manage my helper profile?",
@@ -114,7 +114,7 @@ const USER_FAQ_ITEMS = [
   {
     question: "How do I open a support ticket?",
     answer:
-      "Go to Support > Tickets in the sidebar (or visit your project's support page) and create a new ticket describing your issue. A helper will claim it and follow up with you — you can track the status and reply from the same page.",
+      "Go to Support > Tickets in the sidebar (or visit your project's support page) and create a new ticket describing your issue. A helper will claim it and follow up with you - you can track the status and reply from the same page.",
   },
   {
     question: "How do I chat with support?",
@@ -122,7 +122,7 @@ const USER_FAQ_ITEMS = [
       "Open Support > Chat in the sidebar to start a live conversation with the project's support team. Chat is best for quick questions; for issues that need follow-up, create a ticket instead so nothing gets lost.",
   },
   {
-    question: "The helper logged time — what do I need to do?",
+    question: "The helper logged time - what do I need to do?",
     answer:
       "Every time a helper logs time on your ticket you get an Accept / Decline prompt in the chat. Please review each entry before the session ends. If you decline, you'll be asked for a short explanation, which is shared with the helper in the chat. Entries you do not review within 24 hours are accepted automatically. Declined time is not charged.",
   },

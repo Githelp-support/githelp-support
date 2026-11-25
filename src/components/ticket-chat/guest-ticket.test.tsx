@@ -132,7 +132,7 @@ describe("guest system messages", () => {
     expect(guestSystemMessageCopy("guest_signed_in", "customer")).toBe(GUEST_SIGNED_IN_CUSTOMER_COPY)
     expect(guestSystemMessageCopy("payment_required", "customer")).toBeNull()
     expect(VISITOR_LEFT_HELPER_COPY).toBe("The visitor left before signing in.")
-    expect(GUEST_SIGNED_IN_HELPER_COPY).toBe("The visitor signed in — you can claim this ticket now.")
+    expect(GUEST_SIGNED_IN_HELPER_COPY).toBe("The visitor signed in - you can claim this ticket now.")
   })
 
   it("renders visitor_left and guest_signed_in in the customer thread", () => {

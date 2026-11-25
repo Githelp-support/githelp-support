@@ -626,7 +626,7 @@ export default function HelperReportsPage() {
                               {payout.ticketShortId}
                             </Link>
                           ) : (
-                            <span className="text-sm font-medium text-foreground">—</span>
+                            <span className="text-sm font-medium text-foreground">-</span>
                           )}
                           <TicketText text={payout.ticketTitle} />
                         </div>

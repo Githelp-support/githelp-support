@@ -535,7 +535,7 @@ export default function UserReportsPage() {
                                 {row.ticketShortId}
                               </Link>
                             ) : (
-                              <span className="text-sm font-medium text-foreground">—</span>
+                              <span className="text-sm font-medium text-foreground">-</span>
                             )}
                             <div className="text-xs text-muted-foreground truncate" title={row.ticketTitle}>
                               {row.ticketTitle}

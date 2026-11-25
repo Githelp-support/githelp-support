@@ -246,7 +246,7 @@ describe("describeChargedLine", () => {
                 paymentStatus: "free",
                 capturedAmountSmallestUnit: null,
             }),
-        ).toBe("Free support — no charge");
+        ).toBe("Free support - no charge");
     });
 });
 
