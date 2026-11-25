@@ -150,6 +150,10 @@ const USER_SIDEBAR_SUBTITLE_MAX_CHARS = 50;
  * the `limit` window. Also returns `activeCount` — total number of active
  * tickets (independent of the `limit` applied to the displayed items). Used by
  * the UI to render "Active tickets (N)".
+ *
+ * Count rule (UI terms): Users count Unclaimed and In progress tickets
+ * (statuses `available`, `claimed`, `in-progress`); Completed and Cancelled
+ * never count. A current ticket added only for display does not raise it.
  */
 export function useUserActiveTicketsSidebar(
     userId: string | undefined,
