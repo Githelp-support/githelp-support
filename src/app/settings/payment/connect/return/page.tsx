@@ -48,14 +48,14 @@ function ConnectReturnContent() {
             {statusLabel === "Pending verification" && (
               <>
                 {" "}
-                — Stripe still needs some information. Click &quot;Set up payouts&quot; again
+                - Stripe still needs some information. Click &quot;Set up payouts&quot; again
                 to finish.
               </>
             )}
             {statusLabel === "Restricted" && (
               <>
                 {" "}
-                — Stripe is reviewing your details. This usually resolves within a few minutes.
+                - Stripe is reviewing your details. This usually resolves within a few minutes.
               </>
             )}
           </p>

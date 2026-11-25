@@ -132,7 +132,7 @@ function getMonthYear(dateString: string) {
 
 /** Extract a short ticket ID for display (e.g. from uuid 02735023-... to 2735023) */
 function getShortTicketId(ticketId: string | null): string {
-  if (!ticketId) return "—"
+  if (!ticketId) return "-"
   const first = ticketId.split("-")[0] || ""
   return first.replace(/^0+/, "") || first.slice(0, 8)
 }
@@ -686,7 +686,7 @@ export default function ReportsSupportPage() {
                               {getShortTicketId(row.ticketId)}
                             </Link>
                           ) : (
-                            <span className="text-sm font-medium text-foreground">—</span>
+                            <span className="text-sm font-medium text-foreground">-</span>
                           )}
                           <div className="text-xs text-muted-foreground" title={row.ticketTitle}>
                             {ticketPreview(row.ticketTitle)}
@@ -921,7 +921,7 @@ export default function ReportsSupportPage() {
                                     {getShortTicketId(transfer.ticket_id)}
                                   </Link>
                                 ) : (
-                                  <span className="text-sm font-medium text-foreground">—</span>
+                                  <span className="text-sm font-medium text-foreground">-</span>
                                 )}
                               </span>
                               <span className="min-w-0 text-muted-foreground tabular-nums">{formatDate(transferDate(transfer))}</span>

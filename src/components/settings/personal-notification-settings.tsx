@@ -74,7 +74,7 @@ export function PersonalNotificationSettings({ emailGroups }: PersonalNotificati
       setSavedToggles(emailToggles)
       toast.success("Notification preferences saved")
     } catch {
-      toast.error("Could not save preferences — please try again")
+      toast.error("Could not save preferences - please try again")
     }
   }
 

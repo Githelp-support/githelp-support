@@ -25,7 +25,7 @@ export function SupportSandboxBanner({ slug, projectId }: Props) {
     <div className="w-full bg-amber-100 dark:bg-amber-950/40 border-b border-amber-300 dark:border-amber-800 px-6 py-2 flex items-center gap-2 text-sm text-amber-900 dark:text-amber-100">
       <Icon name="fi-rr-info" className="shrink-0" />
       <span className="truncate">
-        This is a sandbox project. Payments use Stripe test mode — no real charges will be made.
+        This is a sandbox project. Payments use Stripe test mode - no real charges will be made.
       </span>
     </div>
   )

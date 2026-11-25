@@ -275,7 +275,7 @@ export function useUserActiveTicketsSidebar(
                         ? firstMsg
                               .slice(0, USER_SIDEBAR_SUBTITLE_MAX_CHARS)
                               .trim() + "…"
-                        : firstMsg.trim() || "—";
+                        : firstMsg.trim() || "-";
                 const lastMessageId =
                     lastMessageIdByTicket.get(t.id) ?? null;
                 const lastRead = lastReadByTicket.get(t.id) ?? null;
@@ -286,7 +286,7 @@ export function useUserActiveTicketsSidebar(
                     id: t.id,
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
                     subtitle,
-                    subject: t.title?.trim() || firstMsg.trim() || "—",
+                    subject: t.title?.trim() || firstMsg.trim() || "-",
                     projectName,
                     shortId: t.id.slice(0, 8),
                     createdAt: t.created_at,

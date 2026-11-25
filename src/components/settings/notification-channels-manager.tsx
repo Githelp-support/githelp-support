@@ -85,10 +85,10 @@ export function NotificationChannelsManager({
       setShowForm(false)
       setName("")
       setWebhookUrl("")
-      toast.success("Channel connected — use Test to verify it")
+      toast.success("Channel connected - use Test to verify it")
     } catch (err) {
       // The server explains rejected URLs (e.g. wrong host for the type).
-      toast.error(err instanceof Error && err.message ? err.message : "Could not add the channel — please try again")
+      toast.error(err instanceof Error && err.message ? err.message : "Could not add the channel - please try again")
     }
   }
 
@@ -99,7 +99,7 @@ export function NotificationChannelsManager({
       if (result.success) toast.success("Test notification sent")
       else toast.error(`Test failed: ${result.error ?? "unknown error"}`)
     } catch {
-      toast.error("Test failed — check the webhook URL")
+      toast.error("Test failed - check the webhook URL")
     } finally {
       setTestingId(null)
     }
@@ -120,7 +120,7 @@ export function NotificationChannelsManager({
         <div className="mb-4 p-4 border border-border rounded-lg bg-muted/40">
           <p className="text-sm font-medium text-foreground mb-1">Webhook signing secret</p>
           <p className="text-xs text-muted-foreground mb-2">
-            Shown once — store it now. Verify requests with the{" "}
+            Shown once - store it now. Verify requests with the{" "}
             <code className="font-mono">X-Githelp-Signature: sha256=&lt;hmac&gt;</code> header.
           </p>
           <div className="flex items-center gap-2">

@@ -37,8 +37,8 @@ export function buildAutoReply(avgResponseSeconds: number | null | undefined): s
  */
 export const VISITOR_LEFT_CUSTOMER_COPY = "This conversation was closed because you left before signing in.";
 export const VISITOR_LEFT_HELPER_COPY = "The visitor left before signing in.";
-export const GUEST_SIGNED_IN_CUSTOMER_COPY = "You signed in — this conversation is now linked to your account.";
-export const GUEST_SIGNED_IN_HELPER_COPY = "The visitor signed in — you can claim this ticket now.";
+export const GUEST_SIGNED_IN_CUSTOMER_COPY = "You signed in - this conversation is now linked to your account.";
+export const GUEST_SIGNED_IN_HELPER_COPY = "The visitor signed in - you can claim this ticket now.";
 /**
  * `guest_abandoned` (the guest closed the chat window) and `guest_returned`
  * (they came back) are notes for the helper only: the customer thread hides
@@ -325,7 +325,7 @@ export function describeChargedLine(opts: {
     }
     if (opts.cancelled) return "No charge";
     if (opts.slaCovered) return "Covered by your SLA";
-    if (opts.paymentStatus === "free") return "Free support — no charge";
+    if (opts.paymentStatus === "free") return "Free support - no charge";
     if (opts.paymentStatus === "distributing" || opts.paymentStatus === "completed") {
         return amount ?? "Charged";
     }
@@ -358,7 +358,7 @@ export function buildSessionEndedMessage(opts: {
         content: [
             "**Session ended**",
             "",
-            `The helper has ended this session — ${opts.cancelled ? "they were not able to help" : "marked as resolved"}.`,
+            `The helper has ended this session - ${opts.cancelled ? "they were not able to help" : "marked as resolved"}.`,
             "",
             `- **Outcome:** ${opts.cancelled ? "Not able to help" : "Resolved"}`,
             `- **Time logged:** ${opts.totalLoggedFormatted}`,

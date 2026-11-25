@@ -710,7 +710,7 @@ export default function UserSupportChatPage() {
                 ) : (
                   <div className="px-4 py-6 space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      No projects match &ldquo;{projectTerm}&rdquo;. It may not be on Githelp yet &mdash; we can
+                      No projects match &ldquo;{projectTerm}&rdquo;. It may not be on Githelp yet - we can
                       reach out to them for you.
                     </p>
                     <Button
@@ -796,7 +796,7 @@ export default function UserSupportChatPage() {
     }
     // A new ticket must be created against prices the customer has actually seen.
     if (!ticketCreated && (paymentSettingsLoading || !paymentSettings)) {
-      toast.error(paymentSettingsLoading ? "Loading the project's rates — try again in a moment." : "This project isn't accepting tickets yet.")
+      toast.error(paymentSettingsLoading ? "Loading the project's rates - try again in a moment." : "This project isn't accepting tickets yet.")
       return
     }
     if (sendingRef.current) return

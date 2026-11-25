@@ -995,7 +995,7 @@ export default function TicketDetailPage() {
                   ? "Processing…"
                   : paymentFailed
                     ? "Failed"
-                    : "—"
+                    : "-"
   // Who got what out of the charge. Shown once the capture has settled.
   const chargeSplits =
     !isCancelledEnd && paymentSettled && chargedSmallestUnit != null ? paymentGate.capturedSplits : null

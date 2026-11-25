@@ -109,9 +109,9 @@ export const PAYOUT_PREVIEW_ROWS: PayoutPreviewRow[] = [
 ]
 
 export const MONTHLY_PREVIEW_STATS: { label: string; value: string }[] = [
-    { label: "Tickets closed (preview)", value: "—" },
-    { label: "Hours logged (preview)", value: "—" },
-    { label: "Earnings (preview)", value: "—" },
+    { label: "Tickets closed (preview)", value: "-" },
+    { label: "Hours logged (preview)", value: "-" },
+    { label: "Earnings (preview)", value: "-" },
 ]
 
 /* ---------------------------------------------------------------------------

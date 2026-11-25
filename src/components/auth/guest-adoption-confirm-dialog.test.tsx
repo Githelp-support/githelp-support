@@ -19,7 +19,7 @@ describe("GuestAdoptionConfirmDialog", () => {
     render(<GuestAdoptionConfirmDialog />)
     const pending = open()
     expect(screen.getByText("Link your guest conversation to this account?")).toBeInTheDocument()
-    expect(screen.getByText("Build fails — Acme")).toBeInTheDocument()
+    expect(screen.getByText("Build fails - Acme")).toBeInTheDocument()
     expect(screen.getByText("ada@example.com")).toBeInTheDocument()
     expect(screen.getByText(/Linking to:/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Link to my account" }))
@@ -30,7 +30,7 @@ describe("GuestAdoptionConfirmDialog", () => {
   it("discards only via 'Not mine — discard'", async () => {
     render(<GuestAdoptionConfirmDialog />)
     const pending = open()
-    fireEvent.click(screen.getByRole("button", { name: "Not mine — discard" }))
+    fireEvent.click(screen.getByRole("button", { name: "Not mine - discard" }))
     await expect(pending).resolves.toBe("discard")
   })
 

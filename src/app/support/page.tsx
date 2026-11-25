@@ -414,7 +414,7 @@ export default function SupportPage() {
     }
     // A new ticket must be created against prices the customer has actually seen.
     if (!ticketCreated && (paymentSettingsLoading || !paymentSettings)) {
-      toast.error(paymentSettingsLoading ? "Loading the project's rates — try again in a moment." : "This project isn't accepting tickets yet.")
+      toast.error(paymentSettingsLoading ? "Loading the project's rates - try again in a moment." : "This project isn't accepting tickets yet.")
       return
     }
     if (sendingRef.current) return
