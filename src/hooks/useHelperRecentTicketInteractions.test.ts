@@ -382,6 +382,9 @@ describe("useHelperRecentTicketInteractions", () => {
                 message("m1", "mine", "2026-01-01T00:00:00.000Z"),
                 message("m2", "mine", "2026-01-02T00:00:00.000Z"),
                 message("m3", "mine", "2026-01-03T00:00:00.000Z", { deleted_at: "2026-01-04T00:00:00.000Z" }),
+                // Automatic welcome / note: not counted as messages.
+                message("w1", "mine", "2025-12-31T00:00:00.000Z", { is_automatic: true }),
+                message("w2", "done", "2025-12-31T00:00:00.000Z", { is_automatic: true }),
             ],
             projects: [
                 { project_id: "proj-1", name: "Project One", logo_url: "p1.png" },

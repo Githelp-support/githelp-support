@@ -211,6 +211,21 @@ export type Database = {
                     success: boolean;
                     /** Opened by an anonymous (not signed-in) visitor; cleared when they sign in. Read-only for clients. */
                     guest: boolean;
+                    /**
+                     * Rate snapshot taken when the ticket was opened (BEFORE INSERT trigger
+                     * `02_tickets_rate_snapshot`), in cents. Read-only for clients; null on
+                     * tickets the backfill could not fill.
+                     */
+                    rate_start_price: number | null;
+                    rate_first_60: number | null;
+                    rate_after_60: number | null;
+                    /** Lowercase ISO 4217, currently always "usd". */
+                    rate_currency: string | null;
+                    /** All three snapshot rates are zero (same rule as `isFreeSupport`). */
+                    rate_is_free: boolean | null;
+                    rates_snapshot_at: string | null;
+                    /** "creation" or "backfill_<source>". */
+                    rates_snapshot_source: string | null;
                 };
                 Insert: Partial<{
                     id: string;
@@ -395,6 +410,11 @@ export type Database = {
                     deleted_at: string | null;
                     updated_at: string;
                     metadata: Record<string, unknown> | null;
+                    /**
+                     * Server-generated message (welcome, disclaimer, auto reply, payment/time
+                     * notices). Set by the server only; never notifies.
+                     */
+                    is_automatic: boolean;
                 };
                 Insert: Partial<{
                     id: string;

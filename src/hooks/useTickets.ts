@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
+import { markWelcomeReveal } from "@/lib/welcome-reveal";
 import type { Database } from "@/types/database";
 
 type Ticket = Database["public"]["Tables"]["tickets"]["Row"];
@@ -72,6 +73,8 @@ export function useCreateTicket() {
             return data;
         },
         onSuccess: (data) => {
+            // The creator's chat reveals the welcome group once (TicketChat).
+            markWelcomeReveal(data.id);
             queryClient.invalidateQueries({
                 queryKey: ["tickets", data.project_id],
             });

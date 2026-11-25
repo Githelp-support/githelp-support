@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { Icon } from "@/components/ui/icon"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ChatMessageMeta } from "./chat-message-parts"
 import { getAvatarColorHexForId, SQUIRCLE_RADIUS } from "@/lib/constants"
 import { RATES_NOT_CONFIGURED, type TicketRates } from "@/lib/ticket-pricing"
@@ -137,6 +138,43 @@ export function CustomerChatIntro({
             </p>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Placeholder in the shape of `CustomerChatIntro` (project avatar, name line,
+ * welcome text, the three rate boxes), shown where the welcome message will
+ * appear while a fresh chat "writes" it (TicketChat's entrance); the message
+ * then fades in in its place.
+ */
+export function WelcomeMessageSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading welcome message"
+      data-slot="welcome-skeleton"
+      className="flex gap-3 animate-fade-in"
+    >
+      <Skeleton className={`size-7.5 shrink-0 ${SQUIRCLE_RADIUS[30]}`} />
+      <div className="min-w-0 flex-1 space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-3.5 w-28" />
+            <Skeleton className="h-4 w-12" />
+          </div>
+          <Skeleton className="h-3.5 w-3/4" />
+          <Skeleton className="h-3.5 w-1/2" />
+        </div>
+        <div>
+          <Skeleton className="mb-3 h-3.5 w-12" />
+          <div className="grid grid-cols-3 gap-4">
+            <Skeleton className="h-15.5 rounded-lg" />
+            <Skeleton className="h-15.5 rounded-lg" />
+            <Skeleton className="h-15.5 rounded-lg" />
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -121,6 +121,13 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     sla_id: null,
     success: true,
     guest: false,
+    rate_start_price: null,
+    rate_first_60: null,
+    rate_after_60: null,
+    rate_currency: null,
+    rate_is_free: null,
+    rates_snapshot_at: null,
+    rates_snapshot_source: null,
     ...overrides,
   }
 }

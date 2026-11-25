@@ -160,15 +160,16 @@ export function useHelperClaimedTicketsSidebar(
             const ticketIds = tickets.map((t) => t.id);
             const { data: messages } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, content, created_at")
+                .select("id, ticket_id, content, created_at, is_automatic")
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
 
             const firstMessageByTicket = new Map<string, { content: string }>();
             const lastMessageIdByTicket = new Map<string, string>();
-            messages?.forEach((m: { id: string; ticket_id: string; content: string }) => {
-                if (!firstMessageByTicket.has(m.ticket_id)) {
+            messages?.forEach((m: { id: string; ticket_id: string; content: string; is_automatic?: boolean }) => {
+                // The subtitle is the customer's question, not the automatic welcome/notes.
+                if (!m.is_automatic && !firstMessageByTicket.has(m.ticket_id)) {
                     firstMessageByTicket.set(m.ticket_id, { content: m.content });
                 }
                 lastMessageIdByTicket.set(m.ticket_id, m.id);
@@ -345,7 +346,7 @@ export function useAdminActiveTicketsSidebar(
 
             const { data: messages } = await supabase
                 .from("tickets_messages")
-                .select("id, ticket_id, content, created_at")
+                .select("id, ticket_id, content, created_at, is_automatic")
                 .in("ticket_id", ticketIds)
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
@@ -353,8 +354,9 @@ export function useAdminActiveTicketsSidebar(
             const firstMessageByTicket = new Map<string, { content: string }>();
             const lastMessageIdByTicket = new Map<string, string>();
             messages?.forEach(
-                (m: { id: string; ticket_id: string; content: string }) => {
-                    if (!firstMessageByTicket.has(m.ticket_id)) {
+                (m: { id: string; ticket_id: string; content: string; is_automatic?: boolean }) => {
+                    // The subtitle is the customer's question, not the automatic welcome/notes.
+                    if (!m.is_automatic && !firstMessageByTicket.has(m.ticket_id)) {
                         firstMessageByTicket.set(m.ticket_id, {
                             content: m.content,
                         });
