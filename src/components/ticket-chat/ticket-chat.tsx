@@ -505,7 +505,10 @@ export function TicketChat(props: TicketChatProps) {
   }, [introEntrance])
 
   const introHidden = (welcomeHidden && !keepIntro) || introEntrance === "hidden"
-  const introEnterClass = introEntrance === "entering" ? "animate-enter" : keepIntro ? undefined : welcomeEnterClass
+  // The day divider fades in; the welcome itself makes a "nudge" (rise, small
+  // overshoot, settle) so the visitor's eye lands on it.
+  const dividerEnterClass = introEntrance === "entering" ? "animate-enter" : keepIntro ? undefined : welcomeEnterClass
+  const introEnterClass = dividerEnterClass ? "animate-nudge" : undefined
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
@@ -723,7 +726,7 @@ export function TicketChat(props: TicketChatProps) {
               <div className="flex min-h-full flex-col justify-end">
                 <div className="flex flex-col px-6 py-5 md:px-12">
                   {!introHidden && (intro || rows.length > 0) && (
-                    <ChatDayDivider label={topDayLabel} className={cn("mb-4", introEnterClass)} />
+                    <ChatDayDivider label={topDayLabel} className={cn("mb-4", dividerEnterClass)} />
                   )}
                   {!introHidden && introAtTop && (introEnterClass && intro ? <div className={introEnterClass}>{intro}</div> : intro)}
 
@@ -743,7 +746,8 @@ export function TicketChat(props: TicketChatProps) {
                             followUp ? "mt-1" : (index > 0 || (intro && introAtTop)) && "mt-4",
                             // The intro was on screen before its stored row arrived.
                             isNewMessage(msg.id) && !(intro && msg.kind === "welcome") && "animate-enter",
-                            welcomeRow && welcomeEnterClass,
+                            // The welcome nudges; the notes posted with it fade in.
+                            welcomeRow && welcomeEnterClass && (msg.kind === "welcome" ? "animate-nudge" : welcomeEnterClass),
                           )}
                         >
                           {renderRowBody(msg, row.groupStart)}

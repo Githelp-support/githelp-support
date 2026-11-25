@@ -123,13 +123,13 @@ describe("CustomerChatIntro entrance in a new ticket's chat", () => {
     expect(screen.queryByText("Welcome!")).toBeNull()
 
     act(() => vi.advanceTimersByTime(1))
-    expect(screen.getByText("Welcome!").closest(".animate-enter")).not.toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-nudge")).not.toBeNull()
     expect(screen.getByText("Start price (USD)")).toBeInTheDocument()
   })
 
   it("appears at once without the flag (reload, later visit)", () => {
     renderInChat("t1")
-    expect(screen.getByText("Welcome!").closest(".animate-enter")).toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-nudge")).toBeNull()
     expect(screen.getByText("Start price (USD)")).toBeInTheDocument()
   })
 
@@ -137,8 +137,8 @@ describe("CustomerChatIntro entrance in a new ticket's chat", () => {
     setReducedMotion(true)
     markWelcomeReveal("t1")
     renderInChat("t1")
-    expect(screen.getByText("Welcome!").closest(".animate-enter")).toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-nudge")).toBeNull()
     act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS))
-    expect(screen.getByText("Welcome!").closest(".animate-enter")).toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-nudge")).toBeNull()
   })
 })

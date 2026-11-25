@@ -229,6 +229,31 @@
 @utility animate-leave {
   animation: fade-out-plain var(--duration-fast) var(--ease-out) both;
 }
+/* Chat welcome "nudge": the project's welcome pops in when a fresh support chat opens (and
+   when a new ticket's welcome group is revealed): it rises from 12px below, overshoots 3px
+   upwards and settles, growing from its avatar corner. Transform + opacity only; the global
+   prefers-reduced-motion rule makes it instant. Only for the chat welcome (see CLAUDE.md → Motion). */
+@keyframes welcome-nudge {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.01);
+  }
+  72% {
+    transform: translateY(1px) scale(0.998);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@utility animate-nudge {
+  animation: welcome-nudge 520ms var(--ease-out) both;
+  transform-origin: left bottom;
+}
 /* Skeleton → content: a 150ms fade on arrival. */
 @utility animate-fade-in {
   animation: fade-in-plain 150ms var(--ease-out) both;
