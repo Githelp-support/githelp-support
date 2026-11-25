@@ -1332,19 +1332,19 @@ export default function TicketDetailPage() {
                           <Icon name="fi-rr-check" className="text-brand-primary shrink-0" />
                           <span>Ticket ended</span>
                         </div>
-                        <div className="mt-2.5">
-                          <p className="mb-1.5 text-ui font-medium text-foreground">Summary</p>
+                        <div className="mt-2">
                           {userHasSLA ? (
                             <Button
                               onClick={handleSeeDetails}
                               variant="outline"
                               size="sm"
-                              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent font-book"
+                              className="border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent font-book!"
                             >
                               See details
                             </Button>
                           ) : (
                             <div className="rounded-lg border border-border bg-muted/40 p-4 max-w-xs">
+                              <p className="mb-1.5 text-ui font-medium text-foreground">Summary</p>
                               <div className="space-y-1.5 pl-2.5 text-ui">
                                 <div className="flex items-center justify-between gap-6">
                                   <span className="text-muted-foreground">Outcome</span>
@@ -1416,15 +1416,15 @@ export default function TicketDetailPage() {
                                   disabled={captureTicket.isPending}
                                   variant="outline"
                                   size="sm"
-                                  className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent font-book"
+                                  className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/10 bg-transparent font-book!"
                                 >
                                   {captureTicket.isPending ? "Retrying…" : "Retry payment"}
                                 </Button>
                               )}
 
-                              <div className="mt-3">
+                              <div className="mt-3.5">
                                 <NextLink href="/tickets">
-                                  <Button variant="default" size="sm">
+                                  <Button variant="default" size="sm" className="font-book!">
                                     Back to tickets
                                   </Button>
                                 </NextLink>
