@@ -143,8 +143,9 @@ export interface UserActiveTicketsSidebarResult {
 const USER_SIDEBAR_SUBTITLE_MAX_CHARS = 50;
 
 /**
- * Latest active tickets the given user has created (for sidebar on Support chat).
- * "Active" = status not in (completed, cancelled). Avatar uses the project's
+ * Active tickets the given user has created (for sidebar on Support chat).
+ * "Active" = status in (available, claimed, in-progress), i.e. Unclaimed or
+ * In progress (see `getTicketStatusBadge` in lib/status-colors). Avatar uses the project's
  * branding logo / initial, mirroring the helper sidebar visual structure.
  * Always includes the current ticket if provided, even if it would be outside
  * the `limit` window. Also returns `activeCount` — total number of active
@@ -158,7 +159,7 @@ const USER_SIDEBAR_SUBTITLE_MAX_CHARS = 50;
 export function useUserActiveTicketsSidebar(
     userId: string | undefined,
     currentTicketId: string | undefined,
-    limit = 3
+    limit = 50
 ) {
     return useQuery({
         queryKey: ["user-active-tickets-sidebar", userId, currentTicketId, limit],
@@ -172,7 +173,7 @@ export function useUserActiveTicketsSidebar(
                 )
                 .eq("created_by", userId)
                 .is("deleted_at", null)
-                .not("status", "in", "(completed,cancelled)")
+                .in("status", ["available", "claimed", "in-progress"])
                 .order("updated_at", { ascending: false });
 
             if (ticketsError) throw ticketsError;

@@ -108,17 +108,18 @@ async function renderSidebar(currentTicketId?: string, limit?: number) {
 describe("useUserActiveTicketsSidebar activeCount", () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it("excludes only completed and cancelled tickets from the active query", async () => {
+    it("queries only Unclaimed and In progress statuses as active", async () => {
         const log = setupSupabase({ tickets: [] });
         await renderSidebar();
 
         const activeQuery = log.find((q) => q.table === "tickets")!;
-        expect(activeQuery.filters).toContainEqual({
-            op: "not",
-            col: "status",
-            val: "in",
-            extra: "(completed,cancelled)",
-        });
+        expect(activeQuery.filters).toContainEqual(
+            expect.objectContaining({
+                op: "in",
+                col: "status",
+                val: ["available", "claimed", "in-progress"],
+            })
+        );
         expect(activeQuery.filters).toContainEqual(expect.objectContaining({ op: "eq", col: "created_by", val: USER }));
         expect(activeQuery.filters).toContainEqual(expect.objectContaining({ op: "is", col: "deleted_at", val: null }));
     });
