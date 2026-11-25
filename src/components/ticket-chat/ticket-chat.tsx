@@ -266,6 +266,36 @@ const WELCOME_NOTE_KINDS: ReadonlySet<SystemMessageKind> = new Set(["welcome_dis
 const isWelcomeGroupRow = (msg: TicketChatMessage) =>
   msg.kind === "welcome" || (msg.senderType === "system" && !!msg.paymentMetadata && WELCOME_NOTE_KINDS.has(msg.paymentMetadata.kind))
 
+/**
+ * Wraps the chat welcome so it can enter like a message scrolled into view
+ * (`animate-scroll-up` in globals.css): its space opens upwards from the
+ * composer and the content rises with it. The three-level structure is always
+ * rendered so toggling the class never remounts the content; the class is
+ * dropped once the animation ends, so nothing stays clipped.
+ */
+function ScrollUpReveal({ active, children }: { active: boolean; children: React.ReactNode }) {
+  const [settled, setSettled] = useState(false)
+  const animating = active && !settled
+  const ref = useRef<HTMLDivElement>(null)
+  // Native listener: the wrapper's own animation only (the content's fade bubbles too).
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !animating) return
+    const onEnd = (e: AnimationEvent) => {
+      if (e.target === el) setSettled(true)
+    }
+    el.addEventListener("animationend", onEnd)
+    return () => el.removeEventListener("animationend", onEnd)
+  }, [animating])
+  return (
+    <div ref={ref} data-slot="scroll-up-reveal" className={cn(animating && "animate-scroll-up")}>
+      <div>
+        <div>{children}</div>
+      </div>
+    </div>
+  )
+}
+
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
 }
@@ -505,10 +535,8 @@ export function TicketChat(props: TicketChatProps) {
   }, [introEntrance])
 
   const introHidden = (welcomeHidden && !keepIntro) || introEntrance === "hidden"
-  // The day divider fades in; the welcome itself makes a "nudge" (rise, small
-  // overshoot, settle) so the visitor's eye lands on it.
-  const dividerEnterClass = introEntrance === "entering" ? "animate-enter" : keepIntro ? undefined : welcomeEnterClass
-  const introEnterClass = dividerEnterClass ? "animate-nudge" : undefined
+  // The top day divider and the welcome scroll up into view together.
+  const introEntering = introEntrance === "entering" || (!keepIntro && !!welcomeEnterClass)
 
   // A payment_required / payment_cap_exceeded prompt is stale once a hold is
   // authorized *after* it. A later prompt (e.g. a failed weekly re-hold) is live
@@ -726,9 +754,11 @@ export function TicketChat(props: TicketChatProps) {
               <div className="flex min-h-full flex-col justify-end">
                 <div className="flex flex-col px-6 py-5 md:px-12">
                   {!introHidden && (intro || rows.length > 0) && (
-                    <ChatDayDivider label={topDayLabel} className={cn("mb-4", dividerEnterClass)} />
+                    <ScrollUpReveal active={introEntering}>
+                      <ChatDayDivider label={topDayLabel} className="mb-4" />
+                      {introAtTop && intro}
+                    </ScrollUpReveal>
                   )}
-                  {!introHidden && introAtTop && (introEnterClass && intro ? <div className={introEnterClass}>{intro}</div> : intro)}
 
                   {rows.map((row, index) => {
                     const msg = row.item
@@ -746,11 +776,17 @@ export function TicketChat(props: TicketChatProps) {
                             followUp ? "mt-1" : (index > 0 || (intro && introAtTop)) && "mt-4",
                             // The intro was on screen before its stored row arrived.
                             isNewMessage(msg.id) && !(intro && msg.kind === "welcome") && "animate-enter",
-                            // The welcome nudges; the notes posted with it fade in.
-                            welcomeRow && welcomeEnterClass && (msg.kind === "welcome" ? "animate-nudge" : welcomeEnterClass),
+                            // The notes posted with the welcome fade in; the welcome scrolls up.
+                            welcomeRow && msg.kind !== "welcome" && welcomeEnterClass,
                           )}
                         >
-                          {renderRowBody(msg, row.groupStart)}
+                          {msg.kind === "welcome" ? (
+                            <ScrollUpReveal active={welcomeRow && !!welcomeEnterClass}>
+                              {renderRowBody(msg, row.groupStart)}
+                            </ScrollUpReveal>
+                          ) : (
+                            renderRowBody(msg, row.groupStart)
+                          )}
                         </div>
                       </Fragment>
                     )
