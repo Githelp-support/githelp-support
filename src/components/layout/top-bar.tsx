@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { ProfileAvatar } from "@/components/ui/profile-avatar"
 import { Logo } from "@/components/brand/logo"
 import { MobileNavToggle } from "@/components/layout/mobile-nav"
+import { isShellRoute } from "@/components/layout/app-shell"
 import { RoleSwitcher, ProjectSwitcher } from "@/components/layout/workspace-switchers"
 import { NotificationsPanel } from "./notifications-panel"
 import type { Notification } from "@/hooks/useNotifications"
@@ -37,9 +38,13 @@ interface TopBarProps {
 }
 
 export function TopBar({ variant = "default" }: TopBarProps) {
-  const isShell = variant === "shell"
   const router = useRouter()
   const pathname = usePathname()
+  // On a public support project page the top bar (logo, Sign out, bell,
+  // avatar) is removed: the support sidebar holds the logo and the profile.
+  // Like the shell, only the slim menu-button bar remains below lg.
+  const isPublicSupportPage = !!pathname?.startsWith("/support") && !isShellRoute(pathname)
+  const isShell = variant === "shell" || isPublicSupportPage
   const { confirmNavigation } = useUnsavedChanges()
   const {
     user,
