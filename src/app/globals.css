@@ -229,32 +229,6 @@
 @utility animate-leave {
   animation: fade-out-plain var(--duration-fast) var(--ease-out) both;
 }
-/* Chat welcome "scroll up": the project's welcome enters like a message scrolled into view
-   when a fresh support chat opens (and when a new ticket's welcome group is revealed). The
-   wrapper's row grows from 0 to its full height (the grid-template-rows trick) with the
-   overflow clipped; the thread is bottom-anchored, so the message rises from the composer, top
-   edge first, while it fades in. Clipping only lasts for the animation (ScrollUpReveal drops the
-   class on animationend, so focus rings are not cut off). The global prefers-reduced-motion
-   rule makes it instant. Only for the chat welcome (see CLAUDE.md → Motion). */
-@keyframes scroll-up-space {
-  from {
-    grid-template-rows: 0fr;
-  }
-  to {
-    grid-template-rows: 1fr;
-  }
-}
-@utility animate-scroll-up {
-  display: grid;
-  animation: scroll-up-space 480ms var(--ease-out) both;
-  & > * {
-    min-height: 0;
-    overflow: hidden;
-  }
-  & > * > * {
-    animation: fade-in-plain 360ms var(--ease-out) both;
-  }
-}
 /* Skeleton → content: a 150ms fade on arrival. */
 @utility animate-fade-in {
   animation: fade-in-plain 150ms var(--ease-out) both;

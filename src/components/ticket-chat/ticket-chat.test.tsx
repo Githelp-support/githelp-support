@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { act, fireEvent, render, screen, within } from "@testing-library/react"
+import { WELCOME_REVEAL_DELAY_MS } from "@/lib/welcome-reveal"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -305,10 +306,11 @@ describe("TicketChat welcome entrance", () => {
       renderChat({ intro, messages: thread, welcomeRevealId: "t1" })
       expect(screen.queryByTestId("intro")).toBeNull()
       expect(screen.queryByText("Not charged yet.")).toBeNull()
-      expect(screen.queryByRole("separator")).toBeNull()
+      expect(screen.getByRole("status", { name: "Loading welcome message" })).toBeInTheDocument()
+      expect(screen.getByRole("separator")).toBeInTheDocument()
 
-      act(() => vi.advanceTimersByTime(400))
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).not.toBeNull()
+      act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS))
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).not.toBeNull()
       expect(screen.getByText("Not charged yet.").closest(".animate-enter")).not.toBeNull()
       expect(window.sessionStorage.getItem("welcome-reveal:t1")).toBeNull()
     } finally {
@@ -333,11 +335,11 @@ describe("TicketChat welcome entrance", () => {
       window.sessionStorage.setItem("welcome-reveal:t3", "1")
       rerender(wrap(<TicketChat {...base} messages={thread} welcomeRevealId="t3" />))
       expect(screen.getByTestId("intro")).toBeInTheDocument()
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
       expect(screen.queryByText("Not charged yet.")).toBeNull()
 
-      act(() => vi.advanceTimersByTime(400))
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+      act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS))
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
       expect(screen.getByText("Not charged yet.").closest(".animate-enter")).not.toBeNull()
       expect(window.sessionStorage.getItem("welcome-reveal:t3")).toBeNull()
     } finally {
@@ -349,10 +351,10 @@ describe("TicketChat welcome entrance", () => {
     vi.useFakeTimers()
     try {
       renderChat({ intro, messages: thread, welcomeRevealId: "t1" })
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
       expect(screen.getByText("Not charged yet.")).toBeInTheDocument()
-      act(() => vi.advanceTimersByTime(400))
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+      act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS))
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
     } finally {
       vi.useRealTimers()
     }
@@ -361,7 +363,7 @@ describe("TicketChat welcome entrance", () => {
   it("ignores the flag on views without welcomeRevealId (helper/admin) and leaves it set", () => {
     window.sessionStorage.setItem("welcome-reveal:t1", "1")
     renderChat({ intro, messages: thread })
-    expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+    expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
     expect(screen.getByText("Not charged yet.")).toBeInTheDocument()
     expect(window.sessionStorage.getItem("welcome-reveal:t1")).toBe("1")
   })
@@ -370,7 +372,7 @@ describe("TicketChat welcome entrance", () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
     window.sessionStorage.setItem("welcome-reveal:t2", "1")
     renderChat({ intro, messages: thread, welcomeRevealId: "t2" })
-    expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+    expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
     expect(screen.getByText("Not charged yet.").closest(".animate-enter")).toBeNull()
     expect(screen.getByRole("separator")).toBeInTheDocument()
     expect(window.sessionStorage.getItem("welcome-reveal:t2")).toBeNull()
@@ -396,19 +398,17 @@ describe("TicketChat intro entrance on opening a fresh chat", () => {
     try {
       render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
       expect(screen.queryByTestId("intro")).toBeNull()
-      expect(screen.queryByRole("separator")).toBeNull()
+      // The day divider and the welcome's skeleton are there from the start.
+      expect(screen.getByRole("separator")).toBeInTheDocument()
+      expect(screen.getByRole("status", { name: "Loading welcome message" })).toBeInTheDocument()
 
-      act(() => vi.advanceTimersByTime(399))
+      act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS - 1))
       expect(screen.queryByTestId("intro")).toBeNull()
 
       act(() => vi.advanceTimersByTime(1))
-      const reveal = screen.getByTestId("intro").closest(".animate-scroll-up")
-      expect(reveal).not.toBeNull()
-      expect(screen.getByRole("separator").closest(".animate-scroll-up")).toBe(reveal)
-
-      // Once it has run, nothing stays clipped.
-      fireEvent.animationEnd(reveal!)
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+      // The message replaces its skeleton with a fade.
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).not.toBeNull()
+      expect(screen.queryByRole("status", { name: "Loading welcome message" })).toBeNull()
     } finally {
       vi.useRealTimers()
     }
@@ -421,9 +421,9 @@ describe("TicketChat intro entrance on opening a fresh chat", () => {
       expect(screen.queryByTestId("intro")).toBeNull()
       // e.g. a guest's open ticket was resumed
       rerender(wrap(<TicketChat {...base} messages={[]} introEntrance={false} />))
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
-      act(() => vi.advanceTimersByTime(400))
-      expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
+      act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS))
+      expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
     } finally {
       vi.useRealTimers()
     }
@@ -433,7 +433,7 @@ describe("TicketChat intro entrance on opening a fresh chat", () => {
     vi.useFakeTimers()
     try {
       const { rerender } = render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
-      act(() => vi.advanceTimersByTime(400))
+      act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS))
       expect(screen.getByTestId("intro")).toBeInTheDocument()
       rerender(wrap(<TicketChat {...base} messages={[message("u1", { content: "Help", createdAt: at(15, 10, 17) })]} introEntrance={false} />))
       expect(screen.getByTestId("intro")).toBeInTheDocument()
@@ -445,11 +445,11 @@ describe("TicketChat intro entrance on opening a fresh chat", () => {
 
   it("shows the intro at once without the prop (existing tickets, helper/admin) and under reduced motion", () => {
     const { unmount } = render(wrap(<TicketChat {...base} messages={[]} />))
-    expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+    expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
     unmount()
     window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia
     render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
-    expect(screen.getByTestId("intro").closest(".animate-scroll-up")).toBeNull()
+    expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
     expect(screen.getByRole("separator")).toBeInTheDocument()
   })
 })

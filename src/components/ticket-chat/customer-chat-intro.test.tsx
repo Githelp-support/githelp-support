@@ -118,18 +118,21 @@ describe("CustomerChatIntro entrance in a new ticket's chat", () => {
     renderInChat("t1")
     expect(screen.queryByText("Welcome!")).toBeNull()
     expect(screen.queryByText("Start price (USD)")).toBeNull()
+    // The welcome's skeleton holds its place meanwhile.
+    expect(screen.getByRole("status", { name: "Loading welcome message" })).toBeInTheDocument()
 
     act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS - 1))
     expect(screen.queryByText("Welcome!")).toBeNull()
 
     act(() => vi.advanceTimersByTime(1))
-    expect(screen.getByText("Welcome!").closest(".animate-scroll-up")).not.toBeNull()
+    expect(screen.queryByRole("status", { name: "Loading welcome message" })).toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-fade-in")).not.toBeNull()
     expect(screen.getByText("Start price (USD)")).toBeInTheDocument()
   })
 
   it("appears at once without the flag (reload, later visit)", () => {
     renderInChat("t1")
-    expect(screen.getByText("Welcome!").closest(".animate-scroll-up")).toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-fade-in")).toBeNull()
     expect(screen.getByText("Start price (USD)")).toBeInTheDocument()
   })
 
@@ -137,8 +140,8 @@ describe("CustomerChatIntro entrance in a new ticket's chat", () => {
     setReducedMotion(true)
     markWelcomeReveal("t1")
     renderInChat("t1")
-    expect(screen.getByText("Welcome!").closest(".animate-scroll-up")).toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-fade-in")).toBeNull()
     act(() => vi.advanceTimersByTime(WELCOME_REVEAL_DELAY_MS))
-    expect(screen.getByText("Welcome!").closest(".animate-scroll-up")).toBeNull()
+    expect(screen.getByText("Welcome!").closest(".animate-fade-in")).toBeNull()
   })
 })

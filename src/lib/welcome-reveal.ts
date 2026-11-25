@@ -5,8 +5,12 @@
  */
 const key = (ticketId: string) => `welcome-reveal:${ticketId}`
 
-/** Delay before the welcome group appears in a freshly created ticket's chat. */
-export const WELCOME_REVEAL_DELAY_MS = 400
+/**
+ * How long the welcome's skeleton shows before the message replaces it (a
+ * fresh chat, or a freshly created ticket's chat). Long enough to read as the
+ * project "writing", short enough not to feel like loading.
+ */
+export const WELCOME_REVEAL_DELAY_MS = 700
 
 export function markWelcomeReveal(ticketId: string) {
   try {
