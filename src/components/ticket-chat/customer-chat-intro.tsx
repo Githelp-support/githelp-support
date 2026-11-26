@@ -102,15 +102,15 @@ export function CustomerChatIntro({
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-card border border-border rounded-lg p-3">
               <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.startPrice}</p>
-              <p className="text-xs text-muted-foreground">Start price (USD)</p>
+              <p className="text-xs text-text-chat-meta">Start price (USD)</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-3">
               <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.first60Price}</p>
-              <p className="text-xs text-muted-foreground">First 60 min (USD/min)</p>
+              <p className="text-xs text-text-chat-meta">First 60 min (USD/min)</p>
             </div>
             <div className="bg-card border border-border rounded-lg p-3">
               <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.after60Price}</p>
-              <p className="text-xs text-muted-foreground">After 60 min (USD/min)</p>
+              <p className="text-xs text-text-chat-meta">After 60 min (USD/min)</p>
             </div>
           </div>
           )}
