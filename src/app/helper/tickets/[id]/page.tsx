@@ -55,7 +55,7 @@ import {
   endAbandonedGuestTicketErrorAction,
   ticketCreatorDisplayName,
 } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy, helperWelcomeMessageCopy, isCustomerOnlySystemKind, isFreeWelcomeDisclaimer, isGuestAbandoned, storedWelcomeIntro } from "@/lib/customer-chat-messages"
+import { HELPER_WELCOME_PREFIX, HELPER_WELCOME_SUFFIX, helperSystemMessageCopy, isCustomerOnlySystemKind, isFreeWelcomeDisclaimer, isGuestAbandoned, storedWelcomeIntro } from "@/lib/customer-chat-messages"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import { useQueryClient } from "@tanstack/react-query"
 import { GuestName } from "@/components/ui/guest-name"
@@ -1160,7 +1160,14 @@ export default function TicketDetailPage() {
                               projectName={project?.name || "Support"}
                               projectLogo={brandingData?.logo_url || null}
                               primaryColor={brandingData?.primary_color}
-                              welcomeText={helperWelcomeMessageCopy(welcomeUserName)}
+                              welcomeText={
+                                <>
+                                  {HELPER_WELCOME_PREFIX}
+                                  {/* Same weight as the sender name beside an avatar (ChatMessageMeta). */}
+                                  <span className="font-semibold">{welcomeUserName}</span>
+                                  {HELPER_WELCOME_SUFFIX}
+                                </>
+                              }
                               timestamp={welcomeIntro?.timestamp ?? messageTime(msg) ?? ""}
                               rates={welcomeIntro?.rates ?? null}
                               isFree={welcomeIntro?.isFree ?? false}

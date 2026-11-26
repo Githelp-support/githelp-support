@@ -16,7 +16,7 @@ export interface CustomerChatIntroProps {
   /** Branding primary color for the fallback avatar (falls back to a deterministic color). */
   primaryColor?: string | null
   /** Welcome copy shown as the project team's opening line. */
-  welcomeText: string
+  welcomeText: ReactNode
   /** Time only ("10:16", see `formatChatTime`), shown next to the team name. */
   timestamp: string
   /** Formatted rates, or `null` while the project has no payment settings (see formatTicketRates). */
