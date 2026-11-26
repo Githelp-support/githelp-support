@@ -55,7 +55,7 @@ import {
   endAbandonedGuestTicketErrorAction,
   ticketCreatorDisplayName,
 } from "@/components/ticket-chat/guest-ticket"
-import { helperSystemMessageCopy, isFreeWelcomeDisclaimer, isGuestAbandoned, storedWelcomeIntro } from "@/lib/customer-chat-messages"
+import { HELPER_WELCOME_PREFIX, HELPER_WELCOME_SUFFIX, helperSystemMessageCopy, isCustomerOnlySystemKind, isFreeWelcomeDisclaimer, isGuestAbandoned, storedWelcomeIntro } from "@/lib/customer-chat-messages"
 import { CustomerChatIntro } from "@/components/ticket-chat/customer-chat-intro"
 import { useQueryClient } from "@tanstack/react-query"
 import { GuestName } from "@/components/ui/guest-name"
@@ -69,7 +69,7 @@ import { SidebarSectionHeading, SidebarDivider, SidebarEmptyText } from "@/compo
 import { useRightSidebarCollapsed, RightSidebarHeaderToggle } from "@/components/ticket-chat/right-sidebar-collapse"
 import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
-import { formatTicketRates, isFlatFeePricing, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
+import { formatTicketRates, isFlatFeePricing, isFreeSupport } from "@/lib/ticket-pricing"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
 import { useProjectRole } from "@/hooks/useProjectRole"
 import { useAddSelfAsHelper } from "@/hooks/useHelpers"
@@ -480,6 +480,8 @@ export default function TicketDetailPage() {
       messagesData
         // A free ticket's intro already says it is free; its stored disclaimer would repeat it.
         .filter((msg) => !(msg.sender_type === "system" && isFreeWelcomeDisclaimer(msg.metadata as Record<string, unknown> | null)))
+        // Customer-only notes (the "Thank you for reaching out!" auto reply) stay out of the helper thread.
+        .filter((msg) => !(msg.sender_type === "system" && isCustomerOnlySystemKind((msg.metadata as { kind?: string } | null | undefined)?.kind)))
         .map((msg): Message => ({
         id: msg.id,
         sender: msg.sender_type === "user" ? "user" : msg.sender_type === "helper" ? "helper" : "system",
@@ -509,40 +511,19 @@ export default function TicketDetailPage() {
   }
   const isNewMessage = (id: string) => initialMessageIds !== null && !initialMessageIds.has(id)
 
-  /** First user message in the chat, or ticket description as fallback (for "Info about issue"). */
-  const firstIssueMessage = useMemo(() => {
-    const ticketCreatorId =
-      (ticketDetails?.user as { id?: string } | undefined)?.id ?? ticket?.created_by ?? undefined
-    const ticketCreatorAvatarUrl =
-      (ticketDetails?.user as { avatar_url?: string | null } | undefined)?.avatar_url ?? null
+  /** Name in the helper-side welcome line: "Guest" for guest tickets, else the creator's name. */
+  const welcomeUserName = useMemo(() => {
+    if (isGuestTicket) return "Guest"
     const firstUser = messagesData?.find((m: { sender_type: string }) => m.sender_type === "user")
-    if (firstUser) {
-      return {
-        content: firstUser.content,
-        senderName: ticketCreatorDisplayName((firstUser as { sender?: { name?: string } }).sender?.name ?? ticketDetails?.user?.name, isGuestTicket),
-        senderId: (firstUser as { sender_id?: string }).sender_id ?? ticketCreatorId,
-        senderAvatarUrl:
-          (firstUser as { sender?: { avatar_url?: string | null } }).sender?.avatar_url ?? ticketCreatorAvatarUrl,
-        timestamp: firstUser.created_at,
-      }
-    }
-    if (ticket?.description || ticketDetails?.description) {
-      return {
-        content: ticket?.description ?? ticketDetails?.description ?? "",
-        senderName: ticketCreatorDisplayName(ticketDetails?.user?.name, isGuestTicket),
-        senderId: ticketCreatorId,
-        senderAvatarUrl: ticketCreatorAvatarUrl,
-        timestamp: ticket?.created_at ?? "",
-      }
-    }
-    return {
-      content: "",
-      senderName: ticketCreatorDisplayName(ticketDetails?.user?.name, isGuestTicket),
-      senderId: ticketCreatorId,
-      senderAvatarUrl: ticketCreatorAvatarUrl,
-      timestamp: ticket?.created_at ?? "",
-    }
-  }, [messagesData, ticket?.description, ticket?.created_at, ticket?.created_by, ticketDetails?.user, ticketDetails?.description, isGuestTicket])
+    return (
+      ticketDetails?.user?.name ||
+      (firstUser as { sender?: { name?: string } } | undefined)?.sender?.name ||
+      "User"
+    )
+  }, [isGuestTicket, ticketDetails?.user, messagesData])
+
+  /** The stored welcome row, rendered as the intro (it carries the ticket actions). */
+  const hasWelcomeRow = messages.some((m) => m.sender === "system" && m.metadataKind === "welcome")
 
   // Images attached via the toolbar button, paste or drag & drop end up as
   // markdown in the draft message.
@@ -587,18 +568,19 @@ export default function TicketDetailPage() {
     return () => cancelAnimationFrame(id)
   }, [ticketId, messages, isTicketEnded, hasHistory])
 
-  // Day dividers and sender grouping. The first divider sits above the "Info
-  // about issue" block and takes its date (the first message, else the ticket).
+  // Day dividers and sender grouping. The first divider sits at the top of the
+  // thread and takes the ticket's creation date.
+  const ticketCreatedAt = ticket?.created_at
   const { rows, topDayLabel } = useMemo(() => {
     const now = new Date()
     const built = buildThreadRows(messages, now)
-    const introDate = firstIssueMessage.timestamp ? new Date(firstIssueMessage.timestamp) : null
+    const introDate = ticketCreatedAt ? new Date(ticketCreatedAt) : null
     const top =
       introDate && !Number.isNaN(introDate.getTime())
         ? formatDayDividerLabel(introDate, now)
         : (built[0]?.showDayDivider ?? formatDayDividerLabel(now, now))
     return { rows: built, topDayLabel: top }
-  }, [messages, firstIssueMessage.timestamp])
+  }, [messages, ticketCreatedAt])
 
   // A helper has claimed the ticket or joined the chat (anyone but its creator).
   const helperJoined =
@@ -1047,6 +1029,52 @@ export default function TicketDetailPage() {
     )
   }
 
+  const ticketActions = (
+    <>
+      {/* Action Buttons — claim only on an open, unclaimed ticket
+          (never for its creator); End ticket only for the claimed
+          helper or a project admin. */}
+      {canClaim && (
+        <ClaimTicketButton
+          isGuest={isGuestTicket}
+          pending={claimTicket.isPending}
+          onClaim={() => void handleClaimTicket()}
+        />
+      )}
+
+      {isClaimed && !isTicketEnded && canManageTicket && (
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" onClick={() => setIsEndTicketDrawerOpen(true)} className="cursor-pointer">
+            End ticket
+          </Button>
+        </div>
+      )}
+
+      {/* Abandoned guest ticket: not claimable, but any helper or
+          admin can end it (directly, without the drawer). */}
+      {guestAbandoned && !(isClaimed && canManageTicket) && (
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            loading={isEndingAbandoned}
+            onClick={() => void handleEndAbandonedGuestTicket()}
+            className="cursor-pointer"
+          >
+            End ticket
+          </Button>
+        </div>
+      )}
+
+      {isClaimed && !isTicketEnded && !canManageTicket && (
+        <p className="text-ui text-muted-foreground">
+          {claimer?.name ? `${claimer.name} is handling this ticket.` : "Another helper is handling this ticket."}{" "}
+          You can read along, but only they (or a project admin) can log time or end it.
+        </p>
+      )}
+    </>
+  )
+
   return (
     // The AppShell content column is a vertical flex column: this row puts
     // the right panel beside the chat column (TicketChat does the same).
@@ -1100,134 +1128,14 @@ export default function TicketDetailPage() {
                   <div className="min-h-full flex flex-col justify-end">
                     <div className="flex flex-col px-6 py-10 md:px-12">
                 <ChatDayDivider label={topDayLabel} className="mb-4" />
-                {/* Initial Ticket Info — first message in chat = "Info about issue" */}
-                <div className="flex gap-3 items-start">
-                  <ChatAvatarSlot
-                    kind="avatar"
-                    id={firstIssueMessage.senderId}
-                    name={firstIssueMessage.senderName ?? "U"}
-                    avatarUrl={firstIssueMessage.senderAvatarUrl ?? null}
-                    guest={isGuestTicket}
-                  />
-                  <div className="min-w-0 flex-1 space-y-4">
-                    <div>
-                      <ChatMessageMeta
-                        name={creatorGuest ? creatorGuest.label : (firstIssueMessage.senderName ?? "User")}
-                        guest={!!creatorGuest}
-                        guestFull={creatorGuest?.full}
-                        time={firstIssueMessage.timestamp ? formatChatTime(firstIssueMessage.timestamp) : null}
-                        className="mb-1"
-                      />
-                      <div>
-                        <h3 className="text-sm font-medium mb-2 text-foreground">Info about issue</h3>
-                        <div className="space-y-3 text-foreground">
-                          {firstIssueMessage.content ? (
-                            <MarkdownContent content={firstIssueMessage.content} className="text-sm" />
-                          ) : (
-                            <p className="text-sm">No description provided.</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Other topics — from ticket keywords */}
-                    {ticketDetails?.keywords && ticketDetails.keywords.length > 0 && (
-                      <div>
-                        <h4 className="font-medium text-foreground mb-2">Other topics</h4>
-                        <div className="flex gap-2 flex-wrap">
-                          {ticketDetails.keywords.map((k) => (
-                            <Badge key={k.value} variant="secondary" className="bg-muted text-muted-foreground">
-                              {k.value}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Type of help — from ticket help categories */}
-                    {ticketDetails?.help_categories && ticketDetails.help_categories.length > 0 && (
-                      <div>
-                        <h4 className="font-medium text-foreground mb-2">Type of help</h4>
-                        <div className="flex gap-2 flex-wrap">
-                          {ticketDetails.help_categories.map((c) => (
-                            <Badge key={`${c.value}-${c.type}`} variant="type" className="capitalize">
-                              {c.type !== "default" ? c.type : c.value}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
-                      {rates == null ? (
-                        <div className="bg-card border border-border rounded-lg p-3">
-                          <p className="text-sm font-medium text-foreground">{RATES_NOT_CONFIGURED}</p>
-                          <p className="text-sm text-muted-foreground">
-                            This project has no payment settings yet, so no hold can be placed.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="bg-card border border-border rounded-lg p-3">
-                            <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.startPrice}</p>
-                            <p className="text-xs text-muted-foreground">Start price (USD)</p>
-                          </div>
-                          <div className="bg-card border border-border rounded-lg p-3">
-                            <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.first60Price}</p>
-                            <p className="text-xs text-muted-foreground">First 60 min (USD/min)</p>
-                          </div>
-                          <div className="bg-card border border-border rounded-lg p-3">
-                            <p className="text-sm font-bold text-foreground mb-1 tabular-nums">{rates.after60Price}</p>
-                            <p className="text-xs text-muted-foreground">After 60 min (USD/min)</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Buttons — claim only on an open, unclaimed ticket
-                        (never for its creator); End ticket only for the claimed
-                        helper or a project admin. */}
-                    {canClaim && (
-                      <ClaimTicketButton
-                        isGuest={isGuestTicket}
-                        pending={claimTicket.isPending}
-                        onClaim={() => void handleClaimTicket()}
-                      />
-                    )}
-
-                    {isClaimed && !isTicketEnded && canManageTicket && (
-                      <div className="flex gap-3">
-                        <Button variant="outline" size="sm" onClick={() => setIsEndTicketDrawerOpen(true)} className="cursor-pointer">
-                          End ticket
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Abandoned guest ticket: not claimable, but any helper or
-                        admin can end it (directly, without the drawer). */}
-                    {guestAbandoned && !(isClaimed && canManageTicket) && (
-                      <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          loading={isEndingAbandoned}
-                          onClick={() => void handleEndAbandonedGuestTicket()}
-                          className="cursor-pointer"
-                        >
-                          End ticket
-                        </Button>
-                      </div>
-                    )}
-
-                    {isClaimed && !isTicketEnded && !canManageTicket && (
-                      <p className="text-ui text-muted-foreground">
-                        {claimer?.name ? `${claimer.name} is handling this ticket.` : "Another helper is handling this ticket."}{" "}
-                        You can read along, but only they (or a project admin) can log time or end it.
-                      </p>
-                    )}
+                {/* Ticket actions sit under the welcome intro's Rates; without a
+                    stored welcome row they go here so claiming still works. */}
+                {!hasWelcomeRow && (
+                  <div className="flex gap-3 items-start">
+                    <ChatAvatarSlot kind="spacer" />
+                    <div className="min-w-0 flex-1 space-y-4">{ticketActions}</div>
                   </div>
-                </div>
+                )}
 
                 {/* Chat Messages: day dividers above each new day, follow-ups grouped under their sender */}
                   {rows.map((row, index) => {
@@ -1252,7 +1160,14 @@ export default function TicketDetailPage() {
                               projectName={project?.name || "Support"}
                               projectLogo={brandingData?.logo_url || null}
                               primaryColor={brandingData?.primary_color}
-                              welcomeText={msg.content}
+                              welcomeText={
+                                <>
+                                  {HELPER_WELCOME_PREFIX}
+                                  {/* Same weight as the sender name beside an avatar (ChatMessageMeta). */}
+                                  <span className="font-semibold">{welcomeUserName}</span>
+                                  {HELPER_WELCOME_SUFFIX}
+                                </>
+                              }
                               timestamp={welcomeIntro?.timestamp ?? messageTime(msg) ?? ""}
                               rates={welcomeIntro?.rates ?? null}
                               isFree={welcomeIntro?.isFree ?? false}
@@ -1260,6 +1175,7 @@ export default function TicketDetailPage() {
                               isAuthenticated
                               ticketCreated
                               onSignIn={() => {}}
+                              footer={ticketActions}
                             />
                           ) : isBanner ? (
                             <div data-slot="chat-banner-row" className="flex items-start gap-3">
