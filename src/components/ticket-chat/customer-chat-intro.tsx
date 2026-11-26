@@ -32,6 +32,8 @@ export interface CustomerChatIntroProps {
   signedOutExtra?: ReactNode
   /** Extra content between the welcome line and the rates, e.g. SLA free-help remaining. */
   children?: ReactNode
+  /** Extra content after the rates, e.g. the helper's claim / End ticket actions. */
+  footer?: ReactNode
 }
 
 /**
@@ -54,6 +56,7 @@ export function CustomerChatIntro({
   onSignIn,
   signedOutExtra,
   children,
+  footer,
 }: CustomerChatIntroProps) {
   return (
     <div className="flex gap-3">
@@ -115,6 +118,8 @@ export function CustomerChatIntro({
           </div>
           )}
         </div>
+
+        {footer}
 
         {isAuthenticated && !ticketCreated && (
           <div className="flex items-center gap-2 text-sm text-brand-primary">
