@@ -26,6 +26,9 @@ import {
 } from "@/components/ticket-chat/time-entry-review"
 import { describeAutoAcceptDeadline } from "@/lib/time-entries"
 import { useTicketAttachmentUpload } from "@/hooks/useTicketAttachments"
+import { useMarkTicketRead } from "@/hooks/useTicketReadState"
+import { useChatReadVisibility } from "@/hooks/useChatReadVisibility"
+import { useMobileNav } from "@/components/layout/mobile-nav"
 import { appendToDraft } from "@/lib/ticket-attachments"
 import { ILLUSTRATIVE_BUTTON_TOOLTIP } from "@/lib/constants"
 import { isPaymentFailedCtaLive } from "@/lib/customer-chat-messages"
@@ -260,6 +263,19 @@ export interface TicketChatProps {
    * CTAs are retired (see isPaymentFailedCtaLive).
    */
   paymentStatus?: TicketPaymentStatus
+
+  /**
+   * Read tracking: while the newest message can be seen (tab visible, window
+   * focused, thread at the bottom, no mobile sheet over it), the ticket is
+   * marked read up to `latestMessageId` via `useMarkTicketRead`. Skipped when
+   * `userId` is missing (signed-out visitor before a guest session) or there is
+   * no ticket.
+   */
+  readTracking?: {
+    ticketId?: string | null
+    userId?: string | null
+    latestMessageId?: string | null
+  }
 }
 
 /** System notes posted with the welcome message; they enter together with it. */
@@ -353,6 +369,7 @@ export function TicketChat(props: TicketChatProps) {
     onPaymentCtaClick,
     paymentCtaLoading,
     paymentStatus,
+    readTracking,
   } = props
 
   const [imageUploadOpen, setImageUploadOpen] = useState(false)
@@ -420,6 +437,19 @@ export function TicketChat(props: TicketChatProps) {
     const id = requestAnimationFrame(() => scrollToBottom())
     return () => cancelAnimationFrame(id)
   }, [threadKey, messages.length, isEnded, hasHistory])
+
+  // Mark the ticket read while its newest message is actually on screen: on
+  // open, and as realtime messages arrive while the reader sits at the bottom.
+  const { open: mobileNavOpen } = useMobileNav()
+  const threadInView = useChatReadVisibility({
+    scrollRef: scrollBoxRef,
+    endRef: messagesEndRef,
+    coveredBySheet: mobilePanelOpen || mobileNavOpen,
+    contentKey: messages.length,
+  })
+  useMarkTicketRead(readTracking?.ticketId, readTracking?.latestMessageId, {
+    enabled: !!readTracking?.userId && !!readTracking.ticketId && threadInView,
+  })
 
   const thread = useMemo(() => messages ?? [], [messages])
   // Before the stored welcome message exists (no ticket yet) the intro sits

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import { refetchTicketParticipants } from '@/hooks/useTicketParticipants'
+import { TICKET_UNREAD_QUERY_KEY } from '@/hooks/useTicketReadState'
 
 /**
  * Shape of the bits of a `tickets_messages` realtime payload we look at.
@@ -107,6 +108,11 @@ export function useRealtimeMessages(ticketId?: string) {
           // accept/decline messages flip an entry's review_status the same way.
           if (isTimeEntryMessage(payload)) {
             void invalidateTimeEntries()
+          }
+          // Sidebar unread dots: the server decides what counts as unread
+          // (automatic, system and own messages never do), so refetch the flags.
+          if ((payload as MessageChangePayload).eventType === 'INSERT') {
+            void queryClient.invalidateQueries({ queryKey: TICKET_UNREAD_QUERY_KEY })
           }
         }
       )

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement } from "react";
 
 vi.mock("@/lib/supabase/client", () => ({
-    supabase: { from: vi.fn() },
+    supabase: { from: vi.fn(), rpc: vi.fn() },
 }));
 
 import { supabase } from "@/lib/supabase/client";
@@ -28,6 +28,10 @@ type Fixture = {
     projects?: Array<Record<string, unknown>>;
     brandings?: Array<Record<string, unknown>>;
     users?: Array<Record<string, unknown>>;
+    /** ticket_unread_flags result per ticket id (absent = not returned). */
+    unread?: Record<string, boolean>;
+    /** Make ticket_unread_flags fail. */
+    unreadError?: boolean;
 };
 
 function ticket(id: string, overrides: Record<string, unknown> = {}) {
@@ -55,7 +59,6 @@ function participant(ticket_id: string, overrides: Record<string, unknown> = {})
         participant_id: HELPER_USER,
         created_at: "2026-01-01T00:00:00.000Z",
         claimed: true,
-        last_read_message_id: null,
         ...overrides,
     };
 }
@@ -80,6 +83,15 @@ function setupSupabase(fx: Fixture) {
         projects_branding: fx.brandings ?? [],
         users_public: fx.users ?? [{ id: CUSTOMER, name: "Casey Customer", avatar_url: "c.png" }],
     };
+
+    vi.mocked(supabase.rpc).mockImplementation(((fn: string, args: { p_ticket_ids: string[] }) => {
+        if (fn !== "ticket_unread_flags") throw new Error(`unexpected rpc ${fn}`);
+        if (fx.unreadError) return Promise.resolve({ data: null, error: { message: "boom" } });
+        const data = args.p_ticket_ids
+            .filter((id) => fx.unread && id in fx.unread)
+            .map((id) => ({ ticket_id: id, has_unread: fx.unread![id] }));
+        return Promise.resolve({ data, error: null });
+    }) as never);
 
     vi.mocked(supabase.from).mockImplementation(((table: string) => {
         const filters: Filter[] = [];
@@ -266,57 +278,33 @@ describe("useHelperRecentTicketInteractions", () => {
         expect(data.map((d) => d.id)).toEqual(["t-3", "t-2"]);
     });
 
-    it("flags has_unread when last_read_message_id differs from the last message id", async () => {
+    it("takes has_unread from ticket_unread_flags for the listed tickets", async () => {
         setupSupabase({
-            tickets: [ticket("t-1")],
-            participants: [participant("t-1", { last_read_message_id: "m1" })],
-            messages: [
-                // fixture order is deliberately reversed; the hook orders by created_at asc
-                message("m2", "t-1", "2026-01-02T00:00:00.000Z"),
-                message("m1", "t-1", "2026-01-01T00:00:00.000Z"),
-            ],
-        });
-
-        const [row] = await renderRecent();
-        expect(row.has_unread).toBe(true);
-    });
-
-    it("flags has_unread when the helper has no participant row but the ticket has messages", async () => {
-        setupSupabase({
-            tickets: [ticket("t-1")],
-            timeEntries: [{ ticket_id: "t-1", helper_id: HELPER_ID, created_at: "2026-01-05T00:00:00.000Z" }],
+            tickets: [ticket("t-1"), ticket("t-2"), ticket("t-3")],
+            participants: [participant("t-1"), participant("t-2"), participant("t-3")],
             messages: [message("m1", "t-1", "2026-01-01T00:00:00.000Z")],
+            unread: { "t-1": true, "t-2": false },
         });
 
-        const [row] = await renderRecent();
-        expect(row.has_unread).toBe(true);
+        const data = await renderRecent();
+        const byId = Object.fromEntries(data.map((d) => [d.id, d.has_unread]));
+        expect(byId).toEqual({ "t-1": true, "t-2": false, "t-3": false });
+        expect(supabase.rpc).toHaveBeenCalledWith("ticket_unread_flags", {
+            p_ticket_ids: expect.arrayContaining(["t-1", "t-2", "t-3"]),
+        });
     });
 
-    it("does not flag has_unread when last_read_message_id equals the last message id", async () => {
+    it("shows no dots when ticket_unread_flags fails", async () => {
         setupSupabase({
             tickets: [ticket("t-1")],
-            participants: [participant("t-1", { last_read_message_id: "m2" })],
-            messages: [
-                message("m1", "t-1", "2026-01-01T00:00:00.000Z"),
-                message("m2", "t-1", "2026-01-02T00:00:00.000Z"),
-                // a newer but deleted message does not reopen the unread state
-                message("m3", "t-1", "2026-01-03T00:00:00.000Z", { deleted_at: "2026-01-04T00:00:00.000Z" }),
-            ],
+            participants: [participant("t-1")],
+            messages: [message("m1", "t-1", "2026-01-01T00:00:00.000Z")],
+            unreadError: true,
         });
 
         const [row] = await renderRecent();
         expect(row.has_unread).toBe(false);
-    });
-
-    it("does not flag has_unread when the ticket has no messages", async () => {
-        setupSupabase({
-            tickets: [ticket("t-1")],
-            participants: [participant("t-1", { last_read_message_id: null })],
-        });
-
-        const [row] = await renderRecent();
-        expect(row.has_unread).toBe(false);
-        expect(row.message_count).toBe(0);
+        expect(row.message_count).toBe(1);
     });
 
     it("drops deleted tickets", async () => {

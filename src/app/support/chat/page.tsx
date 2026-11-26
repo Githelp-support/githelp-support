@@ -38,7 +38,7 @@ import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
-import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
+import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
 import { useTicketWithDetails, useLatestUserActiveTicket } from "@/hooks/useTicketsWithDetails"
 import { useCustomerTicketSidebar, toChatParticipants, hasHelperJoined } from "@/hooks/useCustomerTicketSidebar"
 import { CustomerTicketSidebarFooter } from "@/components/ticket-chat/customer-sidebar-footer"
@@ -393,16 +393,9 @@ export default function UserSupportChatPage() {
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
 
-  // Mark the latest message as read so the sidebar's unread dot clears for
-  // the customer too (mirrors the helper page). Depend on ids only: the
-  // mutation object changes identity and would loop with the invalidation.
-  const updateLastReadMessage = useUpdateLastReadMessage()
+  // Latest message id: TicketChat marks the ticket read up to it (mark_ticket_read)
+  // while it is on screen.
   const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
-  useEffect(() => {
-    if (!ticketId || !sessionUserId || !lastMessageId) return
-    updateLastReadMessage.mutate({ ticketId, participantId: sessionUserId, messageId: lastMessageId })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
-  }, [ticketId, sessionUserId, lastMessageId])
   // Right sidebar data (participants / logged time / active tickets) — shared
   // with the /support Get support tab so both entry points render the same.
   const {
@@ -1029,6 +1022,8 @@ export default function UserSupportChatPage() {
         sending={isSending}
         composerPlaceholder={composerPlaceholder(project ?? { name: projectName })}
         isEnded={ticketEnded}
+        // Marked read while the newest message is on screen (guests too: adoption moves their read state).
+        readTracking={{ ticketId, userId: sessionUserId, latestMessageId: lastMessageId }}
         paymentStatus={paymentStatus.status}
         // Signed-out visitors get the composer: the first send starts a guest
         // session. While a guest, a banner above it offers sign-in.

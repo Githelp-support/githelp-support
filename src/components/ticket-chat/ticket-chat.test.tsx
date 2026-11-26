@@ -18,6 +18,10 @@ vi.mock("@/components/layout/header", () => ({
   ),
 }))
 
+// Read tracking: assert what the chat asks the hook for, not the RPC itself.
+vi.mock("@/hooks/useTicketReadState", () => ({ useMarkTicketRead: vi.fn() }))
+
+import { useMarkTicketRead } from "@/hooks/useTicketReadState"
 import { TicketChat, type TicketChatMessage, type TicketChatProps } from "./ticket-chat"
 
 /** Local time on Sunday 15 November 2026 (day dividers and times are local). */
@@ -451,5 +455,128 @@ describe("TicketChat intro entrance on opening a fresh chat", () => {
     render(wrap(<TicketChat {...base} messages={[]} introEntrance />))
     expect(screen.getByTestId("intro").closest(".animate-fade-in")).toBeNull()
     expect(screen.getByRole("separator")).toBeInTheDocument()
+  })
+})
+
+describe("TicketChat read tracking", () => {
+  const markRead = vi.mocked(useMarkTicketRead)
+  let visibility: DocumentVisibilityState = "visible"
+  let focused = true
+
+  /** The last `enabled` the chat passed for this ticket and message. */
+  const lastCall = () => {
+    const call = markRead.mock.calls[markRead.mock.calls.length - 1]
+    return { ticketId: call[0], messageId: call[1], enabled: call[2]?.enabled }
+  }
+
+  /** Give the scroll container a geometry (jsdom has no layout) and fire a scroll. */
+  const scrollTo = (box: HTMLElement, { scrollHeight, clientHeight, scrollTop }: Record<string, number>) => {
+    Object.defineProperty(box, "scrollHeight", { configurable: true, value: scrollHeight })
+    Object.defineProperty(box, "clientHeight", { configurable: true, value: clientHeight })
+    box.scrollTop = scrollTop
+    fireEvent.scroll(box)
+  }
+
+  const readTracking = { ticketId: "t1", userId: "u1", latestMessageId: "m1" }
+  const thread = [message("m1", { createdAt: at(15, 10, 17) })]
+
+  beforeEach(() => {
+    markRead.mockClear()
+    visibility = "visible"
+    focused = true
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => visibility })
+    vi.spyOn(document, "hasFocus").mockImplementation(() => focused)
+  })
+
+  it("marks the ticket read on open when the tab is visible, focused and at the bottom", () => {
+    renderChat({ messages: thread, readTracking })
+    expect(lastCall()).toEqual({ ticketId: "t1", messageId: "m1", enabled: true })
+  })
+
+  it("does not mark read while the tab is hidden, and does once it is visible again", () => {
+    visibility = "hidden"
+    renderChat({ messages: thread, readTracking })
+    expect(lastCall().enabled).toBe(false)
+    expect(markRead.mock.calls.some(([, , opts]) => opts?.enabled)).toBe(false)
+
+    act(() => {
+      visibility = "visible"
+      document.dispatchEvent(new Event("visibilitychange"))
+    })
+    expect(lastCall().enabled).toBe(true)
+  })
+
+  it("does not mark read while the window is blurred", () => {
+    renderChat({ messages: thread, readTracking })
+    act(() => {
+      focused = false
+      window.dispatchEvent(new Event("blur"))
+    })
+    expect(lastCall().enabled).toBe(false)
+    act(() => {
+      focused = true
+      window.dispatchEvent(new Event("focus"))
+    })
+    expect(lastCall().enabled).toBe(true)
+  })
+
+  it("only marks read when scrolled to within 48px of the bottom", () => {
+    const { container } = renderChat({ messages: thread, readTracking })
+    const box = container.querySelector('[data-slot="chat-scroll"]') as HTMLElement
+
+    act(() => scrollTo(box, { scrollHeight: 2000, clientHeight: 500, scrollTop: 1000 }))
+    expect(lastCall().enabled).toBe(false)
+
+    act(() => scrollTo(box, { scrollHeight: 2000, clientHeight: 500, scrollTop: 1460 }))
+    expect(lastCall().enabled).toBe(true)
+  })
+
+  it("marks new realtime messages read while at the bottom, not while scrolled up", () => {
+    const wrap = (props: Partial<TicketChatProps>) => (
+      <QueryClientProvider client={new QueryClient()}>
+        <TooltipProvider>
+          <TicketChat headerTitle="Ticket" message="" onMessageChange={() => {}} onSend={() => {}} messages={thread} {...props} />
+        </TooltipProvider>
+      </QueryClientProvider>
+    )
+    const { container, rerender } = render(wrap({ readTracking }))
+    const box = container.querySelector('[data-slot="chat-scroll"]') as HTMLElement
+
+    rerender(
+      wrap({
+        messages: [...thread, message("m2", { createdAt: at(15, 10, 18) })],
+        readTracking: { ...readTracking, latestMessageId: "m2" },
+      }),
+    )
+    expect(lastCall()).toEqual({ ticketId: "t1", messageId: "m2", enabled: true })
+
+    act(() => scrollTo(box, { scrollHeight: 2000, clientHeight: 500, scrollTop: 200 }))
+    markRead.mockClear()
+    rerender(
+      wrap({
+        messages: [...thread, message("m2", { createdAt: at(15, 10, 18) }), message("m3", { createdAt: at(15, 10, 19) })],
+        readTracking: { ...readTracking, latestMessageId: "m3" },
+      }),
+    )
+    expect(lastCall().messageId).toBe("m3")
+    expect(markRead.mock.calls.some(([, , opts]) => opts?.enabled)).toBe(false)
+  })
+
+  it("skips guests without a user id and chats without read tracking", () => {
+    const guest = renderChat({ messages: thread, readTracking: { ...readTracking, userId: null } })
+    expect(markRead.mock.calls.every(([, , opts]) => opts?.enabled === false)).toBe(true)
+    guest.unmount()
+
+    markRead.mockClear()
+    renderChat({ messages: thread })
+    expect(markRead.mock.calls.every(([, , opts]) => opts?.enabled === false)).toBe(true)
+  })
+
+  it("does not mark read while the details sheet covers the chat below lg", () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true, addEventListener: () => {}, removeEventListener: () => {} }) as unknown as typeof window.matchMedia
+    renderChat({ messages: thread, readTracking })
+    expect(lastCall().enabled).toBe(true)
+    fireEvent.click(within(screen.getByTestId("header-actions")).getByRole("button", { name: "Ticket details" }))
+    expect(lastCall().enabled).toBe(false)
   })
 })

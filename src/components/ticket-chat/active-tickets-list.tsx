@@ -97,9 +97,11 @@ export function ActiveTicketsList<T extends ActiveTicketListItem>({
                   <p className="text-xs text-muted-foreground">{formatDateMedium(item.createdAt)}</p>
                 </div>
                 {item.hasNotification && (
-                  <span className="size-2 shrink-0 mt-1.5 rounded-full bg-brand-primary">
-                    <span className="sr-only">Unread messages</span>
-                  </span>
+                  <span
+                    role="img"
+                    aria-label="Unread messages"
+                    className="size-2 shrink-0 self-center rounded-full bg-brand-primary"
+                  />
                 )}
               </Link>
             </li>

@@ -65,9 +65,12 @@ import { useCaptureTicket } from "@/hooks/useCaptureTicket"
 import { useTicketMessages, useSendMessage } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
+import { useMarkTicketRead } from "@/hooks/useTicketReadState"
+import { useChatReadVisibility } from "@/hooks/useChatReadVisibility"
+import { useMobileNav } from "@/components/layout/mobile-nav"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmptyText } from "@/components/ticket-chat/sidebar-section"
 import { useRightSidebarCollapsed, RightSidebarHeaderToggle } from "@/components/ticket-chat/right-sidebar-collapse"
-import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
+import { useTicketParticipants, useClaimTicket, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFlatFeePricing, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
@@ -295,24 +298,10 @@ export default function TicketDetailPage() {
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
 
-  const updateLastReadMessage = useUpdateLastReadMessage()
-
   const lastMessageId = useMemo(
     () => (messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null),
     [messagesData]
   )
-
-  // Mark latest message as read when viewing this ticket. Only depend on ids so we don't re-run
-  // when the mutation object reference changes (it would cause an update loop with query invalidation).
-  useEffect(() => {
-    if (!ticketId || !currentUser?.id || !lastMessageId) return
-    updateLastReadMessage.mutate({
-      ticketId,
-      participantId: currentUser.id,
-      messageId: lastMessageId,
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
-  }, [ticketId, currentUser?.id, lastMessageId])
 
   const claimer = useMemo(
     () => participants?.find((p) => p.claimed)?.user,
@@ -586,6 +575,17 @@ export default function TicketDetailPage() {
     const id = requestAnimationFrame(() => scrollToBottom())
     return () => cancelAnimationFrame(id)
   }, [ticketId, messages, isTicketEnded, hasHistory])
+
+  // Mark the ticket read while its newest message is actually on screen: on
+  // open, and as realtime messages arrive while the reader sits at the bottom.
+  const { open: mobileNavOpen } = useMobileNav()
+  const threadInView = useChatReadVisibility({
+    scrollRef: scrollBoxRef,
+    endRef: messagesEndRef,
+    coveredBySheet: mobilePanelOpen || mobileNavOpen,
+    contentKey: messages.length,
+  })
+  useMarkTicketRead(ticketId, lastMessageId, { enabled: !!currentUser?.id && threadInView })
 
   // Day dividers and sender grouping. The first divider sits above the "Info
   // about issue" block and takes its date (the first message, else the ticket).

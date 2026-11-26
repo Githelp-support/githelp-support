@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/lib/format";
 import { excludeAbandonedGuestTickets } from "@/lib/guest-ticket-filters";
 import { supabase } from "@/lib/supabase/client";
+import { useQueryWithUnreadFlags } from "@/hooks/useTicketReadState";
 
 export interface TicketWithDetails {
     id: string;
@@ -133,11 +134,18 @@ export interface UserActiveTicketSidebarItem {
     avatarUrl: string | null;
     avatarInitial: string;
     current: boolean;
+    /** Unread messages for this user (from `ticket_unread_flags`); never set on the open ticket. */
     hasNotification: boolean;
 }
 
 export interface UserActiveTicketsSidebarResult {
     items: UserActiveTicketSidebarItem[];
+    activeCount: number;
+}
+
+/** What the query fetches; `hasNotification` is added from the unread flags. */
+interface UserActiveTicketsSidebarQueryResult {
+    items: Omit<UserActiveTicketSidebarItem, "hasNotification">[];
     activeCount: number;
 }
 
@@ -150,16 +158,17 @@ const USER_SIDEBAR_SUBTITLE_MAX_CHARS = 50;
  * Always includes the current ticket if provided, even if it would be outside
  * the `limit` window. Also returns `activeCount` — total number of active
  * tickets (independent of the `limit` applied to the displayed items). Used by
- * the UI to render "Active tickets (N)".
+ * the UI to render "Active tickets (N)". `hasNotification` comes from
+ * `ticket_unread_flags` and is never set on the open (current) ticket.
  */
 export function useUserActiveTicketsSidebar(
     userId: string | undefined,
     currentTicketId: string | undefined,
     limit = 3
 ) {
-    return useQuery({
+    const query = useQuery({
         queryKey: ["user-active-tickets-sidebar", userId, currentTicketId, limit],
-        queryFn: async (): Promise<UserActiveTicketsSidebarResult> => {
+        queryFn: async (): Promise<UserActiveTicketsSidebarQueryResult> => {
             if (!userId) return { items: [], activeCount: 0 };
 
             const { data: activeTickets, error: ticketsError } = await supabase
@@ -232,18 +241,6 @@ export function useUserActiveTicketsSidebar(
             );
 
             const ticketIds = tickets.map((t) => t.id);
-            const { data: partRows } = await supabase
-                .from("tickets_participants")
-                .select("ticket_id, last_read_message_id")
-                .eq("participant_id", userId)
-                .in("ticket_id", ticketIds);
-            const lastReadByTicket = new Map(
-                (partRows ?? []).map((p) => [
-                    p.ticket_id,
-                    p.last_read_message_id ?? null,
-                ])
-            );
-
             const { data: messages } = await supabase
                 .from("tickets_messages")
                 .select("id, ticket_id, content, created_at, is_automatic")
@@ -252,7 +249,6 @@ export function useUserActiveTicketsSidebar(
                 .order("created_at", { ascending: true });
 
             const firstMessageByTicket = new Map<string, { content: string }>();
-            const lastMessageIdByTicket = new Map<string, string>();
             messages?.forEach(
                 (m: { id: string; ticket_id: string; content: string; is_automatic?: boolean }) => {
                     // The subtitle is the customer's question, not the automatic welcome/notes.
@@ -261,7 +257,6 @@ export function useUserActiveTicketsSidebar(
                             content: m.content,
                         });
                     }
-                    lastMessageIdByTicket.set(m.ticket_id, m.id);
                 }
             );
 
@@ -278,12 +273,6 @@ export function useUserActiveTicketsSidebar(
                               .slice(0, USER_SIDEBAR_SUBTITLE_MAX_CHARS)
                               .trim() + "…"
                         : firstMsg.trim() || "-";
-                const lastMessageId =
-                    lastMessageIdByTicket.get(t.id) ?? null;
-                const lastRead = lastReadByTicket.get(t.id) ?? null;
-                const hasNotification =
-                    lastMessageId != null && lastRead !== lastMessageId;
-
                 return {
                     id: t.id,
                     title: `${projectName} - ${t.id.slice(0, 8)}`,
@@ -296,7 +285,6 @@ export function useUserActiveTicketsSidebar(
                     avatarUrl: projectLogo,
                     avatarInitial: projectName[0]?.toUpperCase() ?? "?",
                     current: t.id === currentTicketId,
-                    hasNotification,
                 };
             });
 
@@ -306,6 +294,7 @@ export function useUserActiveTicketsSidebar(
         retry: false,
         staleTime: 60000,
     });
+    return useQueryWithUnreadFlags(query);
 }
 
 /**
