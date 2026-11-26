@@ -70,7 +70,7 @@ import { useChatReadVisibility } from "@/hooks/useChatReadVisibility"
 import { useMobileNav } from "@/components/layout/mobile-nav"
 import { SidebarSectionHeading, SidebarDivider, SidebarEmptyText } from "@/components/ticket-chat/sidebar-section"
 import { useRightSidebarCollapsed, RightSidebarHeaderToggle } from "@/components/ticket-chat/right-sidebar-collapse"
-import { useTicketParticipants, useClaimTicket, useEnsureParticipant, useUpdateLastReadMessage, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
+import { useTicketParticipants, useClaimTicket, useEnsureParticipant, type ParticipantWithUser } from "@/hooks/useTicketParticipants"
 import { useProjectPaymentSettings } from "@/hooks/useProject"
 import { formatTicketRates, isFlatFeePricing, isFreeSupport, RATES_NOT_CONFIGURED } from "@/lib/ticket-pricing"
 import { useHelperClaimedTicketsSidebar, useAdminActiveTicketsSidebar } from "@/hooks/useHelperTickets"
@@ -298,24 +298,10 @@ export default function TicketDetailPage() {
   useRealtimeMessages(ticketId)
   useRealtimeTicket(ticketId)
 
-  const updateLastReadMessage = useUpdateLastReadMessage()
-
   const lastMessageId = useMemo(
     () => (messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null),
     [messagesData]
   )
-
-  // Mark latest message as read when viewing this ticket. Only depend on ids so we don't re-run
-  // when the mutation object reference changes (it would cause an update loop with query invalidation).
-  useEffect(() => {
-    if (!ticketId || !currentUser?.id || !lastMessageId) return
-    updateLastReadMessage.mutate({
-      ticketId,
-      participantId: currentUser.id,
-      messageId: lastMessageId,
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
-  }, [ticketId, currentUser?.id, lastMessageId])
 
   const claimer = useMemo(
     () => participants?.find((p) => p.claimed)?.user,

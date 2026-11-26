@@ -16,8 +16,8 @@ export interface HelperRecentTicketInteraction {
     creator: { id: string; name: string; avatar_url: string | null } | null;
     message_count: number;
     /**
-     * Same rule as the helper chat sidebar: the newest non-deleted message
-     * differs from this helper's participant `last_read_message_id`.
+     * Same rule as the chat sidebars: `ticket_unread_flags` (a message from
+     * someone else, not automatic or system, after this user's read watermark).
      */
     has_unread: boolean;
     /** ISO timestamp of the helper's most recent interaction with the ticket. */
@@ -42,7 +42,6 @@ type ParticipantRow = {
     ticket_id: string;
     created_at: string;
     claimed: boolean | null;
-    last_read_message_id: string | null;
 };
 
 const TICKET_COLUMNS =
@@ -81,7 +80,7 @@ export async function fetchHelperTicketsByLastInteraction(userId: string): Promi
     // (b) tickets the helper joined / claimed.
     const { data: participants, error: participantsError } = await supabase
         .from("tickets_participants")
-        .select("ticket_id, created_at, claimed, last_read_message_id")
+        .select("ticket_id, created_at, claimed")
         .eq("participant_id", userId);
     if (participantsError) throw participantsError;
 
@@ -184,8 +183,7 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                 .in("project_id", projectIds);
             const brandingMap = new Map(brandings?.map((b: any) => [b.project_id, b]) || []);
 
-            // Non-deleted messages, oldest first: gives both the message count and
-            // the last message id per ticket (same rule as the helper sidebar).
+            // Non-deleted messages: the count of messages written by people.
             const { data: messageRows } = await supabase
                 .from("tickets_messages")
                 .select("id, ticket_id, created_at, is_automatic")
@@ -193,13 +191,19 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                 .is("deleted_at", null)
                 .order("created_at", { ascending: true });
             const countsMap = new Map<string, number>();
-            const lastMessageIdByTicket = new Map<string, string>();
             messageRows?.forEach((msg: any) => {
-                // Count messages written by people; the unread check still compares
-                // against the latest row of any kind (what the chat marks as read).
                 if (!msg.is_automatic) countsMap.set(msg.ticket_id, (countsMap.get(msg.ticket_id) || 0) + 1);
-                lastMessageIdByTicket.set(msg.ticket_id, msg.id);
             });
+
+            // Unread dots: the server decides (same RPC as the chat sidebars).
+            // A failure only hides the dots.
+            const unreadByTicket = new Map<string, boolean>();
+            const { data: unreadRows } = await supabase.rpc("ticket_unread_flags", {
+                p_ticket_ids: ticketIds,
+            });
+            (unreadRows ?? []).forEach((row: { ticket_id: string; has_unread: boolean | null }) =>
+                unreadByTicket.set(row.ticket_id, !!row.has_unread)
+            );
 
             // Any claimed participant (this helper or someone else) means "Claimed".
             const { data: claimedParticipants } = await supabase
@@ -239,9 +243,7 @@ export function useHelperRecentTicketInteractions(userId?: string, limit = 5) {
                 const status: HelperRecentTicketStatus =
                     ticket.status === "completed" ? "Completed" : isClaimed ? "Claimed" : "Unclaimed";
 
-                const lastMessageId = lastMessageIdByTicket.get(ticket.id) ?? null;
-                const lastRead = participant?.last_read_message_id ?? null;
-                const has_unread = lastMessageId != null && lastRead !== lastMessageId;
+                const has_unread = unreadByTicket.get(ticket.id) ?? false;
 
                 return {
                     id: ticket.id,

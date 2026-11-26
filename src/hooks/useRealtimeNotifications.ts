@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/contexts/user-context'
 import { notificationType, type Notification } from './useNotifications'
+import { TICKET_UNREAD_QUERY_KEY } from './useTicketReadState'
 
 const NOTIFICATIONS_KEY = ['notifications'] as const
 
@@ -44,6 +45,12 @@ export function useRealtimeNotifications() {
       )
       // Reconcile with the server in the background.
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY })
+      // A new or refreshed unread chat entry means another chat got a message:
+      // refresh the unread dots of the ticket lists (they don't watch every ticket).
+      if (notificationType(notification) === 'TICKET_MESSAGE' && !notification.is_read) {
+        queryClient.invalidateQueries({ queryKey: TICKET_UNREAD_QUERY_KEY })
+        queryClient.invalidateQueries({ queryKey: ['helper-recent-ticket-interactions'] })
+      }
     }
 
     const channel = supabase

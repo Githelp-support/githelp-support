@@ -174,6 +174,20 @@ describe("useRealtimeNotifications", () => {
     expect(await screen.findByRole("button", { name: "Inbox, 1 unread" })).toBeInTheDocument()
   })
 
+  it("an unread chat INSERT/UPDATE refreshes the ticket unread dots; other changes don't", () => {
+    const { client } = renderWithCache([])
+    const spy = vi.spyOn(client, "invalidateQueries")
+    const unreadCalls = () => spy.mock.calls.filter(([f]) => JSON.stringify(f?.queryKey) === '["ticket-unread"]').length
+
+    act(() => handlers.INSERT({ new: chatRow() }))
+    expect(unreadCalls()).toBe(1)
+    act(() => handlers.UPDATE({ new: chatRow({ created_at: "2026-11-25T11:00:00Z" }) }))
+    expect(unreadCalls()).toBe(2)
+    act(() => handlers.UPDATE({ new: chatRow({ is_read: true }) }))
+    act(() => handlers.INSERT({ new: row({ id: "x" }) }))
+    expect(unreadCalls()).toBe(2)
+  })
+
   it("still toasts other notification types", () => {
     renderWithCache([])
     act(() => handlers.INSERT({ new: row({ id: "p-1", title: "You've been paid" }) }))

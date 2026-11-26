@@ -268,7 +268,8 @@ export interface TicketChatProps {
    * Read tracking: while the newest message can be seen (tab visible, window
    * focused, thread at the bottom, no mobile sheet over it), the ticket is
    * marked read up to `latestMessageId` via `useMarkTicketRead`. Skipped when
-   * `userId` is missing (guests / anonymous visitors) or there is no ticket.
+   * `userId` is missing (signed-out visitor before a guest session) or there is
+   * no ticket.
    */
   readTracking?: {
     ticketId?: string | null

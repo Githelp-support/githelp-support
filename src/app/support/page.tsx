@@ -46,7 +46,7 @@ import { ConfirmPaymentModal } from "@/components/payment/ConfirmPaymentModal"
 import { useSendMessage, useTicketMessages } from "@/hooks/useTicketMessages"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { useRealtimeTicket } from "@/hooks/useRealtimeTicket"
-import { useEnsureParticipant, useUpdateLastReadMessage } from "@/hooks/useTicketParticipants"
+import { useEnsureParticipant } from "@/hooks/useTicketParticipants"
 import { useCustomerTicketSidebar, toChatParticipants, hasHelperJoined } from "@/hooks/useCustomerTicketSidebar"
 import { SignInModal } from "@/components/modals/sign-in-modal"
 import { supabase } from "@/lib/supabase/client"
@@ -281,16 +281,9 @@ export default function SupportPage() {
     ticketStatus: liveTicket?.status ?? null,
   })
 
-  // Mark the latest message as read so the sidebar's unread dot clears for
-  // the customer too (mirrors the helper page). Depend on ids only: the
-  // mutation object changes identity and would loop with the invalidation.
-  const updateLastReadMessage = useUpdateLastReadMessage()
+  // Latest message id: TicketChat marks the ticket read up to it (mark_ticket_read)
+  // while it is on screen.
   const lastMessageId = messagesData && messagesData.length > 0 ? messagesData[messagesData.length - 1].id : null
-  useEffect(() => {
-    if (!ticketId || !sessionUserId || !lastMessageId) return
-    updateLastReadMessage.mutate({ ticketId, participantId: sessionUserId, messageId: lastMessageId })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutate is stable; including updateLastReadMessage causes an update loop
-  }, [ticketId, sessionUserId, lastMessageId])
 
   // Welcome message used as the prose copy in the intro block.
   const welcomeMessageContent = useMemo(
@@ -782,8 +775,8 @@ export default function SupportPage() {
             sending={isSending}
             composerPlaceholder={composerPlaceholder(project ?? { name: projectName })}
             isEnded={ticketEnded}
-            // Marked read while the newest message is on screen; guests (no user id) are skipped.
-            readTracking={{ ticketId, userId: user?.id, latestMessageId: lastMessageId }}
+            // Marked read while the newest message is on screen (guests too: adoption moves their read state).
+            readTracking={{ ticketId, userId: sessionUserId, latestMessageId: lastMessageId }}
             paymentStatus={paymentStatus.status}
             // Signed-out visitors get the composer: the first send starts a
             // guest session. While a guest, a banner above it offers sign-in.
