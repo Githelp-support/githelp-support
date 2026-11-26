@@ -86,8 +86,8 @@ export function CustomerChatIntro({
           <h4 className="text-ui font-semibold text-foreground mb-3">Rates</h4>
           {isFree ? (
             <div className="bg-card border border-border rounded-lg p-3">
-              <p className="text-sm font-medium text-foreground">Free support</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-bold text-foreground mb-1">Free support</p>
+              <p className="text-xs text-muted-foreground">
                 {projectName} offers support for free - no payment method needed.
               </p>
             </div>
