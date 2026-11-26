@@ -47,10 +47,10 @@ export function ChatMessageMeta({ name, guest = false, guestFull, time, children
       {guest ? (
         <GuestName label={name} full={guestFull} className="text-sm" />
       ) : (
-        <span className="min-w-0 truncate text-sm font-semibold text-foreground">{name}</span>
+        <span className="min-w-0 truncate text-sm font-bold text-foreground">{name}</span>
       )}
       {children}
-      {time ? <span className="shrink-0 font-sans text-xs text-muted-foreground tabular-nums">{time}</span> : null}
+      {time ? <span className="shrink-0 font-sans text-xs text-text-chat-meta tabular-nums">{time}</span> : null}
     </div>
   )
 }

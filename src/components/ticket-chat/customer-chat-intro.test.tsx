@@ -37,6 +37,14 @@ describe("CustomerChatIntro header row", () => {
     expect(screen.getByText("Welcome!")).toHaveClass("text-foreground")
     expect(screen.getByText("Welcome!")).not.toHaveClass("text-muted-foreground")
   })
+
+  it("sets the sender name in bold and the time in the chat-meta grey", () => {
+    render(<CustomerChatIntro {...baseProps} />)
+    expect(screen.getByText("Acme Team")).toHaveClass("font-bold")
+    expect(screen.getByText("Acme Team")).not.toHaveClass("font-semibold")
+    expect(screen.getByText("12:00")).toHaveClass("text-text-chat-meta")
+    expect(screen.getByText("12:00")).not.toHaveClass("text-muted-foreground")
+  })
 })
 
 describe("CustomerChatIntro rates", () => {
@@ -49,6 +57,14 @@ describe("CustomerChatIntro rates", () => {
     expect(screen.getByText("1.00")).toBeInTheDocument()
     expect(screen.getByText("After 60 min (USD/min)")).toBeInTheDocument()
     expect(screen.queryByText("Free support")).not.toBeInTheDocument()
+  })
+
+  it("sets the rate labels in the chat-meta grey", () => {
+    render(<CustomerChatIntro {...baseProps} />)
+    for (const label of ["Start price (USD)", "First 60 min (USD/min)", "After 60 min (USD/min)"]) {
+      expect(screen.getByText(label)).toHaveClass("text-text-chat-meta")
+      expect(screen.getByText(label)).not.toHaveClass("text-muted-foreground")
+    }
   })
 
   it("says support is free instead of listing $0 rates", () => {
