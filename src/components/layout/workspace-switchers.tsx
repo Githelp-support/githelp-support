@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactElement } from "react"
+import { useId, useState, type ReactElement } from "react"
 import { Icon } from "@/components/ui/icon"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -60,14 +60,53 @@ const ProjectLogo = ({
   )
 }
 
-// Avatar-sized stand-in for the private user context in the project control.
-const PrivateContextIcon = ({ size }: { size: string }) => (
-  <span
-    className={`${size} ${sizeRadiusMap[size] || squircleRadiusClass(0)} shrink-0 flex items-center justify-center bg-muted text-muted-foreground`}
-  >
-    <Icon name="fi-rr-lock" size={3.5} />
-  </span>
-)
+// Glyph size per private tile size: about 60% of the tile.
+const PRIVATE_GLYPH_SIZE: Record<string, string> = {
+  "w-5 h-5": "size-3.25",
+  "w-[22px] h-[22px]": "size-3.5",
+  "w-6 h-6": "size-4",
+  "w-7 h-7": "size-4",
+}
+
+// Avatar-sized stand-in for the private user context in the project control:
+// the Githelp house glyph (githelp-house.svg), inlined so it takes the tile's
+// text colour. The mask id comes from useId because the trigger and the open
+// menu item can be mounted at the same time.
+const PrivateContextIcon = ({ size }: { size: string }) => {
+  const maskId = useId()
+
+  return (
+    <span
+      className={cn(
+        size,
+        sizeRadiusMap[size] || squircleRadiusClass(0),
+        "shrink-0 flex items-center justify-center bg-brand-primary/10 text-brand-primary"
+      )}
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 512 512"
+        fill="none"
+        className={cn("shrink-0", PRIVATE_GLYPH_SIZE[size] ?? "size-3.5")}
+      >
+        <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+          <rect width="512" height="512" fill="#fff" />
+          <rect x="270" y="274" width="136" height="168" rx="50" fill="#000" />
+          <rect x="109" y="253" width="104" height="104" rx="36" fill="#000" />
+          <rect x="221" y="157" width="70" height="70" rx="24" fill="#000" />
+        </mask>
+        <path
+          mask={`url(#${maskId})`}
+          d="M256 58C300 58 452 178 458 222C466 300 468 392 446 438C440 450 430 456 416 458C318 470 194 470 96 458C82 456 72 450 66 438C44 392 46 300 54 222C60 178 212 58 256 58Z"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="40"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
 
 // Component to render project logo with branding in dropdown
 function ProjectLogoWithBranding({
