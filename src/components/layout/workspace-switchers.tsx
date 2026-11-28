@@ -70,7 +70,8 @@ const PRIVATE_GLYPH_SIZE: Record<string, string> = {
 
 // Avatar-sized stand-in for the private user context in the project control:
 // the Githelp house glyph (githelp-house.svg), inlined so it takes the tile's
-// text colour. The mask id comes from useId because the trigger and the open
+// text colour: the sidebar menu icons' grey (`text-tertiary`) on the neutral
+// grey fill. The mask id comes from useId because the trigger and the open
 // menu item can be mounted at the same time.
 const PrivateContextIcon = ({ size }: { size: string }) => {
   const maskId = useId()
@@ -80,7 +81,7 @@ const PrivateContextIcon = ({ size }: { size: string }) => {
       className={cn(
         size,
         sizeRadiusMap[size] || squircleRadiusClass(0),
-        "shrink-0 flex items-center justify-center bg-brand-primary/10 text-brand-primary"
+        "shrink-0 flex items-center justify-center bg-badge-neutral-bg text-text-tertiary"
       )}
     >
       <svg
